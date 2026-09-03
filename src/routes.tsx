@@ -16,6 +16,7 @@ import DRepDetail from "./pages/explorer/DRepDetail";
 import WalletHome from "./pages/wallet/WalletHome";
 import WalletSend from "./pages/wallet/WalletSend";
 import WalletSwap from "./pages/wallet/WalletSwap";
+import WalletDelegate from "./pages/wallet/WalletDelegate";
 import NotFound from "./pages/NotFound";
 
 export const router = createBrowserRouter([
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
       { path: "wallet", element: <WalletHome /> },
       { path: "wallet/send", element: <WalletSend /> },
       { path: "wallet/swap", element: <WalletSwap /> },
+      { path: "wallet/delegate", element: <WalletDelegate /> },
       { path: "*", element: <NotFound /> },
     ],
   },

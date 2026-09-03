@@ -6,11 +6,20 @@ const LAST_WALLET_KEY = "dingo-demo.wallet";
 
 export type WalletStatus = "disconnected" | "connecting" | "connected" | "error";
 
+export interface WalletToken {
+  // Blockfrost-style unit: hex policy ID + hex asset name concatenated -
+  // also exactly what Core.AssetId() expects, so no reformatting is needed
+  // to build a tx output for one of these.
+  assetId: string;
+  quantity: bigint;
+}
+
 interface WalletDetails {
   usedAddresses: string[];
   changeAddress: string | null;
   rewardAddress: string | null;
   balanceLovelace: bigint | null;
+  tokens: WalletToken[];
 }
 
 // Dingo's example apps and this showcase both target Preview. A wallet
@@ -35,6 +44,7 @@ const emptyDetails: WalletDetails = {
   changeAddress: null,
   rewardAddress: null,
   balanceLovelace: null,
+  tokens: [],
 };
 
 function listWallets(): Array<{ name: string; icon?: string }> {
@@ -57,6 +67,14 @@ async function loadWalletDetails(api: Cip30WalletApi): Promise<WalletDetails> {
       api.getBalance(),
     ]);
 
+  const balance = Core.Serialization.Value.fromCbor(Core.HexBlob(balanceCbor));
+  const multiasset = balance.multiasset();
+  const tokens: WalletToken[] = multiasset
+    ? [...multiasset.entries()]
+        .map(([assetId, quantity]) => ({ assetId: String(assetId), quantity }))
+        .sort((a, b) => a.assetId.localeCompare(b.assetId))
+    : [];
+
   return {
     usedAddresses: usedAddressesHex.map(
       (hex) => Core.Address.fromBytes(Core.HexBlob(hex)).toBech32() as string,
@@ -69,9 +87,8 @@ async function loadWalletDetails(api: Cip30WalletApi): Promise<WalletDetails> {
           Core.HexBlob(rewardAddressesHex[0]),
         ).toBech32() as string)
       : null,
-    balanceLovelace: Core.Serialization.Value.fromCbor(
-      Core.HexBlob(balanceCbor),
-    ).coin(),
+    balanceLovelace: balance.coin(),
+    tokens,
   };
 }
 

@@ -131,13 +131,19 @@ export default function WalletHome() {
           to="/wallet/send"
           className="rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500"
         >
-          Send ADA
+          Send
         </Link>
         <Link
           to="/wallet/swap"
           className="rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500"
         >
           SundaeSwap
+        </Link>
+        <Link
+          to="/wallet/delegate"
+          className="rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500"
+        >
+          Delegate
         </Link>
       </div>
     </div>
