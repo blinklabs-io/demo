@@ -2,9 +2,10 @@ import { useMempoolStore } from "../../stores/mempoolStore";
 import { Panel } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { formatAda } from "../../lib/format";
+import { useNow } from "../../lib/useNow";
 
-function formatAge(seenAt: number): string {
-  const seconds = Math.max(0, Math.floor((Date.now() - seenAt) / 1000));
+function formatAge(seenAt: number, now: number): string {
+  const seconds = Math.max(0, Math.floor((now - seenAt) / 1000));
   if (seconds < 60) return `${seconds}s ago`;
   return `${Math.floor(seconds / 60)}m ago`;
 }
@@ -13,6 +14,7 @@ export default function MempoolFeed() {
   const status = useMempoolStore((state) => state.status);
   const error = useMempoolStore((state) => state.error);
   const pendingTxs = useMempoolStore((state) => state.pendingTxs);
+  const now = useNow();
 
   const sorted = [...pendingTxs.values()].sort((a, b) => b.seenAt - a.seenAt);
 
@@ -73,7 +75,9 @@ export default function MempoolFeed() {
               <div className="flex items-center gap-3 text-xs text-slate-400">
                 <span>{formatAda(tx.totalOutputLovelace)}</span>
                 <span>fee {formatAda(tx.fee)}</span>
-                <span className="text-slate-600">{formatAge(tx.seenAt)}</span>
+                <span className="text-slate-600">
+                  {formatAge(tx.seenAt, now)}
+                </span>
               </div>
             </li>
           ))}

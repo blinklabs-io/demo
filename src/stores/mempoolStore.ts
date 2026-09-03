@@ -4,7 +4,7 @@ import {
   readMempoolSnapshot,
   decodeMempoolTx,
   type PendingTx,
-} from "../lib/dingo/utxorpc/mempool";
+} from "../lib/dingo/utxorpc/streaming";
 
 const SNAPSHOT_INTERVAL_MS = 15_000;
 const WATCH_RETRY_DELAY_MS = 5_000;

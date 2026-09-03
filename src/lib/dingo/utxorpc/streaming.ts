@@ -4,6 +4,7 @@
 // uses the same browser-safe gRPC-Web transport (@connectrpc/connect-web)
 // that @utxorpc/blaze-provider already proves works against Dingo.
 import { CardanoSubmitClient, CardanoSyncClient } from "@utxorpc/sdk";
+import type { CardanoTipEvent } from "@utxorpc/sdk";
 import { Core } from "@blaze-cardano/sdk";
 import { DINGO_CONFIG } from "../config";
 
@@ -17,7 +18,7 @@ export function getMempoolSubmitClient(): CardanoSubmitClient {
   return submitClient;
 }
 
-export function getMempoolSyncClient(): CardanoSyncClient {
+export function getSyncClient(): CardanoSyncClient {
   if (!syncClient) {
     syncClient = new CardanoSyncClient({ uri: DINGO_CONFIG.utxorpcUrl });
   }
@@ -80,4 +81,33 @@ export async function readMempoolSnapshot(): Promise<PendingTx[]> {
     }
   }
   return decoded;
+}
+
+export interface LiveTip {
+  height: number;
+  hash: string;
+  slot: number;
+  txCount: number;
+  receivedAt: number;
+}
+
+// UTxO RPC's block header carries slot/hash/height but not epoch - unlike
+// Blockfrost, which reports epoch directly. NodeHealthStrip keeps polling
+// Blockfrost's /health and /network/eras for isHealthy and era, and uses
+// this only for the tip fields, which is otherwise updated instantly
+// instead of on the next poll interval.
+export function decodeTipEvent(event: CardanoTipEvent): LiveTip | null {
+  if (event.action !== "apply" || !event.block.header) {
+    return null;
+  }
+  const header = event.block.header;
+  return {
+    height: Number(header.height),
+    slot: Number(header.slot),
+    hash: Array.from(header.hash, (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join(""),
+    txCount: event.block.body?.tx.length ?? 0,
+    receivedAt: Date.now(),
+  };
 }
