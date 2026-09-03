@@ -1,10 +1,62 @@
-import { useParams } from "react-router";
+import { useEffect } from "react";
+import { useParams, useNavigate } from "react-router";
+import { useQuery } from "@tanstack/react-query";
+import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 
-// A 64-char hex string from the global search bar could be a tx hash or a
-// block hash. This page should try GET /api/v0/txs/{hash} first, and on 404
-// fall back to GET /api/v0/blocks/{hash}, then redirect to the matching
-// detail route.
+type Resolution = { kind: "tx" | "block" } | { kind: "none" };
+
+async function resolve(hash: string): Promise<Resolution> {
+  try {
+    await blockfrostFetch(`/api/v0/txs/${hash}`);
+    return { kind: "tx" };
+  } catch (err) {
+    if (!(err instanceof BlockfrostError) || err.status !== 404) {
+      throw err;
+    }
+  }
+  try {
+    await blockfrostFetch(`/api/v0/blocks/${hash}`);
+    return { kind: "block" };
+  } catch (err) {
+    if (!(err instanceof BlockfrostError) || err.status !== 404) {
+      throw err;
+    }
+  }
+  return { kind: "none" };
+}
+
 export default function LookupResolver() {
   const { hash } = useParams();
-  return <p className="text-slate-400">Resolving {hash} — coming soon.</p>;
+  const navigate = useNavigate();
+
+  const { data, error } = useQuery({
+    queryKey: ["dingo", "lookup", hash],
+    queryFn: () => resolve(hash!),
+    enabled: Boolean(hash),
+  });
+
+  useEffect(() => {
+    if (!data || !hash) return;
+    if (data.kind === "tx") {
+      navigate(`/explorer/tx/${hash}`, { replace: true });
+    } else if (data.kind === "block") {
+      navigate(`/explorer/block/${hash}`, { replace: true });
+    }
+  }, [data, hash, navigate]);
+
+  if (error) {
+    return (
+      <p className="text-sm text-red-400">
+        {error instanceof Error ? error.message : "Something went wrong."}
+      </p>
+    );
+  }
+  if (data?.kind === "none") {
+    return (
+      <p className="text-sm text-slate-500">
+        No transaction or block matches "{hash}".
+      </p>
+    );
+  }
+  return <p className="text-sm text-slate-500">Looking up {hash}…</p>;
 }

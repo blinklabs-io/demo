@@ -1,6 +1,199 @@
 import { useParams } from "react-router";
+import { useQuery } from "@tanstack/react-query";
+import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import { Panel, Field } from "../../components/explorer/Panel";
+import { HashLink } from "../../components/explorer/HashLink";
+import { AdaAmount, type AmountEntry } from "../../components/explorer/AdaAmount";
+import { QueryState } from "../../components/explorer/QueryState";
+import { formatAda } from "../../lib/format";
+
+interface TransactionResponse {
+  hash: string;
+  block: string;
+  block_height: number;
+  block_time: number;
+  slot: number;
+  index: number;
+  fees: string;
+  deposit: string;
+  size: number;
+  valid_contract: boolean;
+  delegation_count: number;
+  withdrawal_count: number;
+  redeemer_count: number;
+  stake_cert_count: number;
+  pool_update_count: number;
+  pool_retire_count: number;
+}
+
+interface TxUtxo {
+  address: string;
+  tx_hash: string;
+  output_index: number;
+  amount: AmountEntry[];
+  collateral: boolean;
+  reference?: boolean;
+}
+
+interface TransactionUtxosResponse {
+  hash: string;
+  inputs: TxUtxo[];
+  outputs: TxUtxo[];
+}
+
+interface DelegationRow {
+  address: string;
+  pool_id: string;
+  active_epoch: number;
+}
+
+interface WithdrawalRow {
+  address: string;
+  amount: string;
+}
 
 export default function TxDetail() {
   const { hash } = useParams();
-  return <p className="text-slate-400">Transaction {hash} — coming soon.</p>;
+
+  const txQuery = useQuery({
+    queryKey: ["dingo", "tx", hash],
+    queryFn: () => blockfrostFetch<TransactionResponse>(`/api/v0/txs/${hash}`),
+    enabled: Boolean(hash),
+  });
+
+  const utxosQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "utxos"],
+    queryFn: () =>
+      blockfrostFetch<TransactionUtxosResponse>(`/api/v0/txs/${hash}/utxos`),
+    enabled: Boolean(hash),
+  });
+
+  const tx = txQuery.data;
+
+  const delegationsQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "delegations"],
+    queryFn: () =>
+      blockfrostFetch<DelegationRow[]>(`/api/v0/txs/${hash}/delegations`),
+    enabled: Boolean(hash) && Boolean(tx) && tx!.delegation_count > 0,
+  });
+
+  const withdrawalsQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "withdrawals"],
+    queryFn: () =>
+      blockfrostFetch<WithdrawalRow[]>(`/api/v0/txs/${hash}/withdrawals`),
+    enabled: Boolean(hash) && Boolean(tx) && tx!.withdrawal_count > 0,
+  });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Panel title="Transaction">
+        <QueryState
+          isLoading={txQuery.isLoading}
+          error={txQuery.error}
+          notFoundLabel="Transaction not found."
+        >
+          {tx && (
+            <div>
+              <Field label="Hash" value={tx.hash} />
+              <Field label="Block" value={<HashLink kind="block" id={tx.block} full />} />
+              <Field label="Block height" value={tx.block_height} />
+              <Field
+                label="Time"
+                value={new Date(tx.block_time * 1000).toLocaleString()}
+              />
+              <Field label="Fees" value={formatAda(BigInt(tx.fees))} />
+              <Field label="Deposit" value={formatAda(BigInt(tx.deposit))} />
+              <Field label="Size" value={`${tx.size} bytes`} />
+              <Field
+                label="Valid"
+                value={tx.valid_contract ? "Yes" : "No (script failed)"}
+              />
+            </div>
+          )}
+        </QueryState>
+      </Panel>
+
+      <Panel title="UTxOs">
+        <QueryState isLoading={utxosQuery.isLoading} error={utxosQuery.error}>
+          {utxosQuery.data && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
+                  Inputs
+                </h3>
+                <ul className="flex flex-col gap-2">
+                  {utxosQuery.data.inputs.map((utxo, index) => (
+                    <li
+                      key={`${utxo.tx_hash}:${utxo.output_index}:${index}`}
+                      className="rounded border border-slate-800 p-2 text-sm"
+                    >
+                      <HashLink kind="address" id={utxo.address} visible={10} />
+                      <div className="mt-1">
+                        <AdaAmount amount={utxo.amount} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
+                  Outputs
+                </h3>
+                <ul className="flex flex-col gap-2">
+                  {utxosQuery.data.outputs.map((utxo) => (
+                    <li
+                      key={utxo.output_index}
+                      className="rounded border border-slate-800 p-2 text-sm"
+                    >
+                      <HashLink kind="address" id={utxo.address} visible={10} />
+                      <div className="mt-1">
+                        <AdaAmount amount={utxo.amount} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </QueryState>
+      </Panel>
+
+      {tx && tx.delegation_count > 0 && (
+        <Panel title="Delegations">
+          <QueryState
+            isLoading={delegationsQuery.isLoading}
+            error={delegationsQuery.error}
+          >
+            <ul className="flex flex-col gap-1 text-sm">
+              {delegationsQuery.data?.map((row, index) => (
+                <li key={index}>
+                  <HashLink kind="account" id={row.address} visible={10} /> →{" "}
+                  <HashLink kind="pool" id={row.pool_id} visible={10} /> (epoch{" "}
+                  {row.active_epoch})
+                </li>
+              ))}
+            </ul>
+          </QueryState>
+        </Panel>
+      )}
+
+      {tx && tx.withdrawal_count > 0 && (
+        <Panel title="Withdrawals">
+          <QueryState
+            isLoading={withdrawalsQuery.isLoading}
+            error={withdrawalsQuery.error}
+          >
+            <ul className="flex flex-col gap-1 text-sm">
+              {withdrawalsQuery.data?.map((row, index) => (
+                <li key={index}>
+                  <HashLink kind="account" id={row.address} visible={10} /> —{" "}
+                  {formatAda(BigInt(row.amount))}
+                </li>
+              ))}
+            </ul>
+          </QueryState>
+        </Panel>
+      )}
+    </div>
+  );
 }
