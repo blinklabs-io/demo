@@ -4,6 +4,7 @@ import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { Panel } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { QueryState } from "../../components/explorer/QueryState";
+import { useMempoolStore } from "../../stores/mempoolStore";
 
 interface BlockSummary {
   time: number;
@@ -36,6 +37,9 @@ function formatTime(unixSeconds: number): string {
 }
 
 export default function ExplorerOverview() {
+  const pendingCount = useMempoolStore((state) => state.pendingTxs.size);
+  const mempoolStatus = useMempoolStore((state) => state.status);
+
   const blocksQuery = useQuery({
     queryKey: ["dingo", "recent-blocks"],
     queryFn: fetchRecentBlocks,
@@ -49,7 +53,22 @@ export default function ExplorerOverview() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <Link
+          to="/explorer/mempool"
+          className="flex items-center justify-between rounded-md border border-slate-800 bg-slate-900/40 p-3 text-sm text-slate-300 hover:border-slate-600"
+        >
+          Mempool
+          <span
+            className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
+              mempoolStatus === "live"
+                ? "bg-emerald-950 text-emerald-300"
+                : "bg-slate-800 text-slate-500"
+            }`}
+          >
+            {mempoolStatus === "live" ? pendingCount : "…"}
+          </span>
+        </Link>
         <Link
           to="/explorer/pools"
           className="rounded-md border border-slate-800 bg-slate-900/40 p-3 text-sm text-slate-300 hover:border-slate-600"

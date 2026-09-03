@@ -4,6 +4,7 @@ import ExplorerOverview from "./pages/explorer/ExplorerOverview";
 import BlockDetail from "./pages/explorer/BlockDetail";
 import TxDetail from "./pages/explorer/TxDetail";
 import LookupResolver from "./pages/explorer/LookupResolver";
+import MempoolFeed from "./pages/explorer/MempoolFeed";
 import AddressDetail from "./pages/explorer/AddressDetail";
 import AccountDetail from "./pages/explorer/AccountDetail";
 import AssetDetail from "./pages/explorer/AssetDetail";
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: "explorer/block/:id", element: <BlockDetail /> },
       { path: "explorer/tx/:hash", element: <TxDetail /> },
       { path: "explorer/lookup/:hash", element: <LookupResolver /> },
+      { path: "explorer/mempool", element: <MempoolFeed /> },
       { path: "explorer/address/:address", element: <AddressDetail /> },
       { path: "explorer/account/:stakeAddress", element: <AccountDetail /> },
       { path: "explorer/asset/:assetId", element: <AssetDetail /> },

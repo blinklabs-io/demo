@@ -1,11 +1,12 @@
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { AdaAmount, type AmountEntry } from "../../components/explorer/AdaAmount";
 import { QueryState } from "../../components/explorer/QueryState";
 import { formatAda } from "../../lib/format";
+import { useMempoolStore } from "../../stores/mempoolStore";
 
 interface TransactionResponse {
   hash: string;
@@ -61,11 +62,22 @@ export default function TxDetail() {
     enabled: Boolean(hash),
   });
 
+  // Blockfrost only knows about confirmed (indexed) transactions. A hash
+  // that 404s there might just not exist yet, or might be sitting in
+  // Dingo's mempool - the live mempool feed (started once in AppShell) is
+  // checked as a fallback before treating it as genuinely not found.
+  const pendingTx = useMempoolStore((state) =>
+    hash ? state.pendingTxs.get(hash) : undefined,
+  );
+  const isNotFoundOnChain =
+    txQuery.error instanceof BlockfrostError && txQuery.error.status === 404;
+  const isPending = isNotFoundOnChain && Boolean(pendingTx);
+
   const utxosQuery = useQuery({
     queryKey: ["dingo", "tx", hash, "utxos"],
     queryFn: () =>
       blockfrostFetch<TransactionUtxosResponse>(`/api/v0/txs/${hash}/utxos`),
-    enabled: Boolean(hash),
+    enabled: Boolean(hash) && !isPending,
   });
 
   const tx = txQuery.data;
@@ -83,6 +95,40 @@ export default function TxDetail() {
       blockfrostFetch<WithdrawalRow[]>(`/api/v0/txs/${hash}/withdrawals`),
     enabled: Boolean(hash) && Boolean(tx) && tx!.withdrawal_count > 0,
   });
+
+  if (isPending && pendingTx) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Panel
+          title={
+            <span className="flex items-center gap-2">
+              Transaction
+              <span className="rounded bg-amber-950 px-1.5 py-0.5 text-xs text-amber-300">
+                pending
+              </span>
+            </span>
+          }
+        >
+          <p className="mb-3 text-xs text-slate-500">
+            Not yet in a block - this is decoded from the raw transaction
+            bytes in Dingo's mempool, not from Blockfrost. Full details
+            (addresses, exact outputs) become available here once it's
+            confirmed.
+          </p>
+          <div>
+            <Field label="Hash" value={pendingTx.hash} />
+            <Field label="Inputs" value={pendingTx.inputCount} />
+            <Field label="Outputs" value={pendingTx.outputCount} />
+            <Field
+              label="Total output"
+              value={formatAda(pendingTx.totalOutputLovelace)}
+            />
+            <Field label="Fee" value={formatAda(pendingTx.fee)} />
+          </div>
+        </Panel>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
