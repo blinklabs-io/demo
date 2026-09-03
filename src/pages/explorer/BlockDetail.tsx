@@ -33,10 +33,23 @@ export default function BlockDetail() {
 
   // Dingo only exposes a transaction list for the current tip
   // (GET /api/v0/blocks/latest/txs) - there is no per-block equivalent. Only
-  // fetch it when this block turns out to be the current tip.
-  const isTip = blockQuery.data?.confirmations === 0;
+  // fetch it when this block turns out to be the current tip - and check
+  // that live, not from blockQuery's (possibly stale) cached confirmations:
+  // otherwise, if a new block lands after this page loaded, a refetch of
+  // /blocks/latest/txs would attribute the *new* tip's transactions to this
+  // (no longer current) block.
+  const latestBlockQuery = useQuery({
+    queryKey: ["dingo", "block", "latest-hash"],
+    queryFn: () => blockfrostFetch<{ hash: string }>("/api/v0/blocks/latest"),
+    refetchInterval: 15_000,
+  });
+  const isTip = Boolean(
+    blockQuery.data &&
+      latestBlockQuery.data &&
+      blockQuery.data.hash === latestBlockQuery.data.hash,
+  );
   const latestTxsQuery = useQuery({
-    queryKey: ["dingo", "block", id, "latest-txs"],
+    queryKey: ["dingo", "block", blockQuery.data?.hash, "latest-txs"],
     queryFn: () => blockfrostFetch<string[]>("/api/v0/blocks/latest/txs"),
     enabled: isTip,
   });

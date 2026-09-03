@@ -13,6 +13,11 @@ interface WalletDetails {
   balanceLovelace: bigint | null;
 }
 
+// Dingo's example apps and this showcase both target Preview. A wallet
+// switched to Mainnet must never be allowed to build or submit here - see
+// the network guard in `connect` below.
+const EXPECTED_NETWORK_ID = 0; // CIP-30 network id 0 = testnet (Preview/Preprod), 1 = mainnet
+
 interface WalletState extends WalletDetails {
   status: WalletStatus;
   walletName: string | null;
@@ -82,6 +87,11 @@ function rememberWallet(walletName: string | null) {
   }
 }
 
+// Bumped on every connect/disconnect so an in-flight connect() that loses a
+// race against a disconnect() (or a second connect()) can detect it's stale
+// and not resurrect a connection the user already left.
+let connectGeneration = 0;
+
 export const useWalletStore = create<WalletState>((set, get) => ({
   status: "disconnected",
   walletName: null,
@@ -97,10 +107,26 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       set({ status: "error", error: `Wallet "${walletName}" was not found.` });
       return;
     }
+    const generation = ++connectGeneration;
     set({ status: "connecting", error: null });
     try {
       const api = await wallet.enable();
+      const networkId = await api.getNetworkId();
+      if (networkId !== EXPECTED_NETWORK_ID) {
+        if (connectGeneration === generation) {
+          set({
+            status: "error",
+            error: `Connected wallet reports network id ${networkId} (mainnet). This app only supports a testnet-connected wallet (Preview/Preprod) - switch the wallet's network and reconnect.`,
+          });
+        }
+        return;
+      }
       const details = await loadWalletDetails(api);
+      if (connectGeneration !== generation) {
+        // A disconnect (or a newer connect) happened while we were awaiting;
+        // don't resurrect a connection the user already moved past.
+        return;
+      }
       set({
         status: "connected",
         walletName,
@@ -110,14 +136,18 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       });
       rememberWallet(walletName);
     } catch (err) {
-      set({
-        status: "error",
-        error: err instanceof Error ? err.message : "Failed to connect wallet.",
-      });
+      if (connectGeneration === generation) {
+        set({
+          status: "error",
+          error:
+            err instanceof Error ? err.message : "Failed to connect wallet.",
+        });
+      }
     }
   },
 
   disconnect: () => {
+    connectGeneration++;
     rememberWallet(null);
     set({
       status: "disconnected",

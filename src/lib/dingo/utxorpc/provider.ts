@@ -10,6 +10,11 @@ import type { DingoQueryClient, UtxoRpcBytes } from "./utxorpcTypes";
 
 const MAX_SUMMARY_UTXOS = 200;
 
+// Preview network magic. Dingo reports this from the Shelley genesis it
+// loaded, so it's the authoritative answer for which chain the endpoint is
+// serving - see assertDingoNetwork below.
+const PREVIEW_NETWORK_MAGIC = 2;
+
 let cachedProvider: U5C | null = null;
 
 export function getDingoProvider(): U5C {
@@ -20,9 +25,29 @@ export function getDingoProvider(): U5C {
     url: DINGO_CONFIG.utxorpcUrl,
     network: Core.NetworkId.Testnet,
   });
+  // U5C derives its internal networkName from the NetworkId above, which
+  // resolves any non-mainnet id to "cardano-preprod" - wrong for Preview,
+  // and silently wrong: @sundaeswap/core resolves its datum builder and
+  // slot/time config from this string, not from genesis data.
+  provider.networkName = "cardano-preview";
   installDingoAssetSearchCompatibility(provider);
   cachedProvider = provider;
   return provider;
+}
+
+// assertDingoNetwork confirms the endpoint really serves Preview before the
+// app builds transactions against Preview-only assumptions (e.g. Sundae V3
+// script hashes hardcoded for Preview). Without this, a provider URL pointed
+// at another network silently produces unusable - or on a live network,
+// dangerous - transactions.
+export async function assertDingoNetwork(provider: U5C): Promise<string> {
+  const genesis = await queryClientFor(provider).readGenesis();
+  if (genesis.networkMagic !== PREVIEW_NETWORK_MAGIC) {
+    throw new Error(
+      `Dingo reports network magic ${genesis.networkMagic}; this app requires Preview (${PREVIEW_NETWORK_MAGIC}).`,
+    );
+  }
+  return `Preview genesis confirmed (network magic ${genesis.networkMagic}, ${genesis.networkId})`;
 }
 
 export type DingoUtxoSummary = {

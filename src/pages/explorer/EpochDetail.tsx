@@ -36,14 +36,17 @@ interface ProtocolParamsResponse {
 
 export default function EpochDetail() {
   const { epoch } = useParams();
-  const path = epoch ? `/api/v0/epochs/${epoch}/parameters` : "/api/v0/epochs/latest/parameters";
+  const path = epoch
+    ? `/api/v0/epochs/${epoch}/parameters`
+    : "/api/v0/epochs/latest/parameters";
 
+  // Dingo only exposes full epoch stats (blocks/tx/output/fees/active stake)
+  // for the current epoch, via /epochs/latest - there is no /epochs/{number}
+  // route for a historical epoch, only /epochs/{number}/parameters.
   const epochQuery = useQuery({
-    queryKey: ["dingo", "epoch", epoch ?? "latest"],
-    queryFn: () =>
-      blockfrostFetch<EpochResponse>(
-        epoch ? `/api/v0/epochs/${epoch}` : "/api/v0/epochs/latest",
-      ),
+    queryKey: ["dingo", "epoch", "latest"],
+    queryFn: () => blockfrostFetch<EpochResponse>("/api/v0/epochs/latest"),
+    enabled: !epoch,
   });
 
   const paramsQuery = useQuery({
@@ -53,37 +56,45 @@ export default function EpochDetail() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Panel title={epoch ? `Epoch ${epoch}` : "Current epoch"}>
-        <QueryState
-          isLoading={epochQuery.isLoading}
-          error={epochQuery.error}
-          notFoundLabel="Epoch not found."
-        >
-          {epochQuery.data && (
-            <div>
-              <Field label="Epoch" value={epochQuery.data.epoch} />
-              <Field
-                label="Start"
-                value={new Date(epochQuery.data.start_time * 1000).toLocaleString()}
-              />
-              <Field
-                label="End"
-                value={new Date(epochQuery.data.end_time * 1000).toLocaleString()}
-              />
-              <Field label="Blocks" value={epochQuery.data.block_count} />
-              <Field label="Transactions" value={epochQuery.data.tx_count} />
-              <Field label="Output" value={formatAda(BigInt(epochQuery.data.output))} />
-              <Field label="Fees" value={formatAda(BigInt(epochQuery.data.fees))} />
-              {epochQuery.data.active_stake && (
+      {epoch ? (
+        <p className="text-sm text-slate-500">
+          Epoch stats (blocks, transactions, active stake) are only available
+          for the current epoch. Showing protocol parameters for epoch{" "}
+          {epoch}.
+        </p>
+      ) : (
+        <Panel title="Current epoch">
+          <QueryState
+            isLoading={epochQuery.isLoading}
+            error={epochQuery.error}
+            notFoundLabel="Epoch not found."
+          >
+            {epochQuery.data && (
+              <div>
+                <Field label="Epoch" value={epochQuery.data.epoch} />
                 <Field
-                  label="Active stake"
-                  value={formatAda(BigInt(epochQuery.data.active_stake))}
+                  label="Start"
+                  value={new Date(epochQuery.data.start_time * 1000).toLocaleString()}
                 />
-              )}
-            </div>
-          )}
-        </QueryState>
-      </Panel>
+                <Field
+                  label="End"
+                  value={new Date(epochQuery.data.end_time * 1000).toLocaleString()}
+                />
+                <Field label="Blocks" value={epochQuery.data.block_count} />
+                <Field label="Transactions" value={epochQuery.data.tx_count} />
+                <Field label="Output" value={formatAda(BigInt(epochQuery.data.output))} />
+                <Field label="Fees" value={formatAda(BigInt(epochQuery.data.fees))} />
+                {epochQuery.data.active_stake && (
+                  <Field
+                    label="Active stake"
+                    value={formatAda(BigInt(epochQuery.data.active_stake))}
+                  />
+                )}
+              </div>
+            )}
+          </QueryState>
+        </Panel>
+      )}
 
       <Panel title="Protocol parameters">
         <QueryState isLoading={paramsQuery.isLoading} error={paramsQuery.error}>

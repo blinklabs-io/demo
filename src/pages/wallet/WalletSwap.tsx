@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ADA_METADATA, type IPoolData, type IPoolDataAsset } from "@sundaeswap/core";
 import { useWalletStore } from "../../stores/walletStore";
-import { getDingoProvider } from "../../lib/dingo/utxorpc/provider";
+import { assertDingoNetwork, getDingoProvider } from "../../lib/dingo/utxorpc/provider";
 import { getBlaze } from "../../lib/dingo/blaze";
 import { DingoSundaeQueryProvider } from "../../lib/sundae/dingoQueryProvider";
 import { POOL_PRESETS, type PoolPreset } from "../../lib/sundae/protocol";
@@ -49,6 +49,24 @@ export default function WalletSwap() {
       });
     }
   }, [queryProvider]);
+
+  // This app's Sundae V3 integration is hardcoded to Preview (script hashes,
+  // reference UTxOs). Verify the configured Dingo endpoint actually serves
+  // Preview, and that it has indexed the reference UTxOs the swap datum
+  // builder needs, before letting anyone build an order against it - a
+  // silently wrong network or a partially-synced node otherwise produces a
+  // transaction that fails deep inside the SDK with no useful diagnostic.
+  const networkCheck = useQuery({
+    queryKey: ["dingo", "assert-network"],
+    queryFn: () => assertDingoNetwork(getDingoProvider()),
+    retry: false,
+  });
+  const referencesCheck = useQuery({
+    queryKey: ["sundae", "validate-references"],
+    queryFn: () => queryProvider.validateProtocolReferences(),
+    enabled: networkCheck.isSuccess,
+    retry: false,
+  });
 
   const [direction, setDirection] = useState<SwapDirection>("adaToToken");
   const [selectedIdent, setSelectedIdent] = useState(POOL_PRESETS[0].ident);
@@ -154,6 +172,23 @@ export default function WalletSwap() {
     return (
       <div className="rounded-md border border-slate-800 p-6 text-center text-sm text-slate-400">
         Connect a wallet from the header to build a SundaeSwap order.
+      </div>
+    );
+  }
+
+  if (networkCheck.isError || referencesCheck.isError) {
+    const error = (networkCheck.error ?? referencesCheck.error) as Error;
+    return (
+      <div className="rounded-md border border-red-900 bg-red-950 p-6 text-center text-sm text-red-200">
+        Can't build SundaeSwap orders against this Dingo instance: {error.message}
+      </div>
+    );
+  }
+
+  if (networkCheck.isLoading || (networkCheck.isSuccess && referencesCheck.isLoading)) {
+    return (
+      <div className="rounded-md border border-slate-800 p-6 text-center text-sm text-slate-400">
+        Checking Dingo is on Preview with Sundae V3 reference UTxOs indexed…
       </div>
     );
   }

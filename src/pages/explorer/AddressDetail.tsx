@@ -33,6 +33,14 @@ const PAGE_SIZE = 20;
 
 export default function AddressDetail() {
   const { address } = useParams();
+  // React Router reuses this component instance across navigations that
+  // only change the :address param, so a plain useState here would leak
+  // pagination from the previous address. Keying the state-holding inner
+  // component by address forces a clean remount instead.
+  return <AddressDetailContent key={address} address={address} />;
+}
+
+function AddressDetailContent({ address }: { address?: string }) {
   const [utxoPage, setUtxoPage] = useState(1);
   const [txPage, setTxPage] = useState(1);
 

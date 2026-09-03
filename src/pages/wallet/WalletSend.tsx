@@ -38,8 +38,29 @@ export default function WalletSend() {
         .newTransaction()
         .payLovelace(recipientAddress, lovelace)
         .complete();
+
+      // Cardano enforces a minimum ADA per output (min-UTxO). Blaze silently
+      // raises an output below that floor rather than failing - so verify
+      // the built output actually pays what the user typed before asking
+      // them to sign anything else.
+      const recipientBech32 = recipientAddress.toBech32();
+      const actualOutput = tx
+        .body()
+        .outputs()
+        .find((output) => output.address().toBech32() === recipientBech32);
+      const actualLovelace = actualOutput?.amount().coin() ?? 0n;
+      if (actualLovelace !== lovelace) {
+        throw new Error(
+          `${lovelace} lovelace is below Cardano's minimum ADA per output; the recipient would actually receive ${actualLovelace} lovelace. Enter at least ${actualLovelace} lovelace (${(Number(actualLovelace) / 1_000_000).toFixed(6)} ADA).`,
+        );
+      }
+
       const signed = await blaze.signTransaction(tx);
-      const txId = await blaze.submitTransaction(signed);
+      // Submit through Dingo (the provider), not the wallet extension's own
+      // backend - this is a Dingo showcase, and it also keeps a
+      // testnet-only tx from reaching a different network via the wallet's
+      // own submission path.
+      const txId = await blaze.submitTransaction(signed, true);
       return { txHash: txId.toString() };
     },
     onSuccess: () => {

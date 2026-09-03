@@ -127,7 +127,25 @@ export default function TxDetail() {
                       key={`${utxo.tx_hash}:${utxo.output_index}:${index}`}
                       className="rounded border border-slate-800 p-2 text-sm"
                     >
-                      <HashLink kind="address" id={utxo.address} visible={10} />
+                      <div className="flex items-center gap-2">
+                        <HashLink kind="address" id={utxo.address} visible={10} />
+                        {utxo.reference && (
+                          <span
+                            className="rounded bg-sky-950 px-1.5 py-0.5 text-xs text-sky-300"
+                            title="Reference input: read by a script, never spent by this transaction."
+                          >
+                            reference
+                          </span>
+                        )}
+                        {utxo.collateral && (
+                          <span
+                            className="rounded bg-amber-950 px-1.5 py-0.5 text-xs text-amber-300"
+                            title="Collateral input: only consumed if script validation for this transaction fails."
+                          >
+                            collateral
+                          </span>
+                        )}
+                      </div>
                       <div className="mt-1">
                         <AdaAmount amount={utxo.amount} />
                       </div>

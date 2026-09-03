@@ -2,6 +2,9 @@ import { NavLink } from "react-router";
 import { NodeHealthStrip } from "./NodeHealthStrip";
 import { GlobalLookup } from "./GlobalLookup";
 import { WalletConnectSummary } from "./WalletConnectSummary";
+import { ConnectDingoBanner } from "./ConnectDingoBanner";
+import { useNodeHealth } from "../../lib/dingo/nodeHealth";
+import { BlockfrostError } from "../../lib/dingo/blockfrost";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-3 py-1.5 text-sm font-medium ${
@@ -11,6 +14,11 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 export function Header() {
+  // Shares the query cache with NodeHealthStrip's own useNodeHealth() call
+  // (same queryKey), so this doesn't add a second network request - it just
+  // reads the error to drive the one global "Dingo unreachable" banner.
+  const { error } = useNodeHealth();
+
   return (
     <header className="border-b border-slate-800 bg-slate-950">
       <div className="flex items-center gap-4 px-4 py-2 text-xs">
@@ -31,6 +39,7 @@ export function Header() {
         <GlobalLookup />
         <WalletConnectSummary />
       </div>
+      {error instanceof BlockfrostError && <ConnectDingoBanner error={error} />}
     </header>
   );
 }
