@@ -7,25 +7,44 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@blaze-cardano/sdk": "0.2.48",
+    "@sundaeswap/asset": "1.0.11",
+    "@sundaeswap/core": "2.13.1",
+    "@tanstack/react-query": "^5.100.10",
+    "@utxorpc/blaze-provider": "0.3.9",
+    "@utxorpc/sdk": "0.8.2",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "react-router": "^7.16.0",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.1.18",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@types/node": "^25.3.0",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.2",
+    "@vitest/coverage-v8": "^3.2.7",
+    "@vitest/ui": "^3.2.7",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "jsdom": "^29.0.2",
     "tailwindcss": "^4.2.4",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.60.1",
-    "vite": "^7.3.2"
+    "vite": "^7.3.2",
+    "vite-plugin-node-polyfills": "0.28.0",
+    "vitest": "^3.2.7"
   }
 }
