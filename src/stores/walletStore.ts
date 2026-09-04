@@ -47,6 +47,10 @@ const emptyDetails: WalletDetails = {
   tokens: [],
 };
 
+function bech32AddressFromHex(hex: string): string {
+  return Core.Address.fromBytes(Core.HexBlob(hex)).toBech32() as string;
+}
+
 function listWallets(): Array<{ name: string; icon?: string }> {
   if (typeof window === "undefined" || !window.cardano) {
     return [];
@@ -76,16 +80,10 @@ async function loadWalletDetails(api: Cip30WalletApi): Promise<WalletDetails> {
     : [];
 
   return {
-    usedAddresses: usedAddressesHex.map(
-      (hex) => Core.Address.fromBytes(Core.HexBlob(hex)).toBech32() as string,
-    ),
-    changeAddress: Core.Address.fromBytes(
-      Core.HexBlob(changeAddressHex),
-    ).toBech32() as string,
+    usedAddresses: usedAddressesHex.map(bech32AddressFromHex),
+    changeAddress: bech32AddressFromHex(changeAddressHex),
     rewardAddress: rewardAddressesHex[0]
-      ? (Core.Address.fromBytes(
-          Core.HexBlob(rewardAddressesHex[0]),
-        ).toBech32() as string)
+      ? bech32AddressFromHex(rewardAddressesHex[0])
       : null,
     balanceLovelace: balance.coin(),
     tokens,
@@ -119,7 +117,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   listAvailableWallets: listWallets,
 
   connect: async (walletName: string) => {
-    const generation = ++connectGeneration;
+    const requestGeneration = ++connectGeneration;
     const wallet = window.cardano?.[walletName] as Cip30Wallet | undefined;
     if (!wallet) {
       set({
@@ -142,7 +140,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       const api = await wallet.enable();
       const networkId = await api.getNetworkId();
       if (networkId !== EXPECTED_NETWORK_ID) {
-        if (connectGeneration === generation) {
+        if (connectGeneration === requestGeneration) {
           set({
             status: "error",
             error: `Connected wallet reports unsupported network id ${networkId}. This app only supports a testnet-connected wallet (Preview/Preprod) - switch the wallet's network and reconnect.`,
@@ -151,7 +149,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         return;
       }
       const details = await loadWalletDetails(api);
-      if (connectGeneration !== generation) {
+      if (connectGeneration !== requestGeneration) {
         // A disconnect (or a newer connect) happened while we were awaiting;
         // don't resurrect a connection the user already moved past.
         return;
@@ -165,7 +163,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       });
       rememberWallet(walletName);
     } catch (err) {
-      if (connectGeneration === generation) {
+      if (connectGeneration === requestGeneration) {
         set({
           status: "error",
           error:
@@ -204,7 +202,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     const restoreGeneration = connectGeneration;
     if (wallet.isEnabled) {
       const isEnabled = await wallet.isEnabled().catch(() => false);
-      if (!isEnabled || connectGeneration !== restoreGeneration) {
+      if (!isEnabled) {
         return;
       }
     }
@@ -219,9 +217,9 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     if (!api) {
       return;
     }
-    const generation = connectGeneration;
+    const refreshGeneration = connectGeneration;
     const details = await loadWalletDetails(api);
-    if (connectGeneration === generation && get().walletApi === api) {
+    if (connectGeneration === refreshGeneration && get().walletApi === api) {
       set(details);
     }
   },

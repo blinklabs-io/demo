@@ -21,6 +21,10 @@ interface DelegateResult {
   txHash: string;
 }
 
+type DelegationTarget =
+  | { kind: "pool"; id: string }
+  | { kind: "drep"; id: string };
+
 export default function WalletDelegate() {
   const status = useWalletStore((state) => state.status);
   const walletApi = useWalletStore((state) => state.walletApi);
@@ -49,70 +53,55 @@ export default function WalletDelegate() {
     enabled: Boolean(rewardAddress),
   });
 
+  async function submitDelegation(
+    target: DelegationTarget,
+  ): Promise<DelegateResult> {
+    if (!walletApi || !rewardAddress) {
+      throw new Error("Connect a wallet first.");
+    }
+    if (!accountQuery.isSuccess || !accountQuery.data) {
+      throw new Error("Unable to verify the stake account registration status.");
+    }
+
+    const targetId = target.id.trim();
+    if (!targetId) {
+      throw new Error(
+        target.kind === "pool" ? "Enter a stake pool ID." : "Enter a DRep ID.",
+      );
+    }
+
+    const credential = stakeCredentialFromRewardAddress(rewardAddress);
+    const drepCredential =
+      target.kind === "drep" ? credentialFromDRepId(targetId) : null;
+    const { blaze } = await getBlaze(walletApi);
+    let builder = blaze.newTransaction();
+    if (!accountQuery.data.registered) {
+      builder = builder.addRegisterStake(credential);
+    }
+    builder =
+      target.kind === "pool"
+        ? builder.addDelegation(credential, Core.PoolId(targetId))
+        : builder.addVoteDelegation(credential, drepCredential!);
+
+    const tx = await builder.complete();
+    const signed = await blaze.signTransaction(tx);
+    const txId = await blaze.submitTransaction(signed, true);
+    return { txHash: txId.toString() };
+  }
+
+  function refreshDelegation() {
+    void refreshBalance();
+    void accountQuery.refetch();
+  }
+
   const poolMutation = useMutation<DelegateResult, Error>({
-    mutationFn: async () => {
-      if (!walletApi || !rewardAddress) {
-        throw new Error("Connect a wallet first.");
-      }
-      if (!accountQuery.isSuccess || !accountQuery.data) {
-        throw new Error(
-          "Unable to verify the stake account registration status.",
-        );
-      }
-      const trimmed = poolId.trim();
-      if (!trimmed) {
-        throw new Error("Enter a stake pool ID.");
-      }
-      const credential = stakeCredentialFromRewardAddress(rewardAddress);
-      const { blaze } = await getBlaze(walletApi);
-      let builder = blaze.newTransaction();
-      if (!accountQuery.data.registered) {
-        builder = builder.addRegisterStake(credential);
-      }
-      const tx = await builder
-        .addDelegation(credential, Core.PoolId(trimmed))
-        .complete();
-      const signed = await blaze.signTransaction(tx);
-      const txId = await blaze.submitTransaction(signed, true);
-      return { txHash: txId.toString() };
-    },
-    onSuccess: () => {
-      void refreshBalance();
-      void accountQuery.refetch();
-    },
+    mutationFn: () => submitDelegation({ kind: "pool", id: poolId }),
+    onSuccess: refreshDelegation,
   });
 
   const drepMutation = useMutation<DelegateResult, Error>({
-    mutationFn: async () => {
-      if (!walletApi || !rewardAddress) {
-        throw new Error("Connect a wallet first.");
-      }
-      if (!accountQuery.isSuccess || !accountQuery.data) {
-        throw new Error(
-          "Unable to verify the stake account registration status.",
-        );
-      }
-      if (!drepId.trim()) {
-        throw new Error("Enter a DRep ID.");
-      }
-      const credential = stakeCredentialFromRewardAddress(rewardAddress);
-      const drepCredential = credentialFromDRepId(drepId);
-      const { blaze } = await getBlaze(walletApi);
-      let builder = blaze.newTransaction();
-      if (!accountQuery.data.registered) {
-        builder = builder.addRegisterStake(credential);
-      }
-      const tx = await builder
-        .addVoteDelegation(credential, drepCredential)
-        .complete();
-      const signed = await blaze.signTransaction(tx);
-      const txId = await blaze.submitTransaction(signed, true);
-      return { txHash: txId.toString() };
-    },
-    onSuccess: () => {
-      void refreshBalance();
-      void accountQuery.refetch();
-    },
+    mutationFn: () => submitDelegation({ kind: "drep", id: drepId }),
+    onSuccess: refreshDelegation,
   });
 
   if (status !== "connected") {

@@ -19,9 +19,7 @@ export function WalletConnectSummary() {
 
   useEffect(() => {
     void restoreConnection();
-    // Only ever attempt a silent restore once, on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [restoreConnection]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

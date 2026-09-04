@@ -13,6 +13,7 @@ import {
 import type { U5C } from "@utxorpc/blaze-provider";
 import { parseAssetAmount } from "../dingo/amount";
 import type { DingoSundaeQueryProvider } from "./dingoQueryProvider";
+import { offeredAssetForDirection, poolHasAda } from "./pricing";
 
 export type SwapDirection = "adaToToken" | "tokenToAda";
 
@@ -43,7 +44,10 @@ export async function buildSwapOrder({
   slippagePercent,
 }: BuildSwapArgs): Promise<BuiltSwap> {
   const changeAddress = (await blaze.wallet.getChangeAddress()).toBech32();
-  const suppliedAsset = assetForDirection(pool, direction);
+  if (!poolHasAda(pool)) {
+    throw new Error("The selected pool is not an ADA pair.");
+  }
+  const suppliedAsset = offeredAssetForDirection(pool, direction);
   const suppliedAmount = parseAssetAmount(amount, suppliedAsset.decimals ?? 0, labelForAsset(suppliedAsset));
   if (suppliedAmount <= 0n) {
     throw new Error(`Enter a positive ${labelForAsset(suppliedAsset)} amount.`);
@@ -88,22 +92,6 @@ export async function buildSwapOrder({
       return txId.toString();
     },
   };
-}
-
-function assetForDirection(pool: IPoolData, direction: SwapDirection): IPoolDataAsset {
-  if (!poolHasAda(pool)) {
-    throw new Error("The selected pool is not an ADA pair.");
-  }
-
-  if (direction === "adaToToken") {
-    return ADA_METADATA;
-  }
-
-  return pool.assetA.assetId === ADA_METADATA.assetId ? pool.assetB : pool.assetA;
-}
-
-function poolHasAda(pool: IPoolData): boolean {
-  return pool.assetA.assetId === ADA_METADATA.assetId || pool.assetB.assetId === ADA_METADATA.assetId;
 }
 
 function labelForAsset(asset: IPoolDataAsset): string {

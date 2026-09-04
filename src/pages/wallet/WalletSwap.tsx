@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ADA_METADATA, type IPoolData, type IPoolDataAsset } from "@sundaeswap/core";
+import { ADA_METADATA, type IPoolDataAsset } from "@sundaeswap/core";
 import { useWalletStore } from "../../stores/walletStore";
 import { assertDingoNetwork, getDingoProvider } from "../../lib/dingo/utxorpc/provider";
 import { getBlaze } from "../../lib/dingo/blaze";
 import { DingoSundaeQueryProvider } from "../../lib/sundae/dingoQueryProvider";
-import { POOL_PRESETS, type PoolPreset } from "../../lib/sundae/protocol";
+import { DEFAULT_POOL, POOL_PRESETS } from "../../lib/sundae/protocol";
 import { formatAssetAmount } from "../../lib/sundae/assets";
 import { parseAssetAmount } from "../../lib/dingo/amount";
 import { buildSwapOrder, type SwapDirection } from "../../lib/sundae/swap";
@@ -41,21 +41,23 @@ interface SwapResult {
   txHash: string;
 }
 
+function createQueryProvider(): DingoSundaeQueryProvider {
+  const provider = new DingoSundaeQueryProvider(getDingoProvider());
+  for (const preset of POOL_PRESETS) {
+    provider.setAssetHint(preset.assetBAssetId, {
+      label: preset.assetBLabel,
+      decimals: preset.assetBDecimals,
+    });
+  }
+  return provider;
+}
+
 export default function WalletSwap() {
   const status = useWalletStore((state) => state.status);
   const walletApi = useWalletStore((state) => state.walletApi);
   const refreshBalance = useWalletStore((state) => state.refreshBalance);
 
-  const queryProvider = useMemo(() => {
-    const provider = new DingoSundaeQueryProvider(getDingoProvider());
-    for (const preset of POOL_PRESETS) {
-      provider.setAssetHint(preset.assetBAssetId, {
-        label: preset.assetBLabel,
-        decimals: preset.assetBDecimals,
-      });
-    }
-    return provider;
-  }, []);
+  const queryProvider = useMemo(() => createQueryProvider(), []);
 
   // This app's Sundae V3 integration is hardcoded to Preview (script hashes,
   // reference UTxOs). Verify the configured Dingo endpoint actually serves
@@ -77,7 +79,7 @@ export default function WalletSwap() {
   });
 
   const [direction, setDirection] = useState<SwapDirection>("adaToToken");
-  const [selectedIdent, setSelectedIdent] = useState(POOL_PRESETS[0].ident);
+  const [selectedIdent, setSelectedIdent] = useState(DEFAULT_POOL.ident);
   const [amount, setAmount] = useState("5");
   const [slippagePercent, setSlippagePercent] = useState("1");
 
@@ -104,7 +106,7 @@ export default function WalletSwap() {
         ident: pool.ident,
         label: `${labelFor(pool.assetA)} / ${labelFor(pool.assetB)}`,
       }))
-    : POOL_PRESETS.map((preset: PoolPreset) => ({
+    : POOL_PRESETS.map((preset) => ({
         ident: preset.ident,
         label: preset.label,
       }));
@@ -127,7 +129,7 @@ export default function WalletSwap() {
       status === "connected" && !discoveredPool && Boolean(effectiveIdent),
   });
 
-  const candidatePool: IPoolData | undefined = discoveredPool ?? poolDetailQuery.data;
+  const candidatePool = discoveredPool ?? poolDetailQuery.data;
   const pool =
     candidatePool &&
     hasKnownDecimals(candidatePool.assetA) &&

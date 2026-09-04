@@ -63,6 +63,11 @@ function poolFeeBasisPoints(pool: IPoolData): bigint {
   return BigInt(Math.max(0, Math.min(10_000, Math.round(pool.currentFee * 10_000))));
 }
 
+function amountAfterPoolFee(pool: IPoolData, amount: bigint): bigint {
+  const fee = poolFeeBasisPoints(pool);
+  return (amount * (10_000n - fee)) / 10_000n;
+}
+
 export function quoteOutput(
   pool: IPoolData,
   offered: IPoolDataAsset,
@@ -75,8 +80,7 @@ export function quoteOutput(
     return 0n;
   }
 
-  const feeBps = poolFeeBasisPoints(pool);
-  const inputAfterFee = (inputAmount * (10_000n - feeBps)) / 10_000n;
+  const inputAfterFee = amountAfterPoolFee(pool, inputAmount);
   return (inputAfterFee * reserveOut) / (reserveIn + inputAfterFee);
 }
 
@@ -92,8 +96,7 @@ export function priceImpactBasisPoints(
     return 0n;
   }
 
-  const feeBps = poolFeeBasisPoints(pool);
-  const inputAfterFee = (inputAmount * (10_000n - feeBps)) / 10_000n;
+  const inputAfterFee = amountAfterPoolFee(pool, inputAmount);
   const spotOutputAfterFee = (inputAfterFee * reserveOut) / reserveIn;
   const quotedOutput = quoteOutput(pool, offered, received, inputAmount);
   if (spotOutputAfterFee <= 0n || quotedOutput >= spotOutputAfterFee) {

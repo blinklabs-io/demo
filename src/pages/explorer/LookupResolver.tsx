@@ -7,28 +7,20 @@ import { useMempoolStore } from "../../stores/mempoolStore";
 type Resolution = { kind: "tx" | "block" | "asset" | "none" };
 
 async function resolve(hash: string): Promise<Resolution> {
-  try {
-    await blockfrostFetch(`/api/v0/txs/${hash}`);
-    return { kind: "tx" };
-  } catch (err) {
-    if (!(err instanceof BlockfrostError) || err.status !== 404) {
-      throw err;
-    }
-  }
-  try {
-    await blockfrostFetch(`/api/v0/blocks/${hash}`);
-    return { kind: "block" };
-  } catch (err) {
-    if (!(err instanceof BlockfrostError) || err.status !== 404) {
-      throw err;
-    }
-  }
-  try {
-    await blockfrostFetch(`/api/v0/assets/${hash}`);
-    return { kind: "asset" };
-  } catch (err) {
-    if (!(err instanceof BlockfrostError) || err.status !== 404) {
-      throw err;
+  const candidates = [
+    ["tx", `/api/v0/txs/${hash}`],
+    ["block", `/api/v0/blocks/${hash}`],
+    ["asset", `/api/v0/assets/${hash}`],
+  ] as const;
+
+  for (const [kind, path] of candidates) {
+    try {
+      await blockfrostFetch(path);
+      return { kind };
+    } catch (error) {
+      if (!(error instanceof BlockfrostError) || error.status !== 404) {
+        throw error;
+      }
     }
   }
   return { kind: "none" };

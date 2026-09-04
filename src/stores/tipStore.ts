@@ -20,7 +20,7 @@ interface TipState {
 // Same StrictMode-safety rationale as mempoolStore's connectGeneration:
 // this is started once from AppShell, which is mounted for the app's
 // entire lifetime, so a real stop() is not expected in normal use.
-let generation = 0;
+let feedGeneration = 0;
 let activeWatchIterator: AsyncIterator<Parameters<typeof decodeTipEvent>[0]> | null =
   null;
 
@@ -33,11 +33,11 @@ export const useTipStore = create<TipState>((set, get) => ({
     if (get().status !== "idle" && get().status !== "error") {
       return;
     }
-    const myGeneration = ++generation;
+    const startedGeneration = ++feedGeneration;
     set({ status: "connecting", error: null });
 
     (async () => {
-      while (generation === myGeneration) {
+      while (feedGeneration === startedGeneration) {
         let iterator: AsyncIterator<Parameters<typeof decodeTipEvent>[0]> | null =
           null;
         try {
@@ -47,12 +47,12 @@ export const useTipStore = create<TipState>((set, get) => ({
           // No intersect point: Dingo starts the stream from its current
           // tip, which is exactly what a "what just landed" indicator wants
           // - this app has no interest in replaying history on connect.
-          while (generation === myGeneration) {
+          while (feedGeneration === startedGeneration) {
             const result = await iterator.next();
             if (result.done) {
               break;
             }
-            if (generation !== myGeneration) {
+            if (feedGeneration !== startedGeneration) {
               return;
             }
             const tip = decodeTipEvent(result.value);
@@ -65,7 +65,7 @@ export const useTipStore = create<TipState>((set, get) => ({
             // "apply" self-corrects it.
           }
         } catch (err) {
-          if (generation !== myGeneration) {
+          if (feedGeneration !== startedGeneration) {
             return;
           }
           set({
@@ -78,7 +78,7 @@ export const useTipStore = create<TipState>((set, get) => ({
             activeWatchIterator = null;
           }
         }
-        if (generation !== myGeneration) {
+        if (feedGeneration !== startedGeneration) {
           return;
         }
         set({ status: "connecting", error: null });
@@ -90,7 +90,7 @@ export const useTipStore = create<TipState>((set, get) => ({
   },
 
   stop: () => {
-    generation++;
+    feedGeneration++;
     void activeWatchIterator?.return?.();
     activeWatchIterator = null;
     set({ status: "idle", error: null, tip: null });

@@ -44,6 +44,16 @@ function formatTime(unixSeconds: number): string {
   return new Date(unixSeconds * 1000).toLocaleTimeString();
 }
 
+async function fetchLatestBlockTransactions(): Promise<string[]> {
+  const before = await blockfrostFetch<BlockSummary>("/api/v0/blocks/latest");
+  const txs = await blockfrostFetch<string[]>("/api/v0/blocks/latest/txs");
+  const after = await blockfrostFetch<BlockSummary>("/api/v0/blocks/latest");
+  if (before.hash !== after.hash) {
+    throw new Error("The latest block changed while loading its transactions.");
+  }
+  return txs;
+}
+
 export default function ExplorerOverview() {
   const pendingCount = useMempoolStore((state) => state.pendingTxs.size);
   const mempoolStatus = useMempoolStore((state) => state.status);
@@ -55,19 +65,7 @@ export default function ExplorerOverview() {
   });
   const latestTxsQuery = useQuery({
     queryKey: ["dingo", "latest-block-txs"],
-    queryFn: async () => {
-      const before = await blockfrostFetch<BlockSummary>(
-        "/api/v0/blocks/latest",
-      );
-      const txs = await blockfrostFetch<string[]>("/api/v0/blocks/latest/txs");
-      const after = await blockfrostFetch<BlockSummary>(
-        "/api/v0/blocks/latest",
-      );
-      if (before.hash !== after.hash) {
-        throw new Error("The latest block changed while loading its transactions.");
-      }
-      return txs;
-    },
+    queryFn: fetchLatestBlockTransactions,
     refetchInterval: 20_000,
   });
 
