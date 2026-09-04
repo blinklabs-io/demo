@@ -18,7 +18,12 @@ interface BlockSummary {
 
 const RECENT_BLOCK_COUNT = 10;
 
-async function fetchRecentBlocks(): Promise<BlockSummary[]> {
+interface RecentBlocksResult {
+  blocks: BlockSummary[];
+  incomplete: boolean;
+}
+
+async function fetchRecentBlocks(): Promise<RecentBlocksResult> {
   const latest = await blockfrostFetch<BlockSummary>("/api/v0/blocks/latest");
   const blocks: BlockSummary[] = [latest];
   let cursor = latest.previous_block;
@@ -27,12 +32,12 @@ async function fetchRecentBlocks(): Promise<BlockSummary[]> {
     try {
       block = await blockfrostFetch<BlockSummary>(`/api/v0/blocks/${cursor}`);
     } catch {
-      return blocks;
+      return { blocks, incomplete: true };
     }
     blocks.push(block);
     cursor = block.previous_block;
   }
-  return blocks;
+  return { blocks, incomplete: false };
 }
 
 function formatTime(unixSeconds: number): string {
@@ -58,7 +63,10 @@ export default function ExplorerOverview() {
       const after = await blockfrostFetch<BlockSummary>(
         "/api/v0/blocks/latest",
       );
-      return before.hash === after.hash ? txs : null;
+      if (before.hash !== after.hash) {
+        throw new Error("The latest block changed while loading its transactions.");
+      }
+      return txs;
     },
     refetchInterval: 20_000,
   });
@@ -112,6 +120,12 @@ export default function ExplorerOverview() {
           isLoading={blocksQuery.isLoading}
           error={blocksQuery.error}
         >
+          {blocksQuery.data?.incomplete && (
+            <p className="mb-3 text-sm text-amber-300" role="status">
+              Recent block history is incomplete. Some older blocks could not
+              be loaded.
+            </p>
+          )}
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="text-xs uppercase tracking-wide text-slate-500">
@@ -123,7 +137,7 @@ export default function ExplorerOverview() {
               </tr>
             </thead>
             <tbody>
-              {blocksQuery.data?.map((block) => (
+              {blocksQuery.data?.blocks.map((block) => (
                 <tr key={block.hash} className="border-t border-slate-800">
                   <td className="py-1.5">
                     <HashLink kind="block" id={String(block.height)} />

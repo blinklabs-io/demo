@@ -77,15 +77,36 @@ export default function TxDetail() {
   const isNotFoundOnChain =
     txQuery.error instanceof BlockfrostError && txQuery.error.status === 404;
   const isPending = isNotFoundOnChain && Boolean(pendingTx);
-  const wasPending = useRef(false);
+  const pendingState = useRef({
+    hash,
+    wasSeen: false,
+    confirmationRefetched: false,
+  });
   const { refetch } = txQuery;
 
   useEffect(() => {
-    if (wasPending.current && !isPending && isNotFoundOnChain) {
+    if (pendingState.current.hash !== hash) {
+      pendingState.current = {
+        hash,
+        wasSeen: false,
+        confirmationRefetched: false,
+      };
+    }
+    if (pendingTx) {
+      pendingState.current.wasSeen = true;
+      pendingState.current.confirmationRefetched = false;
+    }
+    if (
+      !txQuery.isLoading &&
+      isNotFoundOnChain &&
+      !pendingTx &&
+      pendingState.current.wasSeen &&
+      !pendingState.current.confirmationRefetched
+    ) {
+      pendingState.current.confirmationRefetched = true;
       void refetch();
     }
-    wasPending.current = isPending;
-  }, [isNotFoundOnChain, isPending, refetch]);
+  }, [hash, isNotFoundOnChain, pendingTx, refetch, txQuery.isLoading]);
 
   const utxosQuery = useQuery({
     queryKey: ["dingo", "tx", hash, "utxos"],

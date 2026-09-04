@@ -367,6 +367,7 @@ function isNonPoolDecodeError(error: unknown): boolean {
   return (
     /^Invalid (type|literal|map|tuple|constr) at /.test(message) ||
     /^Pool datum identifier .+ did not match requested /.test(message) ||
-    /^Pool .+ was found but has no datum\.$/.test(message)
+    /^Pool .+ was found but has no datum\.$/.test(message) ||
+    /^Pool .+ is missing asset .+\.$/.test(message)
   );
 }

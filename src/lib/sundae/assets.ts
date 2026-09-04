@@ -25,7 +25,7 @@ export function metadataFor(assetId: string, hint?: AssetHint): IPoolDataAsset {
 
   return {
     assetId,
-    decimals: hint?.decimals ?? 0,
+    decimals: hint?.decimals,
     ticker: hint?.label ?? printableAssetName(assetId),
   } as IPoolDataAsset;
 }

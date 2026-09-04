@@ -30,7 +30,7 @@ let generation = 0;
 let snapshotTimer: ReturnType<typeof setInterval> | null = null;
 let activeWatchIterator: AsyncIterator<{ nativeBytes: Uint8Array }> | null =
   null;
-let snapshotInFlight = false;
+let snapshotInFlightGeneration: number | null = null;
 let mempoolRevision = 0;
 const txRevisions = new Map<string, number>();
 
@@ -40,9 +40,11 @@ async function watchLoop(
   get: () => MempoolState,
 ) {
   while (generation === myGeneration) {
-    const iterator = getMempoolSubmitClient().watchMempool()[Symbol.asyncIterator]();
-    activeWatchIterator = iterator;
+    let iterator: AsyncIterator<{ nativeBytes: Uint8Array }> | null = null;
     try {
+      const client = getMempoolSubmitClient();
+      iterator = client.watchMempool()[Symbol.asyncIterator]();
+      activeWatchIterator = iterator;
       while (generation === myGeneration) {
         const result = await iterator.next();
         if (result.done) {
@@ -72,7 +74,7 @@ async function watchLoop(
           err instanceof Error ? err.message : "Mempool stream disconnected.",
       });
     } finally {
-      if (activeWatchIterator === iterator) {
+      if (iterator && activeWatchIterator === iterator) {
         activeWatchIterator = null;
       }
     }
@@ -96,10 +98,10 @@ export const useMempoolStore = create<MempoolState>((set, get) => ({
     set({ status: "connecting", error: null });
 
     const runSnapshot = async () => {
-      if (snapshotInFlight) {
+      if (snapshotInFlightGeneration === myGeneration) {
         return;
       }
-      snapshotInFlight = true;
+      snapshotInFlightGeneration = myGeneration;
       const snapshotRevision = mempoolRevision;
       try {
         const txs = await readMempoolSnapshot();
@@ -122,6 +124,11 @@ export const useMempoolStore = create<MempoolState>((set, get) => ({
           status: "live",
           error: null,
         });
+        for (const [hash, revision] of txRevisions) {
+          if (revision <= snapshotRevision) {
+            txRevisions.delete(hash);
+          }
+        }
       } catch (err) {
         if (generation !== myGeneration) {
           return;
@@ -134,7 +141,9 @@ export const useMempoolStore = create<MempoolState>((set, get) => ({
               : "Could not read Dingo's mempool.",
         });
       } finally {
-        snapshotInFlight = false;
+        if (snapshotInFlightGeneration === myGeneration) {
+          snapshotInFlightGeneration = null;
+        }
       }
     };
 

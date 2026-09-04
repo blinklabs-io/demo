@@ -35,10 +35,10 @@ function RouteError() {
       : "An unexpected error occurred.";
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-12 text-slate-200">
+    <section className="mx-auto max-w-2xl px-4 py-12 text-slate-200">
       <h1 className="text-xl font-semibold">Something went wrong</h1>
       <p className="mt-2 text-slate-400">{message}</p>
-    </main>
+    </section>
   );
 }
 

@@ -38,9 +38,12 @@ export const useTipStore = create<TipState>((set, get) => ({
 
     (async () => {
       while (generation === myGeneration) {
-        const iterator = getSyncClient().followTip()[Symbol.asyncIterator]();
-        activeWatchIterator = iterator;
+        let iterator: AsyncIterator<Parameters<typeof decodeTipEvent>[0]> | null =
+          null;
         try {
+          const client = getSyncClient();
+          iterator = client.followTip()[Symbol.asyncIterator]();
+          activeWatchIterator = iterator;
           // No intersect point: Dingo starts the stream from its current
           // tip, which is exactly what a "what just landed" indicator wants
           // - this app has no interest in replaying history on connect.
@@ -71,7 +74,7 @@ export const useTipStore = create<TipState>((set, get) => ({
               err instanceof Error ? err.message : "Tip stream disconnected.",
           });
         } finally {
-          if (activeWatchIterator === iterator) {
+          if (iterator && activeWatchIterator === iterator) {
             activeWatchIterator = null;
           }
         }

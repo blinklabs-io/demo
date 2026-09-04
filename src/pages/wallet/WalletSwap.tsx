@@ -27,7 +27,9 @@ function labelFor(asset: { assetId: string; ticker?: string }): string {
   return asset.ticker ?? `${asset.assetId.slice(0, 8)}...${asset.assetId.slice(-6)}`;
 }
 
-function hasKnownDecimals(asset: IPoolDataAsset): boolean {
+function hasKnownDecimals(
+  asset: IPoolDataAsset,
+): asset is IPoolDataAsset & { decimals: number } {
   return (
     asset.decimals !== undefined &&
     Number.isInteger(asset.decimals) &&
@@ -125,7 +127,13 @@ export default function WalletSwap() {
       status === "connected" && !discoveredPool && Boolean(effectiveIdent),
   });
 
-  const pool: IPoolData | undefined = discoveredPool ?? poolDetailQuery.data;
+  const candidatePool: IPoolData | undefined = discoveredPool ?? poolDetailQuery.data;
+  const pool =
+    candidatePool &&
+    hasKnownDecimals(candidatePool.assetA) &&
+    hasKnownDecimals(candidatePool.assetB)
+      ? candidatePool
+      : undefined;
 
   const offered: IPoolDataAsset | undefined = pool
     ? offeredAssetForDirection(pool, direction)
@@ -140,13 +148,19 @@ export default function WalletSwap() {
   let parsedAmount: bigint | null = null;
   let amountError: string | null = null;
 
-  if (pool && offered && received) {
+  if (
+    pool &&
+    offered &&
+    received &&
+    hasKnownDecimals(offered) &&
+    hasKnownDecimals(received)
+  ) {
     spotPrice = spotPriceLabel(pool, offered, received, labelFor);
     try {
-      parsedAmount = parseAssetAmount(amount, offered.decimals ?? 0, labelFor(offered));
+      parsedAmount = parseAssetAmount(amount, offered.decimals, labelFor(offered));
       if (parsedAmount > 0n) {
         const output = quoteOutput(pool, offered, received, parsedAmount);
-        estimatedReceive = `${formatAssetAmount(output, received.decimals ?? 0)} ${labelFor(received)}`;
+        estimatedReceive = `${formatAssetAmount(output, received.decimals)} ${labelFor(received)}`;
         const impactBps = priceImpactBasisPoints(pool, offered, received, parsedAmount);
         priceImpact = formatBasisPointsPercent(impactBps);
       }
