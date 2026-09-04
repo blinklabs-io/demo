@@ -23,6 +23,7 @@ import WalletSend from "./pages/wallet/WalletSend";
 import WalletSwap from "./pages/wallet/WalletSwap";
 import WalletDelegate from "./pages/wallet/WalletDelegate";
 import NotFound from "./pages/NotFound";
+import ApiConsole from "./pages/ApiConsole";
 
 // This component is intentionally colocated with the route configuration.
 // eslint-disable-next-line react-refresh/only-export-components
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
           { path: "wallet/send", element: <WalletSend /> },
           { path: "wallet/swap", element: <WalletSwap /> },
           { path: "wallet/delegate", element: <WalletDelegate /> },
+          { path: "api", element: <ApiConsole /> },
           { path: "*", element: <NotFound /> },
         ],
       },

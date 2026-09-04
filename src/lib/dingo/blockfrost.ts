@@ -22,6 +22,18 @@ export async function blockfrostFetch<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  const response = await blockfrostFetchResponse(path, init);
+
+  return (await response.json()) as T;
+}
+
+// Use this when a caller needs response metadata or a non-JSON body, such as
+// the API console. The regular blockfrostFetch helper remains the preferred
+// choice for typed API calls.
+export async function blockfrostFetchResponse(
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
   const url = `${DINGO_CONFIG.blockfrostUrl}${path}`;
   let response: Response;
   try {
@@ -50,5 +62,5 @@ export async function blockfrostFetch<T>(
     );
   }
 
-  return (await response.json()) as T;
+  return response;
 }
