@@ -4,6 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import { Core } from "@blaze-cardano/sdk";
 import { useWalletStore } from "../../stores/walletStore";
 import { getBlaze } from "../../lib/dingo/blaze";
+import {
+  assertDingoNetwork,
+  getDingoProvider,
+} from "../../lib/dingo/utxorpc/provider";
 import { parseAdaToLovelace, parseAssetAmount } from "../../lib/dingo/amount";
 import { formatAda } from "../../lib/format";
 
@@ -44,6 +48,7 @@ export default function WalletSend() {
         throw new Error("Enter a valid bech32 address.");
       }
       const recipientBech32 = recipientAddress.toBech32();
+      await assertDingoNetwork(getDingoProvider());
       const { blaze } = await getBlaze(walletApi);
 
       if (selectedAsset === ADA_OPTION) {

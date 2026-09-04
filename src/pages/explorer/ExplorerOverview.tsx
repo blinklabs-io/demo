@@ -23,9 +23,12 @@ async function fetchRecentBlocks(): Promise<BlockSummary[]> {
   const blocks: BlockSummary[] = [latest];
   let cursor = latest.previous_block;
   while (blocks.length < RECENT_BLOCK_COUNT && cursor) {
-    const block = await blockfrostFetch<BlockSummary>(
-      `/api/v0/blocks/${cursor}`,
-    );
+    let block: BlockSummary;
+    try {
+      block = await blockfrostFetch<BlockSummary>(`/api/v0/blocks/${cursor}`);
+    } catch {
+      return blocks;
+    }
     blocks.push(block);
     cursor = block.previous_block;
   }
@@ -47,7 +50,16 @@ export default function ExplorerOverview() {
   });
   const latestTxsQuery = useQuery({
     queryKey: ["dingo", "latest-block-txs"],
-    queryFn: () => blockfrostFetch<string[]>("/api/v0/blocks/latest/txs"),
+    queryFn: async () => {
+      const before = await blockfrostFetch<BlockSummary>(
+        "/api/v0/blocks/latest",
+      );
+      const txs = await blockfrostFetch<string[]>("/api/v0/blocks/latest/txs");
+      const after = await blockfrostFetch<BlockSummary>(
+        "/api/v0/blocks/latest",
+      );
+      return before.hash === after.hash ? txs : null;
+    },
     refetchInterval: 20_000,
   });
 
@@ -136,7 +148,7 @@ export default function ExplorerOverview() {
           isLoading={latestTxsQuery.isLoading}
           error={latestTxsQuery.error}
         >
-          {latestTxsQuery.data && latestTxsQuery.data.length === 0 && (
+          {latestTxsQuery.data?.length === 0 && (
             <p className="text-sm text-slate-500">
               No transactions in the latest block.
             </p>

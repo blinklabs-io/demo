@@ -55,7 +55,10 @@ async function fetchNodeHealth(): Promise<NodeHealth> {
       0,
       Math.floor(Date.now() / 1000) - latestBlock.time,
     ),
-    eraIndex: currentEraIndex >= 0 ? currentEraIndex : eras.length - 1,
+    eraIndex: Math.max(
+      0,
+      currentEraIndex >= 0 ? currentEraIndex : eras.length - 1,
+    ),
   };
 }
 

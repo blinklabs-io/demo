@@ -161,7 +161,7 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
       }
     }
 
-    return pools.sort((a, b) => compareBigints(b.liquidity.aReserve, a.liquidity.aReserve));
+    return pools;
   }
 
   private async findUtxoByAsset(
@@ -196,9 +196,14 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
       throw new Error(`Pool datum identifier ${datum.identifier} did not match requested ${ident}.`);
     }
 
-    const [assetATuple, assetBTuple] = datum.assets as [[string, string], [string, string]];
-    const assetA = metadataFor(assetIdFromTuple(assetATuple), this.assetHints.get(assetIdFromTuple(assetATuple)));
-    const assetB = metadataFor(assetIdFromTuple(assetBTuple), this.assetHints.get(assetIdFromTuple(assetBTuple)));
+    const [assetATuple, assetBTuple] = datum.assets as [
+      [string, string],
+      [string, string],
+    ];
+    const assetAId = assetIdFromTuple(assetATuple);
+    const assetBId = assetIdFromTuple(assetBTuple);
+    const assetA = metadataFor(assetAId, this.assetHints.get(assetAId));
+    const assetB = metadataFor(assetBId, this.assetHints.get(assetBId));
 
     return {
       ident,
@@ -213,8 +218,8 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
       protocolFee: 0,
       linearAmplificationFactor: 0n,
       liquidity: {
-        aReserve: this.amountInOutput(poolUtxo, assetA),
-        bReserve: this.amountInOutput(poolUtxo, assetB),
+        aReserve: this.amountInOutput(poolUtxo, assetA, ident),
+        bReserve: this.amountInOutput(poolUtxo, assetB, ident),
         lpTotal: datum.circulatingLp,
       },
     };
@@ -277,7 +282,11 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
     return validator.hash;
   }
 
-  private amountInOutput(utxo: Core.TransactionUnspentOutput, asset: IPoolDataAsset): bigint {
+  private amountInOutput(
+    utxo: Core.TransactionUnspentOutput,
+    asset: IPoolDataAsset,
+    ident: string,
+  ): bigint {
     const value = utxo.output().amount().toCore();
     if (asset.assetId === "ada.lovelace") {
       return value.coins;
@@ -289,7 +298,7 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
         return amount;
       }
     }
-    return 0n;
+    throw new Error(`Pool ${ident} is missing asset ${asset.assetId}.`);
   }
 
   private getQueryClient(): DingoQueryClient {
@@ -351,16 +360,6 @@ function identFromPoolNftName(assetName: string): string | undefined {
     return assetName.slice(POOL_NFT_NAME_PREFIX.length);
   }
   return undefined;
-}
-
-function compareBigints(a: bigint, b: bigint): number {
-  if (a > b) {
-    return 1;
-  }
-  if (a < b) {
-    return -1;
-  }
-  return 0;
 }
 
 function isNonPoolDecodeError(error: unknown): boolean {

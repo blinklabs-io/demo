@@ -23,7 +23,7 @@ export default function DRepList() {
       <PaginatedList<DRepListRow>
         queryKey={["dingo", "dreps"]}
         buildUrl={(page, count) =>
-          `/api/v0/governance/dreps?page=${page}&count=${count}&order_by=amount`
+          `/api/v0/governance/dreps?page=${page}&count=${count}&order=desc`
         }
         keyFor={(row) => row.drep_id}
         emptyLabel="No DReps found."

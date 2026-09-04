@@ -6,8 +6,11 @@ function unsupported(): never {
 }
 
 function unsupportedNamespace(name: string): unknown {
+  const callableTarget = function unsupportedNamespaceTarget(): never {
+    return unsupported();
+  };
   return new Proxy(
-    {},
+    callableTarget,
     {
       get(_target, property) {
         if (property === "then") {

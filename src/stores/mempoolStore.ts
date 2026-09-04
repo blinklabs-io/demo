@@ -28,11 +28,27 @@ interface MempoolState {
 // entire lifetime, so a real stop() is not expected in normal use.
 let generation = 0;
 let snapshotTimer: ReturnType<typeof setInterval> | null = null;
+let activeWatchIterator: AsyncIterator<{ nativeBytes: Uint8Array }> | null =
+  null;
+let snapshotInFlight = false;
+let mempoolRevision = 0;
+const txRevisions = new Map<string, number>();
 
-async function watchLoop(myGeneration: number, set: (partial: Partial<MempoolState>) => void, get: () => MempoolState) {
+async function watchLoop(
+  myGeneration: number,
+  set: (partial: Partial<MempoolState>) => void,
+  get: () => MempoolState,
+) {
   while (generation === myGeneration) {
+    const iterator = getMempoolSubmitClient().watchMempool()[Symbol.asyncIterator]();
+    activeWatchIterator = iterator;
     try {
-      for await (const event of getMempoolSubmitClient().watchMempool()) {
+      while (generation === myGeneration) {
+        const result = await iterator.next();
+        if (result.done) {
+          break;
+        }
+        const event = result.value;
         if (generation !== myGeneration) {
           return;
         }
@@ -42,6 +58,7 @@ async function watchLoop(myGeneration: number, set: (partial: Partial<MempoolSta
         }
         const next = new Map(get().pendingTxs);
         next.set(tx.hash, tx);
+        txRevisions.set(tx.hash, ++mempoolRevision);
         set({ pendingTxs: next, status: "live", error: null });
       }
       // The stream ended cleanly (server closed it) - reconnect.
@@ -54,6 +71,10 @@ async function watchLoop(myGeneration: number, set: (partial: Partial<MempoolSta
         error:
           err instanceof Error ? err.message : "Mempool stream disconnected.",
       });
+    } finally {
+      if (activeWatchIterator === iterator) {
+        activeWatchIterator = null;
+      }
     }
     if (generation !== myGeneration) {
       return;
@@ -75,13 +96,29 @@ export const useMempoolStore = create<MempoolState>((set, get) => ({
     set({ status: "connecting", error: null });
 
     const runSnapshot = async () => {
+      if (snapshotInFlight) {
+        return;
+      }
+      snapshotInFlight = true;
+      const snapshotRevision = mempoolRevision;
       try {
         const txs = await readMempoolSnapshot();
         if (generation !== myGeneration) {
           return;
         }
+        const current = get().pendingTxs;
+        const next = new Map<string, PendingTx>();
+        for (const tx of txs) {
+          const existing = current.get(tx.hash);
+          next.set(tx.hash, existing ? { ...tx, seenAt: existing.seenAt } : tx);
+        }
+        for (const [hash, tx] of current) {
+          if ((txRevisions.get(hash) ?? 0) > snapshotRevision) {
+            next.set(hash, tx);
+          }
+        }
         set({
-          pendingTxs: new Map(txs.map((tx) => [tx.hash, tx])),
+          pendingTxs: next,
           status: "live",
           error: null,
         });
@@ -96,6 +133,8 @@ export const useMempoolStore = create<MempoolState>((set, get) => ({
               ? err.message
               : "Could not read Dingo's mempool.",
         });
+      } finally {
+        snapshotInFlight = false;
       }
     };
 
@@ -110,6 +149,9 @@ export const useMempoolStore = create<MempoolState>((set, get) => ({
 
   stop: () => {
     generation++;
+    void activeWatchIterator?.return?.();
+    activeWatchIterator = null;
+    txRevisions.clear();
     if (snapshotTimer) {
       clearInterval(snapshotTimer);
       snapshotTimer = null;

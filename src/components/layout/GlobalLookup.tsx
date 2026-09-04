@@ -23,6 +23,7 @@ export function GlobalLookup() {
     <form onSubmit={handleSubmit} className="flex-1">
       <input
         type="search"
+        aria-label="Global lookup"
         value={query}
         onChange={(event) => {
           setQuery(event.target.value);

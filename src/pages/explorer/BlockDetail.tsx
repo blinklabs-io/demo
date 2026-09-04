@@ -43,8 +43,10 @@ export default function BlockDetail() {
     queryFn: () => blockfrostFetch<{ hash: string }>("/api/v0/blocks/latest"),
     refetchInterval: 15_000,
   });
+  const isTipKnown = latestBlockQuery.isSuccess;
   const isTip = Boolean(
-    blockQuery.data &&
+    isTipKnown &&
+      blockQuery.data &&
       latestBlockQuery.data &&
       blockQuery.data.hash === latestBlockQuery.data.hash,
   );
@@ -128,12 +130,20 @@ export default function BlockDetail() {
           </QueryState>
         </Panel>
       )}
-      {!isTip && blockQuery.data && (
+      {isTipKnown && !isTip && blockQuery.data && (
         <p className="text-xs text-slate-500">
           Dingo only lists transactions for the current chain tip; this block
           has since been superseded, so its transaction list isn't available
           here. Look up individual transactions by hash instead.
         </p>
+      )}
+      {!isTipKnown && blockQuery.data && (
+        <QueryState
+          isLoading={latestBlockQuery.isLoading}
+          error={latestBlockQuery.error}
+        >
+          {null}
+        </QueryState>
       )}
     </div>
   );

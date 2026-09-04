@@ -54,6 +54,11 @@ export default function WalletDelegate() {
       if (!walletApi || !rewardAddress) {
         throw new Error("Connect a wallet first.");
       }
+      if (!accountQuery.isSuccess || !accountQuery.data) {
+        throw new Error(
+          "Unable to verify the stake account registration status.",
+        );
+      }
       const trimmed = poolId.trim();
       if (!trimmed) {
         throw new Error("Enter a stake pool ID.");
@@ -61,7 +66,7 @@ export default function WalletDelegate() {
       const credential = stakeCredentialFromRewardAddress(rewardAddress);
       const { blaze } = await getBlaze(walletApi);
       let builder = blaze.newTransaction();
-      if (accountQuery.data && !accountQuery.data.registered) {
+      if (!accountQuery.data.registered) {
         builder = builder.addRegisterStake(credential);
       }
       const tx = await builder
@@ -82,6 +87,11 @@ export default function WalletDelegate() {
       if (!walletApi || !rewardAddress) {
         throw new Error("Connect a wallet first.");
       }
+      if (!accountQuery.isSuccess || !accountQuery.data) {
+        throw new Error(
+          "Unable to verify the stake account registration status.",
+        );
+      }
       if (!drepId.trim()) {
         throw new Error("Enter a DRep ID.");
       }
@@ -89,7 +99,7 @@ export default function WalletDelegate() {
       const drepCredential = credentialFromDRepId(drepId);
       const { blaze } = await getBlaze(walletApi);
       let builder = blaze.newTransaction();
-      if (accountQuery.data && !accountQuery.data.registered) {
+      if (!accountQuery.data.registered) {
         builder = builder.addRegisterStake(credential);
       }
       const tx = await builder
@@ -113,12 +123,24 @@ export default function WalletDelegate() {
     );
   }
 
+  if (!rewardAddress) {
+    return (
+      <div className="rounded-md border border-red-900 bg-red-950 p-6 text-center text-sm text-red-200">
+        The connected wallet did not provide a reward address, so delegation
+        is unavailable.
+      </div>
+    );
+  }
+
   const registered = accountQuery.data?.registered ?? false;
+  const accountUnavailable = !accountQuery.isSuccess;
   const registerNote = accountQuery.isLoading
     ? ""
-    : registered
-      ? ""
-      : " Your stake credential isn't registered yet - this will register and delegate in one transaction.";
+    : accountQuery.isError
+      ? " Unable to verify stake account registration."
+      : registered
+        ? ""
+        : " Your stake credential isn't registered yet - this will register and delegate in one transaction.";
 
   return (
     <div className="flex max-w-lg flex-col gap-6">
@@ -174,7 +196,7 @@ export default function WalletDelegate() {
           </label>
           <button
             type="submit"
-            disabled={poolMutation.isPending}
+            disabled={poolMutation.isPending || accountUnavailable}
             className="self-start rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500 disabled:opacity-50"
           >
             {poolMutation.isPending
@@ -230,7 +252,7 @@ export default function WalletDelegate() {
           </label>
           <button
             type="submit"
-            disabled={drepMutation.isPending}
+            disabled={drepMutation.isPending || accountUnavailable}
             className="self-start rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500 disabled:opacity-50"
           >
             {drepMutation.isPending

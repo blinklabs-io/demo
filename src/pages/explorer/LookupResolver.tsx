@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { useMempoolStore } from "../../stores/mempoolStore";
 
-type Resolution = { kind: "tx" | "block" } | { kind: "none" };
+type Resolution = { kind: "tx" | "block" | "asset" | "none" };
 
 async function resolve(hash: string): Promise<Resolution> {
   try {
@@ -23,11 +23,20 @@ async function resolve(hash: string): Promise<Resolution> {
       throw err;
     }
   }
+  try {
+    await blockfrostFetch(`/api/v0/assets/${hash}`);
+    return { kind: "asset" };
+  } catch (err) {
+    if (!(err instanceof BlockfrostError) || err.status !== 404) {
+      throw err;
+    }
+  }
   return { kind: "none" };
 }
 
 export default function LookupResolver() {
-  const { hash } = useParams();
+  const { hash: rawHash } = useParams();
+  const hash = rawHash?.toLowerCase();
   const navigate = useNavigate();
   // A hash sitting in Dingo's live mempool is unambiguously a pending tx -
   // route straight there without spending a Blockfrost round-trip on it.
@@ -55,6 +64,8 @@ export default function LookupResolver() {
       navigate(`/explorer/tx/${hash}`, { replace: true });
     } else if (data.kind === "block") {
       navigate(`/explorer/block/${hash}`, { replace: true });
+    } else if (data.kind === "asset") {
+      navigate(`/explorer/asset/${hash}`, { replace: true });
     }
   }, [data, hash, isPendingTx, navigate]);
 
@@ -68,7 +79,7 @@ export default function LookupResolver() {
   if (data?.kind === "none") {
     return (
       <p className="text-sm text-slate-500">
-        No transaction or block matches "{hash}".
+        No transaction, block, or asset matches "{hash}".
       </p>
     );
   }

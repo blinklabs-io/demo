@@ -21,6 +21,8 @@ interface TipState {
 // this is started once from AppShell, which is mounted for the app's
 // entire lifetime, so a real stop() is not expected in normal use.
 let generation = 0;
+let activeWatchIterator: AsyncIterator<Parameters<typeof decodeTipEvent>[0]> | null =
+  null;
 
 export const useTipStore = create<TipState>((set, get) => ({
   status: "idle",
@@ -36,15 +38,21 @@ export const useTipStore = create<TipState>((set, get) => ({
 
     (async () => {
       while (generation === myGeneration) {
+        const iterator = getSyncClient().followTip()[Symbol.asyncIterator]();
+        activeWatchIterator = iterator;
         try {
           // No intersect point: Dingo starts the stream from its current
           // tip, which is exactly what a "what just landed" indicator wants
           // - this app has no interest in replaying history on connect.
-          for await (const event of getSyncClient().followTip()) {
+          while (generation === myGeneration) {
+            const result = await iterator.next();
+            if (result.done) {
+              break;
+            }
             if (generation !== myGeneration) {
               return;
             }
-            const tip = decodeTipEvent(event);
+            const tip = decodeTipEvent(result.value);
             if (tip) {
               set({ tip, status: "live", error: null });
             }
@@ -60,14 +68,17 @@ export const useTipStore = create<TipState>((set, get) => ({
           set({
             status: "error",
             error:
-              err instanceof Error
-                ? err.message
-                : "Tip stream disconnected.",
+              err instanceof Error ? err.message : "Tip stream disconnected.",
           });
+        } finally {
+          if (activeWatchIterator === iterator) {
+            activeWatchIterator = null;
+          }
         }
         if (generation !== myGeneration) {
           return;
         }
+        set({ status: "connecting", error: null });
         await new Promise((resolve) =>
           setTimeout(resolve, WATCH_RETRY_DELAY_MS),
         );
@@ -77,6 +88,8 @@ export const useTipStore = create<TipState>((set, get) => ({
 
   stop: () => {
     generation++;
+    void activeWatchIterator?.return?.();
+    activeWatchIterator = null;
     set({ status: "idle", error: null, tip: null });
   },
 }));

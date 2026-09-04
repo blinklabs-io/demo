@@ -19,7 +19,13 @@ function summaryLabel(summary: DingoUtxoSummary): string {
   return `${formatAda(summary.lovelace)} across ${prefix} ${utxoLabel}`;
 }
 
-function DingoWalletView({ changeAddress }: { changeAddress: string }) {
+function DingoWalletView({
+  changeAddress,
+  rewardAddress,
+}: {
+  changeAddress: string;
+  rewardAddress: string | null;
+}) {
   const addressQuery = useQuery({
     queryKey: ["dingo", "wallet-view", "address", changeAddress],
     queryFn: () =>
@@ -29,9 +35,9 @@ function DingoWalletView({ changeAddress }: { changeAddress: string }) {
       ),
   });
 
-  const stakeCredentialHash = stakeCredentialHashFor(
-    Core.Address.fromBech32(changeAddress),
-  );
+  const stakeCredentialHash = rewardAddress
+    ? stakeCredentialHashFor(Core.Address.fromBech32(rewardAddress))
+    : undefined;
 
   const stakeQuery = useQuery({
     queryKey: ["dingo", "wallet-view", "stake", stakeCredentialHash],
@@ -123,7 +129,10 @@ export default function WalletHome() {
         <h2 className="mb-2 text-sm font-medium text-slate-300">
           What Dingo sees, independently of CIP-30
         </h2>
-        <DingoWalletView changeAddress={changeAddress} />
+        <DingoWalletView
+          changeAddress={changeAddress}
+          rewardAddress={rewardAddress}
+        />
       </div>
 
       <div className="flex gap-3">

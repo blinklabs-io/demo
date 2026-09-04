@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ADA_METADATA, type IPoolData, type IPoolDataAsset } from "@sundaeswap/core";
@@ -27,6 +27,14 @@ function labelFor(asset: { assetId: string; ticker?: string }): string {
   return asset.ticker ?? `${asset.assetId.slice(0, 8)}...${asset.assetId.slice(-6)}`;
 }
 
+function hasKnownDecimals(asset: IPoolDataAsset): boolean {
+  return (
+    asset.decimals !== undefined &&
+    Number.isInteger(asset.decimals) &&
+    asset.decimals >= 0
+  );
+}
+
 interface SwapResult {
   txHash: string;
 }
@@ -36,19 +44,16 @@ export default function WalletSwap() {
   const walletApi = useWalletStore((state) => state.walletApi);
   const refreshBalance = useWalletStore((state) => state.refreshBalance);
 
-  const queryProvider = useMemo(
-    () => new DingoSundaeQueryProvider(getDingoProvider()),
-    [],
-  );
-
-  useEffect(() => {
+  const queryProvider = useMemo(() => {
+    const provider = new DingoSundaeQueryProvider(getDingoProvider());
     for (const preset of POOL_PRESETS) {
-      queryProvider.setAssetHint(preset.assetBAssetId, {
+      provider.setAssetHint(preset.assetBAssetId, {
         label: preset.assetBLabel,
         decimals: preset.assetBDecimals,
       });
     }
-  }, [queryProvider]);
+    return provider;
+  }, []);
 
   // This app's Sundae V3 integration is hardcoded to Preview (script hashes,
   // reference UTxOs). Verify the configured Dingo endpoint actually serves
@@ -60,11 +65,12 @@ export default function WalletSwap() {
     queryKey: ["dingo", "assert-network"],
     queryFn: () => assertDingoNetwork(getDingoProvider()),
     retry: false,
+    enabled: status === "connected",
   });
   const referencesCheck = useQuery({
     queryKey: ["sundae", "validate-references"],
     queryFn: () => queryProvider.validateProtocolReferences(),
-    enabled: networkCheck.isSuccess,
+    enabled: status === "connected" && networkCheck.isSuccess,
     retry: false,
   });
 
@@ -80,9 +86,15 @@ export default function WalletSwap() {
     queryKey: ["sundae", "discover-pools"],
     queryFn: () => queryProvider.discoverPools(),
     retry: false,
+    enabled: status === "connected",
   });
 
-  const discoveredAdaPools = (discoveredQuery.data ?? []).filter(poolHasAda);
+  const discoveredAdaPools = (discoveredQuery.data ?? []).filter(
+    (candidate) =>
+      poolHasAda(candidate) &&
+      hasKnownDecimals(candidate.assetA) &&
+      hasKnownDecimals(candidate.assetB),
+  );
   const usingDiscovered = discoveredAdaPools.length > 0;
 
   const options: Array<{ ident: string; label: string }> = usingDiscovered
@@ -109,7 +121,8 @@ export default function WalletSwap() {
   const poolDetailQuery = useQuery({
     queryKey: ["sundae", "pool", effectiveIdent],
     queryFn: () => queryProvider.findPoolDataByIdent({ ident: effectiveIdent }),
-    enabled: !discoveredPool && Boolean(effectiveIdent),
+    enabled:
+      status === "connected" && !discoveredPool && Boolean(effectiveIdent),
   });
 
   const pool: IPoolData | undefined = discoveredPool ?? poolDetailQuery.data;
@@ -150,6 +163,14 @@ export default function WalletSwap() {
       }
       if (!pool) {
         throw new Error("Pool is still loading.");
+      }
+      if (!networkCheck.isSuccess || !referencesCheck.isSuccess) {
+        throw new Error(
+          "Dingo Preview and Sundae V3 references have not been verified.",
+        );
+      }
+      if (!offered || !hasKnownDecimals(offered)) {
+        throw new Error("This token does not have known decimal metadata.");
       }
       const { blaze } = await getBlaze(walletApi);
       const built = await buildSwapOrder({
@@ -273,6 +294,11 @@ export default function WalletSwap() {
         </dl>
 
         {amountError && <p className="text-sm text-red-400">{amountError}</p>}
+        {poolDetailQuery.isError && (
+          <p className="text-sm text-red-400">
+            Could not load the selected pool: {poolDetailQuery.error.message}
+          </p>
+        )}
 
         <button
           type="button"

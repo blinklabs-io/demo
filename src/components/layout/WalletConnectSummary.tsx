@@ -74,6 +74,8 @@ export function WalletConnectSummary() {
     );
   }
 
+  const availableWallets = listAvailableWallets();
+
   return (
     <div ref={containerRef} className="relative">
       <button
@@ -86,12 +88,12 @@ export function WalletConnectSummary() {
       </button>
       {open && status !== "connecting" && (
         <div className="absolute right-0 z-10 mt-2 w-56 rounded-md border border-slate-700 bg-slate-900 p-2 text-sm shadow-lg">
-          {listAvailableWallets().length === 0 && (
+          {availableWallets.length === 0 && (
             <p className="px-2 py-1.5 text-slate-500">
               No CIP-30 wallets detected.
             </p>
           )}
-          {listAvailableWallets().map((wallet) => (
+          {availableWallets.map((wallet) => (
             <button
               key={wallet.name}
               type="button"
@@ -107,9 +109,9 @@ export function WalletConnectSummary() {
               {wallet.name}
             </button>
           ))}
-          {error && <p className="mt-1 px-2 text-xs text-red-400">{error}</p>}
         </div>
       )}
+      {error && <p className="mt-1 max-w-56 text-xs text-red-400">{error}</p>}
     </div>
   );
 }

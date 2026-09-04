@@ -7,6 +7,7 @@ import { CardanoSubmitClient, CardanoSyncClient } from "@utxorpc/sdk";
 import type { CardanoTipEvent } from "@utxorpc/sdk";
 import { Core } from "@blaze-cardano/sdk";
 import { DINGO_CONFIG } from "../config";
+import { bytesToHex } from "./bytes";
 
 let submitClient: CardanoSubmitClient | null = null;
 let syncClient: CardanoSyncClient | null = null;
@@ -41,10 +42,9 @@ export interface PendingTx {
 // than adding a second CBOR library.
 export function decodeMempoolTx(nativeBytes: Uint8Array): PendingTx | null {
   try {
-    const hex = Array.from(nativeBytes, (byte) =>
-      byte.toString(16).padStart(2, "0"),
-    ).join("");
-    const tx = Core.Serialization.Transaction.fromCbor(Core.TxCBOR(hex));
+    const tx = Core.Serialization.Transaction.fromCbor(
+      Core.TxCBOR(bytesToHex(nativeBytes)),
+    );
     const body = tx.body();
     let totalOutputLovelace = 0n;
     for (const output of body.outputs()) {
@@ -104,9 +104,7 @@ export function decodeTipEvent(event: CardanoTipEvent): LiveTip | null {
   return {
     height: Number(header.height),
     slot: Number(header.slot),
-    hash: Array.from(header.hash, (byte) =>
-      byte.toString(16).padStart(2, "0"),
-    ).join(""),
+    hash: bytesToHex(header.hash),
     txCount: event.block.body?.tx.length ?? 0,
     receivedAt: Date.now(),
   };

@@ -54,7 +54,7 @@ export default function MempoolFeed() {
           <p className="mb-3 text-sm text-red-400">{error}</p>
         )}
 
-        {status !== "idle" && sorted.length === 0 && !error && (
+        {status === "live" && sorted.length === 0 && !error && (
           <p className="text-sm text-slate-500">
             Mempool is empty right now.
           </p>

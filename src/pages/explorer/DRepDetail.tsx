@@ -43,6 +43,9 @@ export default function DRepDetail() {
               value={formatAda(BigInt(drepQuery.data.amount))}
             />
             <Field label="Active" value={drepQuery.data.active ? "Yes" : "No"} />
+            {drepQuery.data.active_epoch !== null && (
+              <Field label="Active epoch" value={drepQuery.data.active_epoch} />
+            )}
             <Field
               label="Script-based"
               value={drepQuery.data.has_script ? "Yes" : "No"}

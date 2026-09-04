@@ -6,19 +6,30 @@ import { Pagination } from "./Pagination";
 
 const PAGE_SIZE = 20;
 
-export function PaginatedList<T>({
-  queryKey,
-  buildUrl,
-  renderItem,
-  emptyLabel = "Nothing here yet.",
-  keyFor,
-}: {
+interface PaginatedListProps<T> {
   queryKey: unknown[];
   buildUrl: (page: number, pageSize: number) => string;
   renderItem: (item: T) => ReactNode;
   emptyLabel?: string;
   keyFor: (item: T, index: number) => string | number;
-}) {
+}
+
+export function PaginatedList<T>(props: PaginatedListProps<T>) {
+  return (
+    <PaginatedListPage
+      key={JSON.stringify(props.queryKey)}
+      {...props}
+    />
+  );
+}
+
+function PaginatedListPage<T>({
+  queryKey,
+  buildUrl,
+  renderItem,
+  emptyLabel = "Nothing here yet.",
+  keyFor,
+}: PaginatedListProps<T>) {
   const [page, setPage] = useState(1);
   const query = useQuery({
     queryKey: [...queryKey, page],

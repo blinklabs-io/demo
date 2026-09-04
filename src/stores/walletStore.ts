@@ -119,13 +119,25 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   listAvailableWallets: listWallets,
 
   connect: async (walletName: string) => {
+    const generation = ++connectGeneration;
     const wallet = window.cardano?.[walletName] as Cip30Wallet | undefined;
     if (!wallet) {
-      set({ status: "error", error: `Wallet "${walletName}" was not found.` });
+      set({
+        status: "error",
+        error: `Wallet "${walletName}" was not found.`,
+        walletName: null,
+        walletApi: null,
+        ...emptyDetails,
+      });
       return;
     }
-    const generation = ++connectGeneration;
-    set({ status: "connecting", error: null });
+    set({
+      status: "connecting",
+      error: null,
+      ...emptyDetails,
+      walletName: null,
+      walletApi: null,
+    });
     try {
       const api = await wallet.enable();
       const networkId = await api.getNetworkId();
@@ -133,7 +145,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         if (connectGeneration === generation) {
           set({
             status: "error",
-            error: `Connected wallet reports network id ${networkId} (mainnet). This app only supports a testnet-connected wallet (Preview/Preprod) - switch the wallet's network and reconnect.`,
+            error: `Connected wallet reports unsupported network id ${networkId}. This app only supports a testnet-connected wallet (Preview/Preprod) - switch the wallet's network and reconnect.`,
           });
         }
         return;
@@ -186,22 +198,31 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       return;
     }
     const wallet = window.cardano?.[lastWallet] as Cip30Wallet | undefined;
-    if (!wallet?.isEnabled) {
+    if (!wallet) {
       return;
     }
-    const isEnabled = await wallet.isEnabled().catch(() => false);
-    if (!isEnabled) {
+    const restoreGeneration = connectGeneration;
+    if (wallet.isEnabled) {
+      const isEnabled = await wallet.isEnabled().catch(() => false);
+      if (!isEnabled || connectGeneration !== restoreGeneration) {
+        return;
+      }
+    }
+    if (connectGeneration !== restoreGeneration) {
       return;
     }
     await get().connect(lastWallet);
   },
 
   refreshBalance: async () => {
-    const { walletApi } = get();
-    if (!walletApi) {
+    const api = get().walletApi;
+    if (!api) {
       return;
     }
-    const details = await loadWalletDetails(walletApi);
-    set(details);
+    const generation = connectGeneration;
+    const details = await loadWalletDetails(api);
+    if (connectGeneration === generation && get().walletApi === api) {
+      set(details);
+    }
   },
 }));

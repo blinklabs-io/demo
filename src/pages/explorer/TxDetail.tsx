@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
@@ -60,6 +61,10 @@ export default function TxDetail() {
     queryKey: ["dingo", "tx", hash],
     queryFn: () => blockfrostFetch<TransactionResponse>(`/api/v0/txs/${hash}`),
     enabled: Boolean(hash),
+    retry: (failureCount, error) =>
+      error instanceof BlockfrostError && error.status === 404
+        ? false
+        : failureCount < 2,
   });
 
   // Blockfrost only knows about confirmed (indexed) transactions. A hash
@@ -72,6 +77,15 @@ export default function TxDetail() {
   const isNotFoundOnChain =
     txQuery.error instanceof BlockfrostError && txQuery.error.status === 404;
   const isPending = isNotFoundOnChain && Boolean(pendingTx);
+  const wasPending = useRef(false);
+  const { refetch } = txQuery;
+
+  useEffect(() => {
+    if (wasPending.current && !isPending && isNotFoundOnChain) {
+      void refetch();
+    }
+    wasPending.current = isPending;
+  }, [isNotFoundOnChain, isPending, refetch]);
 
   const utxosQuery = useQuery({
     queryKey: ["dingo", "tx", hash, "utxos"],
@@ -86,14 +100,14 @@ export default function TxDetail() {
     queryKey: ["dingo", "tx", hash, "delegations"],
     queryFn: () =>
       blockfrostFetch<DelegationRow[]>(`/api/v0/txs/${hash}/delegations`),
-    enabled: Boolean(hash) && Boolean(tx) && tx!.delegation_count > 0,
+    enabled: Boolean(hash && tx && tx.delegation_count > 0),
   });
 
   const withdrawalsQuery = useQuery({
     queryKey: ["dingo", "tx", hash, "withdrawals"],
     queryFn: () =>
       blockfrostFetch<WithdrawalRow[]>(`/api/v0/txs/${hash}/withdrawals`),
-    enabled: Boolean(hash) && Boolean(tx) && tx!.withdrawal_count > 0,
+    enabled: Boolean(hash && tx && tx.withdrawal_count > 0),
   });
 
   if (isPending && pendingTx) {

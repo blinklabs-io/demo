@@ -39,7 +39,9 @@ export function Header() {
         <GlobalLookup />
         <WalletConnectSummary />
       </div>
-      {error instanceof BlockfrostError && <ConnectDingoBanner error={error} />}
+      {error instanceof BlockfrostError && error.status === 0 && (
+        <ConnectDingoBanner error={error} />
+      )}
     </header>
   );
 }

@@ -18,7 +18,9 @@ export function AdaAmount({ amount }: { amount: AmountEntry[] }) {
       </span>
       {assets.length > 0 && (
         <span className="ml-2 text-xs text-slate-500">
-          + {assets.length} asset{assets.length === 1 ? "" : "s"}
+          {assets
+            .map((asset) => `${asset.unit}: ${asset.quantity}`)
+            .join("; ")}
         </span>
       )}
     </span>

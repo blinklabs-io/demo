@@ -12,11 +12,11 @@ export function hexToBytes(hex: string): UtxoRpcBytes {
 
   const bytes = new Uint8Array(hex.length / 2) as UtxoRpcBytes;
   for (let offset = 0; offset < hex.length; offset += 2) {
-    const byte = Number.parseInt(hex.slice(offset, offset + 2), 16);
-    if (Number.isNaN(byte)) {
+    const pair = hex.slice(offset, offset + 2);
+    if (!/^[0-9a-fA-F]{2}$/.test(pair)) {
       throw new Error("Hex string contains invalid characters.");
     }
-    bytes[offset / 2] = byte;
+    bytes[offset / 2] = Number.parseInt(pair, 16);
   }
   return bytes;
 }

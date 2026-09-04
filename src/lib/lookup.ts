@@ -45,10 +45,10 @@ export function detectEntityKind(rawQuery: string): LookupResult | null {
   if (HEX64.test(query)) {
     // A 64-char hex string could be a tx hash or a block hash. The resolver
     // route tries tx first, then falls back to block.
-    return { kind: "tx", route: `/explorer/lookup/${query}` };
+    return { kind: "tx", route: `/explorer/lookup/${query.toLowerCase()}` };
   }
   if (ASSET_HEX.test(query)) {
-    return { kind: "asset", route: `/explorer/asset/${query}` };
+    return { kind: "asset", route: `/explorer/asset/${query.toLowerCase()}` };
   }
   if (NUMERIC.test(query)) {
     return { kind: "block", route: `/explorer/block/${query}` };
