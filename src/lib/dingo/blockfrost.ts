@@ -4,13 +4,21 @@ export class BlockfrostError extends Error {
   status: number;
   path: string;
   body?: unknown;
+  cause?: unknown;
 
-  constructor(message: string, status: number, path: string, body?: unknown) {
+  constructor(
+    message: string,
+    status: number,
+    path: string,
+    body?: unknown,
+    cause?: unknown,
+  ) {
     super(message);
     this.name = "BlockfrostError";
     this.status = status;
     this.path = path;
     this.body = body;
+    this.cause = cause;
   }
 }
 
@@ -43,6 +51,7 @@ export async function blockfrostFetchResponse(
       `Could not reach Dingo at ${DINGO_CONFIG.blockfrostUrl}. Is it running, and is CORS enabled for this origin?`,
       0,
       path,
+      undefined,
       cause,
     );
   }
@@ -50,7 +59,14 @@ export async function blockfrostFetchResponse(
   if (!response.ok) {
     let body: unknown;
     try {
-      body = await response.json();
+      const text = await response.text();
+      if (text) {
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = text;
+        }
+      }
     } catch {
       body = undefined;
     }

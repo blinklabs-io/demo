@@ -35,9 +35,10 @@ function isSafePath(path: string): boolean {
 }
 
 function formatErrorBody(body: unknown): string {
+  if (body instanceof Error) return body.message;
   if (typeof body === "string") return body;
   try {
-    return JSON.stringify(body, null, 2);
+    return JSON.stringify(body, null, 2) ?? String(body);
   } catch {
     return String(body);
   }
@@ -94,7 +95,7 @@ export default function ApiConsole() {
         status: cause && typeof cause === "object" && "status" in cause ? Number(cause.status) : 0,
         duration: Math.round(performance.now() - startedAt),
         body: errorBody === undefined ? "" : formatErrorBody(errorBody),
-        isJson: errorBody !== undefined,
+        isJson: errorBody !== undefined && typeof errorBody !== "string",
       });
     } finally {
       setLoading(false);
