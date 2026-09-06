@@ -35,6 +35,9 @@ export function Header() {
           <NavLink to="/wallet" className={navLinkClass}>
             Wallet
           </NavLink>
+          <NavLink to="/api" className={navLinkClass}>
+            API
+          </NavLink>
         </nav>
         <GlobalLookup />
         <WalletConnectSummary />

@@ -20,17 +20,20 @@ describe("blockfrostFetch", () => {
     mockFetch({
       ok: false,
       status: 404,
-      json: async () => ({ error: "Not Found" }),
+      text: async () => JSON.stringify({ error: "Not Found" }),
     });
 
-    await expect(blockfrostFetch("/api/v0/blocks/999")).rejects.toMatchObject({
-      status: 404,
-      path: "/api/v0/blocks/999",
-    });
+    await expect(blockfrostFetch("/api/v0/blocks/999")).rejects.toMatchObject(
+      {
+        status: 404,
+        path: "/api/v0/blocks/999",
+        body: { error: "Not Found" },
+      },
+    );
   });
 
   it("is a BlockfrostError instance so callers can distinguish it from other errors", async () => {
-    mockFetch({ ok: false, status: 500, json: async () => ({}) });
+    mockFetch({ ok: false, status: 500, text: async () => "{}" });
 
     await expect(blockfrostFetch("/api/v0/network")).rejects.toBeInstanceOf(
       BlockfrostError,
@@ -44,19 +47,20 @@ describe("blockfrostFetch", () => {
     expect(error).toBeInstanceOf(BlockfrostError);
     expect((error as BlockfrostError).status).toBe(0);
     expect((error as BlockfrostError).message).toMatch(/Could not reach Dingo/);
+    expect((error as BlockfrostError).body).toBeUndefined();
+    expect((error as BlockfrostError).cause).toBeInstanceOf(TypeError);
   });
 
-  it("tolerates a non-JSON error body without throwing a secondary error", async () => {
+  it("preserves a non-JSON error body without throwing a secondary error", async () => {
     mockFetch({
       ok: false,
       status: 502,
-      json: async () => {
-        throw new SyntaxError("Unexpected token");
-      },
+      text: async () => "upstream unavailable",
     });
 
     await expect(blockfrostFetch("/health")).rejects.toMatchObject({
       status: 502,
+      body: "upstream unavailable",
     });
   });
 });

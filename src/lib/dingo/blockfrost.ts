@@ -4,13 +4,21 @@ export class BlockfrostError extends Error {
   status: number;
   path: string;
   body?: unknown;
+  cause?: unknown;
 
-  constructor(message: string, status: number, path: string, body?: unknown) {
+  constructor(
+    message: string,
+    status: number,
+    path: string,
+    body?: unknown,
+    cause?: unknown,
+  ) {
     super(message);
     this.name = "BlockfrostError";
     this.status = status;
     this.path = path;
     this.body = body;
+    this.cause = cause;
   }
 }
 
@@ -22,6 +30,18 @@ export async function blockfrostFetch<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  const response = await blockfrostFetchResponse(path, init);
+
+  return (await response.json()) as T;
+}
+
+// Use this when a caller needs response metadata or a non-JSON body, such as
+// the API console. The regular blockfrostFetch helper remains the preferred
+// choice for typed API calls.
+export async function blockfrostFetchResponse(
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
   const url = `${DINGO_CONFIG.blockfrostUrl}${path}`;
   let response: Response;
   try {
@@ -31,6 +51,7 @@ export async function blockfrostFetch<T>(
       `Could not reach Dingo at ${DINGO_CONFIG.blockfrostUrl}. Is it running, and is CORS enabled for this origin?`,
       0,
       path,
+      undefined,
       cause,
     );
   }
@@ -38,7 +59,14 @@ export async function blockfrostFetch<T>(
   if (!response.ok) {
     let body: unknown;
     try {
-      body = await response.json();
+      const text = await response.text();
+      if (text) {
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = text;
+        }
+      }
     } catch {
       body = undefined;
     }
@@ -50,5 +78,5 @@ export async function blockfrostFetch<T>(
     );
   }
 
-  return (await response.json()) as T;
+  return response;
 }
