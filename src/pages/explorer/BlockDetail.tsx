@@ -4,6 +4,7 @@ import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { QueryState } from "../../components/explorer/QueryState";
+import { formatAda } from "../../lib/format";
 
 interface BlockDetailResponse {
   time: number;
@@ -17,6 +18,9 @@ interface BlockDetailResponse {
   tx_count: number;
   output: string | null;
   fees: string | null;
+  block_vrf: string | null;
+  op_cert: string | null;
+  op_cert_counter: string | null;
   previous_block: string;
   next_block: string | null;
   confirmations: number;
@@ -80,6 +84,11 @@ export default function BlockDetail() {
               <Field label="Slot leader" value={blockQuery.data.slot_leader} />
               <Field label="Size" value={`${blockQuery.data.size} bytes`} />
               <Field label="Tx count" value={blockQuery.data.tx_count} />
+              {blockQuery.data.output !== null && <Field label="Output" value={`${formatAda(BigInt(blockQuery.data.output))} ADA`} />}
+              {blockQuery.data.fees !== null && <Field label="Fees" value={`${formatAda(BigInt(blockQuery.data.fees))} ADA`} />}
+              {blockQuery.data.block_vrf && <Field label="Block VRF" value={blockQuery.data.block_vrf} />}
+              {blockQuery.data.op_cert && <Field label="Operational certificate" value={blockQuery.data.op_cert} />}
+              {blockQuery.data.op_cert_counter && <Field label="Operational certificate counter" value={blockQuery.data.op_cert_counter} />}
               <Field
                 label="Confirmations"
                 value={blockQuery.data.confirmations}

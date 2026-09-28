@@ -9,7 +9,9 @@ export type EntityKind =
   | "account"
   | "asset"
   | "pool"
-  | "drep";
+  | "drep"
+  | "metadata"
+  | "epoch";
 
 export interface LookupResult {
   kind: EntityKind;
@@ -41,6 +43,21 @@ export function detectEntityKind(rawQuery: string): LookupResult | null {
   }
   if (/^drep1[0-9a-z]+$/i.test(query) || /^drep_script1[0-9a-z]+$/i.test(query)) {
     return { kind: "drep", route: `/explorer/drep/${query}` };
+  }
+  const metadataLabel = /^metadata:(\d+)$/i.exec(query);
+  if (metadataLabel) {
+    return {
+      kind: "metadata",
+      route: `/explorer/metadata/${metadataLabel[1]}`,
+    };
+  }
+  const epochNumber = /^epoch:(\d+)$/i.exec(query);
+  if (epochNumber) {
+    return { kind: "epoch", route: `/explorer/epoch/${epochNumber[1]}` };
+  }
+  const drepCredential = /^drep:([0-9a-f]{56})$/i.exec(query);
+  if (drepCredential) {
+    return { kind: "drep", route: `/explorer/drep/${drepCredential[1].toLowerCase()}` };
   }
   if (HEX64.test(query)) {
     // A 64-char hex string could be a tx hash or a block hash. The resolver

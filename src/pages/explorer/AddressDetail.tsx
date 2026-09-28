@@ -21,6 +21,9 @@ interface AddressUtxo {
   tx_hash: string;
   output_index: number;
   amount: AmountEntry[];
+  data_hash: string | null;
+  inline_datum: string | null;
+  reference_script_hash: string | null;
 }
 
 interface AddressTransaction {
@@ -129,6 +132,14 @@ function AddressDetailContent({ address }: { address?: string }) {
                 <div className="mt-1">
                   <AdaAmount amount={utxo.amount} />
                 </div>
+                {(utxo.data_hash || utxo.inline_datum || utxo.reference_script_hash) && (
+                  <details className="mt-2 text-xs text-slate-500">
+                    <summary className="cursor-pointer">Datum and script references</summary>
+                    {utxo.data_hash && <p className="mt-1 break-all">Datum hash: {utxo.data_hash}</p>}
+                    {utxo.inline_datum && <p className="mt-1 break-all">Inline datum: {utxo.inline_datum}</p>}
+                    {utxo.reference_script_hash && <p className="mt-1 break-all">Reference script: {utxo.reference_script_hash}</p>}
+                  </details>
+                )}
               </li>
             ))}
           </ul>

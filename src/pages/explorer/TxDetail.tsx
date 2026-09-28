@@ -10,6 +10,9 @@ import { formatAda } from "../../lib/format";
 import { useMempoolStore } from "../../stores/mempoolStore";
 
 interface TransactionResponse {
+  invalid_before: string | null;
+  invalid_hereafter: string | null;
+  output_amount: AmountEntry[];
   hash: string;
   block: string;
   block_height: number;
@@ -18,14 +21,17 @@ interface TransactionResponse {
   index: number;
   fees: string;
   deposit: string;
+  treasury_donation: string;
   size: number;
   valid_contract: boolean;
   delegation_count: number;
   withdrawal_count: number;
+  mir_cert_count: number;
   redeemer_count: number;
   stake_cert_count: number;
   pool_update_count: number;
   pool_retire_count: number;
+  asset_mint_or_burn_count: number;
 }
 
 interface TxUtxo {
@@ -35,6 +41,10 @@ interface TxUtxo {
   amount: AmountEntry[];
   collateral: boolean;
   reference?: boolean;
+  data_hash?: string | null;
+  inline_datum?: string | null;
+  reference_script_hash?: string | null;
+  consumed_by_tx?: string | null;
 }
 
 interface TransactionUtxosResponse {
@@ -52,6 +62,34 @@ interface DelegationRow {
 interface WithdrawalRow {
   address: string;
   amount: string;
+}
+
+interface JsonQueryPanelProps {
+  title: string;
+  data: unknown;
+  isLoading: boolean;
+  error: unknown;
+}
+
+function JsonQueryPanel({ title, data, isLoading, error }: JsonQueryPanelProps) {
+  return (
+    <Panel title={title}>
+      <QueryState isLoading={isLoading} error={error}>
+        {Array.isArray(data) && data.length === 0 ? (
+          <p className="text-sm text-slate-500">No {title.toLowerCase()} recorded.</p>
+        ) : data === undefined || data === null ? (
+          <p className="text-sm text-slate-500">No data.</p>
+        ) : (
+          <details>
+            <summary className="cursor-pointer text-sm text-sky-400">Show response data</summary>
+            <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap break-all rounded border border-slate-800 bg-slate-950 p-3 text-xs text-slate-300">
+              {JSON.stringify(data, null, 2)}
+            </pre>
+          </details>
+        )}
+      </QueryState>
+    </Panel>
+  );
 }
 
 export default function TxDetail() {
@@ -131,6 +169,62 @@ export default function TxDetail() {
     enabled: Boolean(hash && tx && tx.withdrawal_count > 0),
   });
 
+  const confirmedTxEnabled = Boolean(hash && tx && !isPending);
+  const metadataQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "metadata"],
+    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/metadata`),
+    enabled: confirmedTxEnabled,
+    retry: false,
+  });
+  const metadataCborQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "metadata-cbor"],
+    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/metadata/cbor`),
+    enabled: confirmedTxEnabled,
+    retry: false,
+  });
+  const transactionCborQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "cbor"],
+    queryFn: () => blockfrostFetch<{ cbor: string }>(`/api/v0/txs/${hash}/cbor`),
+    enabled: confirmedTxEnabled,
+    retry: false,
+  });
+  const stakesQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "stakes"],
+    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/stakes`),
+    enabled: confirmedTxEnabled && (tx ? tx.stake_cert_count > 0 : false),
+    retry: false,
+  });
+  const mirsQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "mirs"],
+    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/mirs`),
+    enabled: confirmedTxEnabled && (tx ? tx.mir_cert_count > 0 : false),
+    retry: false,
+  });
+  const poolUpdatesQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "pool-updates"],
+    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/pool_updates`),
+    enabled: confirmedTxEnabled && (tx ? tx.pool_update_count > 0 : false),
+    retry: false,
+  });
+  const poolRetiresQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "pool-retires"],
+    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/pool_retires`),
+    enabled: confirmedTxEnabled && (tx ? tx.pool_retire_count > 0 : false),
+    retry: false,
+  });
+  const redeemersQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "redeemers"],
+    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/redeemers`),
+    enabled: confirmedTxEnabled && (tx ? tx.redeemer_count > 0 : false),
+    retry: false,
+  });
+  const requiredSignersQuery = useQuery({
+    queryKey: ["dingo", "tx", hash, "required-signers"],
+    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/required_signers`),
+    enabled: confirmedTxEnabled,
+    retry: false,
+  });
+
   if (isPending && pendingTx) {
     return (
       <div className="flex flex-col gap-4">
@@ -184,11 +278,22 @@ export default function TxDetail() {
               />
               <Field label="Fees" value={formatAda(BigInt(tx.fees))} />
               <Field label="Deposit" value={formatAda(BigInt(tx.deposit))} />
+              <Field label="Treasury donation" value={`${formatAda(BigInt(tx.treasury_donation))} ADA`} />
               <Field label="Size" value={`${tx.size} bytes`} />
+              <Field label="Slot" value={tx.slot} />
+              <Field label="Index in block" value={tx.index} />
               <Field
                 label="Valid"
                 value={tx.valid_contract ? "Yes" : "No (script failed)"}
               />
+              {tx.invalid_before && <Field label="Valid after slot" value={tx.invalid_before} />}
+              {tx.invalid_hereafter && <Field label="Valid through slot" value={tx.invalid_hereafter} />}
+              <Field label="Total output" value={<AdaAmount amount={tx.output_amount} />} />
+              <Field label="Mint/burn assets" value={tx.asset_mint_or_burn_count} />
+              <Field label="Redeemers" value={tx.redeemer_count} />
+              <Field label="Stake certificates" value={tx.stake_cert_count} />
+              <Field label="Pool updates / retirements" value={`${tx.pool_update_count} / ${tx.pool_retire_count}`} />
+              <Field label="MIR certificates" value={tx.mir_cert_count} />
             </div>
           )}
         </QueryState>
@@ -227,9 +332,20 @@ export default function TxDetail() {
                           </span>
                         )}
                       </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        Input {utxo.tx_hash}#{utxo.output_index}
+                      </div>
                       <div className="mt-1">
                         <AdaAmount amount={utxo.amount} />
                       </div>
+                      {(utxo.data_hash || utxo.inline_datum || utxo.reference_script_hash) && (
+                        <details className="mt-2 text-xs text-slate-500">
+                          <summary className="cursor-pointer">Datum and script references</summary>
+                          {utxo.data_hash && <p className="mt-1 break-all">Datum hash: {utxo.data_hash}</p>}
+                          {utxo.inline_datum && <p className="mt-1 break-all">Inline datum: {utxo.inline_datum}</p>}
+                          {utxo.reference_script_hash && <p className="mt-1 break-all">Reference script: {utxo.reference_script_hash}</p>}
+                        </details>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -245,9 +361,23 @@ export default function TxDetail() {
                       className="rounded border border-slate-800 p-2 text-sm"
                     >
                       <HashLink kind="address" id={utxo.address} visible={10} />
+                      <div className="mt-1 text-xs text-slate-500">Output #{utxo.output_index}</div>
                       <div className="mt-1">
                         <AdaAmount amount={utxo.amount} />
                       </div>
+                      {utxo.consumed_by_tx && (
+                        <p className="mt-1 text-xs text-slate-500">
+                          Spent by <HashLink kind="tx" id={utxo.consumed_by_tx} visible={10} />
+                        </p>
+                      )}
+                      {(utxo.data_hash || utxo.inline_datum || utxo.reference_script_hash) && (
+                        <details className="mt-2 text-xs text-slate-500">
+                          <summary className="cursor-pointer">Datum and script references</summary>
+                          {utxo.data_hash && <p className="mt-1 break-all">Datum hash: {utxo.data_hash}</p>}
+                          {utxo.inline_datum && <p className="mt-1 break-all">Inline datum: {utxo.inline_datum}</p>}
+                          {utxo.reference_script_hash && <p className="mt-1 break-all">Reference script: {utxo.reference_script_hash}</p>}
+                        </details>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -292,6 +422,20 @@ export default function TxDetail() {
             </ul>
           </QueryState>
         </Panel>
+      )}
+
+      {tx && tx.stake_cert_count > 0 && <JsonQueryPanel title="Stake certificates" data={stakesQuery.data} isLoading={stakesQuery.isLoading} error={stakesQuery.error} />}
+      {tx && tx.mir_cert_count > 0 && <JsonQueryPanel title="MIR certificates" data={mirsQuery.data} isLoading={mirsQuery.isLoading} error={mirsQuery.error} />}
+      {tx && tx.pool_update_count > 0 && <JsonQueryPanel title="Pool updates" data={poolUpdatesQuery.data} isLoading={poolUpdatesQuery.isLoading} error={poolUpdatesQuery.error} />}
+      {tx && tx.pool_retire_count > 0 && <JsonQueryPanel title="Pool retirements" data={poolRetiresQuery.data} isLoading={poolRetiresQuery.isLoading} error={poolRetiresQuery.error} />}
+      {tx && tx.redeemer_count > 0 && <JsonQueryPanel title="Redeemers" data={redeemersQuery.data} isLoading={redeemersQuery.isLoading} error={redeemersQuery.error} />}
+      {tx && (
+        <>
+          <JsonQueryPanel title="Transaction metadata" data={metadataQuery.data} isLoading={metadataQuery.isLoading} error={metadataQuery.error} />
+          <JsonQueryPanel title="Metadata CBOR" data={metadataCborQuery.data} isLoading={metadataCborQuery.isLoading} error={metadataCborQuery.error} />
+          <JsonQueryPanel title="Required signers" data={requiredSignersQuery.data} isLoading={requiredSignersQuery.isLoading} error={requiredSignersQuery.error} />
+          <JsonQueryPanel title="Transaction CBOR" data={transactionCborQuery.data?.cbor} isLoading={transactionCborQuery.isLoading} error={transactionCborQuery.error} />
+        </>
       )}
     </div>
   );

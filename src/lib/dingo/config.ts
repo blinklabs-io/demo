@@ -8,4 +8,7 @@ export const DINGO_CONFIG = {
   utxorpcUrl: (
     import.meta.env.VITE_DINGO_UTXORPC_URL || "http://127.0.0.1:9090"
   ).replace(/\/$/, ""),
+  meshUrl: (
+    import.meta.env.VITE_DINGO_MESH_URL || "http://127.0.0.1:8080"
+  ).replace(/\/$/, ""),
 };

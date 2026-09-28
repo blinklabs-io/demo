@@ -15,6 +15,8 @@ interface AccountResponse {
   controlled_amount: string;
   rewards_sum: string;
   withdrawals_sum: string;
+  reserves_sum: string;
+  treasury_sum: string;
   withdrawable_amount: string;
   pool_id: string | null;
   drep_id: string | null;
@@ -33,6 +35,20 @@ interface RewardHistoryRow {
   amount: string;
   pool_id: string;
   type: string;
+}
+
+interface RegistrationHistoryRow {
+  tx_hash: string;
+  action: string;
+  deposit: string;
+  tx_slot: number;
+  block_time: number;
+}
+
+interface AccountTransactionRow {
+  tx_hash: string;
+  block_height: number;
+  block_time: number;
 }
 
 interface WithdrawalRow {
@@ -90,6 +106,18 @@ export default function AccountDetail() {
               <Field
                 label="Rewards sum"
                 value={formatAda(BigInt(summaryQuery.data.rewards_sum))}
+              />
+              <Field
+                label="Withdrawals sum"
+                value={formatAda(BigInt(summaryQuery.data.withdrawals_sum))}
+              />
+              <Field
+                label="Reserves"
+                value={formatAda(BigInt(summaryQuery.data.reserves_sum))}
+              />
+              <Field
+                label="Treasury"
+                value={formatAda(BigInt(summaryQuery.data.treasury_sum))}
               />
               <Field
                 label="Withdrawable"
@@ -160,6 +188,23 @@ export default function AccountDetail() {
         />
       </Panel>
 
+      <Panel title="Registration history">
+        <PaginatedList<RegistrationHistoryRow>
+          queryKey={["dingo", "account", stakeAddress, "registrations"]}
+          buildUrl={(page, count) =>
+            `/api/v0/accounts/${stakeAddress}/registrations?page=${page}&count=${count}&order=desc`
+          }
+          keyFor={(row, index) => `${row.tx_hash}:${index}`}
+          emptyLabel="No registration history."
+          renderItem={(row) => (
+            <span>
+              {row.action} · deposit {formatAda(BigInt(row.deposit))} ADA · slot {row.tx_slot} ·{" "}
+              <HashLink kind="tx" id={row.tx_hash} visible={10} />
+            </span>
+          )}
+        />
+      </Panel>
+
       <Panel title="Withdrawals">
         <PaginatedList<WithdrawalRow>
           queryKey={["dingo", "account", stakeAddress, "withdrawals"]}
@@ -205,6 +250,23 @@ export default function AccountDetail() {
           emptyLabel="No associated addresses."
           renderItem={(row) => (
             <HashLink kind="address" id={row.address} visible={12} />
+          )}
+        />
+      </Panel>
+
+      <Panel title="Transactions">
+        <PaginatedList<AccountTransactionRow>
+          queryKey={["dingo", "account", stakeAddress, "transactions"]}
+          buildUrl={(page, count) =>
+            `/api/v0/accounts/${stakeAddress}/transactions?page=${page}&count=${count}&order=desc`
+          }
+          keyFor={(row) => row.tx_hash}
+          emptyLabel="No transactions for this stake account."
+          renderItem={(row) => (
+            <span>
+              <HashLink kind="tx" id={row.tx_hash} visible={12} /> · block {row.block_height} ·{" "}
+              {new Date(row.block_time * 1000).toLocaleString()}
+            </span>
           )}
         />
       </Panel>
