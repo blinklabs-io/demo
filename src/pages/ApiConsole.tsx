@@ -24,6 +24,14 @@ const BLOCKFROST_PRESETS: EndpointPreset[] = [
   { label: "Protocol parameters", path: "/api/v0/epochs/latest/parameters" },
   { label: "Network eras", path: "/api/v0/network/eras" },
   { label: "DReps", path: "/api/v0/governance/dreps?page=1&count=20&order_by=amount" },
+  { label: "Governance proposals", path: "/api/v0/governance/proposals?page=1&count=20&order=desc" },
+  { label: "Constitutional committee", path: "/api/v0/governance/committee" },
+  { label: "Committee votes", path: "/api/v0/governance/committee/votes?page=1&count=20&order=desc" },
+  { label: "Assets", path: "/api/v0/assets?page=1&count=20&order=desc" },
+  { label: "Scripts", path: "/api/v0/scripts?page=1&count=20&order=desc" },
+  { label: "Blockfrost mempool", path: "/api/v0/mempool?page=1&count=20&order=desc" },
+  { label: "Latest block transaction CBOR", path: "/api/v0/blocks/latest/txs/cbor?page=1&count=20" },
+  { label: "Retired pools", path: "/api/v0/pools/retired?page=1&count=20&order=desc" },
   { label: "Metadata label 674", path: "/api/v0/metadata/txs/labels/674?page=1&count=20" },
 ];
 

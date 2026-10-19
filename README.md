@@ -1,6 +1,6 @@
 # Dingo Demo
 
-A browser demo for the current Dingo node APIs. It combines a chain explorer,
+A browser demo for the Dingo v0.85.0 node APIs. It combines a chain explorer,
 CIP-30 wallet flows, and read-only API consoles in one app.
 
 ## Run it
@@ -51,3 +51,8 @@ node, so use a test network and connect a test wallet.
   filters
 - Wallet balance, send, pool delegation, and SundaeSwap V3 Preview order flows
 - Blockfrost-compatible GET console and read-only Mesh POST console
+- Governance proposals with deposits, lifecycle epochs, action descriptions,
+  and paginated votes showing whether each vote counts; constitutional committee
+  membership, authorization status, expiration epochs, and quorum
+- API console presets for governance proposals, committee votes, asset and script
+  catalogs, Blockfrost mempool, latest-block transaction CBOR, and retired pools

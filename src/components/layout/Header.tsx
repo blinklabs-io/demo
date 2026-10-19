@@ -35,6 +35,9 @@ export function Header() {
           <NavLink to="/wallet" className={navLinkClass}>
             Wallet
           </NavLink>
+          <NavLink to="/explorer/governance" className={navLinkClass}>
+            Governance
+          </NavLink>
           <NavLink to="/api" className={navLinkClass}>
             API
           </NavLink>
