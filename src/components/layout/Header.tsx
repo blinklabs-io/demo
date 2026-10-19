@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { Link, NavLink, useMatch } from "react-router";
 import { NodeHealthStrip } from "./NodeHealthStrip";
 import { GlobalLookup } from "./GlobalLookup";
 import { WalletConnectSummary } from "./WalletConnectSummary";
@@ -14,6 +14,9 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 export function Header() {
+  const isGovernance = Boolean(useMatch("/explorer/governance"));
+  const isProposal = Boolean(useMatch("/explorer/proposal/:id"));
+  const isGovernanceActive = isGovernance || isProposal;
   // Shares the query cache with NodeHealthStrip's own useNodeHealth() call
   // (same queryKey), so this doesn't add a second network request - it just
   // reads the error to drive the one global "Dingo unreachable" banner.
@@ -35,6 +38,13 @@ export function Header() {
           <NavLink to="/wallet" className={navLinkClass}>
             Wallet
           </NavLink>
+          <Link
+            to="/explorer/governance"
+            className={navLinkClass({ isActive: isGovernanceActive })}
+            aria-current={isGovernanceActive ? "page" : undefined}
+          >
+            Governance
+          </Link>
           <NavLink to="/api" className={navLinkClass}>
             API
           </NavLink>

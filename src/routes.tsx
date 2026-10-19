@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import ApiConsole from "./pages/ApiConsole";
 import NetworkDetail from "./pages/explorer/NetworkDetail";
 import MetadataLabel from "./pages/explorer/MetadataLabel";
+import Governance, { ProposalDetail } from "./pages/explorer/Governance";
 
 // This component is intentionally colocated with the route configuration.
 // eslint-disable-next-line react-refresh/only-export-components
@@ -55,6 +56,8 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/explorer" replace /> },
           { path: "explorer", element: <ExplorerOverview /> },
           { path: "explorer/network", element: <NetworkDetail /> },
+          { path: "explorer/governance", element: <Governance /> },
+          { path: "explorer/proposal/:id", element: <ProposalDetail /> },
           { path: "explorer/metadata/:label", element: <MetadataLabel /> },
           { path: "explorer/block/:id", element: <BlockDetail /> },
           { path: "explorer/tx/:hash", element: <TxDetail /> },

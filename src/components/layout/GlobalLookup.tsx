@@ -20,7 +20,7 @@ export function GlobalLookup() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex-1">
+    <form onSubmit={handleSubmit} className="min-w-56 flex-1">
       <input
         type="search"
         aria-label="Global lookup"
