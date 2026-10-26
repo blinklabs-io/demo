@@ -1,3 +1,4 @@
+import { eraNameFromProtocol } from "../../lib/dingo/networkNames";
 import { useQuery } from "@tanstack/react-query";
 import { readHeaderVersion } from "../../lib/dingo/blockHeader";
 
@@ -39,7 +40,7 @@ export function BlockHeaderVersion({
   return (
     <span
       className={`header-version ${query.data.minor === "69" ? "dingo-version" : ""}`}
-      title="Protocol version decoded from this block's header"
+      title={`${eraNameFromProtocol(Number(query.data.major))} · protocol version decoded from this block's header`}
     >
       {query.data.major}.{query.data.minor}
       {query.data.minor === "69" && <small>Dingo</small>}

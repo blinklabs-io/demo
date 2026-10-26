@@ -1,3 +1,4 @@
+import { eraNameFromProtocol } from "../../lib/dingo/networkNames";
 import { Metric, Gauge, PageIntro } from "../../components/explorer/Visuals";
 import { useNow } from "../../lib/useNow";
 import { useParams } from "react-router";
@@ -224,6 +225,10 @@ export default function EpochDetail() {
         <QueryState isLoading={paramsQuery.isLoading} error={paramsQuery.error}>
           {paramsQuery.data && (
             <div>
+              <Field
+                label="Era"
+                value={eraNameFromProtocol(paramsQuery.data.protocol_major_ver)}
+              />
               <Field
                 label="Protocol version"
                 value={`${paramsQuery.data.protocol_major_ver}.${paramsQuery.data.protocol_minor_ver}`}

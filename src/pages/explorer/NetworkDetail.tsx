@@ -1,3 +1,5 @@
+import { EraName } from "../../components/explorer/EraName";
+import { networkName } from "../../lib/dingo/networkNames";
 import { compactAda, ratio } from "../../lib/visualFormat";
 import { Distribution, Meter, Gauge } from "../../components/explorer/Visuals";
 import { useQuery } from "@tanstack/react-query";
@@ -103,12 +105,19 @@ export default function NetworkDetail() {
       <header className="network-heading">
         <div>
           <span className="eyebrow">The economics of the chain</span>
-          <h1>Network</h1>
+          <h1>
+            {genesis
+              ? `${networkName(genesis.network_magic)} network`
+              : "Network"}
+          </h1>
         </div>
         {genesis && (
-          <span className="network-id">
-            <span aria-hidden="true">◎</span> Network magic{" "}
-            <strong>{genesis.network_magic}</strong>
+          <span
+            className="network-id"
+            title={`Network magic ${genesis.network_magic}`}
+          >
+            <span aria-hidden="true">◎</span>
+            <strong>{networkName(genesis.network_magic)}</strong>
           </span>
         )}
       </header>
@@ -265,7 +274,9 @@ export default function NetworkDetail() {
                   <span>{String(index + 1).padStart(2, "0")}</span>
                   <i />
                 </div>
-                <h3>Era {index + 1}</h3>
+                <h3>
+                  <EraName epoch={era.start.epoch} />
+                </h3>
                 <time dateTime={new Date(era.start.time * 1000).toISOString()}>
                   {new Date(era.start.time * 1000).toLocaleDateString(
                     undefined,
