@@ -170,7 +170,8 @@ export default function DRepList() {
     return selected;
   }, [rows, search, kind, sort]);
   const loading =
-    query.isPending || query.hasNextPage || query.isFetchingNextPage;
+    !query.isError &&
+    (query.isPending || query.hasNextPage || query.isFetchingNextPage);
   const active = Boolean(
     search || filter !== "active" || kind !== "all" || sort !== "registration",
   );

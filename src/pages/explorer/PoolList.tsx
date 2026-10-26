@@ -121,7 +121,8 @@ function PoolDirectory() {
       });
   }, [pools, search, activity, saturation, sort]);
   const loading =
-    query.isPending || query.hasNextPage || query.isFetchingNextPage;
+    !query.isError &&
+    (query.isPending || query.hasNextPage || query.isFetchingNextPage);
   const active = Boolean(
     search || activity !== "all" || saturation !== "all" || sort !== "stake",
   );
@@ -307,7 +308,8 @@ function PoolTickerResults({ ticker }: { ticker: string }) {
     (pool) => pool.metadata?.ticker?.toUpperCase() === ticker,
   );
   const searching =
-    query.isPending || query.isFetchingNextPage || query.hasNextPage;
+    !query.isError &&
+    (query.isPending || query.isFetchingNextPage || query.hasNextPage);
   return (
     <div className="flex flex-col gap-4">
       <div className="page-intro">
@@ -324,9 +326,21 @@ function PoolTickerResults({ ticker }: { ticker: string }) {
       </div>
       <Panel title={`${matches.length} matching pools`}>
         {query.error && (
-          <p role="alert" className="text-sm text-red-400">
-            {query.error.message}
-          </p>
+          <div role="alert" className="mb-4 text-sm text-red-400">
+            <p>Directory incomplete: {query.error.message}</p>
+            <button
+              type="button"
+              className="mt-2 text-xs text-teal-300"
+              disabled={query.isFetching}
+              onClick={() =>
+                void (query.hasNextPage
+                  ? query.fetchNextPage()
+                  : query.refetch())
+              }
+            >
+              Retry directory
+            </button>
+          </div>
         )}
         {searching && (
           <p role="status" className="mb-5 text-xs text-slate-400">

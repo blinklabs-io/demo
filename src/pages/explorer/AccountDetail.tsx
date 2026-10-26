@@ -246,7 +246,7 @@ export default function AccountDetail() {
                 title="reward ADA (current page)"
                 items={[...rows].reverse().map((row) => ({
                   label: `Epoch ${row.epoch}`,
-                  value: Number(BigInt(row.amount) / 1_000_000n),
+                  value: Number(BigInt(row.amount)) / 1_000_000,
                 }))}
               />
             </div>

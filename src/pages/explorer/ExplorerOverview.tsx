@@ -1,6 +1,6 @@
 import { RecentHeaderVersions } from "../../components/explorer/RecentHeaderVersions";
 import { BlockHeaderVersion } from "../../components/explorer/BlockHeaderVersion";
-import { compactAda } from "../../lib/visualFormat";
+import { compactAda, epochProgress } from "../../lib/visualFormat";
 import { useState } from "react";
 import {
   BarChart,
@@ -115,12 +115,12 @@ export default function ExplorerOverview() {
   const average = intervals.length
     ? Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length)
     : null;
-  const progress =
-    latest && genesisQuery.data
-      ? (latest.epoch_slot / genesisQuery.data.epoch_length) * 100
-      : null;
+  const progress = epochProgress(
+    latest?.epoch_slot,
+    genesisQuery.data?.epoch_length,
+  );
   const txs = useQuery({
-    queryKey: ["dingo", "block", latest?.hash, "txs"],
+    queryKey: ["dingo", "block", latest?.hash, "txs", "latest-preview"],
     queryFn: () =>
       blockfrostFetch<string[]>(
         `/api/v0/blocks/${latest!.hash}/txs?count=8&order=desc`,

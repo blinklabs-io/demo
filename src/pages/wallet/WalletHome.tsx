@@ -142,7 +142,8 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
     [changeAddress, usedAddresses, addresses.data, groups, stakeAddress],
   );
   const total = groups.reduce((sum, group) => sum + group.lovelace, 0n);
-  const loadingUtxos = utxos.isPending || moreUtxos || fetchingUtxos;
+  const loadingUtxos =
+    !utxoError && (utxos.isPending || moreUtxos || fetchingUtxos);
   const visibleOutputs = outputs.slice((utxoPage - 1) * 12, utxoPage * 12);
   const visibleAddresses = walletAddresses.slice(
     (addressPage - 1) * 12,
@@ -193,9 +194,11 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
           label="Related addresses found"
           value={walletAddresses.length}
           detail={
-            moreAddresses
-              ? "Discovering associated addresses"
-              : "Wallet and Dingo address records"
+            addressError
+              ? "Address discovery incomplete"
+              : moreAddresses
+                ? "Discovering associated addresses"
+                : "Wallet and Dingo address records"
           }
         />
         <Metric
@@ -266,15 +269,29 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
             : "Wallet addresses"
         }
       >
-        {(addresses.isFetching || moreAddresses) && stakeAddress && (
-          <p className="directory-progress" role="status">
-            Discovering stake-linked addresses…
-          </p>
-        )}
+        {!addressError &&
+          (addresses.isFetching || moreAddresses) &&
+          stakeAddress && (
+            <p className="directory-progress" role="status">
+              Discovering stake-linked addresses…
+            </p>
+          )}
         {addresses.error && (
-          <p role="alert" className="mb-4 text-sm text-red-400">
-            {addresses.error.message}
-          </p>
+          <div role="alert" className="mb-4 text-sm text-red-400">
+            <p>Address discovery incomplete: {addresses.error.message}</p>
+            <button
+              type="button"
+              disabled={addresses.isFetching}
+              className="mt-2 text-xs text-teal-300"
+              onClick={() =>
+                void (moreAddresses
+                  ? addresses.fetchNextPage()
+                  : addresses.refetch())
+              }
+            >
+              Retry address discovery
+            </button>
+          </div>
         )}
         {groups.length > 1 && (
           <div className="mb-6">
@@ -349,9 +366,19 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
           </p>
         )}
         {utxos.error && (
-          <p role="alert" className="mb-4 text-sm text-red-400">
-            {utxos.error.message}
-          </p>
+          <div role="alert" className="mb-4 text-sm text-red-400">
+            <p>UTxO discovery incomplete: {utxos.error.message}</p>
+            <button
+              type="button"
+              disabled={utxos.isFetching}
+              className="mt-2 text-xs text-teal-300"
+              onClick={() =>
+                void (moreUtxos ? utxos.fetchNextPage() : utxos.refetch())
+              }
+            >
+              Retry UTxO discovery
+            </button>
+          </div>
         )}
         {utxos.isSuccess && !loadingUtxos && !outputs.length && (
           <div className="list-empty">
