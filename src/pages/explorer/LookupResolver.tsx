@@ -1,7 +1,10 @@
+import { EmptyState } from "../../components/explorer/Visuals";
+import { Panel } from "../../components/explorer/Panel";
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
+import { queryClient } from "../../lib/queryClient";
 import { useMempoolStore } from "../../stores/mempoolStore";
 
 type Resolution = { kind: "tx" | "block" | "asset" | "none" };
@@ -15,7 +18,14 @@ async function resolve(hash: string): Promise<Resolution> {
 
   for (const [kind, path] of candidates) {
     try {
-      await blockfrostFetch(path);
+      if (kind === "asset") {
+        await queryClient.fetchQuery({
+          queryKey: ["dingo", "asset", hash],
+          queryFn: () => blockfrostFetch(path),
+        });
+      } else {
+        await blockfrostFetch(path);
+      }
       return { kind };
     } catch (error) {
       if (!(error instanceof BlockfrostError) || error.status !== 404) {
@@ -29,6 +39,7 @@ async function resolve(hash: string): Promise<Resolution> {
 export default function LookupResolver() {
   const { hash: rawHash } = useParams();
   const hash = rawHash?.toLowerCase();
+  const valid = Boolean(hash && /^[0-9a-f]{64}$/.test(hash));
   const navigate = useNavigate();
   // A hash sitting in Dingo's live mempool is unambiguously a pending tx -
   // route straight there without spending a Blockfrost round-trip on it.
@@ -42,11 +53,11 @@ export default function LookupResolver() {
   const { data, error } = useQuery({
     queryKey: ["dingo", "lookup", hash],
     queryFn: () => resolve(hash!),
-    enabled: Boolean(hash) && !isPendingTx,
+    enabled: valid && !isPendingTx,
   });
 
   useEffect(() => {
-    if (!hash) return;
+    if (!hash || !valid) return;
     if (isPendingTx) {
       navigate(`/explorer/tx/${hash}`, { replace: true });
       return;
@@ -59,8 +70,18 @@ export default function LookupResolver() {
     } else if (data.kind === "asset") {
       navigate(`/explorer/asset/${hash}`, { replace: true });
     }
-  }, [data, hash, isPendingTx, navigate]);
+  }, [data, hash, valid, isPendingTx, navigate]);
 
+  if (!valid)
+    return (
+      <Panel>
+        <EmptyState
+          icon="⌕"
+          title="That hash does not look right."
+          detail="Transaction and block hashes contain 64 hexadecimal characters."
+        />
+      </Panel>
+    );
   if (error) {
     return (
       <p className="text-sm text-red-400">
@@ -70,10 +91,24 @@ export default function LookupResolver() {
   }
   if (data?.kind === "none") {
     return (
-      <p className="text-sm text-slate-500">
-        No transaction, block, or asset matches "{hash}".
-      </p>
+      <Panel>
+        <EmptyState
+          icon="⌕"
+          title="No matching record."
+          detail={`No transaction, block, or asset matches ${hash}.`}
+        />
+      </Panel>
     );
   }
-  return <p className="text-sm text-slate-500">Looking up {hash}…</p>;
+  return (
+    <Panel>
+      <div role="status">
+        <EmptyState
+          icon="⌕"
+          title="Searching the chain…"
+          detail="Checking transactions, blocks, and assets through Dingo."
+        />
+      </div>
+    </Panel>
+  );
 }

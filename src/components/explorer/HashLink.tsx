@@ -1,3 +1,4 @@
+import { PoolIdentity } from "./PoolIdentity";
 import { Link } from "react-router";
 import { shortenHash } from "../../lib/format";
 
@@ -24,9 +25,11 @@ export function HashLink({
   visible?: number;
   full?: boolean;
 }) {
+  if (kind === "pool") return <PoolIdentity poolId={id} compact />;
   return (
     <Link
       to={ROUTE[kind](id)}
+      title={id}
       className="font-mono text-sky-400 hover:text-sky-300 hover:underline"
     >
       {full ? id : shortenHash(id, visible)}

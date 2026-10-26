@@ -1,3 +1,6 @@
+import { PageIntro } from "../../components/explorer/Visuals";
+import { compactAda } from "../../lib/visualFormat";
+import { BarChart, Distribution } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
@@ -78,7 +81,12 @@ export default function AccountDetail() {
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 detail-showcase">
+      <PageIntro
+        eyebrow="Stake. Delegate. Earn."
+        title="Stake account"
+        symbol="◎"
+      />
       <Panel
         title={
           <>
@@ -93,56 +101,115 @@ export default function AccountDetail() {
         >
           {summaryQuery.data && (
             <div>
-              <Field label="Stake address" value={summaryQuery.data.stake_address} />
-              <Field
-                label="Registered"
-                value={summaryQuery.data.registered ? "Yes" : "No"}
+              <Distribution
+                title="Rewards"
+                unit={compactAda(
+                  BigInt(summaryQuery.data.withdrawable_amount) +
+                    BigInt(summaryQuery.data.withdrawals_sum),
+                )}
+                items={[
+                  {
+                    label: "Available rewards",
+                    value: BigInt(summaryQuery.data.withdrawable_amount),
+                    display: compactAda(summaryQuery.data.withdrawable_amount),
+                  },
+                  {
+                    label: "Withdrawn rewards",
+                    value: BigInt(summaryQuery.data.withdrawals_sum),
+                    display: compactAda(summaryQuery.data.withdrawals_sum),
+                  },
+                ]}
               />
-              <Field label="Active" value={summaryQuery.data.active ? "Yes" : "No"} />
-              <Field
-                label="Controlled amount"
-                value={formatAda(BigInt(summaryQuery.data.controlled_amount))}
-              />
-              <Field
-                label="Rewards sum"
-                value={formatAda(BigInt(summaryQuery.data.rewards_sum))}
-              />
-              <Field
-                label="Withdrawals sum"
-                value={formatAda(BigInt(summaryQuery.data.withdrawals_sum))}
-              />
-              <Field
-                label="Reserves"
-                value={formatAda(BigInt(summaryQuery.data.reserves_sum))}
-              />
-              <Field
-                label="Treasury"
-                value={formatAda(BigInt(summaryQuery.data.treasury_sum))}
-              />
-              <Field
-                label="Withdrawable"
-                value={formatAda(BigInt(summaryQuery.data.withdrawable_amount))}
-              />
-              <Field
-                label="Delegated pool"
-                value={
-                  summaryQuery.data.pool_id ? (
-                    <HashLink kind="pool" id={summaryQuery.data.pool_id} visible={10} />
+              <div className="account-delegation">
+                <div>
+                  <span className="eyebrow">Controlled stake</span>
+                  <strong>
+                    {compactAda(summaryQuery.data.controlled_amount)}
+                  </strong>
+                </div>
+                <div>
+                  <span className="eyebrow">Delegated to</span>
+                  {summaryQuery.data.pool_id ? (
+                    <HashLink kind="pool" id={summaryQuery.data.pool_id} />
                   ) : (
-                    "—"
-                  )
-                }
-              />
-              <Field
-                label="DRep"
-                value={
-                  summaryQuery.data.drep_id ? (
-                    <HashLink kind="drep" id={summaryQuery.data.drep_id} visible={10} />
-                  ) : (
-                    "—"
-                  )
-                }
-              />
+                    <span>Not delegated</span>
+                  )}
+                </div>
+              </div>
+              <details className="technical-details">
+                <summary>Account record & monetary values</summary>
+                <div className="record-grid">
+                  {" "}
+                  <Field
+                    label="Stake address"
+                    value={summaryQuery.data.stake_address}
+                  />
+                  <Field
+                    label="Registered"
+                    value={summaryQuery.data.registered ? "Yes" : "No"}
+                  />
+                  <Field
+                    label="Active"
+                    value={summaryQuery.data.active ? "Yes" : "No"}
+                  />
+                  <Field
+                    label="Controlled amount"
+                    value={formatAda(
+                      BigInt(summaryQuery.data.controlled_amount),
+                    )}
+                  />
+                  <Field
+                    label="Rewards sum"
+                    value={formatAda(BigInt(summaryQuery.data.rewards_sum))}
+                  />
+                  <Field
+                    label="Withdrawals sum"
+                    value={formatAda(BigInt(summaryQuery.data.withdrawals_sum))}
+                  />
+                  <Field
+                    label="Reserves"
+                    value={formatAda(BigInt(summaryQuery.data.reserves_sum))}
+                  />
+                  <Field
+                    label="Treasury"
+                    value={formatAda(BigInt(summaryQuery.data.treasury_sum))}
+                  />
+                  <Field
+                    label="Withdrawable"
+                    value={formatAda(
+                      BigInt(summaryQuery.data.withdrawable_amount),
+                    )}
+                  />
+                  <Field
+                    label="Delegated pool"
+                    value={
+                      summaryQuery.data.pool_id ? (
+                        <HashLink
+                          kind="pool"
+                          id={summaryQuery.data.pool_id}
+                          visible={10}
+                        />
+                      ) : (
+                        "—"
+                      )
+                    }
+                  />
+                  <Field
+                    label="DRep"
+                    value={
+                      summaryQuery.data.drep_id ? (
+                        <HashLink
+                          kind="drep"
+                          id={summaryQuery.data.drep_id}
+                          visible={10}
+                        />
+                      ) : (
+                        "—"
+                      )
+                    }
+                  />
+                </div>
+              </details>
             </div>
           )}
         </QueryState>
@@ -173,6 +240,17 @@ export default function AccountDetail() {
             `/api/v0/accounts/${stakeAddress}/rewards?page=${page}&count=${count}&order=desc`
           }
           keyFor={(row, index) => `${row.epoch}:${row.type}:${index}`}
+          visualize={(rows) => (
+            <div className="mb-6">
+              <BarChart
+                title="reward ADA (current page)"
+                items={[...rows].reverse().map((row) => ({
+                  label: `Epoch ${row.epoch}`,
+                  value: Number(BigInt(row.amount) / 1_000_000n),
+                }))}
+              />
+            </div>
+          )}
           emptyLabel="No reward history."
           renderItem={(row) => (
             <span>
@@ -188,71 +266,85 @@ export default function AccountDetail() {
         />
       </Panel>
 
-      <Panel title="Registration history">
-        <PaginatedList<RegistrationHistoryRow>
-          queryKey={["dingo", "account", stakeAddress, "registrations"]}
-          buildUrl={(page, count) =>
-            `/api/v0/accounts/${stakeAddress}/registrations?page=${page}&count=${count}&order=desc`
-          }
-          keyFor={(row, index) => `${row.tx_hash}:${index}`}
-          emptyLabel="No registration history."
-          renderItem={(row) => (
-            <span>
-              {row.action} · deposit {formatAda(BigInt(row.deposit))} ADA · slot {row.tx_slot} ·{" "}
-              <HashLink kind="tx" id={row.tx_hash} visible={10} />
-            </span>
-          )}
-        />
-      </Panel>
+      <details className="detail-disclosure">
+        <summary>Registration history</summary>
+        <Panel title="Registration history">
+          <PaginatedList<RegistrationHistoryRow>
+            queryKey={["dingo", "account", stakeAddress, "registrations"]}
+            buildUrl={(page, count) =>
+              `/api/v0/accounts/${stakeAddress}/registrations?page=${page}&count=${count}&order=desc`
+            }
+            keyFor={(row, index) => `${row.tx_hash}:${index}`}
+            emptyLabel="No registration history."
+            renderItem={(row) => (
+              <span>
+                {row.action} · deposit {formatAda(BigInt(row.deposit))} · slot{" "}
+                {row.tx_slot} ·{" "}
+                <HashLink kind="tx" id={row.tx_hash} visible={10} />
+              </span>
+            )}
+          />
+        </Panel>
+      </details>
 
-      <Panel title="Withdrawals">
-        <PaginatedList<WithdrawalRow>
-          queryKey={["dingo", "account", stakeAddress, "withdrawals"]}
-          buildUrl={(page, count) =>
-            `/api/v0/accounts/${stakeAddress}/withdrawals?page=${page}&count=${count}&order=desc`
-          }
-          keyFor={(row) => row.tx_hash}
-          emptyLabel="No withdrawals."
-          renderItem={(row) => (
-            <span>
-              {formatAda(BigInt(row.amount))} —{" "}
-              <HashLink kind="tx" id={row.tx_hash} visible={12} /> ·{" "}
-              {new Date(row.block_time * 1000).toLocaleString()}
-            </span>
-          )}
-        />
-      </Panel>
+      <details className="detail-disclosure">
+        <summary>Withdrawals</summary>
+        <Panel title="Withdrawals">
+          <PaginatedList<WithdrawalRow>
+            queryKey={["dingo", "account", stakeAddress, "withdrawals"]}
+            buildUrl={(page, count) =>
+              `/api/v0/accounts/${stakeAddress}/withdrawals?page=${page}&count=${count}&order=desc`
+            }
+            keyFor={(row) => row.tx_hash}
+            emptyLabel="No withdrawals."
+            renderItem={(row) => (
+              <span>
+                {formatAda(BigInt(row.amount))} —{" "}
+                <HashLink kind="tx" id={row.tx_hash} visible={12} /> ·{" "}
+                {new Date(row.block_time * 1000).toLocaleString()}
+              </span>
+            )}
+          />
+        </Panel>
+      </details>
 
-      <Panel title="UTxOs">
-        <PaginatedList<AccountUtxoRow>
-          queryKey={["dingo", "account", stakeAddress, "utxos"]}
-          buildUrl={(page, count) =>
-            `/api/v0/accounts/${stakeAddress}/utxos?page=${page}&count=${count}`
-          }
-          keyFor={(row) => `${row.tx_hash}:${row.output_index}`}
-          emptyLabel="No UTxOs delegating to this account."
-          renderItem={(row) => (
-            <span>
-              <HashLink kind="address" id={row.address} visible={10} /> ·{" "}
-              <HashLink kind="tx" id={row.tx_hash} visible={8} />#{row.output_index}
-            </span>
-          )}
-        />
-      </Panel>
+      <details className="detail-disclosure">
+        <summary>UTxOs</summary>
+        <Panel title="UTxOs">
+          <PaginatedList<AccountUtxoRow>
+            queryKey={["dingo", "account", stakeAddress, "utxos"]}
+            buildUrl={(page, count) =>
+              `/api/v0/accounts/${stakeAddress}/utxos?page=${page}&count=${count}`
+            }
+            keyFor={(row) => `${row.tx_hash}:${row.output_index}`}
+            emptyLabel="No UTxOs delegating to this account."
+            renderItem={(row) => (
+              <span>
+                <HashLink kind="address" id={row.address} visible={10} /> ·{" "}
+                <HashLink kind="tx" id={row.tx_hash} visible={8} />#
+                {row.output_index}
+              </span>
+            )}
+          />
+        </Panel>
+      </details>
 
-      <Panel title="Associated addresses">
-        <PaginatedList<AssociatedAddressRow>
-          queryKey={["dingo", "account", stakeAddress, "addresses"]}
-          buildUrl={(page, count) =>
-            `/api/v0/accounts/${stakeAddress}/addresses?page=${page}&count=${count}`
-          }
-          keyFor={(row) => row.address}
-          emptyLabel="No associated addresses."
-          renderItem={(row) => (
-            <HashLink kind="address" id={row.address} visible={12} />
-          )}
-        />
-      </Panel>
+      <details className="detail-disclosure">
+        <summary>Associated addresses</summary>
+        <Panel title="Associated addresses">
+          <PaginatedList<AssociatedAddressRow>
+            queryKey={["dingo", "account", stakeAddress, "addresses"]}
+            buildUrl={(page, count) =>
+              `/api/v0/accounts/${stakeAddress}/addresses?page=${page}&count=${count}`
+            }
+            keyFor={(row) => row.address}
+            emptyLabel="No associated addresses."
+            renderItem={(row) => (
+              <HashLink kind="address" id={row.address} visible={12} />
+            )}
+          />
+        </Panel>
+      </details>
 
       <Panel title="Transactions">
         <PaginatedList<AccountTransactionRow>
@@ -264,7 +356,8 @@ export default function AccountDetail() {
           emptyLabel="No transactions for this stake account."
           renderItem={(row) => (
             <span>
-              <HashLink kind="tx" id={row.tx_hash} visible={12} /> · block {row.block_height} ·{" "}
+              <HashLink kind="tx" id={row.tx_hash} visible={12} /> · block{" "}
+              {row.block_height} ·{" "}
               {new Date(row.block_time * 1000).toLocaleString()}
             </span>
           )}

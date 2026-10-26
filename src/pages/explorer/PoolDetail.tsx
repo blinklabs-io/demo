@@ -1,3 +1,5 @@
+import { PoolIdentity } from "../../components/explorer/PoolIdentity";
+import { Gauge, Metric, PageIntro } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
@@ -36,7 +38,8 @@ export default function PoolDetail() {
 
   const poolQuery = useQuery({
     queryKey: ["dingo", "pool", poolId],
-    queryFn: () => blockfrostFetch<PoolDetailResponse>(`/api/v0/pools/${poolId}`),
+    queryFn: () =>
+      blockfrostFetch<PoolDetailResponse>(`/api/v0/pools/${poolId}`),
     enabled: Boolean(poolId),
   });
 
@@ -49,11 +52,19 @@ export default function PoolDetail() {
 
   return (
     <div className="flex flex-col gap-4">
+      <PageIntro
+        eyebrow="The block makers"
+        title={metadataQuery.data?.name || "Stake pool"}
+        detail={metadataQuery.data?.description}
+        symbol="⬡"
+      />
       <Panel
         title={
-          metadataQuery.data?.ticker
-            ? `Pool [${metadataQuery.data.ticker}]`
-            : "Pool"
+          poolId ? (
+            <PoolIdentity poolId={poolId} metadata={metadataQuery.data} />
+          ) : (
+            "Stake pool"
+          )
         }
       >
         <QueryState
@@ -63,13 +74,28 @@ export default function PoolDetail() {
         >
           {poolQuery.data && (
             <div>
+              <div className="metric-grid">
+                <Metric
+                  label="Live stake"
+                  value={formatAda(BigInt(poolQuery.data.live_stake))}
+                />
+                <Metric
+                  label="Delegators"
+                  value={poolQuery.data.live_delegators.toLocaleString()}
+                />
+                <Metric
+                  label="Blocks minted"
+                  value={poolQuery.data.blocks_minted.toLocaleString()}
+                />
+              </div>
+              <div className="pool-instrument">
+                <Gauge
+                  label="Pool saturation"
+                  value={poolQuery.data.live_saturation * 100}
+                  detail="Share of saturation threshold"
+                />
+              </div>
               <Field label="Pool ID" value={poolQuery.data.pool_id} />
-              {metadataQuery.data?.name && (
-                <Field label="Name" value={metadataQuery.data.name} />
-              )}
-              {metadataQuery.data?.description && (
-                <Field label="Description" value={metadataQuery.data.description} />
-              )}
               {metadataQuery.data?.homepage && (
                 <Field
                   label="Homepage"
@@ -85,15 +111,7 @@ export default function PoolDetail() {
                   }
                 />
               )}
-              <Field
-                label="Live stake"
-                value={formatAda(BigInt(poolQuery.data.live_stake))}
-              />
-              <Field
-                label="Live saturation"
-                value={`${(poolQuery.data.live_saturation * 100).toFixed(2)}%`}
-              />
-              <Field label="Live delegators" value={poolQuery.data.live_delegators} />
+
               <Field
                 label="Active stake"
                 value={formatAda(BigInt(poolQuery.data.active_stake))}
@@ -106,8 +124,11 @@ export default function PoolDetail() {
                 label="Margin / fixed cost"
                 value={`${(poolQuery.data.margin_cost * 100).toFixed(2)}% + ${formatAda(BigInt(poolQuery.data.fixed_cost))}`}
               />
-              <Field label="Blocks minted (total)" value={poolQuery.data.blocks_minted} />
-              <Field label="Blocks this epoch" value={poolQuery.data.blocks_epoch} />
+
+              <Field
+                label="Blocks this epoch"
+                value={poolQuery.data.blocks_epoch}
+              />
               <Field
                 label="Reward account"
                 value={

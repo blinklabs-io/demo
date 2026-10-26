@@ -13,7 +13,12 @@ export function QueryState({
   children: ReactNode;
 }) {
   if (isLoading) {
-    return <p className="text-sm text-slate-500">Loading…</p>;
+    return (
+      <div role="status" aria-label="Loading data">
+        <div className="skeleton" />
+        <p className="mt-3 text-xs text-slate-400">Loading network data…</p>
+      </div>
+    );
   }
   if (error) {
     if (error instanceof BlockfrostError && error.status === 404) {

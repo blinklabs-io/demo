@@ -7,6 +7,7 @@ export function Pagination({
   onPageChange: (page: number) => void;
   hasNextPage: boolean;
 }) {
+  if (page === 1 && !hasNextPage) return null;
   return (
     <div className="mt-3 flex items-center justify-between text-sm">
       <button

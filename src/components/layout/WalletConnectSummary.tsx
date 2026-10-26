@@ -15,11 +15,6 @@ export function WalletConnectSummary() {
   );
   const connect = useWalletStore((state) => state.connect);
   const disconnect = useWalletStore((state) => state.disconnect);
-  const restoreConnection = useWalletStore((state) => state.restoreConnection);
-
-  useEffect(() => {
-    void restoreConnection();
-  }, [restoreConnection]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -45,9 +40,7 @@ export function WalletConnectSummary() {
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
           {walletName}
           {balanceLovelace !== null && (
-            <span className="text-slate-400">
-              {formatAda(balanceLovelace)}
-            </span>
+            <span className="text-slate-400">{formatAda(balanceLovelace)}</span>
           )}
         </button>
         {open && (

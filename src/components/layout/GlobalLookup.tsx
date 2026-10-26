@@ -29,14 +29,15 @@ export function GlobalLookup() {
           setQuery(event.target.value);
           setNotFound(false);
         }}
-        placeholder="Search block, tx, address, pool, DRep, epoch:123, metadata:123…"
+        placeholder="Search hashes, policy IDs, assets, pool tickers, $handle…"
         className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-slate-500 focus:outline-none"
       />
       {notFound && (
         <p className="mt-1 text-xs text-red-400">
-          Not recognized as a block, tx, address, account, asset, pool, DRep,
-          or metadata label. Use epoch:123, metadata:123, or drep: followed by
-          a credential hash for those lookups.
+          Enter a policy ID, asset ID, pool ticker, $handle, address, hash, or
+          block number. Use asset:ID to specify an asset, pool:8964 for a
+          numeric pool ticker, epoch:123 for an epoch, or metadata:123 for a
+          metadata label. Asset IDs accept policy.asset-name-hex notation.
         </p>
       )}
     </form>

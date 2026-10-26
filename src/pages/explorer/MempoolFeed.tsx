@@ -1,3 +1,4 @@
+import { Metric, PageIntro } from "../../components/explorer/Visuals";
 import { useMempoolStore } from "../../stores/mempoolStore";
 import { Panel } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
@@ -20,6 +21,12 @@ export default function MempoolFeed() {
 
   return (
     <div className="flex flex-col gap-4">
+      <PageIntro
+        eyebrow="Before the next block"
+        title="The waiting room."
+        detail="Live transaction arrivals, streamed directly from Dingo."
+        symbol="≋"
+      />
       <Panel
         title={
           <span className="flex items-center gap-2">
@@ -42,12 +49,20 @@ export default function MempoolFeed() {
           </span>
         }
       >
-        <p className="mb-3 text-xs text-slate-500">
-          Transactions Dingo has accepted into its mempool but not yet
-          included in a block, streamed live over UTxO RPC (
-          <code className="rounded bg-slate-800 px-1">WatchMempool</code>).
-          Dingo only reports raw transaction bytes here, so amounts below are
-          decoded in your browser, not read from Blockfrost.
+        <div className="metric-grid mb-6">
+          <Metric label="Pending transactions" value={sorted.length} />
+          <Metric
+            label="Total fees"
+            value={formatAda(sorted.reduce((sum, tx) => sum + tx.fee, 0n))}
+          />
+          <Metric
+            label="Live feed"
+            value={status === "live" ? "Connected" : "Connecting"}
+          />
+        </div>
+        <p className="mb-4 text-xs text-slate-400">
+          Transactions waiting to be included in a block. Updates arrive live
+          from Dingo.
         </p>
 
         {error && status === "error" && (
@@ -55,9 +70,22 @@ export default function MempoolFeed() {
         )}
 
         {status === "live" && sorted.length === 0 && !error && (
-          <p className="text-sm text-slate-500">
-            Mempool is empty right now.
-          </p>
+          <div className="mempool-radar-empty">
+            <div className="mempool-radar" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <span className="radar-sweep" />
+              <b>0</b>
+            </div>
+            <div>
+              <span className="eyebrow">Live feed connected</span>
+              <h2>Clear for the next block.</h2>
+              <p>
+                No transactions are waiting. New arrivals appear automatically.
+              </p>
+            </div>
+          </div>
         )}
 
         <ul className="flex flex-col gap-2">

@@ -1,4 +1,4 @@
-import { Link, NavLink, useMatch } from "react-router";
+import { Link, NavLink, useLocation } from "react-router";
 import { NodeHealthStrip } from "./NodeHealthStrip";
 import { GlobalLookup } from "./GlobalLookup";
 import { WalletConnectSummary } from "./WalletConnectSummary";
@@ -6,55 +6,83 @@ import { ConnectDingoBanner } from "./ConnectDingoBanner";
 import { useNodeHealth } from "../../lib/dingo/nodeHealth";
 import { BlockfrostError } from "../../lib/dingo/blockfrost";
 
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-md px-3 py-1.5 text-sm font-medium ${
-    isActive
-      ? "bg-slate-800 text-white"
-      : "text-slate-400 hover:text-slate-200"
-  }`;
+const links = [
+  ["/explorer", "Overview", "◫"],
+  ["/explorer/network", "Network", "◎"],
+  ["/explorer/epoch", "Epochs", "◷"],
+  ["/explorer/pools", "Stake pools", "◈"],
+  ["/explorer/dreps", "Representatives", "♧"],
+  ["/explorer/governance", "Governance", "⚑"],
+  ["/explorer/mempool", "Mempool", "≋"],
+  ["/wallet", "Wallet", "▣"],
+  ["/api", "API playground", "⌘"],
+];
 
 export function Header() {
-  const isGovernance = Boolean(useMatch("/explorer/governance"));
-  const isProposal = Boolean(useMatch("/explorer/proposal/:id"));
-  const isGovernanceActive = isGovernance || isProposal;
-  // Shares the query cache with NodeHealthStrip's own useNodeHealth() call
-  // (same queryKey), so this doesn't add a second network request - it just
-  // reads the error to drive the one global "Dingo unreachable" banner.
+  const { pathname } = useLocation();
   const { error } = useNodeHealth();
-
   return (
-    <header className="border-b border-slate-800 bg-slate-950">
-      <div className="flex items-center gap-4 px-4 py-2 text-xs">
-        <NodeHealthStrip />
-      </div>
-      <div className="flex flex-wrap items-center gap-3 border-t border-slate-900 px-4 py-3">
-        <span className="mr-2 text-lg font-semibold text-white">
-          Dingo Demo
-        </span>
-        <nav className="flex items-center gap-1">
-          <NavLink to="/explorer" className={navLinkClass}>
-            Explorer
-          </NavLink>
-          <NavLink to="/wallet" className={navLinkClass}>
-            Wallet
-          </NavLink>
-          <Link
-            to="/explorer/governance"
-            className={navLinkClass({ isActive: isGovernanceActive })}
-            aria-current={isGovernanceActive ? "page" : undefined}
-          >
-            Governance
-          </Link>
-          <NavLink to="/api" className={navLinkClass}>
-            API
-          </NavLink>
+    <>
+      <aside className="sidebar">
+        <NavLink to="/explorer" className="brand">
+          <span className="brand-mark" aria-hidden="true">
+            d
+          </span>
+          <span>
+            dingo<span className="brand-sub">NETWORK EXPLORER</span>
+          </span>
+        </NavLink>
+        <p className="nav-caption">WORKSPACE</p>
+        <nav aria-label="Main navigation">
+          {links.map(([to, label, icon]) =>
+            to === "/explorer/governance" ? (
+              <Link
+                key={to}
+                to={to}
+                className={`side-link ${pathname === to || pathname.startsWith("/explorer/proposal/") ? "selected" : ""}`}
+                aria-current={
+                  pathname === to || pathname.startsWith("/explorer/proposal/")
+                    ? "page"
+                    : undefined
+                }
+              >
+                <span className="nav-icon" aria-hidden="true">
+                  {icon}
+                </span>
+                {label}
+              </Link>
+            ) : (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/explorer"}
+                className={({ isActive }) =>
+                  `side-link ${isActive || (to === "/explorer/governance" && pathname.startsWith("/explorer/proposal/")) ? "selected" : ""}`
+                }
+              >
+                <span className="nav-icon" aria-hidden="true">
+                  {icon}
+                </span>
+                {label}
+              </NavLink>
+            ),
+          )}
         </nav>
+        <div className="sidebar-footer">
+          <span className="live-dot" /> Powered by Dingo
+          <p>Explore the chain. Follow the data.</p>
+        </div>
+      </aside>
+      <header className="workspace-header">
         <GlobalLookup />
         <WalletConnectSummary />
-      </div>
-      {error instanceof BlockfrostError && error.status === 0 && (
-        <ConnectDingoBanner error={error} />
-      )}
-    </header>
+        <div className="health-row">
+          <NodeHealthStrip />
+        </div>
+        {error instanceof BlockfrostError && error.status === 0 && (
+          <ConnectDingoBanner error={error} />
+        )}
+      </header>
+    </>
   );
 }

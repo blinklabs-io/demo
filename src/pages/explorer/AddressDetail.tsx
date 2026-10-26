@@ -1,10 +1,16 @@
+import { PageIntro } from "../../components/explorer/Visuals";
+import { BarChart, Metric } from "../../components/explorer/Visuals";
+import { compactAda } from "../../lib/visualFormat";
 import { useParams } from "react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
-import { AdaAmount, type AmountEntry } from "../../components/explorer/AdaAmount";
+import {
+  AdaAmount,
+  type AmountEntry,
+} from "../../components/explorer/AdaAmount";
 import { QueryState } from "../../components/explorer/QueryState";
 import { Pagination } from "../../components/explorer/Pagination";
 import { YoursBadge } from "../../components/explorer/YoursBadge";
@@ -49,7 +55,8 @@ function AddressDetailContent({ address }: { address?: string }) {
 
   const summaryQuery = useQuery({
     queryKey: ["dingo", "address", address],
-    queryFn: () => blockfrostFetch<AddressResponse>(`/api/v0/addresses/${address}`),
+    queryFn: () =>
+      blockfrostFetch<AddressResponse>(`/api/v0/addresses/${address}`),
     enabled: Boolean(address),
   });
 
@@ -72,7 +79,12 @@ function AddressDetailContent({ address }: { address?: string }) {
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 detail-showcase">
+      <PageIntro
+        eyebrow="An on-chain identity"
+        title="Address explorer"
+        symbol="⌘"
+      />
       <Panel
         title={
           <>
@@ -87,30 +99,58 @@ function AddressDetailContent({ address }: { address?: string }) {
         >
           {summaryQuery.data && (
             <div>
-              <Field label="Address" value={summaryQuery.data.address} />
-              <Field
-                label="Balance"
-                value={<AdaAmount amount={summaryQuery.data.amount} />}
-              />
-              <Field label="Type" value={summaryQuery.data.type} />
-              <Field
-                label="Script"
-                value={summaryQuery.data.script ? "Yes" : "No"}
-              />
-              <Field
-                label="Stake address"
-                value={
-                  summaryQuery.data.stake_address ? (
-                    <HashLink
-                      kind="account"
-                      id={summaryQuery.data.stake_address}
-                      visible={10}
-                    />
-                  ) : (
-                    "—"
-                  )
-                }
-              />
+              <div className="metric-grid mb-6">
+                <Metric
+                  label="ADA balance"
+                  value={compactAda(
+                    summaryQuery.data.amount.find(
+                      (amount) => amount.unit === "lovelace",
+                    )?.quantity ?? "0",
+                  )}
+                />
+                <Metric
+                  label="Native assets"
+                  value={
+                    summaryQuery.data.amount.filter(
+                      (amount) => amount.unit !== "lovelace",
+                    ).length
+                  }
+                />
+                <Metric
+                  label="Address type"
+                  value={summaryQuery.data.script ? "Script" : "Wallet"}
+                />
+              </div>
+              <details className="technical-details">
+                <summary>Address record & asset balances</summary>
+                <div className="record-grid">
+                  {" "}
+                  <Field label="Address" value={summaryQuery.data.address} />
+                  <Field
+                    label="Balance"
+                    value={<AdaAmount amount={summaryQuery.data.amount} />}
+                  />
+                  <Field label="Type" value={summaryQuery.data.type} />
+                  <Field
+                    label="Script"
+                    value={summaryQuery.data.script ? "Yes" : "No"}
+                  />
+                  <Field
+                    label="Stake address"
+                    value={
+                      summaryQuery.data.stake_address ? (
+                        <HashLink
+                          kind="account"
+                          id={summaryQuery.data.stake_address}
+                          visible={10}
+                        />
+                      ) : (
+                        "—"
+                      )
+                    }
+                  />
+                </div>
+              </details>
             </div>
           )}
         </QueryState>
@@ -120,6 +160,24 @@ function AddressDetailContent({ address }: { address?: string }) {
         <QueryState isLoading={utxosQuery.isLoading} error={utxosQuery.error}>
           {utxosQuery.data?.length === 0 && (
             <p className="text-sm text-slate-500">No unspent UTxOs.</p>
+          )}
+          {utxosQuery.data && utxosQuery.data.length > 0 && (
+            <div className="mb-6">
+              <BarChart
+                title="ADA per UTxO (current page)"
+                items={utxosQuery.data.map((utxo) => ({
+                  label: `#${utxo.output_index}`,
+                  value:
+                    Number(
+                      BigInt(
+                        utxo.amount.find((amount) => amount.unit === "lovelace")
+                          ?.quantity ?? "0",
+                      ),
+                    ) / 1_000_000,
+                  href: `/explorer/tx/${utxo.tx_hash}`,
+                }))}
+              />
+            </div>
           )}
           <ul className="flex flex-col gap-2">
             {utxosQuery.data?.map((utxo) => (
@@ -132,12 +190,28 @@ function AddressDetailContent({ address }: { address?: string }) {
                 <div className="mt-1">
                   <AdaAmount amount={utxo.amount} />
                 </div>
-                {(utxo.data_hash || utxo.inline_datum || utxo.reference_script_hash) && (
+                {(utxo.data_hash ||
+                  utxo.inline_datum ||
+                  utxo.reference_script_hash) && (
                   <details className="mt-2 text-xs text-slate-500">
-                    <summary className="cursor-pointer">Datum and script references</summary>
-                    {utxo.data_hash && <p className="mt-1 break-all">Datum hash: {utxo.data_hash}</p>}
-                    {utxo.inline_datum && <p className="mt-1 break-all">Inline datum: {utxo.inline_datum}</p>}
-                    {utxo.reference_script_hash && <p className="mt-1 break-all">Reference script: {utxo.reference_script_hash}</p>}
+                    <summary className="cursor-pointer">
+                      Datum and script references
+                    </summary>
+                    {utxo.data_hash && (
+                      <p className="mt-1 break-all">
+                        Datum hash: {utxo.data_hash}
+                      </p>
+                    )}
+                    {utxo.inline_datum && (
+                      <p className="mt-1 break-all">
+                        Inline datum: {utxo.inline_datum}
+                      </p>
+                    )}
+                    {utxo.reference_script_hash && (
+                      <p className="mt-1 break-all">
+                        Reference script: {utxo.reference_script_hash}
+                      </p>
+                    )}
                   </details>
                 )}
               </li>
@@ -156,7 +230,7 @@ function AddressDetailContent({ address }: { address?: string }) {
           {txsQuery.data?.length === 0 && (
             <p className="text-sm text-slate-500">No transactions yet.</p>
           )}
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="activity-list address-timeline">
             {txsQuery.data?.map((tx) => (
               <li key={tx.tx_hash} className="flex items-center gap-2">
                 <HashLink kind="tx" id={tx.tx_hash} visible={12} />
