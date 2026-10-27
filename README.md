@@ -64,8 +64,7 @@ node, so use a test network and connect a test wallet.
 The explorer includes transaction and block-size charts, ADA supply breakdowns,
 reward and holder charts, and timelines for eras, blocks, and governance actions.
 Charts link to the underlying records and expose values on keyboard focus.
-Pool identities use registered tickers and names, with artwork from published
-extended metadata when available.
+Pool identities use registered tickers and names with locally rendered initials.
 
 Recent blocks and block details show the protocol version decoded from the
 block header bytes returned by UTxO RPC. A minor version of 69 displays the
