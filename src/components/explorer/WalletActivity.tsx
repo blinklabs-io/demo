@@ -120,111 +120,111 @@ export function WalletActivity({
           </QueryState>
         </Panel>
       )}
-      {stakeAddress && (
-        <Panel title="Rewards per epoch">
-          <QueryState isLoading={rewards.isLoading} error={rewards.error}>
-            {rewards.isSuccess &&
-              (rewardPoints.length ? (
-                <>
-                  <BarChart
-                    title="Reward ADA"
-                    items={rewardPoints.map(([epoch, amount]) => ({
-                      label: `Epoch ${epoch}`,
-                      value: Number(amount) / 1_000_000,
-                      href: `/explorer/epoch/${epoch}`,
-                    }))}
-                  />
-                  <p className="mt-3 text-xs text-slate-500">
-                    Latest 12 rewarded epochs in the 100 most recent reward
-                    records. Rewards earned, including amounts already
-                    withdrawn.
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-slate-400">
-                  No reward records returned for this stake account.
-                </p>
-              ))}
-          </QueryState>
-        </Panel>
-      )}
-      <Panel title="Balance over time">
-        <p className="mb-3 text-sm text-slate-400">
-          Compare the last six completed epoch balances with the current
-          balance. Each historical snapshot uses the epoch’s final block.
-          Unwithdrawn staking rewards are excluded.
-        </p>
-        <form
-          className="wallet-history-controls"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setRequestedAddress(historyAddress || addresses[0]);
-          }}
-        >
-          <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
-            Address
-            <span className="history-address-picker">
-              <select
-                aria-label="Balance history address"
-                value={historyAddress || addresses[0] || ""}
-                onChange={(event) => setHistoryAddress(event.target.value)}
-                className="min-w-0 rounded border border-slate-700 p-2"
-              >
-                {addresses.map((address) => (
-                  <option key={address} value={address}>
-                    {address}
-                  </option>
-                ))}
-              </select>
-              {addresses.length > 0 && (
-                <CopyButton value={historyAddress || addresses[0]} />
-              )}
-            </span>
-          </label>
-          <button
-            className="rounded border border-slate-700 px-4 py-2 text-sm disabled:opacity-40"
-            disabled={!addresses.length || history.isFetching}
-          >
-            Load address history
-          </button>
-        </form>
-        <p className="mt-2 text-xs text-slate-500">
-          Loaded on request; no historical balance scans run in the background.
-          This chart covers the selected address.
-        </p>
-        {requestedAddress &&
-          requestedAddress === (historyAddress || addresses[0]) && (
-            <div className="mt-4">
-              <QueryState isLoading={history.isLoading} error={history.error}>
-                {history.data && (
+      <div className="wallet-performance-grid">
+        {stakeAddress && (
+          <Panel title="Rewards per epoch">
+            <QueryState isLoading={rewards.isLoading} error={rewards.error}>
+              {rewards.isSuccess &&
+                (rewardPoints.length ? (
                   <>
-                    <PriceChart
-                      points={history.data.points}
-                      label="Address ADA balance by epoch"
-                      timeScale="date"
+                    <BarChart
+                      title="Reward ADA"
+                      items={rewardPoints.map(([epoch, amount]) => ({
+                        label: `Epoch ${epoch}`,
+                        value: Number(amount) / 1_000_000,
+                        href: `/explorer/epoch/${epoch}`,
+                      }))}
                     />
-                    {history.data.unavailableEpochs.length > 0 && (
-                      <p role="status" className="mt-3 text-xs text-amber-200">
-                        Dingo has no historical block data for epochs{" "}
-                        {history.data.unavailableEpochs.join(", ")}. Those
-                        epochs are omitted; no balance is inferred.
-                      </p>
-                    )}
+                    <p className="mt-3 text-xs text-slate-500">
+                      Latest 12 rewarded epochs in the 100 most recent reward
+                      records. Rewards earned, including amounts already
+                      withdrawn.
+                    </p>
                   </>
-                )}
-              </QueryState>
-              {history.isError && (
-                <button
-                  className="mt-2 text-xs text-teal-300"
-                  type="button"
-                  onClick={() => void history.refetch()}
+                ) : (
+                  <p className="text-sm text-slate-400">
+                    No reward records returned for this stake account.
+                  </p>
+                ))}
+            </QueryState>
+          </Panel>
+        )}
+        <Panel title="Balance over time">
+          <p className="mb-3 text-sm text-slate-400">
+            ADA at each epoch’s close, plus the current balance. Unwithdrawn
+            staking rewards excluded.
+          </p>
+          <form
+            className="wallet-history-controls"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setRequestedAddress(historyAddress || addresses[0]);
+            }}
+          >
+            <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
+              Address
+              <span className="history-address-picker">
+                <select
+                  aria-label="Balance history address"
+                  value={historyAddress || addresses[0] || ""}
+                  onChange={(event) => setHistoryAddress(event.target.value)}
+                  className="min-w-0 rounded border border-slate-700 p-2"
                 >
-                  Retry address history
-                </button>
-              )}
-            </div>
-          )}
-      </Panel>
+                  {addresses.map((address) => (
+                    <option key={address} value={address}>
+                      {address}
+                    </option>
+                  ))}
+                </select>
+                {addresses.length > 0 && (
+                  <CopyButton value={historyAddress || addresses[0]} />
+                )}
+              </span>
+            </label>
+            <button
+              className="rounded border border-slate-700 px-4 py-2 text-sm disabled:opacity-40"
+              disabled={!addresses.length || history.isFetching}
+            >
+              Load address history
+            </button>
+          </form>
+          {requestedAddress &&
+            requestedAddress === (historyAddress || addresses[0]) && (
+              <div className="mt-4">
+                <QueryState isLoading={history.isLoading} error={history.error}>
+                  {history.data && (
+                    <>
+                      <PriceChart
+                        points={history.data.points}
+                        label="Address ADA balance by epoch"
+                        timeScale="date"
+                      />
+                      {history.data.unavailableEpochs.length > 0 && (
+                        <p
+                          role="status"
+                          className="mt-3 text-xs text-amber-200"
+                        >
+                          Epoch-end snapshots unavailable for epochs{" "}
+                          {history.data.unavailableEpochs.join(", ")}. These
+                          points are omitted; no balance is inferred.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </QueryState>
+                {history.isError && (
+                  <button
+                    className="mt-2 text-xs text-teal-300"
+                    type="button"
+                    onClick={() => void history.refetch()}
+                  >
+                    Retry address history
+                  </button>
+                )}
+              </div>
+            )}
+        </Panel>
+      </div>
     </>
   );
 }

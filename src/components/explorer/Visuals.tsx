@@ -13,7 +13,9 @@ export function Metric({
   detail?: ReactNode;
 }) {
   return (
-    <div className="metric">
+    <div
+      className={`metric${typeof value === "string" && value.length > 12 ? " metric-wide" : ""}`}
+    >
       <span className="eyebrow">{label}</span>
       <strong>{value}</strong>
       {detail && <span className="metric-detail">{detail}</span>}

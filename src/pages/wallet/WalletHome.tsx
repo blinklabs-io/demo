@@ -318,8 +318,7 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
                       ? "Wallet address"
                       : "Stake-linked address"}
                 </span>
-                <HashLink kind="address" id={address} visible={12} />
-                <div>
+                <div className="wallet-address-balance">
                   <strong>
                     {group
                       ? formatAda(group.lovelace)
@@ -337,6 +336,7 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
                         : ""}
                   </span>
                 </div>
+                <HashLink kind="address" id={address} />
               </div>
             );
           })}
@@ -386,17 +386,23 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
         <div className="wallet-utxo-grid">
           {visibleOutputs.map((utxo) => (
             <article
-              className="wallet-address-card"
+              className="wallet-utxo-card"
               key={`${utxo.tx_hash}#${utxo.output_index}`}
             >
-              <span className="eyebrow">Output #{utxo.output_index}</span>
-              <HashLink kind="tx" id={utxo.tx_hash} visible={12} />
-              <AdaAmount amount={utxo.amount} />
-              <HashLink
-                kind="address"
-                id={utxo.address ?? changeAddress}
-                visible={10}
-              />
+              <div className="wallet-utxo-heading">
+                <span className="wallet-output-index">
+                  <span aria-hidden="true">◇</span> Output #{utxo.output_index}
+                </span>
+                <AdaAmount amount={utxo.amount} />
+              </div>
+              <div className="wallet-output-reference">
+                <span>Transaction</span>
+                <HashLink kind="tx" id={utxo.tx_hash} full />
+              </div>
+              <div className="wallet-output-reference">
+                <span>Address</span>
+                <HashLink kind="address" id={utxo.address ?? changeAddress} />
+              </div>
             </article>
           ))}
         </div>

@@ -391,7 +391,7 @@ export default function TxDetail() {
                   <small>Outputs</small>
                 </div>
               </div>
-              <div className="tx-ledger grid gap-4 sm:grid-cols-2">
+              <div className="tx-ledger">
                 <div>
                   <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
                     Inputs
@@ -402,6 +402,9 @@ export default function TxDetail() {
                         key={`${utxo.tx_hash}:${utxo.output_index}:${index}`}
                         className="rounded border border-slate-800 p-2 text-sm"
                       >
+                        <div className="tx-utxo-balance">
+                          <AdaAmount amount={utxo.amount} />
+                        </div>
                         <div className="flex items-center gap-2">
                           <HashLink
                             kind="address"
@@ -429,9 +432,6 @@ export default function TxDetail() {
                           Input{" "}
                           <HashLink kind="tx" id={utxo.tx_hash} visible={8} />#
                           {utxo.output_index}
-                        </div>
-                        <div className="mt-1">
-                          <AdaAmount amount={utxo.amount} />
                         </div>
                         {(utxo.data_hash ||
                           utxo.inline_datum ||
@@ -471,6 +471,9 @@ export default function TxDetail() {
                         key={utxo.output_index}
                         className="rounded border border-slate-800 p-2 text-sm"
                       >
+                        <div className="tx-utxo-balance">
+                          <AdaAmount amount={utxo.amount} />
+                        </div>
                         <HashLink
                           kind="address"
                           id={utxo.address}
@@ -478,9 +481,6 @@ export default function TxDetail() {
                         />
                         <div className="mt-1 text-xs text-slate-500">
                           Output #{utxo.output_index}
-                        </div>
-                        <div className="mt-1">
-                          <AdaAmount amount={utxo.amount} />
                         </div>
                         {utxo.consumed_by_tx && (
                           <p className="mt-1 text-xs text-slate-500">

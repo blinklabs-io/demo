@@ -101,13 +101,16 @@ function PolicyAssets({ policyId }: { policyId: string }) {
           <span className="text-xs text-slate-400">
             Filter this page by asset name or ID
           </span>
-          <input
-            type="search"
-            aria-label="Filter policy assets on this page"
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-            placeholder="Asset name or hex…"
-          />
+          <span className="directory-search-field">
+            <span aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              aria-label="Filter policy assets on this page"
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+              placeholder="Asset name or hex…"
+            />
+          </span>
         </label>
         <QueryState
           isLoading={assets.isLoading}

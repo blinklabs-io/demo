@@ -223,7 +223,7 @@ export function ProposalDetail() {
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 detail-showcase">
       <Link
         to="/explorer/governance"
         className="text-sm text-sky-400 hover:underline"

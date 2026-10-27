@@ -29,7 +29,9 @@ export function HashLink({
   if (kind === "pool") return <PoolIdentity poolId={id} compact />;
   if (kind === "address" || kind === "account")
     return (
-      <span className="address-identifier">
+      <span
+        className={`address-identifier${full ? " address-identifier-full" : ""}`}
+      >
         <Link
           to={ROUTE[kind](id)}
           title={id}
@@ -46,7 +48,13 @@ export function HashLink({
       title={id}
       className="font-mono text-sky-400 hover:text-sky-300 hover:underline"
     >
-      {full ? id : shortenHash(id, visible)}
+      {kind === "drep" && id === "drep_always_abstain"
+        ? "Always abstain"
+        : kind === "drep" && id === "drep_always_no_confidence"
+          ? "Always no confidence"
+          : full
+            ? id
+            : shortenHash(id, visible)}
     </Link>
   );
 }

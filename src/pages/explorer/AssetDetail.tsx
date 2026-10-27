@@ -145,9 +145,11 @@ export default function AssetDetail() {
           }
           emptyLabel="No holders."
           renderItem={(row) => (
-            <span>
-              <HashLink kind="address" id={row.address} visible={12} /> —{" "}
-              {row.quantity}
+            <span className="holding-row">
+              <HashLink kind="address" id={row.address} />
+              <strong className="holding-quantity">
+                {BigInt(row.quantity).toLocaleString()}
+              </strong>
             </span>
           )}
         />

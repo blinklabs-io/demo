@@ -51,7 +51,7 @@ export default function PoolDetail() {
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 detail-showcase">
       <PageIntro
         eyebrow="The block makers"
         title={metadataQuery.data?.name || "Stake pool"}
@@ -74,26 +74,28 @@ export default function PoolDetail() {
         >
           {poolQuery.data && (
             <div>
-              <div className="metric-grid">
-                <Metric
-                  label="Live stake"
-                  value={formatAda(BigInt(poolQuery.data.live_stake))}
-                />
-                <Metric
-                  label="Delegators"
-                  value={poolQuery.data.live_delegators.toLocaleString()}
-                />
-                <Metric
-                  label="Blocks minted"
-                  value={poolQuery.data.blocks_minted.toLocaleString()}
-                />
-              </div>
-              <div className="pool-instrument">
-                <Gauge
-                  label="Pool saturation"
-                  value={poolQuery.data.live_saturation * 100}
-                  detail="Share of saturation threshold"
-                />
+              <div className="pool-overview">
+                <div className="metric-grid">
+                  <Metric
+                    label="Live stake"
+                    value={formatAda(BigInt(poolQuery.data.live_stake))}
+                  />
+                  <Metric
+                    label="Delegators"
+                    value={poolQuery.data.live_delegators.toLocaleString()}
+                  />
+                  <Metric
+                    label="Blocks minted"
+                    value={poolQuery.data.blocks_minted.toLocaleString()}
+                  />
+                </div>
+                <div className="pool-instrument">
+                  <Gauge
+                    label="Pool saturation"
+                    value={poolQuery.data.live_saturation * 100}
+                    detail="Share of saturation threshold"
+                  />
+                </div>
               </div>
               <Field label="Pool ID" value={poolQuery.data.pool_id} />
               {metadataQuery.data?.homepage && (

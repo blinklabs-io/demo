@@ -78,9 +78,21 @@ function DRepCard({ row }: { row: DRepDirectoryRow }) {
             href={safeMetadataUrl(row.metadataUrl)}
             target="_blank"
             rel="noreferrer"
-            className="ml-2 text-xs text-sky-500 hover:text-sky-300"
+            className="drep-anchor"
+            aria-label="View CIP-119 metadata"
+            title="View CIP-119 metadata"
           >
-            CIP-119 anchor
+            <svg
+              aria-hidden="true"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path d="M14 3h7v7M21 3 10 14M10 3H3v18h18v-7" />
+            </svg>
           </a>
         )}
       </span>
