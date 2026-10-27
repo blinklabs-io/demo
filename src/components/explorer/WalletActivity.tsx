@@ -4,7 +4,7 @@ import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { readEpochBalanceHistory } from "../../lib/dingo/balanceHistory";
 import { formatAda } from "../../lib/format";
 import { Panel } from "./Panel";
-import { HashLink } from "./HashLink";
+import { CopyButton } from "./CopyButton";
 import { PoolIdentity } from "./PoolIdentity";
 import { PriceChart } from "./PriceChart";
 import { QueryState } from "./QueryState";
@@ -163,18 +163,23 @@ export function WalletActivity({
         >
           <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
             Address
-            <select
-              aria-label="Balance history address"
-              value={historyAddress || addresses[0] || ""}
-              onChange={(event) => setHistoryAddress(event.target.value)}
-              className="min-w-0 rounded border border-slate-700 p-2"
-            >
-              {addresses.map((address) => (
-                <option key={address} value={address}>
-                  {address.slice(0, 18)}…{address.slice(-10)}
-                </option>
-              ))}
-            </select>
+            <span className="history-address-picker">
+              <select
+                aria-label="Balance history address"
+                value={historyAddress || addresses[0] || ""}
+                onChange={(event) => setHistoryAddress(event.target.value)}
+                className="min-w-0 rounded border border-slate-700 p-2"
+              >
+                {addresses.map((address) => (
+                  <option key={address} value={address}>
+                    {address}
+                  </option>
+                ))}
+              </select>
+              {addresses.length > 0 && (
+                <CopyButton value={historyAddress || addresses[0]} />
+              )}
+            </span>
           </label>
           <button
             className="rounded border border-slate-700 px-4 py-2 text-sm disabled:opacity-40"
@@ -183,11 +188,6 @@ export function WalletActivity({
             Load address history
           </button>
         </form>
-        {addresses.length > 0 && (
-          <div className="mt-3">
-            <HashLink kind="address" id={historyAddress || addresses[0]} full />
-          </div>
-        )}
         <p className="mt-2 text-xs text-slate-500">
           Loaded on request; no historical balance scans run in the background.
           This chart covers the selected address.

@@ -131,16 +131,6 @@ function AddressDetailContent({ address }: { address?: string }) {
                 <div className="record-grid">
                   {" "}
                   <Field
-                    label="Address"
-                    value={
-                      <HashLink
-                        kind="address"
-                        id={summaryQuery.data.address}
-                        full
-                      />
-                    }
-                  />
-                  <Field
                     label="Balance"
                     value={<AdaAmount amount={summaryQuery.data.amount} />}
                   />

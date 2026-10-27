@@ -3695,7 +3695,7 @@ summary {
   flex-wrap: wrap;
 }
 .wallet-history-controls label {
-  flex: 1;
+  flex: 1 1 100%;
 }
 @media (max-width: 700px) {
   .wallet-staked-pool {
@@ -3876,8 +3876,8 @@ summary {
   flex: none;
   color: #80dac4;
   font-size: 10px;
-  padding: 3px 7px;
-  line-height: 1.5;
+  padding: 6px;
+  line-height: 1;
   border: 1px solid #365950;
   border-radius: 5px;
   white-space: nowrap;
@@ -3885,4 +3885,17 @@ summary {
 .copy-identifier:hover {
   border-color: #65d8bd;
   background: #15362f;
+}
+
+.history-address-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.history-address-picker select {
+  width: 100%;
+  min-width: 0;
+  font-family: monospace;
+  font-size: 12px;
 }
