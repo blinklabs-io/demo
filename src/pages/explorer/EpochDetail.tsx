@@ -1,5 +1,10 @@
 import { eraNameFromProtocol } from "../../lib/dingo/networkNames";
-import { Metric, Gauge, PageIntro } from "../../components/explorer/Visuals";
+import {
+  Metric,
+  Gauge,
+  PageIntro,
+  EmptyState,
+} from "../../components/explorer/Visuals";
 import { useNow } from "../../lib/useNow";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -39,6 +44,11 @@ interface ProtocolParamsResponse {
 
 export default function EpochDetail() {
   const { epoch } = useParams();
+  const invalidEpoch =
+    epoch !== undefined &&
+    (!/^\d+$/.test(epoch) ||
+      !Number.isSafeInteger(Number(epoch)) ||
+      Number(epoch) < 0);
   const now = useNow(15_000);
   const path = epoch
     ? `/api/v0/epochs/${epoch}/parameters`
@@ -51,6 +61,7 @@ export default function EpochDetail() {
         "/api/v0/blocks/latest",
       ),
     refetchInterval: 30_000,
+    enabled: !invalidEpoch,
   });
   const erasQuery = useQuery({
     queryKey: ["dingo", "network", "eras"],
@@ -63,6 +74,7 @@ export default function EpochDetail() {
         }[]
       >("/api/v0/network/eras"),
     staleTime: 60_000,
+    enabled: !invalidEpoch,
   });
   const selectedEpoch = epoch ? Number(epoch) : tipQuery.data?.epoch;
   const era = erasQuery.data?.find(
@@ -94,6 +106,7 @@ export default function EpochDetail() {
     queryFn: () =>
       blockfrostFetch<EpochResponse>(`/api/v0/epochs/${selectedEpoch}`),
     enabled:
+      !invalidEpoch &&
       selectedEpoch !== undefined &&
       Number.isSafeInteger(selectedEpoch) &&
       selectedEpoch >= 0,
@@ -104,7 +117,19 @@ export default function EpochDetail() {
   const paramsQuery = useQuery({
     queryKey: ["dingo", "epoch", epoch ?? "latest", "parameters"],
     queryFn: () => blockfrostFetch<ProtocolParamsResponse>(path),
+    enabled: !invalidEpoch,
   });
+
+  if (invalidEpoch)
+    return (
+      <Panel title="Epoch">
+        <EmptyState
+          icon="◷"
+          title="Epoch not found."
+          detail="Enter a non-negative whole epoch number."
+        />
+      </Panel>
+    );
 
   return (
     <div className="flex flex-col gap-4">

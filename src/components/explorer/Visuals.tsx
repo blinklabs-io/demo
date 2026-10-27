@@ -14,7 +14,7 @@ export function Metric({
 }) {
   return (
     <div
-      className={`metric${typeof value === "string" && value.length > 12 ? " metric-wide" : ""}`}
+      className={`metric${(typeof value === "string" || typeof value === "number" || typeof value === "bigint") && String(value).length > 10 ? " metric-wide" : ""}`}
     >
       <span className="eyebrow">{label}</span>
       <strong>{value}</strong>

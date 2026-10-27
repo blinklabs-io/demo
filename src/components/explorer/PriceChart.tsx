@@ -84,9 +84,9 @@ export function PriceChart({
             strokeWidth="3"
             strokeLinejoin="round"
           />
-          {valid.map((point) => (
+          {valid.map((point, index) => (
             <circle
-              key={point.time}
+              key={`${point.time}:${index}`}
               cx={x(point.time)}
               cy={y(point.value)}
               r={valid.length === 1 ? 5 : 3}

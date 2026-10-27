@@ -100,15 +100,16 @@ export default function NetworkDetail() {
       ]
     : [];
 
+  const name = genesis ? networkName(genesis.network_magic) : "Network";
   return (
     <div className="network-dashboard">
       <header className="network-heading">
         <div>
           <span className="eyebrow">The economics of the chain</span>
           <h1>
-            {genesis
-              ? `${networkName(genesis.network_magic)} network`
-              : "Network"}
+            {name === "Preview" || name === "Preprod"
+              ? `${name} network`
+              : name}
           </h1>
         </div>
         {genesis && (
