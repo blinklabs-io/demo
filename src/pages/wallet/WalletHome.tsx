@@ -34,7 +34,6 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
   const rewardAddress = useWalletStore((state) => state.rewardAddress);
   const balance = useWalletStore((state) => state.balanceLovelace);
   const walletApi = useWalletStore((state) => state.walletApi);
-  const connectionId = useWalletStore((state) => state.connectionId);
   const stakeAddress = rewardAddress ?? stakeAddressFor(changeAddress);
   const [utxoPage, setUtxoPage] = useState(1);
   const [addressPage, setAddressPage] = useState(1);
@@ -257,7 +256,6 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
         stakeAddress={rewardAddress}
         delegatedPool={account.data?.pool_id}
         walletApi={walletApi}
-        connectionId={connectionId}
       />
       <Panel
         title={

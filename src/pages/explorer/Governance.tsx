@@ -1,3 +1,4 @@
+import { ProposalVoting } from "../../components/explorer/ProposalVoting";
 import {
   Timeline,
   Metric,
@@ -235,7 +236,16 @@ export function ProposalDetail() {
         title="A proposal for the network."
         symbol="§"
       />
-      <Panel title="Governance proposal">
+      <Panel
+        title="Governance proposal"
+        action={
+          proposal.data && (
+            <a href="#drep-vote" className="text-xs text-teal-300">
+              DRep voting ↓
+            </a>
+          )
+        }
+      >
         <QueryState
           isLoading={proposal.isLoading}
           error={proposal.error}
@@ -336,6 +346,7 @@ export function ProposalDetail() {
           )}
         </QueryState>
       </Panel>
+      {proposal.data && <ProposalVoting proposal={proposal.data} />}
       {proposal.data && (
         <Panel title="Votes">
           <PaginatedList<ProposalVote>

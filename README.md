@@ -50,6 +50,8 @@ node, so use a test network and connect a test wallet.
 - CIP-119 DRep names and anchor links, plus active, retired, and expired DRep
   filters
 - Wallet balance, send, pool delegation, and SundaeSwap V3 Preview order flows
+- DRep Yes, No, and Abstain votes from governance action pages, with fee review,
+  CIP-95 wallet signing, and submission through Dingo
 - Blockfrost-compatible GET console and read-only Mesh POST console
 - Governance proposals with deposits, lifecycle epochs, action descriptions,
   and paginated votes showing whether each vote counts; constitutional committee

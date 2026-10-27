@@ -1,7 +1,8 @@
+import { Link } from "react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
-import { drepIdForPublicKey } from "../../lib/dingo/wallet";
+import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import { useWalletDRep } from "../../lib/dingo/useWalletDRep";
 import type { Cip30WalletApi } from "../../lib/dingo/cip30";
 import { Panel } from "./Panel";
 import { HashLink } from "./HashLink";
@@ -11,23 +12,15 @@ interface OwnerRecord {
   pool_id: string;
   owners: string[];
 }
-interface DRepRole {
-  drep_id: string;
-  active: boolean;
-  retired: boolean;
-  expired: boolean;
-}
 
 export function WalletRoles({
   stakeAddress,
   delegatedPool,
   walletApi,
-  connectionId,
 }: {
   stakeAddress: string | null;
   delegatedPool?: string | null;
   walletApi: Cip30WalletApi | null;
-  connectionId: number;
 }) {
   const [poolInput, setPoolInput] = useState("");
   const [requestedPool, setRequestedPool] = useState<string | null>(null);
@@ -41,26 +34,7 @@ export function WalletRoles({
     retry: false,
   });
   const isOwner = ownership.data?.owners.includes(stakeAddress!);
-  const selfDrep = useQuery({
-    queryKey: ["dingo", "wallet", "drep-role", connectionId],
-    enabled: Boolean(walletApi?.cip95),
-    queryFn: async ({ signal }) => {
-      const key = await walletApi!.cip95!.getPubDRepKey();
-      const id = drepIdForPublicKey(key);
-      try {
-        return await blockfrostFetch<DRepRole>(
-          `/api/v0/governance/dreps/${id}`,
-          { signal },
-        );
-      } catch (error) {
-        if (error instanceof BlockfrostError && error.status === 404)
-          return null;
-        throw error;
-      }
-    },
-    staleTime: 60_000,
-    retry: false,
-  });
+  const selfDrep = useWalletDRep();
   return (
     <Panel title="Your roles on chain">
       <div className="wallet-role-grid">
@@ -155,6 +129,14 @@ export function WalletRoles({
                           : "Registered DRep"}
                   </span>
                   <HashLink kind="drep" id={selfDrep.data.drep_id} />
+                  {!selfDrep.data.retired && (
+                    <Link
+                      to="/explorer/governance"
+                      className="text-sm text-teal-300"
+                    >
+                      Vote on governance actions →
+                    </Link>
+                  )}
                 </>
               ) : (
                 selfDrep.isSuccess && (
