@@ -5,7 +5,12 @@ export function PriceChart({
   label,
   timeScale = "time",
 }: {
-  points: Array<{ time: number; value: number; label?: string }>;
+  points: Array<{
+    time: number;
+    value: number;
+    label?: string;
+    displayValue?: string;
+  }>;
   label: string;
   timeScale?: "time" | "date";
 }) {
@@ -89,7 +94,8 @@ export function PriceChart({
           >
             <title>
               {point.label ? `${point.label} · ` : ""}
-              {new Date(point.time).toLocaleString()}: {number(point.value)}
+              {new Date(point.time).toLocaleString()}:{" "}
+              {point.displayValue ?? number(point.value)}
             </title>
           </circle>
         ))}

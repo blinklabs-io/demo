@@ -1,6 +1,7 @@
+import { HashLink } from "../explorer/HashLink";
 import { useEffect, useRef, useState } from "react";
 import { useWalletStore } from "../../stores/walletStore";
-import { formatAda, shortenHash } from "../../lib/format";
+import { formatAda } from "../../lib/format";
 
 export function WalletConnectSummary() {
   const [open, setOpen] = useState(false);
@@ -47,7 +48,7 @@ export function WalletConnectSummary() {
           <div className="absolute right-0 z-10 mt-2 w-64 rounded-md border border-slate-700 bg-slate-900 p-3 text-sm shadow-lg">
             <p className="text-slate-400">Change address</p>
             <p className="mt-1 break-all text-slate-200">
-              {shortenHash(changeAddress, 12)}
+              <HashLink kind="address" id={changeAddress} full />
             </p>
             <button
               type="button"

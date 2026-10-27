@@ -252,9 +252,6 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
         stakeAddress={account.data ? stakeAddress : undefined}
         poolId={account.data?.pool_id}
         addresses={walletAddresses}
-        addressesComplete={
-          !moreAddresses && !addresses.isFetching && !addresses.isError
-        }
       />
       <WalletRoles
         stakeAddress={rewardAddress}

@@ -85,6 +85,11 @@ function AddressDetailContent({ address }: { address?: string }) {
         title="Address explorer"
         symbol="⌘"
       />
+      {address && (
+        <div className="rounded-xl border border-slate-700 p-4">
+          <HashLink kind="address" id={address} full />
+        </div>
+      )}
       <Panel
         title={
           <>
@@ -125,7 +130,16 @@ function AddressDetailContent({ address }: { address?: string }) {
                 <summary>Address record & asset balances</summary>
                 <div className="record-grid">
                   {" "}
-                  <Field label="Address" value={summaryQuery.data.address} />
+                  <Field
+                    label="Address"
+                    value={
+                      <HashLink
+                        kind="address"
+                        id={summaryQuery.data.address}
+                        full
+                      />
+                    }
+                  />
                   <Field
                     label="Balance"
                     value={<AdaAmount amount={summaryQuery.data.amount} />}
