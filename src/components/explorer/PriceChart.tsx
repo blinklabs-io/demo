@@ -3,21 +3,31 @@ import { useId } from "react";
 export function PriceChart({
   points,
   label,
+  timeScale = "time",
 }: {
-  points: Array<{ time: number; value: number }>;
+  points: Array<{ time: number; value: number; label?: string }>;
   label: string;
+  timeScale?: "time" | "date";
 }) {
   const id = useId().replace(/:/g, "");
   const valid = points.filter((point) => Number.isFinite(point.value));
   if (!valid.length)
     return (
       <div className="price-chart-empty">
-        Waiting for the first pool observation…
+        Waiting for the first observation…
       </div>
     );
   const low = Math.min(...valid.map((point) => point.value));
   const high = Math.max(...valid.map((point) => point.value));
   const spread = high - low || Math.abs(high) * 0.02 || 1;
+  const tickLabel = (time: number) =>
+    timeScale === "date"
+      ? new Date(time).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : new Date(time).toLocaleTimeString();
   const first = valid[0].time;
   const last = valid.at(-1)!.time;
   const x = (time: number) =>
@@ -78,6 +88,7 @@ export function PriceChart({
             tabIndex={0}
           >
             <title>
+              {point.label ? `${point.label} · ` : ""}
               {new Date(point.time).toLocaleString()}: {number(point.value)}
             </title>
           </circle>
@@ -88,17 +99,25 @@ export function PriceChart({
         <text x="560" y="175" fill="#9db3bf" fontSize="11">
           {number(low)}
         </text>
-        <text x="50" y="212" fill="#9db3bf" fontSize="11">
-          {new Date(first).toLocaleTimeString()}
-        </text>
-        <text x="550" y="212" textAnchor="end" fill="#9db3bf" fontSize="11">
-          {new Date(last).toLocaleTimeString()}
-        </text>
+        {timeScale === "time" && (
+          <>
+            <text x="50" y="212" fill="#9db3bf" fontSize="11">
+              {tickLabel(first)}
+            </text>
+            <text x="550" y="212" textAnchor="end" fill="#9db3bf" fontSize="11">
+              {tickLabel(last)}
+            </text>
+          </>
+        )}
       </svg>
+      {timeScale === "date" && (
+        <div className="flex justify-between gap-2 text-xs text-slate-400">
+          <span>{tickLabel(first)}</span>
+          <span>{tickLabel(last)}</span>
+        </div>
+      )}
       {valid.length === 1 && (
-        <figcaption>
-          First observation recorded. The chart grows as Dingo refreshes.
-        </figcaption>
+        <figcaption>One observation available.</figcaption>
       )}
     </figure>
   );

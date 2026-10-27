@@ -27,10 +27,6 @@ interface Reward {
   pool_id: string;
   type: string;
 }
-interface Transaction {
-  block_height: number;
-  block_time: number;
-}
 interface BalanceResponse {
   block_identifier: { index: number; hash: string };
   balances: Array<{
@@ -78,31 +74,48 @@ export function WalletActivity({
     );
   const rewardPoints = [...epochRewards].sort(([a], [b]) => a - b).slice(-12);
   const history = useQuery({
-    queryKey: ["dingo", "wallet", "address-balance-history", requestedAddress],
+    queryKey: ["dingo", "wallet", "epoch-balance-history", requestedAddress],
     enabled: Boolean(requestedAddress),
     staleTime: 300_000,
     retry: false,
     queryFn: async ({ signal }) => {
-      const transactions = await blockfrostFetch<Transaction[]>(
-        `/api/v0/addresses/${requestedAddress}/transactions?count=12&order=desc`,
-        { signal },
-      );
       const latest = await blockfrostFetch<{
         height: number;
         time: number;
         hash: string;
+        epoch: number;
       }>("/api/v0/blocks/latest", { signal });
-      const samples = [
-        ...new Map(
-          [
-            { block_height: latest.height, block_time: latest.time },
-            ...transactions,
-          ].map((row) => [row.block_height, row]),
-        ).values(),
-      ]
-        .slice(0, 6)
-        .reverse();
-      const points: Array<{ time: number; value: number }> = [];
+      const samples: Array<{
+        height: number;
+        time: number;
+        hash: string;
+        epoch: number;
+      }> = [];
+      for (
+        let epoch = Math.max(0, latest.epoch - 6);
+        epoch < latest.epoch;
+        epoch++
+      ) {
+        const hashes = await blockfrostFetch<string[]>(
+          `/api/v0/epochs/${epoch}/blocks?count=1&order=desc`,
+          { signal },
+        );
+        if (!hashes.length)
+          throw new Error(
+            `Dingo returned no closing block for epoch ${epoch}.`,
+          );
+        const block = await blockfrostFetch<{
+          height: number;
+          time: number;
+          hash: string;
+          epoch: number;
+        }>(`/api/v0/blocks/${hashes[0]}`, { signal });
+        if (block.hash !== hashes[0] || block.epoch !== epoch)
+          throw new Error("Dingo returned a different epoch's closing block.");
+        samples.push(block);
+      }
+      samples.push(latest);
+      const points: Array<{ time: number; value: number; label: string }> = [];
       for (const sample of samples) {
         const response = await fetch(
           `${DINGO_CONFIG.meshUrl}/account/balance`,
@@ -113,7 +126,7 @@ export function WalletActivity({
             body: JSON.stringify({
               network_identifier: { blockchain: "cardano", network: "preview" },
               account_identifier: { address: requestedAddress },
-              block_identifier: { index: sample.block_height },
+              block_identifier: { index: sample.height, hash: sample.hash },
             }),
           },
         );
@@ -122,16 +135,21 @@ export function WalletActivity({
             `Dingo could not load historical balance (${response.status}).`,
           );
         const result = (await response.json()) as BalanceResponse;
-        if (result.block_identifier.index !== sample.block_height)
+        if (
+          result.block_identifier.index !== sample.height ||
+          result.block_identifier.hash !== sample.hash
+        )
           throw new Error("Dingo returned a different historical block.");
         const ada = result.balances.find(
           (balance) =>
             balance.currency.symbol === "ADA" &&
             balance.currency.decimals === 6,
         );
-        if (!ada) throw new Error("Dingo did not return an ADA historical balance.");
+        if (!ada)
+          throw new Error("Dingo did not return an ADA historical balance.");
         points.push({
-          time: sample.block_time * 1000,
+          time: sample.time * 1000,
+          label: `Epoch ${sample.epoch}${sample.hash === latest.hash ? " · current" : " · close"}`,
           value: Number(BigInt(ada.value)) / 1_000_000,
         });
       }
@@ -216,9 +234,9 @@ export function WalletActivity({
       )}
       <Panel title="Balance over time">
         <p className="mb-3 text-sm text-slate-400">
-          Inspect an address at up to six recent transaction blocks, including
-          the current tip. Historical UTxO balances exclude unwithdrawn staking
-          rewards.
+          Compare the last six completed epoch balances with the current
+          balance. Each historical snapshot uses the epoch’s final block.
+          Unwithdrawn staking rewards are excluded.
         </p>
         <form
           className="wallet-history-controls"
@@ -262,7 +280,8 @@ export function WalletActivity({
                 {history.data && (
                   <PriceChart
                     points={history.data}
-                    label="Address ADA balance at sampled blocks"
+                    label="Address ADA balance by epoch"
+                    timeScale="date"
                   />
                 )}
               </QueryState>

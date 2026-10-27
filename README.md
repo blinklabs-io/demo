@@ -88,7 +88,8 @@ The wallet portfolio groups addresses and UTxOs by their stake credential and
 shows staking rewards, delegation, and the delegated pool's owner record. Shared
 stake credentials do not establish control of the corresponding payment keys.
 Other pool ownership checks and historical address-balance charts run only on
-request. Wallets exposing CIP-95 can also show their DRep registration.
+request. Balance history compares six completed epoch-end snapshots with the
+current balance and uses calendar dates on its axis. Wallets exposing CIP-95 can also show their DRep registration.
 
 The swap view identifies SundaeSwap V3 on Preview, the selected liquidity pool,
 and the order contracts. Quotes show estimated and minimum received amounts,
