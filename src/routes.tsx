@@ -28,6 +28,7 @@ import NotFound from "./pages/NotFound";
 import ApiConsole from "./pages/ApiConsole";
 import NetworkDetail from "./pages/explorer/NetworkDetail";
 import MetadataLabel from "./pages/explorer/MetadataLabel";
+import Surveys, { SurveyCreate, SurveyDetail } from "./pages/explorer/Surveys";
 import Governance, { ProposalDetail } from "./pages/explorer/Governance";
 
 // This component is intentionally colocated with the route configuration.
@@ -58,6 +59,9 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/explorer" replace /> },
           { path: "explorer", element: <ExplorerOverview /> },
           { path: "explorer/network", element: <NetworkDetail /> },
+          { path: "explorer/surveys", element: <Surveys /> },
+          { path: "explorer/surveys/new", element: <SurveyCreate /> },
+          { path: "explorer/surveys/:hash/:index", element: <SurveyDetail /> },
           { path: "explorer/governance", element: <Governance /> },
           { path: "explorer/proposal/:id", element: <ProposalDetail /> },
           { path: "explorer/metadata/:label", element: <MetadataLabel /> },

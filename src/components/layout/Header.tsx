@@ -12,6 +12,7 @@ const links = [
   ["/explorer/epoch", "Epochs", "◷"],
   ["/explorer/pools", "Stake pools", "◈"],
   ["/explorer/dreps", "Representatives", "♧"],
+  ["/explorer/surveys", "Surveys", "◉"],
   ["/explorer/governance", "Governance", "⚑"],
   ["/explorer/mempool", "Mempool", "≋"],
   ["/wallet", "Wallet", "▣"],

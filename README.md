@@ -106,3 +106,26 @@ point and an interactive crosshair. History is cached for six hours and repeated
 samples reuse the same transaction output. These are reserve snapshots, not
 trade candles. Submitting an order is
 separate from its execution by a scooper.
+
+## On-chain surveys
+
+The Surveys section creates, discovers, answers, and cancels public CIP-179
+version 5 surveys on Preview. It supports the six built-in question types and
+keyholder credentials, with required-signer proof verified from transaction
+CBOR. Results validate question constraints and the inclusive epoch cutoff,
+keep the latest valid response per credential in chain order, and exclude all
+responses to a verified creator cancellation. Display aggregation is stated
+beside each result; it is not ADA weighting or a count of unique people.
+
+The app includes a parser for the Cardano Foundation free-text schema from
+[its canonical source](https://github.com/cardano-foundation/state-of-the-developer-ecosystem/blob/main/survey/cip179/free-text.schema.json).
+The schema is pinned to its verified BLAKE2b-256 hash, which must match the survey's anchor before use. Other
+custom schemas, sealed surveys, external presentation documents, and roles that
+require historical ledger membership snapshots are not supported. Runtime
+survey reads and transaction submission use only Dingo APIs.
+
+Discovery pages through metadata label 17. Tallying filters those metadata
+records by survey reference before reading matching transaction CBOR and
+inclusion data, reuses immutable reads, and limits concurrent verifications.
+Publishing, responding, and cancelling each require an explicit transaction
+review and wallet signature; public metadata is permanent.
