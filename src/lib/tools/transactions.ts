@@ -118,11 +118,15 @@ async function timing() {
 }
 function policyExpiry(
   script: Core.Cardano.NativeScript,
-  key: string,
+  allowedKeys: Set<string>,
+  policyKeys: Set<string>,
 ): number | undefined {
   if (script.kind === Core.Cardano.NativeScriptKind.RequireSignature) {
-    if (script.keyHash !== key)
-      throw new Error("This policy requires another signing key.");
+    if (!allowedKeys.has(script.keyHash))
+      throw new Error(
+        "This policy requires a signing key outside the connected wallet.",
+      );
+    policyKeys.add(script.keyHash);
     return;
   }
   if (script.kind === Core.Cardano.NativeScriptKind.RequireTimeBefore)
@@ -136,7 +140,7 @@ function policyExpiry(
     )
       throw new Error("Policy must require this wallet’s signature.");
     const deadlines = script.scripts
-      .map((s) => policyExpiry(s, key))
+      .map((s) => policyExpiry(s, allowedKeys, policyKeys))
       .filter((s): s is number => s !== undefined);
     return deadlines.length ? Math.min(...deadlines) : undefined;
   }
@@ -160,6 +164,7 @@ export async function prepareToolTransaction(
   let policyId: string | undefined;
   let drepKey: string | undefined;
   const ownedOutputs = await walletOutputs(api);
+  const policySigningKeys = new Set<string>();
   let selected: Core.TransactionUnspentOutput[] | undefined;
   const exactPayments: {
     address: string;
@@ -314,7 +319,25 @@ export async function prepareToolTransaction(
           "The connected wallet does not hold enough of this asset.",
         );
     }
-    const deadline = policyExpiry(native.toCore(), who.key);
+    const allowedPolicyKeys = new Set<string>([who.key]);
+    if (action.kind === "burn") {
+      for (const raw of await api.getUsedAddresses()) {
+        const address = Core.Address.fromBytes(Core.HexBlob(raw));
+        const payment = address.getProps().paymentPart;
+        if (
+          address.getNetworkId() === 0 &&
+          payment?.type === Core.Cardano.CredentialType.KeyHash
+        )
+          allowedPolicyKeys.add(payment.hash);
+      }
+    }
+    const deadline = policyExpiry(
+      native.toCore(),
+      allowedPolicyKeys,
+      policySigningKeys,
+    );
+    if (!policySigningKeys.size)
+      throw new Error("Policy must require a wallet payment signature.");
     if (deadline !== undefined) {
       if (deadline <= slot)
         throw new Error(
@@ -466,7 +489,7 @@ export async function prepareToolTransaction(
         "Consolidation changed its selected inputs or destination.",
       );
   }
-  const inputSigningKeys = new Set<string>([who.key]);
+  const inputSigningKeys = new Set<string>([who.key, ...policySigningKeys]);
   const ownedById = new Map(ownedOutputs.map((u) => [inputId(u), u]));
   for (const input of tx.body().inputs().values()) {
     const source = ownedById.get(`${input.transactionId()}#${input.index()}`);
