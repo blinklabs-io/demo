@@ -1,11 +1,22 @@
+import { EraName } from "../../components/explorer/EraName";
+import { networkName } from "../../lib/dingo/networkNames";
+import { compactAda, ratio } from "../../lib/visualFormat";
+import { Distribution, Meter, Gauge } from "../../components/explorer/Visuals";
 import { useQuery } from "@tanstack/react-query";
-import { Panel, Field } from "../../components/explorer/Panel";
+import { Field } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { formatAda } from "../../lib/format";
 
 interface NetworkResponse {
-  supply: { max: string; total: string; circulating: string; locked: string; treasury: string; reserves: string };
+  supply: {
+    max: string;
+    total: string;
+    circulating: string;
+    locked: string;
+    treasury: string;
+    reserves: string;
+  };
   stake: { live: string; active: string };
 }
 
@@ -35,7 +46,7 @@ interface NetworkEraResponse {
 }
 
 function ada(value: string): string {
-  return `${formatAda(BigInt(value))} ADA`;
+  return `${formatAda(BigInt(value))}`;
 }
 
 function date(value: number): string {
@@ -55,74 +66,313 @@ export default function NetworkDetail() {
   });
   const erasQuery = useQuery({
     queryKey: ["dingo", "network", "eras"],
-    queryFn: () => blockfrostFetch<NetworkEraResponse[]>("/api/v0/network/eras"),
+    queryFn: () =>
+      blockfrostFetch<NetworkEraResponse[]>("/api/v0/network/eras"),
     staleTime: Infinity,
   });
 
+  const network = networkQuery.data;
+  const genesis = genesisQuery.data;
+  const eras = erasQuery.data;
+  const currentTiming = eras?.at(-1);
+  const supplyItems = network
+    ? [
+        {
+          label: "Circulating",
+          value: BigInt(network.supply.circulating),
+          display: compactAda(network.supply.circulating),
+        },
+        {
+          label: "Treasury",
+          value: BigInt(network.supply.treasury),
+          display: compactAda(network.supply.treasury),
+        },
+        {
+          label: "Reserves",
+          value: BigInt(network.supply.reserves),
+          display: compactAda(network.supply.reserves),
+        },
+        {
+          label: "Locked",
+          value: BigInt(network.supply.locked),
+          display: compactAda(network.supply.locked),
+        },
+      ]
+    : [];
+
+  const name = genesis ? networkName(genesis.network_magic) : "Network";
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-white">Network</h1>
-        <p className="mt-1 text-sm text-slate-400">Supply, stake, genesis settings, and era timing reported by Dingo.</p>
-      </div>
+    <div className="network-dashboard">
+      <header className="network-heading">
+        <div>
+          <span className="eyebrow">The economics of the chain</span>
+          <h1>
+            {name === "Preview" || name === "Preprod"
+              ? `${name} network`
+              : name}
+          </h1>
+        </div>
+        {genesis && (
+          <span
+            className="network-id"
+            title={`Network magic ${genesis.network_magic}`}
+          >
+            <span aria-hidden="true">◎</span>
+            <strong>{networkName(genesis.network_magic)}</strong>
+          </span>
+        )}
+      </header>
 
-      <Panel title="Supply and stake">
-        <QueryState isLoading={networkQuery.isLoading} error={networkQuery.error}>
-          {networkQuery.data && (
-            <div>
-              <Field label="Maximum supply" value={ada(networkQuery.data.supply.max)} />
-              <Field label="Total supply" value={ada(networkQuery.data.supply.total)} />
-              <Field label="Circulating supply" value={ada(networkQuery.data.supply.circulating)} />
-              <Field label="Locked supply" value={ada(networkQuery.data.supply.locked)} />
-              <Field label="Treasury" value={ada(networkQuery.data.supply.treasury)} />
-              <Field label="Reserves" value={ada(networkQuery.data.supply.reserves)} />
-              <Field label="Live stake" value={ada(networkQuery.data.stake.live)} />
-              <Field label="Active stake" value={ada(networkQuery.data.stake.active)} />
-            </div>
-          )}
-        </QueryState>
-      </Panel>
-
-      <Panel title="Genesis settings">
-        <QueryState isLoading={genesisQuery.isLoading} error={genesisQuery.error}>
-          {genesisQuery.data && (
-            <div>
-              <Field label="Network magic" value={genesisQuery.data.network_magic} />
-              <Field label="System start" value={date(genesisQuery.data.system_start)} />
-              <Field label="Maximum lovelace supply" value={ada(genesisQuery.data.max_lovelace_supply)} />
-              <Field label="Epoch length" value={`${genesisQuery.data.epoch_length.toLocaleString()} slots`} />
-              <Field label="Slot length" value={`${genesisQuery.data.slot_length} seconds`} />
-              <Field label="Active slots coefficient" value={genesisQuery.data.active_slots_coefficient} />
-              <Field label="Security parameter" value={genesisQuery.data.security_param} />
-              <Field label="KES period" value={`${genesisQuery.data.slots_per_kes_period.toLocaleString()} slots`} />
-              <Field label="Maximum KES evolutions" value={genesisQuery.data.max_kes_evolutions} />
-              <Field label="Update quorum" value={genesisQuery.data.update_quorum} />
-            </div>
-          )}
-        </QueryState>
-      </Panel>
-
-      <Panel title="Era timeline">
-        <QueryState isLoading={erasQuery.isLoading} error={erasQuery.error}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[44rem] text-left text-sm">
-              <thead><tr className="text-xs uppercase tracking-wide text-slate-500"><th className="pb-2">Era</th><th className="pb-2">Start</th><th className="pb-2">End</th><th className="pb-2">Epoch length</th><th className="pb-2">Slot length</th><th className="pb-2">Safe zone</th></tr></thead>
-              <tbody>
-                {erasQuery.data?.map((era, index) => (
-                  <tr key={`${era.start.slot}:${index}`} className="border-t border-slate-800">
-                    <td className="py-2 text-slate-200">{index === erasQuery.data.length - 1 ? "Current era" : `Era boundary ${index + 1}`}</td>
-                    <td className="py-2 text-slate-400">{date(era.start.time)}<br />slot {era.start.slot.toLocaleString()} · epoch {era.start.epoch}</td>
-                    <td className="py-2 text-slate-400">{era.end ? <>{date(era.end.time)}<br />slot {era.end.slot.toLocaleString()} · epoch {era.end.epoch}</> : "Ongoing"}</td>
-                    <td className="py-2 text-slate-400">{era.parameters.epoch_length.toLocaleString()}</td>
-                    <td className="py-2 text-slate-400">{era.parameters.slot_length}s</td>
-                    <td className="py-2 text-slate-400">{era.parameters.safe_zone.toLocaleString()} slots</td>
-                  </tr>
+      <QueryState isLoading={networkQuery.isLoading} error={networkQuery.error}>
+        {network && (
+          <div className="network-economics">
+            <section className="network-supply">
+              <div className="network-section-heading">
+                <span className="eyebrow">ADA distribution</span>
+                <span className="network-unit">₳</span>
+              </div>
+              <h2>Where the ADA is</h2>
+              <Distribution
+                title="Maximum supply"
+                unit={compactAda(network.supply.max)}
+                items={supplyItems}
+              />
+              <div className="supply-release">
+                <div>
+                  <span className="eyebrow">Issued supply</span>
+                  <strong>{compactAda(network.supply.total)}</strong>
+                </div>
+                <Meter
+                  label="Issued / maximum"
+                  value={ratio(
+                    BigInt(network.supply.total),
+                    BigInt(network.supply.max),
+                  )}
+                />
+              </div>
+            </section>
+            <section className="network-staking">
+              <span className="eyebrow">Participation</span>
+              <h2>Stake in the network</h2>
+              <div
+                className="stake-comparison"
+                role="img"
+                aria-label={`Live stake ${ada(network.stake.live)}; active stake ${ada(network.stake.active)}`}
+              >
+                {[
+                  {
+                    label: "Live stake",
+                    value: network.stake.live,
+                    className: "live",
+                  },
+                  {
+                    label: "Active stake",
+                    value: network.stake.active,
+                    className: "active",
+                  },
+                ].map((item) => (
+                  <div
+                    className={`stake-column ${item.className}`}
+                    key={item.label}
+                  >
+                    <strong title={ada(item.value)}>
+                      {compactAda(item.value)}
+                    </strong>
+                    <div className="stake-column-track">
+                      <span
+                        style={{
+                          height: `${ratio(BigInt(item.value), BigInt(network.stake.live) > BigInt(network.stake.active) ? BigInt(network.stake.live) : BigInt(network.stake.active))}%`,
+                        }}
+                      />
+                    </div>
+                    <span>{item.label}</span>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+              <Gauge
+                label="Live stake / issued supply"
+                value={ratio(
+                  BigInt(network.stake.live),
+                  BigInt(network.supply.total),
+                )}
+                detail="Current delegation as a share of issued ADA"
+                tone="violet"
+              />
+              <div className="stake-footnote">
+                <span className="legend-dot" />
+                <p>
+                  Live stake reflects current delegation. Active stake is the
+                  snapshot used for the epoch.
+                </p>
+              </div>
+            </section>
           </div>
+        )}
+      </QueryState>
+
+      <section className="network-clock">
+        <div className="network-clock-heading">
+          <div>
+            <span className="eyebrow">How the chain keeps time</span>
+            <h2>Network rhythm</h2>
+          </div>
+          <span className="clock-orbit" aria-hidden="true">
+            ◷
+          </span>
+        </div>
+        <QueryState isLoading={erasQuery.isLoading} error={erasQuery.error}>
+          {currentTiming && (
+            <div className="rhythm-grid">
+              <div>
+                <strong>
+                  {currentTiming.parameters.slot_length}
+                  <small>s</small>
+                </strong>
+                <span>per slot</span>
+                <div className="slot-pulses" aria-hidden="true">
+                  {Array.from({ length: 18 }, (_, i) => (
+                    <i key={i} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <strong>
+                  {currentTiming.parameters.epoch_length.toLocaleString()}
+                </strong>
+                <span>slots per epoch</span>
+                <div className="epoch-stripes" aria-hidden="true" />
+              </div>
+              <div>
+                <strong>
+                  {(
+                    (currentTiming.parameters.epoch_length *
+                      currentTiming.parameters.slot_length) /
+                    3600
+                  ).toLocaleString()}
+                  <small>h</small>
+                </strong>
+                <span>per epoch</span>
+                <div className="epoch-clock" aria-hidden="true" />
+              </div>
+            </div>
+          )}
         </QueryState>
-      </Panel>
+      </section>
+
+      <section className="network-history">
+        <div className="network-section-heading">
+          <div>
+            <span className="eyebrow">Protocol timing</span>
+            <h2>Across the eras</h2>
+          </div>
+          <span className="network-unit">↗</span>
+        </div>
+        <QueryState isLoading={erasQuery.isLoading} error={erasQuery.error}>
+          <ol className="era-track">
+            {(eras ?? []).map((era, index) => (
+              <li key={era.start.slot}>
+                <div className="era-station">
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <i />
+                </div>
+                <h3>
+                  <EraName epoch={era.start.epoch} />
+                </h3>
+                <time dateTime={new Date(era.start.time * 1000).toISOString()}>
+                  {new Date(era.start.time * 1000).toLocaleDateString(
+                    undefined,
+                    { month: "short", day: "numeric", year: "numeric" },
+                  )}
+                </time>
+                <div className="era-origin">
+                  <span>Begins at epoch</span>
+                  <strong>{era.start.epoch.toLocaleString()}</strong>
+                </div>
+                <details>
+                  <summary>Timing boundaries</summary>
+                  <dl>
+                    <dt>Start slot</dt>
+                    <dd>{era.start.slot.toLocaleString()}</dd>
+                    <dt>Start time</dt>
+                    <dd>{date(era.start.time)}</dd>
+                    <dt>End boundary</dt>
+                    <dd>{era.end ? date(era.end.time) : "Open"}</dd>
+                    <dt>Slots / epoch</dt>
+                    <dd>{era.parameters.epoch_length.toLocaleString()}</dd>
+                    <dt>Slot duration</dt>
+                    <dd>{era.parameters.slot_length}s</dd>
+                  </dl>
+                </details>
+              </li>
+            ))}
+          </ol>
+        </QueryState>
+      </section>
+
+      <div className="network-reference">
+        <details className="detail-disclosure">
+          <summary>Exact monetary values</summary>
+          {network && (
+            <div className="network-value-grid">
+              {[
+                ["Maximum supply", network.supply.max],
+                ["Total supply", network.supply.total],
+                ["Circulating", network.supply.circulating],
+                ["Locked", network.supply.locked],
+                ["Treasury", network.supply.treasury],
+                ["Reserves", network.supply.reserves],
+                ["Live stake", network.stake.live],
+                ["Active stake", network.stake.active],
+              ].map(([label, value]) => (
+                <Field key={label} label={label} value={ada(value)} />
+              ))}
+            </div>
+          )}
+        </details>
+        <details className="detail-disclosure">
+          <summary>Genesis configuration</summary>
+          <QueryState
+            isLoading={genesisQuery.isLoading}
+            error={genesisQuery.error}
+          >
+            {genesis && (
+              <div className="network-value-grid">
+                <Field
+                  label="System start"
+                  value={date(genesis.system_start)}
+                />
+                <Field label="Network magic" value={genesis.network_magic} />
+                <Field
+                  label="Maximum supply"
+                  value={ada(genesis.max_lovelace_supply)}
+                />
+                <Field
+                  label="Epoch length"
+                  value={`${genesis.epoch_length.toLocaleString()} slots`}
+                />
+                <Field label="Slot length" value={`${genesis.slot_length}s`} />
+                <Field
+                  label="Active slots coefficient"
+                  value={genesis.active_slots_coefficient}
+                />
+                <Field
+                  label="Security parameter"
+                  value={genesis.security_param}
+                />
+                <Field
+                  label="KES period"
+                  value={`${genesis.slots_per_kes_period.toLocaleString()} slots`}
+                />
+                <Field
+                  label="Maximum KES evolutions"
+                  value={genesis.max_kes_evolutions}
+                />
+                <Field label="Update quorum" value={genesis.update_quorum} />
+              </div>
+            )}
+          </QueryState>
+        </details>
+      </div>
     </div>
   );
 }

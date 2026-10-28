@@ -1,6 +1,7 @@
+import { HashLink } from "../explorer/HashLink";
 import { useEffect, useRef, useState } from "react";
 import { useWalletStore } from "../../stores/walletStore";
-import { formatAda, shortenHash } from "../../lib/format";
+import { shortenHash } from "../../lib/format";
 
 export function WalletConnectSummary() {
   const [open, setOpen] = useState(false);
@@ -8,18 +9,12 @@ export function WalletConnectSummary() {
   const status = useWalletStore((state) => state.status);
   const walletName = useWalletStore((state) => state.walletName);
   const changeAddress = useWalletStore((state) => state.changeAddress);
-  const balanceLovelace = useWalletStore((state) => state.balanceLovelace);
   const error = useWalletStore((state) => state.error);
   const listAvailableWallets = useWalletStore(
     (state) => state.listAvailableWallets,
   );
   const connect = useWalletStore((state) => state.connect);
   const disconnect = useWalletStore((state) => state.disconnect);
-  const restoreConnection = useWalletStore((state) => state.restoreConnection);
-
-  useEffect(() => {
-    void restoreConnection();
-  }, [restoreConnection]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -44,17 +39,15 @@ export function WalletConnectSummary() {
         >
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
           {walletName}
-          {balanceLovelace !== null && (
-            <span className="text-slate-400">
-              {formatAda(balanceLovelace)}
-            </span>
-          )}
+          <span className="text-slate-400" title={changeAddress}>
+            {shortenHash(changeAddress, 6)}
+          </span>
         </button>
         {open && (
           <div className="absolute right-0 z-10 mt-2 w-64 rounded-md border border-slate-700 bg-slate-900 p-3 text-sm shadow-lg">
             <p className="text-slate-400">Change address</p>
             <p className="mt-1 break-all text-slate-200">
-              {shortenHash(changeAddress, 12)}
+              <HashLink kind="address" id={changeAddress} full />
             </p>
             <button
               type="button"

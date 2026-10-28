@@ -1,10 +1,15 @@
+import { PageIntro } from "../../components/explorer/Visuals";
+import { Metric } from "../../components/explorer/Visuals";
 import { useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
-import { AdaAmount, type AmountEntry } from "../../components/explorer/AdaAmount";
+import {
+  AdaAmount,
+  type AmountEntry,
+} from "../../components/explorer/AdaAmount";
 import { QueryState } from "../../components/explorer/QueryState";
 import { formatAda } from "../../lib/format";
 import { useMempoolStore } from "../../stores/mempoolStore";
@@ -71,17 +76,26 @@ interface JsonQueryPanelProps {
   error: unknown;
 }
 
-function JsonQueryPanel({ title, data, isLoading, error }: JsonQueryPanelProps) {
+function JsonQueryPanel({
+  title,
+  data,
+  isLoading,
+  error,
+}: JsonQueryPanelProps) {
   return (
     <Panel title={title}>
       <QueryState isLoading={isLoading} error={error}>
         {Array.isArray(data) && data.length === 0 ? (
-          <p className="text-sm text-slate-500">No {title.toLowerCase()} recorded.</p>
+          <p className="text-sm text-slate-500">
+            No {title.toLowerCase()} recorded.
+          </p>
         ) : data === undefined || data === null ? (
           <p className="text-sm text-slate-500">No data.</p>
         ) : (
           <details>
-            <summary className="cursor-pointer text-sm text-sky-400">Show response data</summary>
+            <summary className="cursor-pointer text-sm text-sky-400">
+              Show response data
+            </summary>
             <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap break-all rounded border border-slate-800 bg-slate-950 p-3 text-xs text-slate-300">
               {JSON.stringify(data, null, 2)}
             </pre>
@@ -178,13 +192,15 @@ export default function TxDetail() {
   });
   const metadataCborQuery = useQuery({
     queryKey: ["dingo", "tx", hash, "metadata-cbor"],
-    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/metadata/cbor`),
+    queryFn: () =>
+      blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/metadata/cbor`),
     enabled: confirmedTxEnabled,
     retry: false,
   });
   const transactionCborQuery = useQuery({
     queryKey: ["dingo", "tx", hash, "cbor"],
-    queryFn: () => blockfrostFetch<{ cbor: string }>(`/api/v0/txs/${hash}/cbor`),
+    queryFn: () =>
+      blockfrostFetch<{ cbor: string }>(`/api/v0/txs/${hash}/cbor`),
     enabled: confirmedTxEnabled,
     retry: false,
   });
@@ -202,13 +218,15 @@ export default function TxDetail() {
   });
   const poolUpdatesQuery = useQuery({
     queryKey: ["dingo", "tx", hash, "pool-updates"],
-    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/pool_updates`),
+    queryFn: () =>
+      blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/pool_updates`),
     enabled: confirmedTxEnabled && (tx ? tx.pool_update_count > 0 : false),
     retry: false,
   });
   const poolRetiresQuery = useQuery({
     queryKey: ["dingo", "tx", hash, "pool-retires"],
-    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/pool_retires`),
+    queryFn: () =>
+      blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/pool_retires`),
     enabled: confirmedTxEnabled && (tx ? tx.pool_retire_count > 0 : false),
     retry: false,
   });
@@ -220,14 +238,20 @@ export default function TxDetail() {
   });
   const requiredSignersQuery = useQuery({
     queryKey: ["dingo", "tx", hash, "required-signers"],
-    queryFn: () => blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/required_signers`),
+    queryFn: () =>
+      blockfrostFetch<unknown[]>(`/api/v0/txs/${hash}/required_signers`),
     enabled: confirmedTxEnabled,
     retry: false,
   });
 
   if (isPending && pendingTx) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 detail-showcase">
+        <PageIntro
+          eyebrow="Follow the value"
+          title="Transaction explorer"
+          symbol="⇄"
+        />
         <Panel
           title={
             <span className="flex items-center gap-2">
@@ -239,10 +263,9 @@ export default function TxDetail() {
           }
         >
           <p className="mb-3 text-xs text-slate-500">
-            Not yet in a block - this is decoded from the raw transaction
-            bytes in Dingo's mempool, not from Blockfrost. Full details
-            (addresses, exact outputs) become available here once it's
-            confirmed.
+            Not yet in a block - this is decoded from the raw transaction bytes
+            in Dingo's mempool, not from Blockfrost. Full details (addresses,
+            exact outputs) become available here once it's confirmed.
           </p>
           <div>
             <Field label="Hash" value={pendingTx.hash} />
@@ -260,7 +283,12 @@ export default function TxDetail() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 detail-showcase">
+      <PageIntro
+        eyebrow="Follow the value"
+        title="Transaction explorer"
+        symbol="⇄"
+      />
       <Panel title="Transaction">
         <QueryState
           isLoading={txQuery.isLoading}
@@ -269,31 +297,78 @@ export default function TxDetail() {
         >
           {tx && (
             <div>
-              <Field label="Hash" value={tx.hash} />
-              <Field label="Block" value={<HashLink kind="block" id={tx.block} full />} />
-              <Field label="Block height" value={tx.block_height} />
-              <Field
-                label="Time"
-                value={new Date(tx.block_time * 1000).toLocaleString()}
-              />
-              <Field label="Fees" value={formatAda(BigInt(tx.fees))} />
-              <Field label="Deposit" value={formatAda(BigInt(tx.deposit))} />
-              <Field label="Treasury donation" value={`${formatAda(BigInt(tx.treasury_donation))} ADA`} />
-              <Field label="Size" value={`${tx.size} bytes`} />
-              <Field label="Slot" value={tx.slot} />
-              <Field label="Index in block" value={tx.index} />
-              <Field
-                label="Valid"
-                value={tx.valid_contract ? "Yes" : "No (script failed)"}
-              />
-              {tx.invalid_before && <Field label="Valid after slot" value={tx.invalid_before} />}
-              {tx.invalid_hereafter && <Field label="Valid through slot" value={tx.invalid_hereafter} />}
-              <Field label="Total output" value={<AdaAmount amount={tx.output_amount} />} />
-              <Field label="Mint/burn assets" value={tx.asset_mint_or_burn_count} />
-              <Field label="Redeemers" value={tx.redeemer_count} />
-              <Field label="Stake certificates" value={tx.stake_cert_count} />
-              <Field label="Pool updates / retirements" value={`${tx.pool_update_count} / ${tx.pool_retire_count}`} />
-              <Field label="MIR certificates" value={tx.mir_cert_count} />
+              <div className="metric-grid mb-5">
+                <Metric
+                  label="Transaction fee"
+                  value={formatAda(BigInt(tx.fees))}
+                />
+                <Metric
+                  label="Size"
+                  value={`${(tx.size / 1024).toFixed(2)} KB`}
+                />
+                <Metric
+                  label="Status"
+                  value={tx.valid_contract ? "Confirmed" : "Script failed"}
+                  detail={`Block #${tx.block_height.toLocaleString()}`}
+                />
+              </div>
+              <details className="technical-details">
+                <summary>Transaction record & certificates</summary>
+                <div className="record-grid">
+                  {" "}
+                  <Field label="Hash" value={tx.hash} />
+                  <Field
+                    label="Block"
+                    value={<HashLink kind="block" id={tx.block} full />}
+                  />
+                  <Field label="Block height" value={tx.block_height} />
+                  <Field
+                    label="Time"
+                    value={new Date(tx.block_time * 1000).toLocaleString()}
+                  />
+                  <Field
+                    label="Deposit"
+                    value={formatAda(BigInt(tx.deposit))}
+                  />
+                  <Field
+                    label="Treasury donation"
+                    value={`${formatAda(BigInt(tx.treasury_donation))}`}
+                  />
+                  <Field label="Slot" value={tx.slot} />
+                  <Field label="Index in block" value={tx.index} />
+                  <Field
+                    label="Valid"
+                    value={tx.valid_contract ? "Yes" : "No (script failed)"}
+                  />
+                  {tx.invalid_before && (
+                    <Field label="Valid after slot" value={tx.invalid_before} />
+                  )}
+                  {tx.invalid_hereafter && (
+                    <Field
+                      label="Valid through slot"
+                      value={tx.invalid_hereafter}
+                    />
+                  )}
+                  <Field
+                    label="Total output"
+                    value={<AdaAmount amount={tx.output_amount} />}
+                  />
+                  <Field
+                    label="Mint/burn assets"
+                    value={tx.asset_mint_or_burn_count}
+                  />
+                  <Field label="Redeemers" value={tx.redeemer_count} />
+                  <Field
+                    label="Stake certificates"
+                    value={tx.stake_cert_count}
+                  />
+                  <Field
+                    label="Pool updates / retirements"
+                    value={`${tx.pool_update_count} / ${tx.pool_retire_count}`}
+                  />
+                  <Field label="MIR certificates" value={tx.mir_cert_count} />
+                </div>
+              </details>
             </div>
           )}
         </QueryState>
@@ -302,87 +377,151 @@ export default function TxDetail() {
       <Panel title="UTxOs">
         <QueryState isLoading={utxosQuery.isLoading} error={utxosQuery.error}>
           {utxosQuery.data && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
-                  Inputs
-                </h3>
-                <ul className="flex flex-col gap-2">
-                  {utxosQuery.data.inputs.map((utxo, index) => (
-                    <li
-                      key={`${utxo.tx_hash}:${utxo.output_index}:${index}`}
-                      className="rounded border border-slate-800 p-2 text-sm"
-                    >
-                      <div className="flex items-center gap-2">
-                        <HashLink kind="address" id={utxo.address} visible={10} />
-                        {utxo.reference && (
-                          <span
-                            className="rounded bg-sky-950 px-1.5 py-0.5 text-xs text-sky-300"
-                            title="Reference input: read by a script, never spent by this transaction."
-                          >
-                            reference
-                          </span>
-                        )}
-                        {utxo.collateral && (
-                          <span
-                            className="rounded bg-amber-950 px-1.5 py-0.5 text-xs text-amber-300"
-                            title="Collateral input: only consumed if script validation for this transaction fails."
-                          >
-                            collateral
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-1 text-xs text-slate-500">
-                        Input {utxo.tx_hash}#{utxo.output_index}
-                      </div>
-                      <div className="mt-1">
-                        <AdaAmount amount={utxo.amount} />
-                      </div>
-                      {(utxo.data_hash || utxo.inline_datum || utxo.reference_script_hash) && (
-                        <details className="mt-2 text-xs text-slate-500">
-                          <summary className="cursor-pointer">Datum and script references</summary>
-                          {utxo.data_hash && <p className="mt-1 break-all">Datum hash: {utxo.data_hash}</p>}
-                          {utxo.inline_datum && <p className="mt-1 break-all">Inline datum: {utxo.inline_datum}</p>}
-                          {utxo.reference_script_hash && <p className="mt-1 break-all">Reference script: {utxo.reference_script_hash}</p>}
-                        </details>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+            <>
+              <div className="tx-flow mb-7">
+                <div className="flow-node">
+                  <strong>{utxosQuery.data.inputs.length}</strong>
+                  <small>Inputs</small>
+                </div>
+                <div className="flow-arrow" aria-hidden="true">
+                  →
+                </div>
+                <div className="flow-node">
+                  <strong>{utxosQuery.data.outputs.length}</strong>
+                  <small>Outputs</small>
+                </div>
               </div>
-              <div>
-                <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
-                  Outputs
-                </h3>
-                <ul className="flex flex-col gap-2">
-                  {utxosQuery.data.outputs.map((utxo) => (
-                    <li
-                      key={utxo.output_index}
-                      className="rounded border border-slate-800 p-2 text-sm"
-                    >
-                      <HashLink kind="address" id={utxo.address} visible={10} />
-                      <div className="mt-1 text-xs text-slate-500">Output #{utxo.output_index}</div>
-                      <div className="mt-1">
-                        <AdaAmount amount={utxo.amount} />
-                      </div>
-                      {utxo.consumed_by_tx && (
-                        <p className="mt-1 text-xs text-slate-500">
-                          Spent by <HashLink kind="tx" id={utxo.consumed_by_tx} visible={10} />
-                        </p>
-                      )}
-                      {(utxo.data_hash || utxo.inline_datum || utxo.reference_script_hash) && (
-                        <details className="mt-2 text-xs text-slate-500">
-                          <summary className="cursor-pointer">Datum and script references</summary>
-                          {utxo.data_hash && <p className="mt-1 break-all">Datum hash: {utxo.data_hash}</p>}
-                          {utxo.inline_datum && <p className="mt-1 break-all">Inline datum: {utxo.inline_datum}</p>}
-                          {utxo.reference_script_hash && <p className="mt-1 break-all">Reference script: {utxo.reference_script_hash}</p>}
-                        </details>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+              <div className="tx-ledger">
+                <div>
+                  <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
+                    Inputs
+                  </h3>
+                  <ul className="flex flex-col gap-2">
+                    {utxosQuery.data.inputs.map((utxo, index) => (
+                      <li
+                        key={`${utxo.tx_hash}:${utxo.output_index}:${index}`}
+                        className="rounded border border-slate-800 p-2 text-sm"
+                      >
+                        <div className="tx-utxo-balance">
+                          <AdaAmount amount={utxo.amount} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <HashLink
+                            kind="address"
+                            id={utxo.address}
+                            visible={10}
+                          />
+                          {utxo.reference && (
+                            <span
+                              className="rounded bg-sky-950 px-1.5 py-0.5 text-xs text-sky-300"
+                              title="Reference input: read by a script, never spent by this transaction."
+                            >
+                              reference
+                            </span>
+                          )}
+                          {utxo.collateral && (
+                            <span
+                              className="rounded bg-amber-950 px-1.5 py-0.5 text-xs text-amber-300"
+                              title="Collateral input: only consumed if script validation for this transaction fails."
+                            >
+                              collateral
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 break-all text-xs text-slate-500">
+                          Input{" "}
+                          <HashLink kind="tx" id={utxo.tx_hash} visible={8} />#
+                          {utxo.output_index}
+                        </div>
+                        {(utxo.data_hash ||
+                          utxo.inline_datum ||
+                          utxo.reference_script_hash) && (
+                          <details className="mt-2 text-xs text-slate-500">
+                            <summary className="cursor-pointer">
+                              Datum and script references
+                            </summary>
+                            {utxo.data_hash && (
+                              <p className="mt-1 break-all">
+                                Datum hash: {utxo.data_hash}
+                              </p>
+                            )}
+                            {utxo.inline_datum && (
+                              <p className="mt-1 break-all">
+                                Inline datum: {utxo.inline_datum}
+                              </p>
+                            )}
+                            {utxo.reference_script_hash && (
+                              <p className="mt-1 break-all">
+                                Reference script: {utxo.reference_script_hash}
+                              </p>
+                            )}
+                          </details>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
+                    Outputs
+                  </h3>
+                  <ul className="flex flex-col gap-2">
+                    {utxosQuery.data.outputs.map((utxo) => (
+                      <li
+                        key={utxo.output_index}
+                        className="rounded border border-slate-800 p-2 text-sm"
+                      >
+                        <div className="tx-utxo-balance">
+                          <AdaAmount amount={utxo.amount} />
+                        </div>
+                        <HashLink
+                          kind="address"
+                          id={utxo.address}
+                          visible={10}
+                        />
+                        <div className="mt-1 text-xs text-slate-500">
+                          Output #{utxo.output_index}
+                        </div>
+                        {utxo.consumed_by_tx && (
+                          <p className="mt-1 text-xs text-slate-500">
+                            Spent by{" "}
+                            <HashLink
+                              kind="tx"
+                              id={utxo.consumed_by_tx}
+                              visible={10}
+                            />
+                          </p>
+                        )}
+                        {(utxo.data_hash ||
+                          utxo.inline_datum ||
+                          utxo.reference_script_hash) && (
+                          <details className="mt-2 text-xs text-slate-500">
+                            <summary className="cursor-pointer">
+                              Datum and script references
+                            </summary>
+                            {utxo.data_hash && (
+                              <p className="mt-1 break-all">
+                                Datum hash: {utxo.data_hash}
+                              </p>
+                            )}
+                            {utxo.inline_datum && (
+                              <p className="mt-1 break-all">
+                                Inline datum: {utxo.inline_datum}
+                              </p>
+                            )}
+                            {utxo.reference_script_hash && (
+                              <p className="mt-1 break-all">
+                                Reference script: {utxo.reference_script_hash}
+                              </p>
+                            )}
+                          </details>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </QueryState>
       </Panel>
@@ -424,18 +563,74 @@ export default function TxDetail() {
         </Panel>
       )}
 
-      {tx && tx.stake_cert_count > 0 && <JsonQueryPanel title="Stake certificates" data={stakesQuery.data} isLoading={stakesQuery.isLoading} error={stakesQuery.error} />}
-      {tx && tx.mir_cert_count > 0 && <JsonQueryPanel title="MIR certificates" data={mirsQuery.data} isLoading={mirsQuery.isLoading} error={mirsQuery.error} />}
-      {tx && tx.pool_update_count > 0 && <JsonQueryPanel title="Pool updates" data={poolUpdatesQuery.data} isLoading={poolUpdatesQuery.isLoading} error={poolUpdatesQuery.error} />}
-      {tx && tx.pool_retire_count > 0 && <JsonQueryPanel title="Pool retirements" data={poolRetiresQuery.data} isLoading={poolRetiresQuery.isLoading} error={poolRetiresQuery.error} />}
-      {tx && tx.redeemer_count > 0 && <JsonQueryPanel title="Redeemers" data={redeemersQuery.data} isLoading={redeemersQuery.isLoading} error={redeemersQuery.error} />}
+      {tx && tx.stake_cert_count > 0 && (
+        <JsonQueryPanel
+          title="Stake certificates"
+          data={stakesQuery.data}
+          isLoading={stakesQuery.isLoading}
+          error={stakesQuery.error}
+        />
+      )}
+      {tx && tx.mir_cert_count > 0 && (
+        <JsonQueryPanel
+          title="MIR certificates"
+          data={mirsQuery.data}
+          isLoading={mirsQuery.isLoading}
+          error={mirsQuery.error}
+        />
+      )}
+      {tx && tx.pool_update_count > 0 && (
+        <JsonQueryPanel
+          title="Pool updates"
+          data={poolUpdatesQuery.data}
+          isLoading={poolUpdatesQuery.isLoading}
+          error={poolUpdatesQuery.error}
+        />
+      )}
+      {tx && tx.pool_retire_count > 0 && (
+        <JsonQueryPanel
+          title="Pool retirements"
+          data={poolRetiresQuery.data}
+          isLoading={poolRetiresQuery.isLoading}
+          error={poolRetiresQuery.error}
+        />
+      )}
+      {tx && tx.redeemer_count > 0 && (
+        <JsonQueryPanel
+          title="Redeemers"
+          data={redeemersQuery.data}
+          isLoading={redeemersQuery.isLoading}
+          error={redeemersQuery.error}
+        />
+      )}
       {tx && (
-        <>
-          <JsonQueryPanel title="Transaction metadata" data={metadataQuery.data} isLoading={metadataQuery.isLoading} error={metadataQuery.error} />
-          <JsonQueryPanel title="Metadata CBOR" data={metadataCborQuery.data} isLoading={metadataCborQuery.isLoading} error={metadataCborQuery.error} />
-          <JsonQueryPanel title="Required signers" data={requiredSignersQuery.data} isLoading={requiredSignersQuery.isLoading} error={requiredSignersQuery.error} />
-          <JsonQueryPanel title="Transaction CBOR" data={transactionCborQuery.data?.cbor} isLoading={transactionCborQuery.isLoading} error={transactionCborQuery.error} />
-        </>
+        <details className="detail-disclosure">
+          <summary>Metadata, signers & serialized transaction</summary>
+          <JsonQueryPanel
+            title="Transaction metadata"
+            data={metadataQuery.data}
+            isLoading={metadataQuery.isLoading}
+            error={metadataQuery.error}
+          />
+          <JsonQueryPanel
+            title="Metadata CBOR"
+            data={metadataCborQuery.data}
+            isLoading={metadataCborQuery.isLoading}
+            error={metadataCborQuery.error}
+          />
+          <JsonQueryPanel
+            title="Required signers"
+            data={requiredSignersQuery.data}
+            isLoading={requiredSignersQuery.isLoading}
+            error={requiredSignersQuery.error}
+          />
+          <JsonQueryPanel
+            title="Transaction CBOR"
+            data={transactionCborQuery.data?.cbor}
+            isLoading={transactionCborQuery.isLoading}
+            error={transactionCborQuery.error}
+          />
+        </details>
       )}
     </div>
   );

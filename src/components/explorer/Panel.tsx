@@ -10,28 +10,32 @@ export function Panel({
   action?: ReactNode;
 }) {
   return (
-    <section className="rounded-md border border-slate-800 bg-slate-900/40 p-4">
+    <section className="data-panel">
       {(title || action) && (
-        <div className="mb-3 flex items-center justify-between">
-          {title && (
-            <h2 className="text-sm font-semibold text-slate-200">{title}</h2>
-          )}
+        <div className="panel-heading">
+          {title && <h2>{title}</h2>}
           {action}
         </div>
       )}
-      {children}
+      <div className="panel-content">{children}</div>
     </section>
   );
 }
 
 export function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex flex-col gap-0.5 py-1.5 sm:flex-row sm:items-baseline sm:gap-2">
-      <span className="w-40 shrink-0 text-xs uppercase tracking-wide text-slate-500">
-        {label}
-      </span>
-      <span className="min-w-0 break-all text-sm text-slate-200">
-        {value}
+    <div className="data-field">
+      <span className="field-label">{label}</span>
+      <span className="field-value">
+        {value === "Yes" || value === "No" ? (
+          <span
+            className={`status-badge ${value === "Yes" ? "positive" : "neutral"}`}
+          >
+            {value}
+          </span>
+        ) : (
+          value
+        )}
       </span>
     </div>
   );

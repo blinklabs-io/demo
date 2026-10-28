@@ -1,3 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
+import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import { networkName } from "../../lib/dingo/networkNames";
+import { EraName } from "../explorer/EraName";
 import { useNodeHealth } from "../../lib/dingo/nodeHealth";
 import { useTipStore } from "../../stores/tipStore";
 import { useNow } from "../../lib/useNow";
@@ -13,6 +17,12 @@ export function NodeHealthStrip() {
   const liveTip = useTipStore((state) => state.tip);
   const tipStatus = useTipStore((state) => state.status);
   const now = useNow();
+  const genesis = useQuery({
+    queryKey: ["dingo", "genesis"],
+    queryFn: ({ signal }) =>
+      blockfrostFetch<{ network_magic: number }>("/api/v0/genesis", { signal }),
+    staleTime: Infinity,
+  });
 
   if (isLoading) {
     return <span className="text-slate-500">Connecting to Dingo…</span>;
@@ -27,10 +37,6 @@ export function NodeHealthStrip() {
     );
   }
 
-  // Epoch/era have no UTxO RPC equivalent, so those still come from the
-  // polled Blockfrost data - only the tip itself (height, freshness) is
-  // swapped for the FollowTip stream once it's live, which updates the
-  // instant a block lands instead of on the next ~15s poll.
   const usingLiveTip = tipStatus === "live" && liveTip !== null;
   const tipHeight = usingLiveTip ? liveTip.height : data.tipHeight;
   const secondsSinceTip = usingLiveTip
@@ -39,6 +45,19 @@ export function NodeHealthStrip() {
 
   return (
     <span className="flex items-center gap-3 text-slate-400">
+      <span
+        title={
+          genesis.data
+            ? `Network magic ${genesis.data.network_magic}`
+            : genesis.error?.message
+        }
+      >
+        {genesis.data
+          ? networkName(genesis.data.network_magic)
+          : genesis.isLoading
+            ? "Identifying network…"
+            : "Network unavailable"}
+      </span>
       <span className="flex items-center gap-1.5">
         <span
           className={`h-2 w-2 rounded-full ${data.isHealthy ? "bg-emerald-500" : "bg-amber-500"}`}
@@ -55,7 +74,9 @@ export function NodeHealthStrip() {
         )}
       </span>
       <span>Epoch {data.tipEpoch}</span>
-      <span>Era {data.eraIndex}</span>
+      <span>
+        <EraName epoch={data.tipEpoch} />
+      </span>
       <span className="hidden sm:inline">{formatAge(secondsSinceTip)}</span>
     </span>
   );

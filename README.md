@@ -8,11 +8,11 @@ CIP-30 wallet flows, and read-only API consoles in one app.
 Start Dingo with API storage enabled and the Blockfrost-compatible, Mesh, and
 UTxO RPC APIs selected. The default local endpoints are:
 
-| API | Default URL | Used for |
-| --- | --- | --- |
-| Blockfrost-compatible REST | `http://127.0.0.1:3000` | Explorer data, health, network, metadata, pools, DReps, accounts |
-| Mesh / Rosetta | `http://127.0.0.1:8080` | Read-only Rosetta API console |
-| UTxO RPC | `http://127.0.0.1:9090` | Wallet balance, transaction building/submission, mempool and live tip |
+| API                        | Default URL             | Used for                                                                          |
+| -------------------------- | ----------------------- | --------------------------------------------------------------------------------- |
+| Blockfrost-compatible REST | `http://127.0.0.1:3000` | Explorer data, policies, health, network, pools, DReps, wallet accounts and UTxOs |
+| Mesh / Rosetta             | `http://127.0.0.1:8080` | Historical address balances and read-only Rosetta API console                     |
+| UTxO RPC                   | `http://127.0.0.1:9090` | Block headers, transaction building/submission, mempool and live tip              |
 
 Then run:
 
@@ -49,10 +49,83 @@ node, so use a test network and connect a test wallet.
   certificate records, redeemers, treasury donations, and required signers
 - CIP-119 DRep names and anchor links, plus active, retired, and expired DRep
   filters
-- Wallet balance, send, pool delegation, and SundaeSwap V3 Preview order flows
+- Wallet balance, reward withdrawals, send, pool delegation, and SundaeSwap V3 Preview order flows
+- DRep Yes, No, and Abstain votes from governance action pages, with fee review,
+  CIP-95 wallet signing, and submission through Dingo
 - Blockfrost-compatible GET console and read-only Mesh POST console
 - Governance proposals with deposits, lifecycle epochs, action descriptions,
   and paginated votes showing whether each vote counts; constitutional committee
   membership, authorization status, expiration epochs, and quorum
 - API console presets for governance proposals, committee votes, asset and script
   catalogs, Blockfrost mempool, latest-block transaction CBOR, and retired pools
+
+## Visual exploration
+
+The explorer includes transaction and block-size charts, ADA supply breakdowns,
+reward and holder charts, and timelines for eras, blocks, and governance actions.
+Charts link to the underlying records and expose values on keyboard focus.
+Pool identities use registered tickers and names with locally rendered initials.
+
+Recent blocks and block details show the protocol version decoded from the
+block header bytes returned by UTxO RPC. A minor version of 69 displays the
+Dingo forging marker. Header versions are distinct from the current epoch's
+protocol parameters.
+
+Global search accepts registered pool tickers and `$handle` names. Numeric pool
+tickers can be qualified as `pool:8964` to distinguish them from block heights.
+Both legacy CIP-25 and CIP-68 `$handle` ownership are supported.
+Handle ownership, virtual-handle datums, and policy-registry data are resolved
+through Dingo's Blockfrost-compatible API; no external Handle resolver is used.
+
+Policy IDs open paginated asset catalogs. Asset searches accept concatenated
+IDs, `policy.asset-name-hex`, and `asset:ID` to disambiguate transaction hashes
+or an asset with an empty name. Policy assets can be filtered by name or ID
+within the displayed page. Pool and DRep directories provide instant substring
+filters over loaded directory records.
+
+The recent header-version graph reuses decoded headers from the overview's
+block list. It describes that recent window, rather than a daily network tally.
+
+The wallet portfolio groups addresses and UTxOs by their stake credential and
+shows available staking rewards, delegation, and the delegated pool's owner record.
+Reward withdrawals include an amount and fee review, explicit wallet signing,
+submission through Dingo, and confirmation tracking. Shared
+stake credentials do not establish control of the corresponding payment keys.
+Other pool ownership checks and historical address-balance charts run only on
+request. Balance history compares up to six completed epoch-end snapshots with
+the current balance and uses calendar dates on its axis. Unretained epochs are
+identified and omitted without inferring balances. Addresses are displayed in
+full with copy controls. Wallets exposing CIP-95 can also show their DRep
+registration.
+
+The swap view identifies SundaeSwap V3 on Preview, the selected liquidity pool,
+and the order contracts. Quotes show estimated and minimum received amounts,
+slippage, price impact, and connected-wallet balances. The weekly price chart samples pool reserves every six hours using the pool
+NFT’s transaction history and reserve outputs from Dingo, with a live price
+point and an interactive crosshair. History is cached for six hours and repeated
+samples reuse the same transaction output. These are reserve snapshots, not
+trade candles. Submitting an order is
+separate from its execution by a scooper.
+
+## On-chain surveys
+
+The Surveys section creates, discovers, answers, and cancels public CIP-179
+version 5 surveys on Preview. It supports the six built-in question types and
+keyholder credentials, with required-signer proof verified from transaction
+CBOR. Results validate question constraints and the inclusive epoch cutoff,
+keep the latest valid response per credential in chain order, and exclude all
+responses to a verified creator cancellation. Display aggregation is stated
+beside each result; it is not ADA weighting or a count of unique people.
+
+The app includes a parser for the Cardano Foundation free-text schema from
+[its canonical source](https://github.com/cardano-foundation/state-of-the-developer-ecosystem/blob/main/survey/cip179/free-text.schema.json).
+The schema is pinned to its verified BLAKE2b-256 hash, which must match the survey's anchor before use. Other
+custom schemas, sealed surveys, external presentation documents, and roles that
+require historical ledger membership snapshots are not supported. Runtime
+survey reads and transaction submission use only Dingo APIs.
+
+Discovery pages through metadata label 17. Tallying filters those metadata
+records by survey reference before reading matching transaction CBOR and
+inclusion data, reuses immutable reads, and limits concurrent verifications.
+Publishing, responding, and cancelling each require an explicit transaction
+review and wallet signature; public metadata is permanent.
