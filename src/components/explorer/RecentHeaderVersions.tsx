@@ -153,8 +153,9 @@ export function RecentHeaderVersions({
         <p className="mt-2 text-xs text-slate-500">
           Uses the same headers as the block list below. Shares cover decoded
           headers in this recent window, not a 24-hour network total. Node
-          identities use protocol minor markers; unrecognized markers are
-          assumed to be Haskell cardano-node.
+          identities use protocol minor markers. Headers 11.1 and 11.2 identify
+          Haskell cardano-node; other unrecognized versions are displayed as
+          assumed Haskell cardano-node.
         </p>
       </section>
     </div>

@@ -12,9 +12,9 @@ export function nodeImplementation(minor: string, major?: string) {
           icon: "/nodes/cardano-node.svg",
         };
       return {
-        id: "unknown",
-        name: "Unidentified node",
-        icon: "/nodes/unknown.svg",
+        id: "cardano-node",
+        name: "Haskell cardano-node (assumed)",
+        icon: "/nodes/cardano-node.svg",
       };
   }
 }
