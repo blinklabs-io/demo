@@ -7,7 +7,7 @@ export function nodeImplementation(minor: string) {
     default:
       return {
         id: "cardano-node",
-        name: "Haskell cardano-node",
+        name: "Haskell cardano-node (assumed)",
         icon: "/nodes/cardano-node.svg",
       };
   }

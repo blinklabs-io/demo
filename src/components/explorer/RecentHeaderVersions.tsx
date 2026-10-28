@@ -89,7 +89,7 @@ export function RecentHeaderVersions({
                       : "#293b4b",
                   }}
                   aria-label={`Block ${block.height}, ${node ? `${node.name}, ` : ""}header version ${version ?? (header.isError ? "unavailable" : "loading")}`}
-                  title={`Block ${block.height} · ${date(block.time)} · ${node ? `${node.name}${node.id === "cardano-node" ? " (assumed)" : ""} · ` : ""}${version ?? (header.isError ? "Header unavailable" : "Loading header")}`}
+                  title={`Block ${block.height} · ${date(block.time)} · ${node ? `${node.name} · ` : ""}${version ?? (header.isError ? "Header unavailable" : "Loading header")}`}
                 >
                   {node && (
                     <img

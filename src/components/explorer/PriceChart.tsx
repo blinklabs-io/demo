@@ -6,6 +6,7 @@ export function PriceChart({
   timeScale = "time",
 }: {
   points: Array<{
+    id: string;
     time: number;
     value: number;
     label?: string;
@@ -84,9 +85,9 @@ export function PriceChart({
             strokeWidth="3"
             strokeLinejoin="round"
           />
-          {valid.map((point, index) => (
+          {valid.map((point) => (
             <circle
-              key={`${point.time}:${index}`}
+              key={point.id}
               cx={x(point.time)}
               cy={y(point.value)}
               r={valid.length === 1 ? 5 : 3}

@@ -177,9 +177,9 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
               : `${formatAda(balance)} in UTxOs`}
             {" + "}
             {rewards === null
-              ? account.isError
-                ? "rewards unavailable"
-                : "checking unclaimed rewards…"
+              ? account.isPending
+                ? "checking unclaimed rewards…"
+                : "rewards unavailable"
               : `${formatAda(rewards)} in unclaimed rewards`}
           </p>
         </div>

@@ -60,6 +60,7 @@ export async function readEpochBalanceHistory(
   }
   samples.push(latest);
   const points: Array<{
+    id: string;
     time: number;
     value: number;
     label: string;
@@ -93,6 +94,7 @@ export async function readEpochBalanceHistory(
     if (!ada)
       throw new Error("Dingo did not return an ADA historical balance.");
     points.push({
+      id: sample.hash,
       time: sample.time * 1000,
       label: `Epoch ${sample.epoch}${sample.hash === latest.hash ? " · current" : " · close"}`,
       value: Number(BigInt(ada.value)) / 1_000_000,

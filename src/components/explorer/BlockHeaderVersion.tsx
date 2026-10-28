@@ -42,7 +42,7 @@ export function BlockHeaderVersion({
   return (
     <span
       className={`header-version ${query.data.minor === "69" ? "dingo-version" : ""}`}
-      title={`${node.name}${node.id === "cardano-node" ? " (assumed)" : ""} · ${eraNameFromProtocol(Number(query.data.major))} · protocol version decoded from this block's header`}
+      title={`${node.name} · ${eraNameFromProtocol(Number(query.data.major))} · protocol version decoded from this block's header`}
     >
       <img
         className="node-icon"
