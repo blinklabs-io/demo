@@ -4,7 +4,11 @@ import type { Cip30Wallet, Cip30WalletApi } from "../lib/dingo/cip30";
 
 const LAST_WALLET_KEY = "dingo-demo.wallet";
 
-export type WalletStatus = "disconnected" | "connecting" | "connected" | "error";
+export type WalletStatus =
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "error";
 
 export interface WalletToken {
   // Blockfrost-style unit: hex policy ID + hex asset name concatenated -
@@ -28,6 +32,7 @@ interface WalletDetails {
 const EXPECTED_NETWORK_ID = 0; // CIP-30 network id 0 = testnet (Preview/Preprod), 1 = mainnet
 
 interface WalletState extends WalletDetails {
+  connectionId: number;
   status: WalletStatus;
   walletName: string | null;
   walletApi: Cip30WalletApi | null;
@@ -108,6 +113,7 @@ function rememberWallet(walletName: string | null) {
 let connectGeneration = 0;
 
 export const useWalletStore = create<WalletState>((set, get) => ({
+  connectionId: 0,
   status: "disconnected",
   walletName: null,
   walletApi: null,
@@ -137,7 +143,11 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       walletApi: null,
     });
     try {
-      const api = await wallet.enable();
+      const api = wallet.supportedExtensions?.some(
+        (extension) => extension.cip === 95,
+      )
+        ? await wallet.enable({ extensions: [{ cip: 95 }] })
+        : await wallet.enable();
       const networkId = await api.getNetworkId();
       if (networkId !== EXPECTED_NETWORK_ID) {
         if (connectGeneration === requestGeneration) {
@@ -156,6 +166,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       }
       set({
         status: "connected",
+        connectionId: requestGeneration,
         walletName,
         walletApi: api,
         error: null,
@@ -177,6 +188,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     connectGeneration++;
     rememberWallet(null);
     set({
+      connectionId: connectGeneration,
       status: "disconnected",
       walletName: null,
       walletApi: null,

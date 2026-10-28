@@ -1,3 +1,5 @@
+import { CopyButton } from "./CopyButton";
+import { PoolIdentity } from "./PoolIdentity";
 import { Link } from "react-router";
 import { shortenHash } from "../../lib/format";
 
@@ -24,12 +26,35 @@ export function HashLink({
   visible?: number;
   full?: boolean;
 }) {
+  if (kind === "pool") return <PoolIdentity poolId={id} compact />;
+  if (kind === "address" || kind === "account")
+    return (
+      <span
+        className={`address-identifier${full ? " address-identifier-full" : ""}`}
+      >
+        <Link
+          to={ROUTE[kind](id)}
+          title={id}
+          className="font-mono text-sky-400 hover:text-sky-300 hover:underline"
+        >
+          {id}
+        </Link>
+        <CopyButton value={id} />
+      </span>
+    );
   return (
     <Link
       to={ROUTE[kind](id)}
+      title={id}
       className="font-mono text-sky-400 hover:text-sky-300 hover:underline"
     >
-      {full ? id : shortenHash(id, visible)}
+      {kind === "drep" && id === "drep_always_abstain"
+        ? "Always abstain"
+        : kind === "drep" && id === "drep_always_no_confidence"
+          ? "Always no confidence"
+          : full
+            ? id
+            : shortenHash(id, visible)}
     </Link>
   );
 }

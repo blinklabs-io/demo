@@ -12,6 +12,7 @@ type Cip30CollateralParams = {
 };
 
 export interface Cip30WalletApi {
+  cip95?: { getPubDRepKey(): Promise<string> };
   getNetworkId(): Promise<number>;
   getUtxos(
     amount?: Cip30Cbor,
@@ -35,7 +36,10 @@ export interface Cip30Wallet {
   name?: string;
   icon?: string;
   apiVersion?: string;
-  enable(): Promise<Cip30WalletApi>;
+  supportedExtensions?: Array<{ cip: number }>;
+  enable(options?: {
+    extensions: Array<{ cip: number }>;
+  }): Promise<Cip30WalletApi>;
   isEnabled?(): Promise<boolean>;
 }
 

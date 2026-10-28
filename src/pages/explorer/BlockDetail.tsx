@@ -1,3 +1,6 @@
+import { PageIntro } from "../../components/explorer/Visuals";
+import { BlockHeaderVersion } from "../../components/explorer/BlockHeaderVersion";
+import { Metric, Timeline, Gauge } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
@@ -35,34 +38,31 @@ export default function BlockDetail() {
     enabled: Boolean(id),
   });
 
-  // Dingo only exposes a transaction list for the current tip
-  // (GET /api/v0/blocks/latest/txs) - there is no per-block equivalent. Only
-  // fetch it when this block turns out to be the current tip - and check
-  // that live, not from blockQuery's (possibly stale) cached confirmations:
-  // otherwise, if a new block lands after this page loaded, a refetch of
-  // /blocks/latest/txs would attribute the *new* tip's transactions to this
-  // (no longer current) block.
-  const latestBlockQuery = useQuery({
-    queryKey: ["dingo", "block", "latest-hash"],
-    queryFn: () => blockfrostFetch<{ hash: string }>("/api/v0/blocks/latest"),
-    refetchInterval: 15_000,
+  const txsQuery = useQuery({
+    queryKey: ["dingo", "block", blockQuery.data?.hash, "txs"],
+    queryFn: () =>
+      blockfrostFetch<string[]>(`/api/v0/blocks/${blockQuery.data!.hash}/txs`),
+    enabled: Boolean(blockQuery.data),
   });
-  const isTipKnown = latestBlockQuery.isSuccess;
-  const isTip = Boolean(
-    isTipKnown &&
-      blockQuery.data &&
-      latestBlockQuery.data &&
-      blockQuery.data.hash === latestBlockQuery.data.hash,
-  );
-  const latestTxsQuery = useQuery({
-    queryKey: ["dingo", "block", blockQuery.data?.hash, "latest-txs"],
-    queryFn: () => blockfrostFetch<string[]>("/api/v0/blocks/latest/txs"),
-    enabled: isTip,
+
+  const limitsQuery = useQuery({
+    queryKey: ["dingo", "epoch", blockQuery.data?.epoch, "block-limits"],
+    queryFn: () =>
+      blockfrostFetch<{ max_block_size: number }>(
+        `/api/v0/epochs/${blockQuery.data!.epoch}/parameters`,
+      ),
+    enabled: Boolean(blockQuery.data),
+    staleTime: Infinity,
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <Panel title={`Block ${id}`}>
+    <div className="flex flex-col gap-4 detail-showcase">
+      <PageIntro
+        eyebrow="Forged. Validated. On chain."
+        title="Block explorer"
+        symbol="⬡"
+      />
+      <Panel title="Block details">
         <QueryState
           isLoading={blockQuery.isLoading}
           error={blockQuery.error}
@@ -70,8 +70,88 @@ export default function BlockDetail() {
         >
           {blockQuery.data && (
             <div>
+              <div className="metric-grid">
+                <Metric
+                  label="Block height"
+                  value={`#${blockQuery.data.height.toLocaleString()}`}
+                />
+                <Metric label="Transactions" value={blockQuery.data.tx_count} />
+                <Metric
+                  label="Block size"
+                  value={`${(blockQuery.data.size / 1024).toFixed(1)} KB`}
+                />
+              </div>
+              <div className="block-cockpit">
+                <div className="block-producer">
+                  <span className="block-monument" aria-hidden="true">
+                    ⬡
+                  </span>
+                  <span className="eyebrow">Forged by</span>
+                  <HashLink kind="pool" id={blockQuery.data.slot_leader} />
+                  <BlockHeaderVersion
+                    hash={blockQuery.data.hash}
+                    slot={blockQuery.data.slot}
+                  />
+                </div>
+                <QueryState
+                  isLoading={limitsQuery.isLoading}
+                  error={limitsQuery.error}
+                >
+                  {limitsQuery.data && (
+                    <Gauge
+                      label="Block capacity used"
+                      value={
+                        limitsQuery.data.max_block_size > 0
+                          ? (blockQuery.data.size /
+                              limitsQuery.data.max_block_size) *
+                            100
+                          : 0
+                      }
+                      detail={`${blockQuery.data.size.toLocaleString()} / ${limitsQuery.data.max_block_size.toLocaleString()} bytes · epoch ${blockQuery.data.epoch}`}
+                      tone="violet"
+                    />
+                  )}
+                </QueryState>
+              </div>
+              <div className="block-chain-timeline my-6">
+                <Timeline
+                  items={[
+                    {
+                      label: "Previous block",
+                      complete: Boolean(blockQuery.data.previous_block),
+                      detail: blockQuery.data.previous_block ? (
+                        <HashLink
+                          kind="block"
+                          id={blockQuery.data.previous_block}
+                        />
+                      ) : (
+                        "Genesis boundary"
+                      ),
+                    },
+                    {
+                      label: `Block #${blockQuery.data.height.toLocaleString()}`,
+                      complete: true,
+                      detail: new Date(
+                        blockQuery.data.time * 1000,
+                      ).toLocaleString(),
+                    },
+                    {
+                      label: "Next block",
+                      complete: Boolean(blockQuery.data.next_block),
+                      detail: blockQuery.data.next_block ? (
+                        <HashLink
+                          kind="block"
+                          id={blockQuery.data.next_block}
+                        />
+                      ) : (
+                        "At the chain tip"
+                      ),
+                    },
+                  ]}
+                />
+              </div>
               <Field label="Hash" value={blockQuery.data.hash} />
-              <Field label="Height" value={blockQuery.data.height} />
+
               <Field label="Slot" value={blockQuery.data.slot} />
               <Field
                 label="Epoch"
@@ -81,79 +161,64 @@ export default function BlockDetail() {
                 label="Time"
                 value={new Date(blockQuery.data.time * 1000).toLocaleString()}
               />
-              <Field label="Slot leader" value={blockQuery.data.slot_leader} />
-              <Field label="Size" value={`${blockQuery.data.size} bytes`} />
-              <Field label="Tx count" value={blockQuery.data.tx_count} />
-              {blockQuery.data.output !== null && <Field label="Output" value={`${formatAda(BigInt(blockQuery.data.output))} ADA`} />}
-              {blockQuery.data.fees !== null && <Field label="Fees" value={`${formatAda(BigInt(blockQuery.data.fees))} ADA`} />}
-              {blockQuery.data.block_vrf && <Field label="Block VRF" value={blockQuery.data.block_vrf} />}
-              {blockQuery.data.op_cert && <Field label="Operational certificate" value={blockQuery.data.op_cert} />}
-              {blockQuery.data.op_cert_counter && <Field label="Operational certificate counter" value={blockQuery.data.op_cert_counter} />}
+              {blockQuery.data.output !== null && (
+                <Field
+                  label="Output"
+                  value={`${formatAda(BigInt(blockQuery.data.output))}`}
+                />
+              )}
+              {blockQuery.data.fees !== null && (
+                <Field
+                  label="Fees"
+                  value={`${formatAda(BigInt(blockQuery.data.fees))}`}
+                />
+              )}
+              <details className="technical-details">
+                <summary>
+                  Cryptographic proofs & operational certificate
+                </summary>{" "}
+                {blockQuery.data.block_vrf && (
+                  <Field label="Block VRF" value={blockQuery.data.block_vrf} />
+                )}
+                {blockQuery.data.op_cert && (
+                  <Field
+                    label="Operational certificate"
+                    value={blockQuery.data.op_cert}
+                  />
+                )}
+                {blockQuery.data.op_cert_counter && (
+                  <Field
+                    label="Operational certificate counter"
+                    value={blockQuery.data.op_cert_counter}
+                  />
+                )}
+              </details>
               <Field
                 label="Confirmations"
                 value={blockQuery.data.confirmations}
-              />
-              <Field
-                label="Previous block"
-                value={
-                  blockQuery.data.previous_block ? (
-                    <HashLink kind="block" id={blockQuery.data.previous_block} full />
-                  ) : (
-                    "—"
-                  )
-                }
-              />
-              <Field
-                label="Next block"
-                value={
-                  blockQuery.data.next_block ? (
-                    <HashLink kind="block" id={blockQuery.data.next_block} full />
-                  ) : (
-                    "—"
-                  )
-                }
               />
             </div>
           )}
         </QueryState>
       </Panel>
 
-      {isTip && (
-        <Panel title="Transactions">
-          <QueryState
-            isLoading={latestTxsQuery.isLoading}
-            error={latestTxsQuery.error}
-          >
-            {latestTxsQuery.data && latestTxsQuery.data.length === 0 && (
-              <p className="text-sm text-slate-500">
-                No transactions in this block.
-              </p>
-            )}
-            <ul className="flex flex-col gap-1">
-              {latestTxsQuery.data?.map((hash) => (
-                <li key={hash}>
-                  <HashLink kind="tx" id={hash} visible={16} />
-                </li>
-              ))}
-            </ul>
-          </QueryState>
-        </Panel>
-      )}
-      {isTipKnown && !isTip && blockQuery.data && (
-        <p className="text-xs text-slate-500">
-          Dingo only lists transactions for the current chain tip; this block
-          has since been superseded, so its transaction list isn't available
-          here. Look up individual transactions by hash instead.
-        </p>
-      )}
-      {!isTipKnown && blockQuery.data && (
-        <QueryState
-          isLoading={latestBlockQuery.isLoading}
-          error={latestBlockQuery.error}
-        >
-          {null}
+      <Panel title="Transactions">
+        <QueryState isLoading={txsQuery.isLoading} error={txsQuery.error}>
+          {txsQuery.data?.length === 0 && (
+            <p className="text-sm text-slate-400">
+              No transactions in this block.
+            </p>
+          )}
+          <ul className="activity-list">
+            {txsQuery.data?.map((hash) => (
+              <li key={hash}>
+                <span className="status-badge positive">TX</span>
+                <HashLink kind="tx" id={hash} visible={16} />
+              </li>
+            ))}
+          </ul>
         </QueryState>
-      )}
+      </Panel>
     </div>
   );
 }

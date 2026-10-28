@@ -8,10 +8,12 @@ export type EntityKind =
   | "address"
   | "account"
   | "asset"
+  | "policy"
   | "pool"
   | "drep"
   | "metadata"
-  | "epoch";
+  | "epoch"
+  | "handle";
 
 export interface LookupResult {
   kind: EntityKind;
@@ -19,11 +21,8 @@ export interface LookupResult {
 }
 
 const HEX64 = /^[0-9a-f]{64}$/i;
-// Blockfrost asset IDs are policy_id (56 hex chars) + optional asset_name_hex
-// (0-64 hex chars). This overlaps with a raw 28-byte DRep credential hex, but
-// DReps are reachable by bech32 id or from the DRep list, so that's an
-// acceptable ambiguity for a search-box heuristic.
-const ASSET_HEX = /^[0-9a-f]{56,120}$/i;
+const POLICY_HEX = /^[0-9a-f]{56}$/i;
+const ASSET_HEX = /^[0-9a-f]{56}(?:[0-9a-f]{2}){0,32}$/i;
 const NUMERIC = /^\d+$/;
 
 export function detectEntityKind(rawQuery: string): LookupResult | null {
@@ -31,6 +30,19 @@ export function detectEntityKind(rawQuery: string): LookupResult | null {
   if (!query) {
     return null;
   }
+
+  if (/^\$[a-z0-9_.@-]+$/i.test(query)) {
+    return {
+      kind: "handle",
+      route: `/explorer/handle/${encodeURIComponent(query.slice(1).toLowerCase())}`,
+    };
+  }
+  const explicitTicker = /^pool:([a-z0-9]{1,5})$/i.exec(query);
+  if (explicitTicker)
+    return {
+      kind: "pool",
+      route: `/explorer/pools?ticker=${explicitTicker[1].toUpperCase()}`,
+    };
 
   if (/^(addr|addr_test)1[0-9a-z]+$/i.test(query)) {
     return { kind: "address", route: `/explorer/address/${query}` };
@@ -41,7 +53,10 @@ export function detectEntityKind(rawQuery: string): LookupResult | null {
   if (/^pool1[0-9a-z]+$/i.test(query)) {
     return { kind: "pool", route: `/explorer/pool/${query}` };
   }
-  if (/^drep1[0-9a-z]+$/i.test(query) || /^drep_script1[0-9a-z]+$/i.test(query)) {
+  if (
+    /^drep1[0-9a-z]+$/i.test(query) ||
+    /^drep_script1[0-9a-z]+$/i.test(query)
+  ) {
     return { kind: "drep", route: `/explorer/drep/${query}` };
   }
   const metadataLabel = /^metadata:(\d+)$/i.exec(query);
@@ -57,8 +72,33 @@ export function detectEntityKind(rawQuery: string): LookupResult | null {
   }
   const drepCredential = /^drep:([0-9a-f]{56})$/i.exec(query);
   if (drepCredential) {
-    return { kind: "drep", route: `/explorer/drep/${drepCredential[1].toLowerCase()}` };
+    return {
+      kind: "drep",
+      route: `/explorer/drep/${drepCredential[1].toLowerCase()}`,
+    };
   }
+  const explicitPolicy = /^policy:([0-9a-f]{56})$/i.exec(query);
+  if (explicitPolicy)
+    return {
+      kind: "policy",
+      route: `/explorer/policy/${explicitPolicy[1].toLowerCase()}`,
+    };
+  const explicitAsset = /^asset:(.+)$/i.exec(query);
+  const assetQuery = explicitAsset ? explicitAsset[1] : query;
+  const dottedAsset = /^([0-9a-f]{56})\.((?:[0-9a-f]{2}){0,32})$/i.exec(
+    assetQuery,
+  );
+  if (dottedAsset)
+    return {
+      kind: "asset",
+      route: `/explorer/asset/${(dottedAsset[1] + dottedAsset[2]).toLowerCase()}`,
+    };
+  if (explicitAsset)
+    return ASSET_HEX.test(assetQuery)
+      ? { kind: "asset", route: `/explorer/asset/${assetQuery.toLowerCase()}` }
+      : null;
+  if (POLICY_HEX.test(query))
+    return { kind: "policy", route: `/explorer/policy/${query.toLowerCase()}` };
   if (HEX64.test(query)) {
     // A 64-char hex string could be a tx hash or a block hash. The resolver
     // route tries tx first, then falls back to block.
@@ -70,5 +110,10 @@ export function detectEntityKind(rawQuery: string): LookupResult | null {
   if (NUMERIC.test(query)) {
     return { kind: "block", route: `/explorer/block/${query}` };
   }
+  if (/^[a-z0-9]{1,5}$/i.test(query))
+    return {
+      kind: "pool",
+      route: `/explorer/pools?ticker=${query.toUpperCase()}`,
+    };
   return null;
 }

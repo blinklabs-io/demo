@@ -8,6 +8,8 @@ const PAGE_SIZE = 20;
 
 interface PaginatedListProps<T> {
   queryKey: unknown[];
+  visualize?: (items: T[]) => ReactNode;
+  staleTime?: number;
   buildUrl: (page: number, pageSize: number) => string;
   renderItem: (item: T) => ReactNode;
   emptyLabel?: string;
@@ -15,12 +17,7 @@ interface PaginatedListProps<T> {
 }
 
 export function PaginatedList<T>(props: PaginatedListProps<T>) {
-  return (
-    <PaginatedListPage
-      key={JSON.stringify(props.queryKey)}
-      {...props}
-    />
-  );
+  return <PaginatedListPage key={JSON.stringify(props.queryKey)} {...props} />;
 }
 
 function PaginatedListPage<T>({
@@ -29,19 +26,27 @@ function PaginatedListPage<T>({
   renderItem,
   emptyLabel = "Nothing here yet.",
   keyFor,
+  visualize,
+  staleTime,
 }: PaginatedListProps<T>) {
   const [page, setPage] = useState(1);
   const query = useQuery({
     queryKey: [...queryKey, page],
-    queryFn: () => blockfrostFetch<T[]>(buildUrl(page, PAGE_SIZE)),
+    queryFn: ({ signal }) =>
+      blockfrostFetch<T[]>(buildUrl(page, PAGE_SIZE), { signal }),
+    staleTime,
   });
 
   return (
     <QueryState isLoading={query.isLoading} error={query.error}>
       {query.data?.length === 0 && (
-        <p className="text-sm text-slate-500">{emptyLabel}</p>
+        <div className="list-empty">
+          <span aria-hidden="true">◇</span>
+          <p>{emptyLabel}</p>
+        </div>
       )}
-      <ul className="flex flex-col gap-1 text-sm">
+      {query.data && query.data.length > 0 && visualize?.(query.data)}
+      <ul className="activity-list">
         {query.data?.map((item, index) => (
           <li key={keyFor(item, index)}>{renderItem(item)}</li>
         ))}

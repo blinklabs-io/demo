@@ -1,3 +1,5 @@
+import { PageIntro } from "../../components/explorer/Visuals";
+import { WalletWelcome } from "../../components/explorer/WalletWelcome";
 import { useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -60,7 +62,9 @@ export default function WalletDelegate() {
       throw new Error("Connect a wallet first.");
     }
     if (!accountQuery.isSuccess || !accountQuery.data) {
-      throw new Error("Unable to verify the stake account registration status.");
+      throw new Error(
+        "Unable to verify the stake account registration status.",
+      );
     }
 
     const targetId = target.id.trim();
@@ -105,18 +109,14 @@ export default function WalletDelegate() {
   });
 
   if (status !== "connected") {
-    return (
-      <div className="rounded-md border border-slate-800 p-6 text-center text-sm text-slate-400">
-        Connect a wallet from the header to delegate.
-      </div>
-    );
+    return <WalletWelcome purpose="delegate your stake" />;
   }
 
   if (!rewardAddress) {
     return (
       <div className="rounded-md border border-red-900 bg-red-950 p-6 text-center text-sm text-red-200">
-        The connected wallet did not provide a reward address, so delegation
-        is unavailable.
+        The connected wallet did not provide a reward address, so delegation is
+        unavailable.
       </div>
     );
   }
@@ -132,22 +132,34 @@ export default function WalletDelegate() {
         : " Your stake credential isn't registered yet - this will register and delegate in one transaction.";
 
   return (
-    <div className="flex max-w-lg flex-col gap-6">
+    <div className="wallet-workbench delegate-workbench flex flex-col gap-6">
+      <PageIntro
+        eyebrow="Stake in what comes next"
+        title="Back your builders."
+        symbol="⬡"
+      />
       <div>
-        <h1 className="mb-1 text-lg font-semibold text-white">Delegate</h1>
         <p className="text-sm text-slate-500">
           {accountQuery.isLoading && "Checking current delegation…"}
           {!accountQuery.isLoading && (
             <>
               Currently delegated to pool{" "}
               {accountQuery.data?.pool_id ? (
-                <HashLink kind="pool" id={accountQuery.data.pool_id} visible={8} />
+                <HashLink
+                  kind="pool"
+                  id={accountQuery.data.pool_id}
+                  visible={8}
+                />
               ) : (
                 "none"
               )}
               , DRep{" "}
               {accountQuery.data?.drep_id ? (
-                <HashLink kind="drep" id={accountQuery.data.drep_id} visible={8} />
+                <HashLink
+                  kind="drep"
+                  id={accountQuery.data.drep_id}
+                  visible={8}
+                />
               ) : (
                 "none"
               )}
@@ -157,7 +169,7 @@ export default function WalletDelegate() {
         </p>
       </div>
 
-      <div>
+      <div className="wallet-form-card">
         <h2 className="mb-2 text-sm font-medium text-slate-300">
           Stake pool delegation
         </h2>
@@ -213,7 +225,7 @@ export default function WalletDelegate() {
         )}
       </div>
 
-      <div>
+      <div className="wallet-form-card">
         <h2 className="mb-2 text-sm font-medium text-slate-300">
           DRep vote delegation
         </h2>

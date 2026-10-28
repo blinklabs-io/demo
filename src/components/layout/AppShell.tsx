@@ -1,10 +1,16 @@
+import { useWalletStore } from "../../stores/walletStore";
 import { useEffect } from "react";
-import { Outlet } from "react-router";
+import { NavLink, Outlet, useLocation } from "react-router";
 import { Header } from "./Header";
 import { useMempoolStore } from "../../stores/mempoolStore";
 import { useTipStore } from "../../stores/tipStore";
 
 export function AppShell() {
+  const { pathname } = useLocation();
+  const restoreConnection = useWalletStore((state) => state.restoreConnection);
+  useEffect(() => {
+    void restoreConnection();
+  }, [restoreConnection]);
   const startMempoolFeed = useMempoolStore((state) => state.start);
   const startTipFeed = useTipStore((state) => state.start);
 
@@ -18,9 +24,31 @@ export function AppShell() {
   }, [startMempoolFeed, startTipFeed]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="app-shell min-h-screen bg-slate-950 text-slate-100">
       <Header />
-      <main className="mx-auto max-w-5xl px-4 py-6">
+      <main className="workspace-main">
+        {pathname.startsWith("/wallet") && (
+          <div className="wallet-nav">
+            <h1 className="sr-only">Wallet</h1>
+            <nav aria-label="Wallet navigation">
+              {[
+                ["/wallet", "Portfolio"],
+                ["/wallet/send", "Send"],
+                ["/wallet/swap", "Swap"],
+                ["/wallet/delegate", "Delegate"],
+              ].map(([to, label]) => (
+                <NavLink
+                  key={to}
+                  end
+                  to={to}
+                  className={({ isActive }) => (isActive ? "selected" : "")}
+                >
+                  {label}
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

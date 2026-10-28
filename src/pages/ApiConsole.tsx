@@ -1,3 +1,4 @@
+import { PageIntro } from "../components/explorer/Visuals";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import {
@@ -23,16 +24,37 @@ const BLOCKFROST_PRESETS: EndpointPreset[] = [
   { label: "Current epoch", path: "/api/v0/epochs/latest" },
   { label: "Protocol parameters", path: "/api/v0/epochs/latest/parameters" },
   { label: "Network eras", path: "/api/v0/network/eras" },
-  { label: "DReps", path: "/api/v0/governance/dreps?page=1&count=20&order_by=amount" },
-  { label: "Governance proposals", path: "/api/v0/governance/proposals?page=1&count=20&order=desc" },
+  {
+    label: "DReps",
+    path: "/api/v0/governance/dreps?page=1&count=20&order_by=amount",
+  },
+  {
+    label: "Governance proposals",
+    path: "/api/v0/governance/proposals?page=1&count=20&order=desc",
+  },
   { label: "Constitutional committee", path: "/api/v0/governance/committee" },
-  { label: "Committee votes", path: "/api/v0/governance/committee/votes?page=1&count=20&order=desc" },
+  {
+    label: "Committee votes",
+    path: "/api/v0/governance/committee/votes?page=1&count=20&order=desc",
+  },
   { label: "Assets", path: "/api/v0/assets?page=1&count=20&order=desc" },
   { label: "Scripts", path: "/api/v0/scripts?page=1&count=20&order=desc" },
-  { label: "Blockfrost mempool", path: "/api/v0/mempool?page=1&count=20&order=desc" },
-  { label: "Latest block transaction CBOR", path: "/api/v0/blocks/latest/txs/cbor?page=1&count=20" },
-  { label: "Retired pools", path: "/api/v0/pools/retired?page=1&count=20&order=desc" },
-  { label: "Metadata label 674", path: "/api/v0/metadata/txs/labels/674?page=1&count=20" },
+  {
+    label: "Blockfrost mempool",
+    path: "/api/v0/mempool?page=1&count=20&order=desc",
+  },
+  {
+    label: "Latest block transaction CBOR",
+    path: "/api/v0/blocks/latest/txs/cbor?page=1&count=20",
+  },
+  {
+    label: "Retired pools",
+    path: "/api/v0/pools/retired?page=1&count=20&order=desc",
+  },
+  {
+    label: "Metadata label 674",
+    path: "/api/v0/metadata/txs/labels/674?page=1&count=20",
+  },
 ];
 
 const PREVIEW_NETWORK = JSON.stringify(
@@ -74,7 +96,9 @@ function isSafePath(path: string, target: ApiTarget): boolean {
   if (target === "mesh" && !MESH_READ_PATHS.has(path)) return false;
 
   try {
-    const base = new URL(target === "mesh" ? DINGO_CONFIG.meshUrl : DINGO_CONFIG.blockfrostUrl);
+    const base = new URL(
+      target === "mesh" ? DINGO_CONFIG.meshUrl : DINGO_CONFIG.blockfrostUrl,
+    );
     return new URL(path, base).origin === base.origin;
   } catch {
     return false;
@@ -113,11 +137,13 @@ export default function ApiConsole() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const presets = target === "mesh" ? MESH_PRESETS : BLOCKFROST_PRESETS;
-  const baseUrl = target === "mesh" ? DINGO_CONFIG.meshUrl : DINGO_CONFIG.blockfrostUrl;
+  const baseUrl =
+    target === "mesh" ? DINGO_CONFIG.meshUrl : DINGO_CONFIG.blockfrostUrl;
 
   function changeTarget(nextTarget: ApiTarget) {
     setTarget(nextTarget);
-    const nextPresets = nextTarget === "mesh" ? MESH_PRESETS : BLOCKFROST_PRESETS;
+    const nextPresets =
+      nextTarget === "mesh" ? MESH_PRESETS : BLOCKFROST_PRESETS;
     setPath(nextPresets[0].path);
     setBody(nextPresets[0].body ?? "{}");
     setResult(null);
@@ -129,9 +155,11 @@ export default function ApiConsole() {
     const requestedPath = path.trim();
     if (!isSafePath(requestedPath, target)) {
       setResult(null);
-      setError(target === "mesh"
-        ? "Choose one of the supported read-only Mesh endpoints."
-        : "Enter a relative API path beginning with /; absolute URLs are not allowed.");
+      setError(
+        target === "mesh"
+          ? "Choose one of the supported read-only Mesh endpoints."
+          : "Enter a relative API path beginning with /; absolute URLs are not allowed.",
+      );
       return;
     }
 
@@ -139,7 +167,11 @@ export default function ApiConsole() {
     if (target === "mesh") {
       try {
         const parsedBody: unknown = JSON.parse(body);
-        if (parsedBody === null || typeof parsedBody !== "object" || Array.isArray(parsedBody)) {
+        if (
+          parsedBody === null ||
+          typeof parsedBody !== "object" ||
+          Array.isArray(parsedBody)
+        ) {
           throw new Error("Mesh requests must be JSON objects.");
         }
         requestBody = JSON.stringify(parsedBody);
@@ -158,7 +190,9 @@ export default function ApiConsole() {
     try {
       let response: Response;
       if (target === "blockfrost") {
-        response = await blockfrostFetchResponse(requestedPath, { method: "GET" });
+        response = await blockfrostFetchResponse(requestedPath, {
+          method: "GET",
+        });
       } else {
         response = await fetch(`${DINGO_CONFIG.meshUrl}${requestedPath}`, {
           method: "POST",
@@ -167,15 +201,26 @@ export default function ApiConsole() {
         });
       }
       const responseBody = await readResponseBody(response);
-      setResult({ status: response.status, duration: Math.round(performance.now() - startedAt), ...responseBody });
+      setResult({
+        status: response.status,
+        duration: Math.round(performance.now() - startedAt),
+        ...responseBody,
+      });
       if (!response.ok) {
-        setError(`Dingo ${target === "mesh" ? "Mesh" : "Blockfrost-compatible"} API returned ${response.status}.`);
+        setError(
+          `Dingo ${target === "mesh" ? "Mesh" : "Blockfrost-compatible"} API returned ${response.status}.`,
+        );
       }
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "The request failed.";
+      const message =
+        cause instanceof Error ? cause.message : "The request failed.";
       setError(message);
-      const errorBody = cause instanceof BlockfrostError ? cause.body : undefined;
-      const status = cause && typeof cause === "object" && "status" in cause ? Number(cause.status) : 0;
+      const errorBody =
+        cause instanceof BlockfrostError ? cause.body : undefined;
+      const status =
+        cause && typeof cause === "object" && "status" in cause
+          ? Number(cause.status)
+          : 0;
       setResult({
         status,
         duration: Math.round(performance.now() - startedAt),
@@ -188,31 +233,47 @@ export default function ApiConsole() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-white">API Console</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Inspect Dingo’s Blockfrost-compatible GET endpoints and read-only Mesh queries.
-        </p>
+    <div className="api-console-grid">
+      <div className="api-console-heading">
+        <PageIntro
+          eyebrow="Talk directly to Dingo"
+          title="Under the hood."
+          detail="Explore the APIs powering every view in this demo."
+          symbol="{ }"
+        />
       </div>
 
       <Panel title="Request">
         <form onSubmit={execute} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="api-target" className="mb-1.5 block text-sm font-medium text-slate-300">API</label>
+            <label
+              htmlFor="api-target"
+              className="mb-1.5 block text-sm font-medium text-slate-300"
+            >
+              API
+            </label>
             <select
               id="api-target"
               value={target}
-              onChange={(event) => changeTarget(event.target.value as ApiTarget)}
+              onChange={(event) =>
+                changeTarget(event.target.value as ApiTarget)
+              }
               className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-500"
             >
-              <option value="blockfrost">Blockfrost-compatible REST · GET</option>
+              <option value="blockfrost">
+                Blockfrost-compatible REST · GET
+              </option>
               <option value="mesh">Mesh / Rosetta · read-only POST</option>
             </select>
           </div>
 
           <div>
-            <label htmlFor="api-endpoint" className="mb-1.5 block text-sm font-medium text-slate-300">Endpoint path</label>
+            <label
+              htmlFor="api-endpoint"
+              className="mb-1.5 block text-sm font-medium text-slate-300"
+            >
+              Endpoint path
+            </label>
             <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 id="api-endpoint"
@@ -223,16 +284,31 @@ export default function ApiConsole() {
                 spellCheck={false}
                 aria-describedby="api-endpoint-help"
               />
-              <button type="submit" disabled={loading} className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:cursor-wait disabled:opacity-60">
-                {loading ? "Loading…" : target === "mesh" ? "Execute POST" : "Execute GET"}
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:cursor-wait disabled:opacity-60"
+              >
+                {loading
+                  ? "Loading…"
+                  : target === "mesh"
+                    ? "Execute POST"
+                    : "Execute GET"}
               </button>
             </div>
-            <p id="api-endpoint-help" className="mt-1.5 text-xs text-slate-500">Requests go to {baseUrl}.</p>
+            <p id="api-endpoint-help" className="mt-1.5 text-xs text-slate-500">
+              Requests go to {baseUrl}.
+            </p>
           </div>
 
           {target === "mesh" && (
             <div>
-              <label htmlFor="mesh-request" className="mb-1.5 block text-sm font-medium text-slate-300">JSON request</label>
+              <label
+                htmlFor="mesh-request"
+                className="mb-1.5 block text-sm font-medium text-slate-300"
+              >
+                JSON request
+              </label>
               <textarea
                 id="mesh-request"
                 value={body}
@@ -245,34 +321,84 @@ export default function ApiConsole() {
           )}
 
           <div>
-            <span className="mb-1.5 block text-xs uppercase tracking-wide text-slate-500">Read-only presets</span>
-            <div className="flex flex-wrap gap-2" aria-label="Endpoint presets">
+            <span className="mb-1.5 block text-xs uppercase tracking-wide text-slate-500">
+              Read-only presets
+            </span>
+            <select
+              aria-label="Endpoint presets"
+              value={presets.some((preset) => preset.path === path) ? path : ""}
+              onChange={(event) => {
+                const preset = presets.find(
+                  (preset) => preset.path === event.target.value,
+                );
+                if (preset) {
+                  setPath(preset.path);
+                  setBody(preset.body ?? "{}");
+                }
+              }}
+              className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-slate-100"
+            >
+              <option value="" disabled>
+                Custom endpoint
+              </option>
               {presets.map((preset) => (
-                <button
-                  key={preset.path}
-                  type="button"
-                  onClick={() => { setPath(preset.path); setBody(preset.body ?? "{}"); }}
-                  className="rounded-md border border-slate-700 px-2.5 py-1.5 text-xs text-slate-300 hover:border-slate-500 hover:text-white"
-                >
+                <option key={preset.path} value={preset.path}>
                   {preset.label}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
         </form>
       </Panel>
 
       <Panel title="Response">
-        {loading && <p className="text-sm text-slate-400" role="status">Requesting {path.trim()}…</p>}
-        {!loading && !result && !error && <p className="text-sm text-slate-500">Choose an API endpoint to inspect its response.</p>}
+        {loading && (
+          <p className="text-sm text-slate-400" role="status">
+            Requesting {path.trim()}…
+          </p>
+        )}
+        {!loading && !result && !error && (
+          <div className="terminal-ready">
+            <span aria-hidden="true">{">_"}</span>
+            <strong>Ready when you are.</strong>
+            <p>Choose an endpoint and execute a request.</p>
+          </div>
+        )}
         {(result || error) && (
           <>
-            <div className="mb-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-400" aria-live="polite">
-              <span>Status: <strong className={result?.status && result.status < 400 ? "text-emerald-300" : "text-rose-300"}>{result?.status || "—"}</strong></span>
-              <span>Duration: <strong className="text-slate-200">{result?.duration ?? "—"} ms</strong></span>
+            <div
+              className="mb-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-400"
+              aria-live="polite"
+            >
+              <span>
+                Status:{" "}
+                <strong
+                  className={
+                    result?.status && result.status < 400
+                      ? "text-emerald-300"
+                      : "text-rose-300"
+                  }
+                >
+                  {result?.status || "—"}
+                </strong>
+              </span>
+              <span>
+                Duration:{" "}
+                <strong className="text-slate-200">
+                  {result?.duration ?? "—"} ms
+                </strong>
+              </span>
             </div>
-            {error && <p className="mb-3 text-sm text-rose-300" role="alert">{error}</p>}
-            {result?.body && <pre className="max-h-[32rem] overflow-auto rounded-md border border-slate-800 bg-slate-950 p-3 text-xs leading-relaxed text-slate-300"><code>{result.body}</code></pre>}
+            {error && (
+              <p className="mb-3 text-sm text-rose-300" role="alert">
+                {error}
+              </p>
+            )}
+            {result?.body && (
+              <pre className="max-h-[32rem] overflow-auto rounded-md border border-slate-800 bg-slate-950 p-3 text-xs leading-relaxed text-slate-300">
+                <code>{result.body}</code>
+              </pre>
+            )}
           </>
         )}
       </Panel>

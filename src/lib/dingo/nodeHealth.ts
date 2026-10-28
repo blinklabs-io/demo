@@ -13,17 +13,6 @@ interface BlockResponse {
   epoch: number;
 }
 
-interface NetworkEraBound {
-  time: number;
-  slot: number;
-  epoch: number;
-}
-
-interface NetworkEraResponse {
-  start: NetworkEraBound;
-  end: NetworkEraBound | null;
-}
-
 export interface NodeHealth {
   isHealthy: boolean;
   tipHeight: number;
@@ -31,19 +20,13 @@ export interface NodeHealth {
   tipEpoch: number;
   tipHash: string;
   secondsSinceTip: number;
-  eraIndex: number;
 }
 
 async function fetchNodeHealth(): Promise<NodeHealth> {
-  const [health, latestBlock, eras] = await Promise.all([
+  const [health, latestBlock] = await Promise.all([
     blockfrostFetch<HealthResponse>("/health"),
     blockfrostFetch<BlockResponse>("/api/v0/blocks/latest"),
-    blockfrostFetch<NetworkEraResponse[]>("/api/v0/network/eras"),
   ]);
-
-  // The array is ordered oldest to newest; the current era is whichever entry
-  // has no end boundary yet, falling back to the last entry Dingo reports.
-  const currentEraIndex = eras.findIndex((era) => era.end === null);
 
   return {
     isHealthy: health.is_healthy,
@@ -54,10 +37,6 @@ async function fetchNodeHealth(): Promise<NodeHealth> {
     secondsSinceTip: Math.max(
       0,
       Math.floor(Date.now() / 1000) - latestBlock.time,
-    ),
-    eraIndex: Math.max(
-      0,
-      currentEraIndex >= 0 ? currentEraIndex : eras.length - 1,
     ),
   };
 }
