@@ -33,13 +33,14 @@ export function AppShell() {
             <nav aria-label="Wallet navigation">
               {[
                 ["/wallet", "Portfolio"],
+                ["/wallet/tools", "Tools"],
                 ["/wallet/send", "Send"],
                 ["/wallet/swap", "Swap"],
                 ["/wallet/delegate", "Delegate"],
               ].map(([to, label]) => (
                 <NavLink
                   key={to}
-                  end
+                  end={to !== "/wallet/tools"}
                   to={to}
                   className={({ isActive }) => (isActive ? "selected" : "")}
                 >

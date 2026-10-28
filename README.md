@@ -129,3 +129,28 @@ records by survey reference before reading matching transaction CBOR and
 inclusion data, reuses immutable reads, and limits concurrent verifications.
 Publishing, responding, and cancelling each require an explicit transaction
 review and wallet signature; public metadata is permanent.
+
+## Preview wallet tools
+
+The wallet Tools section uses the connected CIP-30 wallet and existing Dingo
+APIs. It includes:
+
+- Batch ADA and native asset payments, with CSV recipient import and raw token
+  quantities. Review shows the actual outputs, token-output ADA, change, and fee.
+- Consolidation of selected wallet UTxOs, preserving native assets, and creation
+  of equal ADA outputs. Consolidation excludes datum and reference-script
+  outputs and does not spend other addresses merely sharing a stake key.
+- SHA-256 document proofs in transaction metadata, with local file hashing and
+  verification against confirmed transaction CBOR. Files are never uploaded;
+  only the file name, digest, and message are published. A proof establishes the
+  fingerprint's existence by the block timestamp, not authorship or ownership.
+- Native token minting with CIP-25 metadata, inline SVG artwork, and a signature-and-expiry policy,
+  plus burning using an exported policy. The policy is not a supply cap or a
+  uniqueness guarantee. Minting and burning both stop when the policy expires.
+- CIP-95 DRep registration with the current deposit read from Dingo, and an
+  explicit activity update that clears the metadata anchor.
+- Direct Preview treasury donations using the ledger transaction field.
+
+Every transaction requires separate build/review and sign/submit actions. Drafts
+expire after at most ten minutes, wallet changes invalidate signing, and required
+payment and DRep witnesses are verified before submission through Dingo.

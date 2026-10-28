@@ -20,6 +20,7 @@ import PoolList from "./pages/explorer/PoolList";
 import PoolDetail from "./pages/explorer/PoolDetail";
 import DRepList from "./pages/explorer/DRepList";
 import DRepDetail from "./pages/explorer/DRepDetail";
+import WalletTools from "./pages/wallet/WalletTools";
 import WalletHome from "./pages/wallet/WalletHome";
 import WalletSend from "./pages/wallet/WalletSend";
 import WalletSwap from "./pages/wallet/WalletSwap";
@@ -84,6 +85,8 @@ export const router = createBrowserRouter([
           { path: "explorer/dreps", element: <DRepList /> },
           { path: "explorer/drep/:drepId", element: <DRepDetail /> },
           { path: "wallet", element: <WalletHome /> },
+          { path: "wallet/tools", element: <WalletTools /> },
+          { path: "wallet/tools/:tool", element: <WalletTools /> },
           { path: "wallet/send", element: <WalletSend /> },
           { path: "wallet/swap", element: <WalletSwap /> },
           { path: "wallet/delegate", element: <WalletDelegate /> },
