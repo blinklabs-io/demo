@@ -1,3 +1,4 @@
+import { nodeImplementation } from "../../lib/dingo/nodeImplementation";
 import { eraNameFromProtocol } from "../../lib/dingo/networkNames";
 import { useQuery } from "@tanstack/react-query";
 import { readHeaderVersion } from "../../lib/dingo/blockHeader";
@@ -37,13 +38,20 @@ export function BlockHeaderVersion({
         Unavailable
       </span>
     );
+  const node = nodeImplementation(query.data.minor);
   return (
     <span
       className={`header-version ${query.data.minor === "69" ? "dingo-version" : ""}`}
-      title={`${eraNameFromProtocol(Number(query.data.major))} · protocol version decoded from this block's header`}
+      title={`${node.name}${node.id === "cardano-node" ? " (assumed)" : ""} · ${eraNameFromProtocol(Number(query.data.major))} · protocol version decoded from this block's header`}
     >
+      <img
+        className="node-icon"
+        src={node.icon}
+        alt={node.name}
+        width="22"
+        height="22"
+      />
       {query.data.major}.{query.data.minor}
-      {query.data.minor === "69" && <small>Dingo</small>}
     </span>
   );
 }

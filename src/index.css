@@ -4385,3 +4385,27 @@ summary {
     padding: 18px;
   }
 }
+
+.node-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  object-fit: contain;
+}
+.header-version {
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.recent-version-blocks > a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.recent-version-blocks .node-icon {
+  width: min(26px, 80%);
+  height: auto;
+  max-height: 26px;
+  flex: 0 1 auto;
+  filter: drop-shadow(0 1px 2px #0008);
+}

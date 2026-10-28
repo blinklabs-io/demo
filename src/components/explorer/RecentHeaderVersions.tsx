@@ -1,3 +1,4 @@
+import { nodeImplementation } from "../../lib/dingo/nodeImplementation";
 import { useQueries } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { readHeaderVersion } from "../../lib/dingo/blockHeader";
@@ -49,7 +50,7 @@ export function RecentHeaderVersions({
             title="Decoded headers"
             unit={`${decoded} blocks`}
             items={versions.map(([version, count]) => ({
-              label: version.endsWith(".69") ? `${version} · Dingo` : version,
+              label: `${version} · ${nodeImplementation(version.split(".")[1]).name}`,
               value: BigInt(count),
               display: `${count} · ${((count / decoded) * 100).toFixed(1)}%`,
             }))}
@@ -72,6 +73,9 @@ export function RecentHeaderVersions({
               const version = header.data
                 ? `${header.data.major}.${header.data.minor}`
                 : undefined;
+              const node = header.data
+                ? nodeImplementation(header.data.minor)
+                : undefined;
               const colorIndex = versions.findIndex(
                 ([name]) => name === version,
               );
@@ -84,9 +88,19 @@ export function RecentHeaderVersions({
                       ? colors[colorIndex % colors.length]
                       : "#293b4b",
                   }}
-                  aria-label={`Block ${block.height}, header version ${version ?? (header.isError ? "unavailable" : "loading")}`}
-                  title={`Block ${block.height} · ${date(block.time)} · ${version ?? (header.isError ? "Header unavailable" : "Loading header")}`}
-                />
+                  aria-label={`Block ${block.height}, ${node ? `${node.name}, ` : ""}header version ${version ?? (header.isError ? "unavailable" : "loading")}`}
+                  title={`Block ${block.height} · ${date(block.time)} · ${node ? `${node.name}${node.id === "cardano-node" ? " (assumed)" : ""} · ` : ""}${version ?? (header.isError ? "Header unavailable" : "Loading header")}`}
+                >
+                  {node && (
+                    <img
+                      className="node-icon"
+                      src={node.icon}
+                      alt=""
+                      width="22"
+                      height="22"
+                    />
+                  )}
+                </Link>
               );
             })
             .reverse()}
@@ -102,7 +116,14 @@ export function RecentHeaderVersions({
             <span key={version}>
               <i style={{ background: colors[index % colors.length] }} />
               <strong>{version}</strong>
-              {version.endsWith(".69") && <small>Dingo</small>}
+              <img
+                className="node-icon"
+                src={nodeImplementation(version.split(".")[1]).icon}
+                alt=""
+                width="22"
+                height="22"
+              />
+              <small>{nodeImplementation(version.split(".")[1]).name}</small>
               <span>
                 {count} {count === 1 ? "block" : "blocks"}
               </span>
@@ -119,7 +140,9 @@ export function RecentHeaderVersions({
         </p>
         <p className="mt-2 text-xs text-slate-500">
           Uses the same headers as the block list below. Shares cover decoded
-          headers in this recent window, not a 24-hour network total.
+          headers in this recent window, not a 24-hour network total. Node
+          identities use protocol minor markers; unrecognized markers are
+          assumed to be Haskell cardano-node.
         </p>
       </section>
     </div>
