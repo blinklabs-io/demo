@@ -125,7 +125,10 @@ export function ToolTransaction({
         <button
           className="tool-primary"
           disabled={busy || !ready}
-          onClick={() => prepare.mutate()}
+          onClick={() => {
+            submit.reset();
+            prepare.mutate();
+          }}
         >
           {prepare.isPending ? "Building with Dingo…" : "Review transaction"}
         </button>

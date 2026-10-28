@@ -373,7 +373,7 @@ function Utxos() {
             ready={mode === "split" || chosen.length >= 2}
             action={() =>
               mode === "consolidate"
-                ? { kind: "consolidate", inputs: selected }
+                ? { kind: "consolidate", inputs: chosen.map(inputId) }
                 : { kind: "split", count, amount }
             }
           />
