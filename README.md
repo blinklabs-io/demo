@@ -73,6 +73,7 @@ protocol parameters.
 
 Global search accepts registered pool tickers and `$handle` names. Numeric pool
 tickers can be qualified as `pool:8964` to distinguish them from block heights.
+Both legacy CIP-25 and CIP-68 `$handle` ownership are supported.
 Handle ownership, virtual-handle datums, and policy-registry data are resolved
 through Dingo's Blockfrost-compatible API; no external Handle resolver is used.
 

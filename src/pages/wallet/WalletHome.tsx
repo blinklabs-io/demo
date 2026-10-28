@@ -141,6 +141,17 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
       ),
     [changeAddress, usedAddresses, addresses.data, groups, stakeAddress],
   );
+  const rewards = !stakeAddress
+    ? 0n
+    : account.isSuccess && !account.isError
+      ? account.data === null
+        ? 0n
+        : account.data && /^\d+$/.test(account.data.withdrawable_amount)
+          ? BigInt(account.data.withdrawable_amount)
+          : null
+      : null;
+  const walletTotal =
+    balance !== null && rewards !== null ? balance + rewards : null;
   const total = groups.reduce((sum, group) => sum + group.lovelace, 0n);
   const loadingUtxos =
     !utxoError && (utxos.isPending || moreUtxos || fetchingUtxos);
@@ -158,9 +169,19 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
       />
       <section className="wallet-balance-hero">
         <div>
-          <span className="eyebrow">Connected wallet balance</span>
-          <strong>{balance === null ? "—" : formatAda(balance)}</strong>
-          <p>Reported by your wallet</p>
+          <span className="eyebrow">Total wallet balance</span>
+          <strong>{walletTotal === null ? "—" : formatAda(walletTotal)}</strong>
+          <p>
+            {balance === null
+              ? "UTxO balance unavailable"
+              : `${formatAda(balance)} in UTxOs`}
+            {" + "}
+            {rewards === null
+              ? account.isError
+                ? "rewards unavailable"
+                : "checking unclaimed rewards…"
+              : `${formatAda(rewards)} in unclaimed rewards`}
+          </p>
         </div>
         <div className="wallet-stake-identity">
           <span className="eyebrow">Stake account</span>
