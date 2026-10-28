@@ -100,6 +100,9 @@ registration.
 
 The swap view identifies SundaeSwap V3 on Preview, the selected liquidity pool,
 and the order contracts. Quotes show estimated and minimum received amounts,
-slippage, price impact, and connected-wallet balances. The price chart records
-live reserve observations while the page is open. Submitting an order is
+slippage, price impact, and connected-wallet balances. The weekly price chart samples pool reserves every six hours using the pool
+NFT’s transaction history and reserve outputs from Dingo, with a live price
+point and an interactive crosshair. History is cached for six hours and repeated
+samples reuse the same transaction output. These are reserve snapshots, not
+trade candles. Submitting an order is
 separate from its execution by a scooper.

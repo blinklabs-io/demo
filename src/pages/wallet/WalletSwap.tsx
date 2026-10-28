@@ -1,8 +1,8 @@
 import { PageIntro } from "../../components/explorer/Visuals";
 import { WalletWelcome } from "../../components/explorer/WalletWelcome";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   ADA_METADATA,
   SundaeUtils,
@@ -22,7 +22,8 @@ import {
   SUNDAE_V3_PROTOCOL,
 } from "../../lib/sundae/protocol";
 import { AssetAmount } from "@sundaeswap/asset";
-import { PriceChart } from "../../components/explorer/PriceChart";
+import { MarketChart } from "../../components/explorer/MarketChart";
+import { readWeeklyPoolPrices } from "../../lib/sundae/priceHistory";
 import { formatAssetAmount, unitFromAssetId } from "../../lib/sundae/assets";
 import { parseAssetAmount } from "../../lib/dingo/amount";
 import { buildSwapOrder, type SwapDirection } from "../../lib/sundae/swap";
@@ -75,7 +76,6 @@ export default function WalletSwap() {
   const connectionId = useWalletStore((state) => state.connectionId);
   const balanceLovelace = useWalletStore((state) => state.balanceLovelace);
   const tokens = useWalletStore((state) => state.tokens);
-  const queryClient = useQueryClient();
   const refreshBalance = useWalletStore((state) => state.refreshBalance);
 
   const queryProvider = useMemo(() => createQueryProvider(), []);
@@ -189,42 +189,42 @@ export default function WalletSwap() {
     refetchInterval: 30_000,
     retry: false,
   });
-  const historyKey = ["sundae", "observed-prices", effectiveIdent];
-  const history = useQuery<Array<{ time: number; price: number }>>({
-    queryKey: historyKey,
-    queryFn: () => [],
-    initialData: [],
-    enabled: false,
-    gcTime: 60 * 60 * 1000,
+  const history = useQuery({
+    queryKey: [
+      "sundae",
+      "weekly-prices",
+      effectiveIdent,
+      pool?.assetA.decimals,
+      pool?.assetB.decimals,
+    ],
+    queryFn: ({ signal }) => readWeeklyPoolPrices(pool!, signal),
+    enabled: Boolean(pool),
+    staleTime: 6 * 60 * 60 * 1000,
+    retry: false,
   });
-  useEffect(() => {
-    if (!pool || poolDetailQuery.isError || !poolDetailQuery.dataUpdatedAt)
-      return;
-    const a =
-      Number(pool.liquidity.aReserve) / 10 ** (pool.assetA.decimals ?? 0);
-    const b =
-      Number(pool.liquidity.bReserve) / 10 ** (pool.assetB.decimals ?? 0);
-    if (!(a > 0 && b > 0)) return;
-    const time = poolDetailQuery.dataUpdatedAt;
-    queryClient.setQueryData<Array<{ time: number; price: number }>>(
-      ["sundae", "observed-prices", effectiveIdent],
-      (previous = []) =>
-        previous.some((point) => point.time === time)
-          ? previous
-          : [...previous, { time, price: b / a }].slice(-240),
-    );
-  }, [
-    pool,
-    poolDetailQuery.dataUpdatedAt,
-    poolDetailQuery.isError,
-    effectiveIdent,
-    queryClient,
-  ]);
-  const chartPoints = (history.data ?? []).map((point) => ({
-    time: point.time,
-    value:
-      offered?.assetId === pool?.assetA.assetId ? point.price : 1 / point.price,
-  }));
+  const historicalPoints = history.data ?? [];
+  const latestPrice = pool
+    ? Number(pool.liquidity.bReserve) /
+      10 ** pool.assetB.decimals! /
+      (Number(pool.liquidity.aReserve) / 10 ** pool.assetA.decimals!)
+    : null;
+  const chartPoints = [
+    ...historicalPoints,
+    ...(latestPrice && !poolDetailQuery.isError
+      ? [{ time: poolDetailQuery.dataUpdatedAt, price: latestPrice }]
+      : []),
+  ]
+    .filter(
+      (point) =>
+        point.time >= poolDetailQuery.dataUpdatedAt - 7 * 24 * 60 * 60 * 1000,
+    )
+    .map((point) => ({
+      time: point.time,
+      value:
+        offered?.assetId === pool?.assetA.assetId
+          ? point.price
+          : 1 / point.price,
+    }));
   let minimumReceive = "—";
   let estimatedReceive = "-";
   let priceImpact = "-";
@@ -438,14 +438,25 @@ export default function WalletSwap() {
             {received ? labelFor(received) : "…"}
           </h2>
           <p className="swap-spot-price">{spotPrice}</p>
-          <PriceChart
-            points={chartPoints}
-            label="Observed pool exchange rate"
-          />
+          {history.isPending ? (
+            <div className="price-chart-empty" role="status">
+              Loading weekly pool history…
+            </div>
+          ) : history.error ? (
+            <div role="alert" className="price-chart-empty">
+              {history.error.message}
+              <button type="button" onClick={() => void history.refetch()}>
+                Retry price history
+              </button>
+            </div>
+          ) : (
+            <MarketChart points={chartPoints} label="Pool exchange rate" />
+          )}
           <p className="swap-chart-caption">
-            Actual reserve prices recorded while this page is open. Up to 60
-            minutes; no historical prices are inferred. Hover or focus a point
-            for its time and price.
+            One week of pool reserve prices, sampled every six hours from
+            Dingo’s on-chain transaction history, plus the live price.
+            Crosshair: hover, touch, or use arrow keys. These are reserve
+            snapshots, not trade candles.
           </p>
           <div className="swap-market-stats">
             <div>

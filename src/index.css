@@ -4468,3 +4468,43 @@ summary {
   margin-top: 6px;
   overflow-wrap: anywhere;
 }
+.market-chart {
+  margin: 18px 0;
+  min-width: 0;
+}
+.market-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: pan-y;
+  outline-offset: 3px;
+}
+.market-chart svg text {
+  fill: #88a4b9;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+}
+.market-chart-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  min-height: 44px;
+  font-size: 11px;
+  color: #8ca8bc;
+}
+.market-chart-toolbar strong {
+  color: #91f3d4;
+  font-family: ui-monospace, monospace;
+}
+.market-chart-toolbar time {
+  margin-left: auto;
+}
+@media (max-width: 600px) {
+  .market-chart svg {
+    min-height: 220px;
+  }
+  .market-chart-toolbar time {
+    margin-left: 0;
+  }
+}
