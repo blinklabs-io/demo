@@ -16,21 +16,29 @@ import {
   type ISundaeProtocolParamsFull,
   type TUTXO,
 } from "@sundaeswap/core";
-import type { U5C } from "@utxorpc/blaze-provider";
+import type { DingoProvider } from "../dingo/utxorpc/provider";
 import { bytesToHex, hexToBytes } from "../dingo/utxorpc/bytes";
-import type { DingoQueryClient, DingoUtxo } from "../dingo/utxorpc/utxorpcTypes";
-import { assetIdFromTuple, metadataFor, unitFromAssetId, type AssetHint } from "./assets";
+import type {
+  DingoQueryClient,
+  DingoUtxo,
+} from "../dingo/utxorpc/utxorpcTypes";
+import {
+  assetIdFromTuple,
+  metadataFor,
+  unitFromAssetId,
+  type AssetHint,
+} from "./assets";
 import { SUNDAE_V3_PROTOCOL } from "./protocol";
 
 const POOL_NFT_NAME_PREFIX = "000de140";
 
 export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
   readonly protocol: ISundaeProtocolParamsFull;
-  private readonly provider: U5C;
+  private readonly provider: DingoProvider;
   private readonly datumBuilder = new DatumBuilderV3("preview");
   private readonly assetHints = new Map<string, AssetHint>();
 
-  constructor(provider: U5C) {
+  constructor(provider: DingoProvider) {
     super("preview");
     this.provider = provider;
     this.baseUrl = "dingo://utxorpc";
@@ -44,7 +52,10 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
   async validateProtocolReferences(): Promise<string> {
     const references = this.protocol.references.map(
       ({ txIn }) =>
-        new Core.TransactionInput(Core.TransactionId(txIn.hash), BigInt(txIn.index)),
+        new Core.TransactionInput(
+          Core.TransactionId(txIn.hash),
+          BigInt(txIn.index),
+        ),
     );
     const resolved = await this.provider.resolveUnspentOutputs(references);
     const missing = this.protocol.references.filter((reference) => {
@@ -67,8 +78,12 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
     return `${resolved.length} Sundae V3 reference inputs resolved through Dingo`;
   }
 
-  async getProtocolParamsWithScripts(version: undefined): Promise<ISundaeProtocolParamsFull[]>;
-  async getProtocolParamsWithScripts(version: EContractVersion): Promise<ISundaeProtocolParamsFull>;
+  async getProtocolParamsWithScripts(
+    version: undefined,
+  ): Promise<ISundaeProtocolParamsFull[]>;
+  async getProtocolParamsWithScripts(
+    version: EContractVersion,
+  ): Promise<ISundaeProtocolParamsFull>;
   async getProtocolParamsWithScripts(
     version?: EContractVersion,
   ): Promise<ISundaeProtocolParamsFull | ISundaeProtocolParamsFull[]> {
@@ -76,8 +91,12 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
     return version ? this.protocol : [this.protocol];
   }
 
-  async getProtocolParamsWithScriptHashes(version: undefined): Promise<ISundaeProtocolParams[]>;
-  async getProtocolParamsWithScriptHashes(version: EContractVersion): Promise<ISundaeProtocolParams>;
+  async getProtocolParamsWithScriptHashes(
+    version: undefined,
+  ): Promise<ISundaeProtocolParams[]>;
+  async getProtocolParamsWithScriptHashes(
+    version: EContractVersion,
+  ): Promise<ISundaeProtocolParams>;
   async getProtocolParamsWithScriptHashes(
     version?: EContractVersion,
   ): Promise<ISundaeProtocolParams | ISundaeProtocolParams[]> {
@@ -85,10 +104,12 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
     const stripped: ISundaeProtocolParams = {
       ...this.protocol,
       blueprint: {
-        validators: this.protocol.blueprint.validators.map(({ title, hash }) => ({
-          title,
-          hash,
-        })),
+        validators: this.protocol.blueprint.validators.map(
+          ({ title, hash }) => ({
+            title,
+            hash,
+          }),
+        ),
       },
     };
     return version ? stripped : [stripped];
@@ -96,7 +117,9 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
 
   private assertSupportedVersion(version?: EContractVersion): void {
     if (version !== undefined && version !== EContractVersion.V3) {
-      throw new Error(`Only Sundae V3 is configured for this example, got ${version}`);
+      throw new Error(
+        `Only Sundae V3 is configured for this example, got ${version}`,
+      );
     }
   }
 
@@ -105,10 +128,16 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
   async findPoolData(assetPairArgs: IPoolByPairQuery): Promise<IPoolData[]>;
   async findPoolData(searchArgs: IPoolBySearchTermQuery): Promise<IPoolData[]>;
   async findPoolData(
-    args: IPoolByIdentQuery | IPoolByAssetQuery | IPoolByPairQuery | IPoolBySearchTermQuery,
+    args:
+      | IPoolByIdentQuery
+      | IPoolByAssetQuery
+      | IPoolByPairQuery
+      | IPoolBySearchTermQuery,
   ): Promise<IPoolData | IPoolData[]> {
     if (!("ident" in args)) {
-      throw new Error("This Dingo-only query provider supports pool lookup by V3 ident.");
+      throw new Error(
+        "This Dingo-only query provider supports pool lookup by V3 ident.",
+      );
     }
     return this.findPoolDataByIdent({ ident: args.ident });
   }
@@ -126,7 +155,9 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
   async discoverPools(limit = 100): Promise<IPoolData[]> {
     const poolPolicy = this.validatorHash("pool.mint");
     const queryClient = this.getQueryClient();
-    const rpcUtxos = await queryClient.searchUtxosByAsset(this.hexBytes(poolPolicy));
+    const rpcUtxos = await queryClient.searchUtxosByAsset(
+      this.hexBytes(poolPolicy),
+    );
     const candidates = new Map<string, Core.TransactionInput>();
 
     for (const rpcUtxo of rpcUtxos) {
@@ -142,7 +173,9 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
       }
     }
 
-    const resolved = await this.provider.resolveUnspentOutputs([...candidates.values()]);
+    const resolved = await this.provider.resolveUnspentOutputs([
+      ...candidates.values(),
+    ]);
     const pools: IPoolData[] = [];
 
     for (const utxo of resolved) {
@@ -179,7 +212,9 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
       throw new Error(`${label} was not found in Dingo.`);
     }
 
-    const [resolved] = await this.provider.resolveUnspentOutputs([this.inputFromRpcUtxo(rpcUtxo)]);
+    const [resolved] = await this.provider.resolveUnspentOutputs([
+      this.inputFromRpcUtxo(rpcUtxo),
+    ]);
     if (!resolved) {
       throw new Error(`${label} was found by Dingo but could not be resolved.`);
     }
@@ -191,9 +226,13 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
     poolUtxo: Core.TransactionUnspentOutput,
   ): Promise<IPoolData> {
     const poolPolicy = this.validatorHash("pool.mint");
-    const datum = this.datumBuilder.decodeDatum(await this.poolDatum(poolUtxo, ident));
+    const datum = this.datumBuilder.decodeDatum(
+      await this.poolDatum(poolUtxo, ident),
+    );
     if (datum.identifier !== ident) {
-      throw new Error(`Pool datum identifier ${datum.identifier} did not match requested ${ident}.`);
+      throw new Error(
+        `Pool datum identifier ${datum.identifier} did not match requested ${ident}.`,
+      );
     }
 
     const [assetATuple, assetBTuple] = datum.assets as [
@@ -247,25 +286,39 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
       return bytesToHex(value.key) === datumHash;
     });
     if (!resolved || resolved.nativeBytes.length === 0) {
-      throw new Error(`Pool ${ident} datum ${datumHash} was not found in Dingo.`);
+      throw new Error(
+        `Pool ${ident} datum ${datumHash} was not found in Dingo.`,
+      );
     }
 
-    return Core.PlutusData.fromCbor(Core.HexBlob.fromBytes(resolved.nativeBytes));
+    return Core.PlutusData.fromCbor(
+      Core.HexBlob.fromBytes(resolved.nativeBytes),
+    );
   }
 
-  async findOpenOrderDatum(utxoRef: TUTXO): Promise<{ datum: string; datumHash: string }> {
+  async findOpenOrderDatum(
+    utxoRef: TUTXO,
+  ): Promise<{ datum: string; datumHash: string }> {
     const [utxo] = await this.provider.resolveUnspentOutputs([
-      new Core.TransactionInput(Core.TransactionId(utxoRef.hash), BigInt(utxoRef.index)),
+      new Core.TransactionInput(
+        Core.TransactionId(utxoRef.hash),
+        BigInt(utxoRef.index),
+      ),
     ]);
     if (!utxo) {
-      throw new Error(`Open order UTxO ${utxoRef.hash}#${utxoRef.index} was not found in Dingo.`);
+      throw new Error(
+        `Open order UTxO ${utxoRef.hash}#${utxoRef.index} was not found in Dingo.`,
+      );
     }
 
     const datum = utxo.output().datum();
     const inlineDatum = datum?.asInlineData();
-    const datumHash = datum?.asDataHash()?.toString() ?? inlineDatum?.hash().toString();
+    const datumHash =
+      datum?.asDataHash()?.toString() ?? inlineDatum?.hash().toString();
     if (!inlineDatum || !datumHash) {
-      throw new Error(`Open order UTxO ${utxoRef.hash}#${utxoRef.index} has no inline datum.`);
+      throw new Error(
+        `Open order UTxO ${utxoRef.hash}#${utxoRef.index} has no inline datum.`,
+      );
     }
 
     return {
@@ -275,7 +328,9 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
   }
 
   private validatorHash(title: string): string {
-    const validator = this.protocol.blueprint.validators.find((item) => item.title === title);
+    const validator = this.protocol.blueprint.validators.find(
+      (item) => item.title === title,
+    );
     if (!validator) {
       throw new Error(`Sundae V3 validator ${title} is not configured.`);
     }
@@ -302,11 +357,7 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
   }
 
   private getQueryClient(): DingoQueryClient {
-    const providerWithClient = this.provider as unknown as { queryClient?: DingoQueryClient };
-    if (!providerWithClient.queryClient) {
-      throw new Error("Blaze U5C query client is not available for pool discovery.");
-    }
-    return providerWithClient.queryClient;
+    return this.provider.queryClient;
   }
 
   private inputFromRpcUtxo(utxo: DingoUtxo): Core.TransactionInput {
@@ -334,7 +385,9 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
     return undefined;
   }
 
-  private poolIdentFromCoreUtxo(utxo: Core.TransactionUnspentOutput): string | undefined {
+  private poolIdentFromCoreUtxo(
+    utxo: Core.TransactionUnspentOutput,
+  ): string | undefined {
     const poolPolicy = this.validatorHash("pool.mint");
     const prefix = `${poolPolicy}${POOL_NFT_NAME_PREFIX}`;
     const assets = utxo.output().amount().toCore().assets ?? new Map();

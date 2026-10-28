@@ -10,7 +10,7 @@ import {
   type IPoolData,
   type IPoolDataAsset,
 } from "@sundaeswap/core";
-import type { U5C } from "@utxorpc/blaze-provider";
+import type { DingoProvider } from "../dingo/utxorpc/provider";
 import { parseAssetAmount } from "../dingo/amount";
 import type { DingoSundaeQueryProvider } from "./dingoQueryProvider";
 import { offeredAssetForDirection, poolHasAda } from "./pricing";
@@ -18,7 +18,7 @@ import { offeredAssetForDirection, poolHasAda } from "./pricing";
 export type SwapDirection = "adaToToken" | "tokenToAda";
 
 export type BuildSwapArgs = {
-  blaze: Blaze<U5C, Wallet>;
+  blaze: Blaze<DingoProvider, Wallet>;
   queryProvider: DingoSundaeQueryProvider;
   pool: IPoolData;
   amount: string;
@@ -48,7 +48,11 @@ export async function buildSwapOrder({
     throw new Error("The selected pool is not an ADA pair.");
   }
   const suppliedAsset = offeredAssetForDirection(pool, direction);
-  const suppliedAmount = parseAssetAmount(amount, suppliedAsset.decimals ?? 0, labelForAsset(suppliedAsset));
+  const suppliedAmount = parseAssetAmount(
+    amount,
+    suppliedAsset.decimals ?? 0,
+    labelForAsset(suppliedAsset),
+  );
   if (suppliedAmount <= 0n) {
     throw new Error(`Enter a positive ${labelForAsset(suppliedAsset)} amount.`);
   }
