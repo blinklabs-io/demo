@@ -38,7 +38,7 @@ export function BlockHeaderVersion({
         Unavailable
       </span>
     );
-  const node = nodeImplementation(query.data.minor);
+  const node = nodeImplementation(query.data.minor, query.data.major);
   return (
     <span
       className={`header-version ${query.data.minor === "69" ? "dingo-version" : ""}`}

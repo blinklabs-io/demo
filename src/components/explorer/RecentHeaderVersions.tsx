@@ -50,7 +50,7 @@ export function RecentHeaderVersions({
             title="Decoded headers"
             unit={`${decoded} blocks`}
             items={versions.map(([version, count]) => ({
-              label: `${version} · ${nodeImplementation(version.split(".")[1]).name}`,
+              label: `${version} · ${nodeImplementation(version.split(".")[1], version.split(".")[0]).name}`,
               value: BigInt(count),
               display: `${count} · ${((count / decoded) * 100).toFixed(1)}%`,
             }))}
@@ -74,7 +74,7 @@ export function RecentHeaderVersions({
                 ? `${header.data.major}.${header.data.minor}`
                 : undefined;
               const node = header.data
-                ? nodeImplementation(header.data.minor)
+                ? nodeImplementation(header.data.minor, header.data.major)
                 : undefined;
               const colorIndex = versions.findIndex(
                 ([name]) => name === version,
@@ -118,12 +118,24 @@ export function RecentHeaderVersions({
               <strong>{version}</strong>
               <img
                 className="node-icon"
-                src={nodeImplementation(version.split(".")[1]).icon}
+                src={
+                  nodeImplementation(
+                    version.split(".")[1],
+                    version.split(".")[0],
+                  ).icon
+                }
                 alt=""
                 width="22"
                 height="22"
               />
-              <small>{nodeImplementation(version.split(".")[1]).name}</small>
+              <small>
+                {
+                  nodeImplementation(
+                    version.split(".")[1],
+                    version.split(".")[0],
+                  ).name
+                }
+              </small>
               <span>
                 {count} {count === 1 ? "block" : "blocks"}
               </span>
