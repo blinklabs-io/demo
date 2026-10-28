@@ -5,7 +5,7 @@ export function nodeImplementation(minor: string, major?: string) {
     case "67":
       return { id: "bean", name: "Bean", icon: "/nodes/bean.svg" };
     default:
-      if (major === "11" && minor === "1")
+      if (major === "11" && (minor === "1" || minor === "2"))
         return {
           id: "cardano-node",
           name: "Haskell cardano-node",
