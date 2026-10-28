@@ -49,7 +49,7 @@ node, so use a test network and connect a test wallet.
   certificate records, redeemers, treasury donations, and required signers
 - CIP-119 DRep names and anchor links, plus active, retired, and expired DRep
   filters
-- Wallet balance, send, pool delegation, and SundaeSwap V3 Preview order flows
+- Wallet balance, reward withdrawals, send, pool delegation, and SundaeSwap V3 Preview order flows
 - DRep Yes, No, and Abstain votes from governance action pages, with fee review,
   CIP-95 wallet signing, and submission through Dingo
 - Blockfrost-compatible GET console and read-only Mesh POST console
@@ -86,7 +86,9 @@ The recent header-version graph reuses decoded headers from the overview's
 block list. It describes that recent window, rather than a daily network tally.
 
 The wallet portfolio groups addresses and UTxOs by their stake credential and
-shows staking rewards, delegation, and the delegated pool's owner record. Shared
+shows available staking rewards, delegation, and the delegated pool's owner record.
+Reward withdrawals include an amount and fee review, explicit wallet signing,
+submission through Dingo, and confirmation tracking. Shared
 stake credentials do not establish control of the corresponding payment keys.
 Other pool ownership checks and historical address-balance charts run only on
 request. Balance history compares up to six completed epoch-end snapshots with

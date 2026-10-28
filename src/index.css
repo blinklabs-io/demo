@@ -4409,3 +4409,62 @@ summary {
   flex: 0 1 auto;
   filter: drop-shadow(0 1px 2px #0008);
 }
+
+.wallet-rewards {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.wallet-rewards-balance strong {
+  display: block;
+  margin: 12px 0;
+  font-size: clamp(24px, 5vw, 38px);
+  color: #90f5cf;
+  overflow-wrap: anywhere;
+}
+.wallet-rewards p,
+.withdrawal-review p {
+  color: #9ab2c4;
+  font-size: 13px;
+  max-width: 65ch;
+  margin-bottom: 16px;
+}
+.wallet-rewards-create {
+  padding: 12px 18px;
+  border: 1px solid #288d7c;
+  background: #164d42;
+  color: #a0f5dd;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.wallet-rewards-create:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.withdrawal-review {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #294756;
+}
+.withdrawal-review h3 {
+  font-size: 18px;
+  color: #e1f1ed;
+  margin-bottom: 18px;
+}
+.withdrawal-review dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 40px;
+  margin-bottom: 18px;
+}
+.withdrawal-review dt {
+  font-size: 11px;
+  color: #9ab2c4;
+}
+.withdrawal-review dd {
+  color: #e1f1ed;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}

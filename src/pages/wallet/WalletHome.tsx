@@ -1,3 +1,4 @@
+import { WalletRewards } from "../../components/explorer/WalletRewards";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -200,17 +201,8 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
                 : "Wallet and Dingo address records"
           }
         />
-        <Metric
-          label="Available rewards"
-          value={
-            account.data
-              ? compactAda(account.data.withdrawable_amount)
-              : account.isSuccess
-                ? "Not registered"
-                : "—"
-          }
-        />
       </div>
+      <WalletRewards address={stakeAddress} />
       {stakeAddress && (
         <Panel title="Your delegation">
           <QueryState isLoading={account.isLoading} error={account.error}>
