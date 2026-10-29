@@ -1,3 +1,4 @@
+import { BlockMosaic } from "../../components/chain/BlockMosaic";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { BlockHeaderVersion } from "../../components/explorer/BlockHeaderVersion";
 import { Metric, Timeline, Gauge } from "../../components/explorer/Visuals";
@@ -202,23 +203,32 @@ export default function BlockDetail() {
         </QueryState>
       </Panel>
 
-      <Panel title="Transactions">
-        <QueryState isLoading={txsQuery.isLoading} error={txsQuery.error}>
-          {txsQuery.data?.length === 0 && (
-            <p className="text-sm text-slate-400">
-              No transactions in this block.
-            </p>
-          )}
-          <ul className="activity-list">
-            {txsQuery.data?.map((hash) => (
-              <li key={hash}>
-                <span className="status-badge positive">TX</span>
-                <HashLink kind="tx" id={hash} visible={16} />
-              </li>
-            ))}
-          </ul>
-        </QueryState>
-      </Panel>
+      {blockQuery.data && (
+        <BlockMosaic
+          hash={blockQuery.data.hash}
+          total={blockQuery.data.tx_count}
+        />
+      )}
+      <details className="detail-disclosure">
+        <summary>Transaction hash list</summary>
+        <Panel title="Transactions">
+          <QueryState isLoading={txsQuery.isLoading} error={txsQuery.error}>
+            {txsQuery.data?.length === 0 && (
+              <p className="text-sm text-slate-400">
+                No transactions in this block.
+              </p>
+            )}
+            <ul className="activity-list">
+              {txsQuery.data?.map((hash) => (
+                <li key={hash}>
+                  <span className="status-badge positive">TX</span>
+                  <HashLink kind="tx" id={hash} visible={16} />
+                </li>
+              ))}
+            </ul>
+          </QueryState>
+        </Panel>
+      </details>
     </div>
   );
 }

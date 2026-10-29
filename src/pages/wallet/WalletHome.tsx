@@ -192,6 +192,7 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
           )}
           <Link to="/wallet/send">Send →</Link>
           <Link to="/wallet/tools">Explore wallet tools ↗</Link>
+          <Link to="/wallet/tools/utxos">Map spendable outputs ✦</Link>
         </div>
       </section>
       <div className="metric-grid">

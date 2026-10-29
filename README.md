@@ -61,6 +61,21 @@ node, so use a test network and connect a test wallet.
 
 ## Visual exploration
 
+Interactive views use the configured Dingo APIs and connected wallet data:
+
+- A live block conveyor keeps pending observations separate from confirmed blocks.
+- Transaction value flows account for fees, deposits, withdrawals, minting, and collateral through a shared value pool.
+- Block mosaics size transactions by serialized bytes, with activity filters and on-demand bulk CBOR pages.
+- Wallet UTxO constellations share selection with the consolidation form, with a complete checkbox list for larger wallets.
+- Governance chambers show ballot counts separately for each voter role, rather than weighted voting power.
+- Asset landscapes distinguish loaded holders from unmapped supply and show mint/burn events in event order.
+- Stake journeys separate earned reward epochs, effective delegation epochs, and dated ledger milestones.
+- Epoch fingerprints compare aggregate activity with independently normalized axes and exact values.
+
+Large histories load bounded pages on request. Visuals expose exact records,
+keyboard controls, mobile layouts, and reduced-motion support.
+
+
 The explorer includes transaction and block-size charts, ADA supply breakdowns,
 reward and holder charts, and timelines for eras, blocks, and governance actions.
 Charts link to the underlying records and expose values on keyboard focus.

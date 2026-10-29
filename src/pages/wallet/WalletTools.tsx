@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { UtxoConstellation } from "../../components/chain/UtxoConstellation";
+import { useMemo, useRef, useState } from "react";
 import { Link, NavLink, useParams } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
@@ -246,7 +247,10 @@ function Utxos() {
     queryFn: () => walletOutputs(api!),
     retry: false,
   });
-  const available = plainWalletOutputs(query.data ?? []);
+  const available = useMemo(
+    () => plainWalletOutputs(query.data ?? []),
+    [query.data],
+  );
   const selectedSet = new Set(selected);
   const chosen = available.filter((u) => selectedSet.has(inputId(u)));
   const total = chosen.reduce((n, u) => n + u.output().amount().coin(), 0n);
@@ -274,7 +278,22 @@ function Utxos() {
           Split outputs
         </button>
       </div>
-      <div className="tool-two-column">
+      {mode === "consolidate" && (
+        <UtxoConstellation
+          outputs={available}
+          selected={selected}
+          onToggle={(id) =>
+            setSelected((ids) =>
+              ids.includes(id) ? ids.filter((v) => v !== id) : [...ids, id],
+            )
+          }
+        />
+      )}
+      <div
+        className={
+          mode === "consolidate" ? "tool-consolidation" : "tool-two-column"
+        }
+      >
         <section className="data-panel tool-form">
           <h2>
             {mode === "consolidate"
@@ -378,62 +397,43 @@ function Utxos() {
             }
           />
         </section>
-        <aside className="tool-visual data-panel">
-          <div className={`utxo-map ${mode}`} aria-hidden="true">
-            <div className="utxo-nodes">
-              {Array.from(
-                {
-                  length:
-                    mode === "consolidate"
-                      ? Math.min(Math.max(chosen.length, 4), 12)
-                      : 1,
-                },
-                (_, i) => (
-                  <i key={i} />
-                ),
-              )}
+        {mode === "split" && (
+          <aside className="tool-visual data-panel">
+            <div className={`utxo-map ${mode}`} aria-hidden="true">
+              <div className="utxo-nodes">
+                {Array.from(
+                  {
+                    length: 1,
+                  },
+                  (_, i) => (
+                    <i key={i} />
+                  ),
+                )}
+              </div>
+              <b>→</b>
+              <div className="utxo-nodes">
+                {Array.from(
+                  {
+                    length: Math.min(Math.max(Number(count) || 4, 2), 12),
+                  },
+                  (_, i) => (
+                    <i key={i} />
+                  ),
+                )}
+              </div>
             </div>
-            <b>→</b>
-            <div className="utxo-nodes">
-              {Array.from(
-                {
-                  length:
-                    mode === "split"
-                      ? Math.min(Math.max(Number(count) || 4, 2), 12)
-                      : 1,
-                },
-                (_, i) => (
-                  <i key={i} />
-                ),
-              )}
-            </div>
-          </div>
-          <h3>
-            {mode === "consolidate"
-              ? "Gather the fragments."
-              : "Give your wallet room to move."}
-          </h3>
-          <p>
-            {mode === "consolidate"
-              ? "Selected value returns to your wallet. Large token bundles may need multiple change outputs."
-              : "Separate outputs can fund independent transactions. Each one must meet Cardano’s minimum ADA requirement."}
-          </p>
-          <Gauge
-            label={mode === "consolidate" ? "Outputs selected" : "Output count"}
-            value={
-              mode === "consolidate"
-                ? available.length
-                  ? (chosen.length / available.length) * 100
-                  : 0
-                : Math.min(((Number(count) || 0) / 40) * 100, 100)
-            }
-            detail={
-              mode === "consolidate"
-                ? `${chosen.length} of ${available.length}`
-                : `${count} outputs`
-            }
-          />
-        </aside>
+            <h3>Give your wallet room to move.</h3>
+            <p>
+              Separate outputs can fund independent transactions. Each one must
+              meet Cardano’s minimum ADA requirement.
+            </p>
+            <Gauge
+              label="Output count"
+              value={Math.min(((Number(count) || 0) / 40) * 100, 100)}
+              detail={`${count} outputs`}
+            />
+          </aside>
+        )}
       </div>
     </>
   );

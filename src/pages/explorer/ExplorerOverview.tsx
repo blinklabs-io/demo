@@ -1,3 +1,4 @@
+import { BlockConveyor } from "../../components/chain/BlockConveyor";
 import { RecentHeaderVersions } from "../../components/explorer/RecentHeaderVersions";
 import { BlockHeaderVersion } from "../../components/explorer/BlockHeaderVersion";
 import { compactAda, epochProgress } from "../../lib/visualFormat";
@@ -172,29 +173,7 @@ export default function ExplorerOverview() {
           </div>
         )}
       </QueryState>
-      {blocks.length > 0 && (
-        <nav className="block-ribbon" aria-label="Recent block chain">
-          <span className="ribbon-caption">
-            <span className="live-dot" />
-            Chain tip
-          </span>
-          {blocks.slice(0, 6).map((block, i) => (
-            <Link
-              key={block.hash}
-              to={`/explorer/block/${block.hash}`}
-              className={i === 0 ? "ribbon-block tip" : "ribbon-block"}
-            >
-              <span className="ribbon-cube" aria-hidden="true">
-                ⬡
-              </span>
-              <strong>{block.height.toLocaleString()}</strong>
-              <small>
-                {block.tx_count} TX · {(block.size / 1024).toFixed(1)} KB
-              </small>
-            </Link>
-          ))}
-        </nav>
-      )}
+      {blocks.length > 0 && <BlockConveyor blocks={blocks} />}
       <div className="visual-grid wide-left">
         <Panel
           title="Block activity"

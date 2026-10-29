@@ -1,3 +1,4 @@
+import { TransactionFlow } from "../../components/chain/TransactionFlow";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { Metric } from "../../components/explorer/Visuals";
 import { useEffect, useRef } from "react";
@@ -378,149 +379,150 @@ export default function TxDetail() {
         <QueryState isLoading={utxosQuery.isLoading} error={utxosQuery.error}>
           {utxosQuery.data && (
             <>
-              <div className="tx-flow mb-7">
-                <div className="flow-node">
-                  <strong>{utxosQuery.data.inputs.length}</strong>
-                  <small>Inputs</small>
-                </div>
-                <div className="flow-arrow" aria-hidden="true">
-                  →
-                </div>
-                <div className="flow-node">
-                  <strong>{utxosQuery.data.outputs.length}</strong>
-                  <small>Outputs</small>
-                </div>
-              </div>
-              <div className="tx-ledger">
-                <div>
-                  <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
-                    Inputs
-                  </h3>
-                  <ul className="flex flex-col gap-2">
-                    {utxosQuery.data.inputs.map((utxo, index) => (
-                      <li
-                        key={`${utxo.tx_hash}:${utxo.output_index}:${index}`}
-                        className="rounded border border-slate-800 p-2 text-sm"
-                      >
-                        <div className="tx-utxo-balance">
-                          <AdaAmount amount={utxo.amount} />
-                        </div>
-                        <div className="flex items-center gap-2">
+              {tx && (
+                <TransactionFlow
+                  summary={tx}
+                  inputs={utxosQuery.data.inputs}
+                  outputs={utxosQuery.data.outputs}
+                  cbor={transactionCborQuery.data?.cbor}
+                  error={transactionCborQuery.error}
+                />
+              )}
+              <details className="technical-details">
+                <summary>
+                  Input &amp; output records, collateral &amp; references
+                </summary>
+                <div className="tx-ledger">
+                  <div>
+                    <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
+                      Inputs
+                    </h3>
+                    <ul className="flex flex-col gap-2">
+                      {utxosQuery.data.inputs.map((utxo, index) => (
+                        <li
+                          key={`${utxo.tx_hash}:${utxo.output_index}:${index}`}
+                          className="rounded border border-slate-800 p-2 text-sm"
+                        >
+                          <div className="tx-utxo-balance">
+                            <AdaAmount amount={utxo.amount} />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <HashLink
+                              kind="address"
+                              id={utxo.address}
+                              visible={10}
+                            />
+                            {utxo.reference && (
+                              <span
+                                className="rounded bg-sky-950 px-1.5 py-0.5 text-xs text-sky-300"
+                                title="Reference input: read by a script, never spent by this transaction."
+                              >
+                                reference
+                              </span>
+                            )}
+                            {utxo.collateral && (
+                              <span
+                                className="rounded bg-amber-950 px-1.5 py-0.5 text-xs text-amber-300"
+                                title="Collateral input: only consumed if script validation for this transaction fails."
+                              >
+                                collateral
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 break-all text-xs text-slate-500">
+                            Input{" "}
+                            <HashLink kind="tx" id={utxo.tx_hash} visible={8} />
+                            #{utxo.output_index}
+                          </div>
+                          {(utxo.data_hash ||
+                            utxo.inline_datum ||
+                            utxo.reference_script_hash) && (
+                            <details className="mt-2 text-xs text-slate-500">
+                              <summary className="cursor-pointer">
+                                Datum and script references
+                              </summary>
+                              {utxo.data_hash && (
+                                <p className="mt-1 break-all">
+                                  Datum hash: {utxo.data_hash}
+                                </p>
+                              )}
+                              {utxo.inline_datum && (
+                                <p className="mt-1 break-all">
+                                  Inline datum: {utxo.inline_datum}
+                                </p>
+                              )}
+                              {utxo.reference_script_hash && (
+                                <p className="mt-1 break-all">
+                                  Reference script: {utxo.reference_script_hash}
+                                </p>
+                              )}
+                            </details>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
+                      Outputs
+                    </h3>
+                    <ul className="flex flex-col gap-2">
+                      {utxosQuery.data.outputs.map((utxo) => (
+                        <li
+                          key={utxo.output_index}
+                          className="rounded border border-slate-800 p-2 text-sm"
+                        >
+                          <div className="tx-utxo-balance">
+                            <AdaAmount amount={utxo.amount} />
+                          </div>
                           <HashLink
                             kind="address"
                             id={utxo.address}
                             visible={10}
                           />
-                          {utxo.reference && (
-                            <span
-                              className="rounded bg-sky-950 px-1.5 py-0.5 text-xs text-sky-300"
-                              title="Reference input: read by a script, never spent by this transaction."
-                            >
-                              reference
-                            </span>
+                          <div className="mt-1 text-xs text-slate-500">
+                            Output #{utxo.output_index}
+                          </div>
+                          {utxo.consumed_by_tx && (
+                            <p className="mt-1 text-xs text-slate-500">
+                              Spent by{" "}
+                              <HashLink
+                                kind="tx"
+                                id={utxo.consumed_by_tx}
+                                visible={10}
+                              />
+                            </p>
                           )}
-                          {utxo.collateral && (
-                            <span
-                              className="rounded bg-amber-950 px-1.5 py-0.5 text-xs text-amber-300"
-                              title="Collateral input: only consumed if script validation for this transaction fails."
-                            >
-                              collateral
-                            </span>
+                          {(utxo.data_hash ||
+                            utxo.inline_datum ||
+                            utxo.reference_script_hash) && (
+                            <details className="mt-2 text-xs text-slate-500">
+                              <summary className="cursor-pointer">
+                                Datum and script references
+                              </summary>
+                              {utxo.data_hash && (
+                                <p className="mt-1 break-all">
+                                  Datum hash: {utxo.data_hash}
+                                </p>
+                              )}
+                              {utxo.inline_datum && (
+                                <p className="mt-1 break-all">
+                                  Inline datum: {utxo.inline_datum}
+                                </p>
+                              )}
+                              {utxo.reference_script_hash && (
+                                <p className="mt-1 break-all">
+                                  Reference script: {utxo.reference_script_hash}
+                                </p>
+                              )}
+                            </details>
                           )}
-                        </div>
-                        <div className="mt-1 break-all text-xs text-slate-500">
-                          Input{" "}
-                          <HashLink kind="tx" id={utxo.tx_hash} visible={8} />#
-                          {utxo.output_index}
-                        </div>
-                        {(utxo.data_hash ||
-                          utxo.inline_datum ||
-                          utxo.reference_script_hash) && (
-                          <details className="mt-2 text-xs text-slate-500">
-                            <summary className="cursor-pointer">
-                              Datum and script references
-                            </summary>
-                            {utxo.data_hash && (
-                              <p className="mt-1 break-all">
-                                Datum hash: {utxo.data_hash}
-                              </p>
-                            )}
-                            {utxo.inline_datum && (
-                              <p className="mt-1 break-all">
-                                Inline datum: {utxo.inline_datum}
-                              </p>
-                            )}
-                            {utxo.reference_script_hash && (
-                              <p className="mt-1 break-all">
-                                Reference script: {utxo.reference_script_hash}
-                              </p>
-                            )}
-                          </details>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="mb-1 text-xs uppercase tracking-wide text-slate-500">
-                    Outputs
-                  </h3>
-                  <ul className="flex flex-col gap-2">
-                    {utxosQuery.data.outputs.map((utxo) => (
-                      <li
-                        key={utxo.output_index}
-                        className="rounded border border-slate-800 p-2 text-sm"
-                      >
-                        <div className="tx-utxo-balance">
-                          <AdaAmount amount={utxo.amount} />
-                        </div>
-                        <HashLink
-                          kind="address"
-                          id={utxo.address}
-                          visible={10}
-                        />
-                        <div className="mt-1 text-xs text-slate-500">
-                          Output #{utxo.output_index}
-                        </div>
-                        {utxo.consumed_by_tx && (
-                          <p className="mt-1 text-xs text-slate-500">
-                            Spent by{" "}
-                            <HashLink
-                              kind="tx"
-                              id={utxo.consumed_by_tx}
-                              visible={10}
-                            />
-                          </p>
-                        )}
-                        {(utxo.data_hash ||
-                          utxo.inline_datum ||
-                          utxo.reference_script_hash) && (
-                          <details className="mt-2 text-xs text-slate-500">
-                            <summary className="cursor-pointer">
-                              Datum and script references
-                            </summary>
-                            {utxo.data_hash && (
-                              <p className="mt-1 break-all">
-                                Datum hash: {utxo.data_hash}
-                              </p>
-                            )}
-                            {utxo.inline_datum && (
-                              <p className="mt-1 break-all">
-                                Inline datum: {utxo.inline_datum}
-                              </p>
-                            )}
-                            {utxo.reference_script_hash && (
-                              <p className="mt-1 break-all">
-                                Reference script: {utxo.reference_script_hash}
-                              </p>
-                            )}
-                          </details>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+              </details>
             </>
           )}
         </QueryState>
