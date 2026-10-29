@@ -1,8 +1,3 @@
-// Live mempool and chain-tip streaming over UTxO RPC, via @utxorpc/sdk's
-// CardanoSubmitClient/CardanoSyncClient rather than Blaze's U5C wrapper -
-// Blaze is built for tx construction/submission, not for watching. The SDK
-// uses the same browser-safe gRPC-Web transport (@connectrpc/connect-web)
-// that @utxorpc/blaze-provider already proves works against Dingo.
 import { CardanoSubmitClient, CardanoSyncClient } from "@utxorpc/sdk";
 import type { CardanoTipEvent } from "@utxorpc/sdk";
 import { Core } from "@blaze-cardano/sdk";
