@@ -75,7 +75,6 @@ Interactive views use the configured Dingo APIs and connected wallet data:
 Large histories load bounded pages on request. Visuals expose exact records,
 keyboard controls, mobile layouts, and reduced-motion support.
 
-
 The explorer includes transaction and block-size charts, ADA supply breakdowns,
 reward and holder charts, and timelines for eras, blocks, and governance actions.
 Charts link to the underlying records and expose values on keyboard focus.
@@ -169,3 +168,18 @@ APIs. It includes:
 Every transaction requires separate build/review and sign/submit actions. Drafts
 expire after at most ten minutes, wallet changes invalidate signing, and required
 payment and DRep witnesses are verified before submission through Dingo.
+
+### Visual gallery
+
+Illustrative data, captured at desktop and mobile widths.
+
+| View               | Desktop                                                                     | Mobile                                                                    |
+| ------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Block conveyor     | [visual-conveyor-1500](docs/screenshots/visual-conveyor-1500.jpg)           | [visual-conveyor-390](docs/screenshots/visual-conveyor-390.jpg)           |
+| Transaction flow   | [visual-flow-1500](docs/screenshots/visual-flow-1500.jpg)                   | [visual-flow-390](docs/screenshots/visual-flow-390.jpg)                   |
+| Block mosaic       | [visual-mosaic-1500](docs/screenshots/visual-mosaic-1500.jpg)               | [visual-mosaic-390](docs/screenshots/visual-mosaic-390.jpg)               |
+| UTxO constellation | [visual-constellation-1500](docs/screenshots/visual-constellation-1500.jpg) | [visual-constellation-390](docs/screenshots/visual-constellation-390.jpg) |
+| Governance chamber | [visual-chamber-1500](docs/screenshots/visual-chamber-1500.jpg)             | [visual-chamber-390](docs/screenshots/visual-chamber-390.jpg)             |
+| Asset landscape    | [visual-asset-1500](docs/screenshots/visual-asset-1500.jpg)                 | [visual-asset-390](docs/screenshots/visual-asset-390.jpg)                 |
+| Stake journey      | [visual-stake-1500](docs/screenshots/visual-stake-1500.jpg)                 | [visual-stake-390](docs/screenshots/visual-stake-390.jpg)                 |
+| Epoch fingerprints | [visual-epoch-1500](docs/screenshots/visual-epoch-1500.jpg)                 | [visual-epoch-390](docs/screenshots/visual-epoch-390.jpg)                 |
