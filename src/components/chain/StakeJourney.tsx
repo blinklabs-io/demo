@@ -71,6 +71,8 @@ function Journey({ stake }: { stake: string }) {
   const first = epochs[0] ?? 0,
     last = epochs.at(-1) ?? first,
     span = Math.max(1, last - first);
+  const hitWidth = Math.min(20, 920 / span),
+    barWidth = Math.min(18, 736 / span);
   const maximum = [...totals.values()].reduce((n, v) => (v > n ? v : n), 1n);
   const inspected =
     selected !== null && epochs.includes(selected) ? selected : epochs.at(-1);
@@ -233,24 +235,26 @@ function Journey({ stake }: { stake: string }) {
                         }
                       >
                         <rect
-                          x={x - 10}
+                          x={x - hitWidth / 2}
                           y="45"
-                          width="20"
+                          width={hitWidth}
                           height="204"
                           fill="transparent"
                         />
                         <rect
-                          x={x - Math.min(9, 400 / Math.max(epochs.length, 1))}
+                          x={x - barWidth / 2}
                           y={230 - height}
-                          width={Math.min(18, 800 / Math.max(epochs.length, 1))}
+                          width={barWidth}
                           height={Math.max(value > 0n ? 2 : 0, height)}
                           rx="3"
                           fill={`url(#${uid}-reward)`}
+                          pointerEvents="none"
                         />
                         <circle
                           cx={x}
                           cy="230"
                           r={delegated ? 8 : 3}
+                          pointerEvents="none"
                           fill={delegated ? "#bbacff" : "#638e90"}
                         />
                         {(epoch === first ||
@@ -260,6 +264,7 @@ function Journey({ stake }: { stake: string }) {
                             x={x}
                             y="274"
                             textAnchor="middle"
+                            pointerEvents="none"
                             fill="#c3d7df"
                             fontSize="15"
                           >

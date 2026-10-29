@@ -254,7 +254,7 @@ function Mosaic({ hash, total }: { hash: string; total: number }) {
             !query.isPending &&
             !query.error && (
               <p className="chain-empty">
-                No transactions in this activity filter.
+                No loaded transactions match this activity filter.
               </p>
             )
           )}
