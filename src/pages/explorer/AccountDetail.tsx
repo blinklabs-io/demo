@@ -1,6 +1,7 @@
+import { StakeJourney } from "../../components/chain/StakeJourney";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { compactAda } from "../../lib/visualFormat";
-import { BarChart, Distribution } from "../../components/explorer/Visuals";
+import { Distribution } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
@@ -26,37 +27,9 @@ interface AccountResponse {
   registered: boolean;
 }
 
-interface DelegationHistoryRow {
-  active_epoch: number;
-  tx_hash: string;
-  amount: string;
-  pool_id: string;
-}
-
-interface RewardHistoryRow {
-  epoch: number;
-  amount: string;
-  pool_id: string;
-  type: string;
-}
-
-interface RegistrationHistoryRow {
-  tx_hash: string;
-  action: string;
-  deposit: string;
-  tx_slot: number;
-  block_time: number;
-}
-
 interface AccountTransactionRow {
   tx_hash: string;
   block_height: number;
-  block_time: number;
-}
-
-interface WithdrawalRow {
-  tx_hash: string;
-  amount: string;
   block_time: number;
 }
 
@@ -215,98 +188,7 @@ export default function AccountDetail() {
         </QueryState>
       </Panel>
 
-      <Panel title="Delegation history">
-        <PaginatedList<DelegationHistoryRow>
-          queryKey={["dingo", "account", stakeAddress, "delegations"]}
-          buildUrl={(page, count) =>
-            `/api/v0/accounts/${stakeAddress}/delegations?page=${page}&count=${count}&order=desc`
-          }
-          keyFor={(row) => row.tx_hash}
-          emptyLabel="No delegation history."
-          renderItem={(row) => (
-            <span>
-              Epoch {row.active_epoch} →{" "}
-              <HashLink kind="pool" id={row.pool_id} visible={10} /> (
-              <HashLink kind="tx" id={row.tx_hash} visible={8} />)
-            </span>
-          )}
-        />
-      </Panel>
-
-      <Panel title="Reward history">
-        <PaginatedList<RewardHistoryRow>
-          queryKey={["dingo", "account", stakeAddress, "rewards"]}
-          buildUrl={(page, count) =>
-            `/api/v0/accounts/${stakeAddress}/rewards?page=${page}&count=${count}&order=desc`
-          }
-          keyFor={(row, index) => `${row.epoch}:${row.type}:${index}`}
-          visualize={(rows) => (
-            <div className="mb-6">
-              <BarChart
-                title="reward ADA (current page)"
-                items={[...rows].reverse().map((row) => ({
-                  label: `Epoch ${row.epoch}`,
-                  value: Number(BigInt(row.amount)) / 1_000_000,
-                }))}
-              />
-            </div>
-          )}
-          emptyLabel="No reward history."
-          renderItem={(row) => (
-            <span>
-              Epoch {row.epoch} · {formatAda(BigInt(row.amount))} · {row.type}
-              {row.pool_id && (
-                <>
-                  {" "}
-                  from <HashLink kind="pool" id={row.pool_id} visible={10} />
-                </>
-              )}
-            </span>
-          )}
-        />
-      </Panel>
-
-      <details className="detail-disclosure">
-        <summary>Registration history</summary>
-        <Panel title="Registration history">
-          <PaginatedList<RegistrationHistoryRow>
-            queryKey={["dingo", "account", stakeAddress, "registrations"]}
-            buildUrl={(page, count) =>
-              `/api/v0/accounts/${stakeAddress}/registrations?page=${page}&count=${count}&order=desc`
-            }
-            keyFor={(row, index) => `${row.tx_hash}:${index}`}
-            emptyLabel="No registration history."
-            renderItem={(row) => (
-              <span>
-                {row.action} · deposit {formatAda(BigInt(row.deposit))} · slot{" "}
-                {row.tx_slot} ·{" "}
-                <HashLink kind="tx" id={row.tx_hash} visible={10} />
-              </span>
-            )}
-          />
-        </Panel>
-      </details>
-
-      <details className="detail-disclosure">
-        <summary>Withdrawals</summary>
-        <Panel title="Withdrawals">
-          <PaginatedList<WithdrawalRow>
-            queryKey={["dingo", "account", stakeAddress, "withdrawals"]}
-            buildUrl={(page, count) =>
-              `/api/v0/accounts/${stakeAddress}/withdrawals?page=${page}&count=${count}&order=desc`
-            }
-            keyFor={(row) => row.tx_hash}
-            emptyLabel="No withdrawals."
-            renderItem={(row) => (
-              <span>
-                {formatAda(BigInt(row.amount))} —{" "}
-                <HashLink kind="tx" id={row.tx_hash} visible={12} /> ·{" "}
-                {new Date(row.block_time * 1000).toLocaleString()}
-              </span>
-            )}
-          />
-        </Panel>
-      </details>
+      {summaryQuery.data && <StakeJourney stakeAddress={stakeAddress!} />}
 
       <details className="detail-disclosure">
         <summary>UTxOs</summary>

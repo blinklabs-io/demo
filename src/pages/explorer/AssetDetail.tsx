@@ -1,15 +1,13 @@
+import { AssetDistribution } from "../../components/chain/AssetDistribution";
 import { ChainMark } from "../../components/explorer/ChainMark";
 import { PageIntro } from "../../components/explorer/Visuals";
-import { BarChart, Metric } from "../../components/explorer/Visuals";
-import { ratio } from "../../lib/visualFormat";
-import { shortenHash } from "../../lib/format";
+import { Metric } from "../../components/explorer/Visuals";
 import { Link, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { QueryState } from "../../components/explorer/QueryState";
-import { PaginatedList } from "../../components/explorer/PaginatedList";
 
 interface AssetResponse {
   asset: string;
@@ -21,11 +19,6 @@ interface AssetResponse {
   initial_mint_tx_hash: string;
   mint_or_burn_count: number;
   onchain_metadata: unknown;
-}
-
-interface AssetAddressRow {
-  address: string;
-  quantity: string;
 }
 
 export default function AssetDetail() {
@@ -116,44 +109,12 @@ export default function AssetDetail() {
         </QueryState>
       </Panel>
 
-      <Panel title="Holder addresses">
-        <PaginatedList<AssetAddressRow>
-          queryKey={["dingo", "asset", assetId, "addresses"]}
-          buildUrl={(page, count) =>
-            `/api/v0/assets/${assetId}/addresses?page=${page}&count=${count}`
-          }
-          keyFor={(row) => row.address}
-          visualize={(rows) =>
-            assetQuery.data ? (
-              <div className="mb-6">
-                <BarChart
-                  title="percent of issued supply held (current page)"
-                  items={rows.map((row) => ({
-                    label: shortenHash(row.address, 4),
-                    value: ratio(
-                      BigInt(row.quantity),
-                      BigInt(assetQuery.data!.quantity),
-                    ),
-                    href: `/explorer/address/${row.address}`,
-                  }))}
-                />
-                <p className="mt-3 text-xs text-slate-400">
-                  Holdings on this page as a share of issued supply.
-                </p>
-              </div>
-            ) : null
-          }
-          emptyLabel="No holders."
-          renderItem={(row) => (
-            <span className="holding-row">
-              <HashLink kind="address" id={row.address} />
-              <strong className="holding-quantity">
-                {BigInt(row.quantity).toLocaleString()}
-              </strong>
-            </span>
-          )}
+      {assetQuery.data && (
+        <AssetDistribution
+          assetId={assetId!}
+          supply={BigInt(assetQuery.data.quantity)}
         />
-      </Panel>
+      )}
     </div>
   );
 }

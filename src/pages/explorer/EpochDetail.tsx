@@ -1,3 +1,4 @@
+import { EpochFingerprints } from "../../components/chain/EpochFingerprints";
 import { eraNameFromProtocol } from "../../lib/dingo/networkNames";
 import {
   Metric,
@@ -245,6 +246,13 @@ export default function EpochDetail() {
           </QueryState>
         )}
       </Panel>
+
+      {selectedEpoch !== undefined && (
+        <EpochFingerprints
+          epoch={selectedEpoch}
+          currentEpoch={tipQuery.data?.epoch}
+        />
+      )}
 
       <Panel title="Protocol parameters">
         <QueryState isLoading={paramsQuery.isLoading} error={paramsQuery.error}>

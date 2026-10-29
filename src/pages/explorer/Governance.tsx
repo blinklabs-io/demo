@@ -1,8 +1,8 @@
+import { GovernanceChamber } from "../../components/chain/GovernanceChamber";
 import { ProposalVoting } from "../../components/explorer/ProposalVoting";
 import {
   Timeline,
   Metric,
-  BarChart,
   Gauge,
   Distribution,
   PageIntro,
@@ -32,15 +32,6 @@ interface Proposal extends ProposalSummary {
   dropped_epoch: number | null;
   expired_epoch: number | null;
   expiration: number;
-}
-
-interface ProposalVote {
-  tx_hash: string;
-  cert_index: number;
-  voter_role: string;
-  voter: string;
-  vote: string;
-  counted: boolean;
 }
 
 interface Committee {
@@ -347,45 +338,7 @@ export function ProposalDetail() {
         </QueryState>
       </Panel>
       {proposal.data && <ProposalVoting proposal={proposal.data} />}
-      {proposal.data && (
-        <Panel title="Votes">
-          <PaginatedList<ProposalVote>
-            queryKey={["dingo", "proposal", id, "votes"]}
-            buildUrl={(page, count) =>
-              `${path}/votes?page=${page}&count=${count}&order=desc`
-            }
-            keyFor={(row, index) =>
-              `${row.tx_hash}:${row.cert_index}:${row.voter}:${index}`
-            }
-            visualize={(rows) => (
-              <div className="mb-6">
-                <BarChart
-                  title="counted votes on this page"
-                  items={["yes", "no", "abstain"].map((vote) => ({
-                    label: vote,
-                    value: rows.filter(
-                      (row) => row.counted && row.vote === vote,
-                    ).length,
-                  }))}
-                />
-                <p className="mt-3 text-xs text-slate-400">
-                  Counted votes on this page; counts are not weighted voting
-                  power.
-                </p>
-              </div>
-            )}
-            emptyLabel="No votes cast."
-            renderItem={(row) => (
-              <div className="break-all py-1">
-                <span className="font-medium text-slate-200">{row.vote}</span> ·{" "}
-                {row.voter_role} · {row.voter} ·{" "}
-                {row.counted ? "Counted" : "Not counted"} ·{" "}
-                <HashLink kind="tx" id={row.tx_hash} />
-              </div>
-            )}
-          />
-        </Panel>
-      )}
+      {proposal.data && <GovernanceChamber proposalId={id!} />}
     </div>
   );
 }
