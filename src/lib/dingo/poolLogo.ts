@@ -55,7 +55,14 @@ async function readDocument(url: string, signal: AbortSignal) {
 
 function images(document: Record<string, unknown>, base: string) {
   const info = object(document.info);
-  return [info?.url_png_icon_64x64, info?.url_png_logo]
+  const media = object(object(document.pool)?.media_assets);
+  return [
+    media?.icon_png_64x64,
+    info?.url_png_icon_64x64,
+    media?.logo_png,
+    info?.url_png_logo,
+    media?.logo_svg,
+  ]
     .map((value) => documentUrl(value, base))
     .filter((url): url is string => url !== null);
 }
@@ -67,7 +74,9 @@ export async function readPoolLogos(metadataUrl: string, signal: AbortSignal) {
   const metadata = await readDocument(url, bounded);
   const direct = images(metadata.document, metadata.url);
   if (direct.length) return [...new Set(direct)];
-  const extendedUrl = documentUrl(metadata.document.extended, metadata.url);
+  const extendedUrl =
+    documentUrl(metadata.document.extDataUrl, metadata.url) ??
+    documentUrl(metadata.document.extended, metadata.url);
   if (!extendedUrl) return [...new Set(direct)];
   const extended = await readDocument(extendedUrl, bounded);
   return [...new Set(images(extended.document, extended.url))];

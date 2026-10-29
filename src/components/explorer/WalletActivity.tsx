@@ -83,7 +83,12 @@ export function WalletActivity({
                 <Gauge
                   label="Pool saturation"
                   value={pool.data.live_saturation * 100}
-                  detail="Share of saturation threshold"
+                  tone={pool.data.live_saturation > 1 ? "red" : "teal"}
+                  detail={
+                    pool.data.live_saturation > 1
+                      ? "Oversaturated"
+                      : "Share of saturation threshold"
+                  }
                 />
                 <div className="metric-grid">
                   <Metric
