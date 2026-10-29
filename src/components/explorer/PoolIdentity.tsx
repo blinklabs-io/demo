@@ -1,9 +1,13 @@
+import { useState } from "react";
+import { readPoolLogos } from "../../lib/dingo/poolLogo";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { shortenHash } from "../../lib/format";
 
 export interface PoolMetadata {
+  url?: string | null;
+  hash?: string | null;
   ticker?: string | null;
   name?: string | null;
 }
@@ -15,10 +19,35 @@ function PoolAvatar({
   metadata?: PoolMetadata | null;
   poolId: string;
 }) {
+  const [failed, setFailed] = useState<string[]>([]);
+  const logos = useQuery({
+    queryKey: ["pool-logo", metadata?.url, metadata?.hash],
+    queryFn: ({ signal }) => readPoolLogos(metadata!.url!, signal),
+    enabled: Boolean(metadata?.url),
+    staleTime: 86_400_000,
+    gcTime: 86_400_000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const image = logos.data?.find((url) => !failed.includes(url));
   const initials =
     metadata?.ticker?.slice(0, 2) || poolId.slice(-2).toUpperCase();
   return (
-    <span className="pool-avatar" aria-hidden="true">{initials}</span>
+    <span className="pool-avatar" aria-hidden="true">
+      {image ? (
+        <img
+          key={image}
+          src={image}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed((previous) => [...previous, image])}
+        />
+      ) : (
+        initials
+      )}
+    </span>
   );
 }
 
@@ -48,7 +77,11 @@ export function PoolIdentity({
       className={`pool-identity ${compact ? "compact" : ""}`}
       title={poolId}
     >
-      <PoolAvatar metadata={info} poolId={poolId} />
+      <PoolAvatar
+        key={`${poolId}:${info?.url ?? ""}:${info?.hash ?? ""}`}
+        metadata={info}
+        poolId={poolId}
+      />
       <span className="pool-label">
         <strong>
           {info?.ticker ? info.ticker : shortenHash(poolId, 6)}

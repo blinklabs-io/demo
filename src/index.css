@@ -844,7 +844,7 @@ summary {
 .pool-avatar img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .pool-label {
   display: flex;
@@ -1677,6 +1677,19 @@ summary {
 }
 .instrument-gauge.gauge-violet {
   --instrument-color: #a9a4ff;
+}
+.instrument-gauge.gauge-red {
+  --instrument-color: #f87171;
+}
+.gauge-red .gauge-reading,
+.gauge-red .gauge-reading tspan {
+  fill: var(--instrument-color);
+}
+.gauge-red .gauge-needle line {
+  stroke: var(--instrument-color);
+}
+.gauge-red .gauge-fill {
+  filter: drop-shadow(0 0 6px #f8717140);
 }
 .instrument-gauge.gauge-amber {
   --instrument-color: #ffd276;

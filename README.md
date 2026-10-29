@@ -78,7 +78,11 @@ keyboard controls, mobile layouts, and reduced-motion support.
 The explorer includes transaction and block-size charts, ADA supply breakdowns,
 reward and holder charts, and timelines for eras, blocks, and governance actions.
 Charts link to the underlying records and expose values on keyboard focus.
-Pool identities use registered tickers and names with locally rendered initials.
+Pool identities use registered tickers and names. Icons are resolved from each
+pool’s published metadata and extended metadata files, using the URL supplied
+by Dingo. Both CIP-6 and legacy extended metadata layouts are supported. The small icon is preferred over the full logo; missing or unavailable
+images show ticker initials. Metadata and image files load directly from their
+publishers, without a third-party pool registry or indexer.
 
 Recent blocks and block details show the protocol version decoded from the
 block header bytes returned by UTxO RPC. A minor version of 69 displays the
@@ -183,3 +187,5 @@ Illustrative data, captured at desktop and mobile widths.
 | Asset landscape    | [Desktop](docs/screenshots/asset1500.jpg)                 | [Mobile](docs/screenshots/asset390.jpg)                 |
 | Stake journey      | [Desktop](docs/screenshots/stake1500.jpg)                 | [Mobile](docs/screenshots/stake390.jpg)                 |
 | Epoch fingerprints | [Desktop](docs/screenshots/epoch1500.jpg)                 | [Mobile](docs/screenshots/epoch390.jpg)                 |
+| Pool logos & saturation | [Desktop](docs/screenshots/poollogos1500.jpg) | [Mobile](docs/screenshots/poollogos390.jpg) |
+| Wallet pool saturation | [Desktop](docs/screenshots/walletsaturation1500.jpg) | [Mobile](docs/screenshots/walletsaturation390.jpg) |

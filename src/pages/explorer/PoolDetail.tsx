@@ -93,7 +93,12 @@ export default function PoolDetail() {
                   <Gauge
                     label="Pool saturation"
                     value={poolQuery.data.live_saturation * 100}
-                    detail="Share of saturation threshold"
+                    tone={poolQuery.data.live_saturation > 1 ? "red" : "teal"}
+                    detail={
+                      poolQuery.data.live_saturation > 1
+                        ? "Oversaturated"
+                        : "Share of saturation threshold"
+                    }
                   />
                 </div>
               </div>
