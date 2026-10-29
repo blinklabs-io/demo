@@ -40,7 +40,12 @@ function PoolRow({ row }: { row: PoolExtendedRow }) {
           {(row.margin_cost * 100).toFixed(1)}%<small>Margin</small>
         </strong>
       </div>
-      <Gauge label="Saturation" value={row.live_saturation * 100} />
+      <Gauge
+        label="Saturation"
+        value={row.live_saturation * 100}
+        tone={row.live_saturation > 1 ? "red" : "teal"}
+        detail={row.live_saturation > 1 ? "Oversaturated" : undefined}
+      />
     </div>
   );
 }

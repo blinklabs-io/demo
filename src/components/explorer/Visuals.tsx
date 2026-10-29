@@ -32,7 +32,7 @@ export function Gauge({
   label: string;
   value: number;
   detail?: string;
-  tone?: "teal" | "violet" | "amber";
+  tone?: "teal" | "violet" | "amber" | "red";
 }) {
   const id = useId();
   const bounded = Math.min(
