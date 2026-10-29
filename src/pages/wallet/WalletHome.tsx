@@ -191,6 +191,7 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
             <span>No stake credential on this address</span>
           )}
           <Link to="/wallet/send">Send →</Link>
+          <Link to="/wallet/tools">Explore wallet tools ↗</Link>
         </div>
       </section>
       <div className="metric-grid">
