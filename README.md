@@ -175,11 +175,11 @@ Illustrative data, captured at desktop and mobile widths.
 
 | View               | Desktop                                                                     | Mobile                                                                    |
 | ------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Block conveyor     | [visual-conveyor-1500](docs/screenshots/visual-conveyor-1500.jpg)           | [visual-conveyor-390](docs/screenshots/visual-conveyor-390.jpg)           |
-| Transaction flow   | [visual-flow-1500](docs/screenshots/visual-flow-1500.jpg)                   | [visual-flow-390](docs/screenshots/visual-flow-390.jpg)                   |
-| Block mosaic       | [visual-mosaic-1500](docs/screenshots/visual-mosaic-1500.jpg)               | [visual-mosaic-390](docs/screenshots/visual-mosaic-390.jpg)               |
-| UTxO constellation | [visual-constellation-1500](docs/screenshots/visual-constellation-1500.jpg) | [visual-constellation-390](docs/screenshots/visual-constellation-390.jpg) |
-| Governance chamber | [visual-chamber-1500](docs/screenshots/visual-chamber-1500.jpg)             | [visual-chamber-390](docs/screenshots/visual-chamber-390.jpg)             |
-| Asset landscape    | [visual-asset-1500](docs/screenshots/visual-asset-1500.jpg)                 | [visual-asset-390](docs/screenshots/visual-asset-390.jpg)                 |
-| Stake journey      | [visual-stake-1500](docs/screenshots/visual-stake-1500.jpg)                 | [visual-stake-390](docs/screenshots/visual-stake-390.jpg)                 |
-| Epoch fingerprints | [visual-epoch-1500](docs/screenshots/visual-epoch-1500.jpg)                 | [visual-epoch-390](docs/screenshots/visual-epoch-390.jpg)                 |
+| Block conveyor     | [Desktop](docs/screenshots/conveyor1500.jpg)           | [Mobile](docs/screenshots/conveyor390.jpg)           |
+| Transaction flow   | [Desktop](docs/screenshots/flow1500.jpg)                   | [Mobile](docs/screenshots/flow390.jpg)                   |
+| Block mosaic       | [Desktop](docs/screenshots/mosaic1500.jpg)               | [Mobile](docs/screenshots/mosaic390.jpg)               |
+| UTxO constellation | [Desktop](docs/screenshots/constellation1500.jpg) | [Mobile](docs/screenshots/constellation390.jpg) |
+| Governance chamber | [Desktop](docs/screenshots/chamber1500.jpg)             | [Mobile](docs/screenshots/chamber390.jpg)             |
+| Asset landscape    | [Desktop](docs/screenshots/asset1500.jpg)                 | [Mobile](docs/screenshots/asset390.jpg)                 |
+| Stake journey      | [Desktop](docs/screenshots/stake1500.jpg)                 | [Mobile](docs/screenshots/stake390.jpg)                 |
+| Epoch fingerprints | [Desktop](docs/screenshots/epoch1500.jpg)                 | [Mobile](docs/screenshots/epoch390.jpg)                 |
