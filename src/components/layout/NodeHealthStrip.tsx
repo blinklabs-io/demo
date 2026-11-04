@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { networkName } from "../../lib/dingo/networkNames";
-import { EraName } from "../explorer/EraName";
 import { useNodeHealth } from "../../lib/dingo/nodeHealth";
 import { useTipStore } from "../../stores/tipStore";
 import { useNow } from "../../lib/useNow";
@@ -48,7 +47,10 @@ export function NodeHealthStrip() {
     : data.secondsSinceTip;
 
   return (
-    <span className="flex items-center gap-3 text-slate-400">
+    <span
+      className="flex items-center gap-3 text-slate-400"
+      title={`Tip #${tipHeight} · Epoch ${data.tipEpoch} · ${formatAge(secondsSinceTip)}${usingLiveTip ? " · FollowTip connected" : ""}`}
+    >
       <span
         title={
           genesis.data
@@ -68,20 +70,6 @@ export function NodeHealthStrip() {
         />
         {data.isHealthy ? "Healthy" : "Unhealthy"}
       </span>
-      <span className="flex items-center gap-1">
-        Tip <span className="text-slate-200">#{tipHeight}</span>
-        {usingLiveTip && (
-          <span
-            className="h-1.5 w-1.5 rounded-full bg-sky-400"
-            title="Live via FollowTip"
-          />
-        )}
-      </span>
-      <span>Epoch {data.tipEpoch}</span>
-      <span>
-        <EraName epoch={data.tipEpoch} />
-      </span>
-      <span className="hidden sm:inline">{formatAge(secondsSinceTip)}</span>
     </span>
   );
 }

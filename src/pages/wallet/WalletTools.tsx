@@ -1,7 +1,8 @@
+import TransactionStudio from "../TransactionStudio";
 import { Cip25Editor } from "../../components/wallet/Cip25Editor";
 import { emptyCip25, type Cip25Draft } from "../../lib/tools/cip25";
 import { UtxoConstellation } from "../../components/chain/UtxoConstellation";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ComponentProps } from "react";
 import { Link, NavLink, useParams } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
@@ -12,7 +13,7 @@ import {
   EmptyState,
 } from "../../components/explorer/Visuals";
 import { CopyButton } from "../../components/explorer/CopyButton";
-import { ToolTransaction } from "../../components/wallet/ToolTransaction";
+import { ToolTransaction as WalletToolTransaction } from "../../components/wallet/ToolTransaction";
 import {
   inputId,
   plainWalletOutputs,
@@ -24,7 +25,20 @@ import { fileDigest, verifyDocumentProof } from "../../lib/tools/proofs";
 import { formatAda } from "../../lib/format";
 import { readWalletDRep } from "../../lib/dingo/governanceVote";
 
+function ToolTransaction(props: ComponentProps<typeof WalletToolTransaction>) {
+  const connection = useWalletStore((state) => state.connectionId);
+  return <WalletToolTransaction key={connection} {...props} />;
+}
+
 const tools = [
+  {
+    id: "transactions",
+    icon: "⌁",
+    name: "Transactions",
+    description:
+      "Build unsigned payments, inspect CBOR, add witnesses, and export to cardano-cli.",
+    color: "teal",
+  },
   {
     id: "batch",
     icon: "↗",
@@ -82,12 +96,24 @@ function AssetOptions() {
   );
 }
 function Batch() {
+  const connection = useWalletStore((state) => state.connectionId);
+  const [draftConnection, setDraftConnection] = useState(connection);
   const [rows, setRows] = useState<(Payment & { id: number })[]>([
     { id: 0, address: "", amount: "", asset: "lovelace" },
   ]);
   const next = useRef(1);
   const [csv, setCsv] = useState("");
   const [error, setError] = useState("");
+  if (draftConnection !== connection) {
+    setDraftConnection(connection);
+    setRows((current) =>
+      current.map((row) =>
+        row.asset === "lovelace"
+          ? row
+          : { ...row, asset: "lovelace", amount: "" },
+      ),
+    );
+  }
   const update = (id: number, part: Partial<Payment>) =>
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...part } : r)));
   const total = rows
@@ -240,6 +266,11 @@ function Utxos() {
   const api = useWalletStore((s) => s.walletApi),
     connection = useWalletStore((s) => s.connectionId);
   const [selected, setSelected] = useState<string[]>([]);
+  const [selectionConnection, setSelectionConnection] = useState(connection);
+  if (selectionConnection !== connection) {
+    setSelectionConnection(connection);
+    setSelected([]);
+  }
   const [mode, setMode] = useState<"consolidate" | "split">("consolidate");
   const [count, setCount] = useState("4"),
     [amount, setAmount] = useState("5");
@@ -280,7 +311,13 @@ function Utxos() {
           Split outputs
         </button>
       </div>
-      {mode === "consolidate" && (
+      {mode === "consolidate" && !api && (
+        <p className="tool-help">
+          Connect a wallet to inspect and select its actual outputs. You can
+          explore the split-output form without connecting.
+        </p>
+      )}
+      {mode === "consolidate" && api && (
         <UtxoConstellation
           outputs={available}
           selected={selected}
@@ -572,6 +609,8 @@ function Mint() {
     files: [],
   });
   const tokens = useWalletStore((s) => s.tokens);
+  const connection = useWalletStore((state) => state.connectionId);
+  const [selectionConnection, setSelectionConnection] = useState(connection);
   const [mode, setMode] = useState<"mint" | "burn">("mint");
   const [name, setName] = useState(""),
     [quantity, setQuantity] = useState("1000"),
@@ -580,6 +619,10 @@ function Mint() {
     [asset, setAsset] = useState(""),
     [policy, setPolicy] = useState(""),
     [importError, setImportError] = useState("");
+  if (selectionConnection !== connection) {
+    setSelectionConnection(connection);
+    setAsset("");
+  }
   const bytes = new TextEncoder().encode(name).length;
   async function importPolicy(file: File) {
     try {
@@ -863,6 +906,8 @@ function Treasury() {
 }
 function ToolBody({ tool }: { tool: string }) {
   switch (tool) {
+    case "transactions":
+      return <TransactionStudio />;
     case "batch":
       return <Batch />;
     case "utxos":
@@ -881,19 +926,21 @@ function ToolBody({ tool }: { tool: string }) {
 }
 export default function WalletTools() {
   const { tool } = useParams();
-  const connection = useWalletStore((s) => s.connectionId);
+  const connected = useWalletStore((s) => s.status === "connected");
   const current = tools.find((t) => t.id === tool);
   return (
     <div className="wallet-tools">
-      <PageIntro
-        eyebrow="Built on Cardano. Powered by Dingo."
-        title={current?.name ?? "More than a wallet."}
-        detail={
-          current?.description ??
-          "Create, organize, prove, and participate. Every on-chain action goes through Dingo."
-        }
-        symbol={current?.icon ?? "✦"}
-      />
+      {tool !== "transactions" && (
+        <PageIntro
+          eyebrow="Built on Cardano. Powered by Dingo."
+          title={current?.name ?? "More than a wallet."}
+          detail={
+            current?.description ??
+            "Create, organize, prove, and participate. Every on-chain action goes through Dingo."
+          }
+          symbol={current?.icon ?? "✦"}
+        />
+      )}
       {!tool ? (
         <>
           <div className="tool-catalog">
@@ -927,7 +974,7 @@ export default function WalletTools() {
         </>
       ) : current ? (
         <>
-          <nav className="tool-tabs" aria-label="Wallet tools">
+          <nav className="tool-tabs" aria-label="Creation tools">
             <NavLink end to="/wallet/tools">
               All tools
             </NavLink>
@@ -937,7 +984,13 @@ export default function WalletTools() {
               </NavLink>
             ))}
           </nav>
-          <ToolBody key={`${tool}:${connection}`} tool={tool} />
+          {!connected && tool !== "transactions" && tool !== "utxos" && (
+            <p className="tool-help">
+              Explore the tools and edit your drafts without connecting. Wallet
+              funds and transaction signing require a connected Preview wallet.
+            </p>
+          )}
+          <ToolBody key={tool} tool={tool} />
         </>
       ) : (
         <EmptyState

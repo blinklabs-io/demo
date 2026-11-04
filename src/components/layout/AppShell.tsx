@@ -1,12 +1,19 @@
-import { useWalletStore } from "../../stores/walletStore";
 import { useEffect } from "react";
-import { NavLink, Outlet, useLocation, useNavigationType } from "react-router";
+import {
+  isParticipationPath,
+  isExplorePath,
+  normalizePath,
+  exploreSections,
+  participationSections,
+} from "../../lib/navigation";
+import { Link, Outlet, useLocation, useNavigationType } from "react-router";
 import { Header } from "./Header";
 import { useMempoolStore } from "../../stores/mempoolStore";
 import { useTipStore } from "../../stores/tipStore";
 
 export function AppShell() {
-  const { pathname, hash } = useLocation();
+  const { pathname: rawPathname, hash } = useLocation();
+  const pathname = normalizePath(rawPathname);
   const navigationType = useNavigationType();
   useEffect(() => {
     if (navigationType === "POP" && !hash) return;
@@ -14,10 +21,6 @@ export function AppShell() {
     if (target) target.scrollIntoView({ block: "start" });
     else window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname, hash, navigationType]);
-  const restoreConnection = useWalletStore((state) => state.restoreConnection);
-  useEffect(() => {
-    void restoreConnection();
-  }, [restoreConnection]);
   const startMempoolFeed = useMempoolStore((state) => state.start);
   const startTipFeed = useTipStore((state) => state.start);
 
@@ -34,25 +37,55 @@ export function AppShell() {
     <div className="app-shell min-h-screen bg-slate-950 text-slate-100">
       <Header />
       <main className="workspace-main">
-        {pathname.startsWith("/wallet") && (
+        {isExplorePath(pathname) && (
+          <div className="wallet-nav">
+            <nav aria-label="Explorer navigation">
+              {exploreSections.map(({ to, label, matches }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className={matches(pathname) ? "selected" : ""}
+                  aria-current={matches(pathname) ? "page" : undefined}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
+        {isParticipationPath(pathname) && (
+          <div className="wallet-nav">
+            <nav aria-label="Participation navigation">
+              {participationSections.map(({ to, label, matches }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className={matches(pathname) ? "selected" : ""}
+                  aria-current={matches(pathname) ? "page" : undefined}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
+        {/^\/wallet(?:\/(send|delegate))?$/.test(pathname) && (
           <div className="wallet-nav">
             <h1 className="sr-only">Wallet</h1>
             <nav aria-label="Wallet navigation">
               {[
                 ["/wallet", "Portfolio"],
-                ["/wallet/tools", "Tools"],
                 ["/wallet/send", "Send"],
-                ["/wallet/swap", "Swap"],
                 ["/wallet/delegate", "Delegate"],
               ].map(([to, label]) => (
-                <NavLink
+                <Link
                   key={to}
-                  end={to !== "/wallet/tools"}
                   to={to}
-                  className={({ isActive }) => (isActive ? "selected" : "")}
+                  className={pathname === to ? "selected" : ""}
+                  aria-current={pathname === to ? "page" : undefined}
                 >
                   {label}
-                </NavLink>
+                </Link>
               ))}
             </nav>
           </div>

@@ -2,7 +2,7 @@ import { TransactionFlow } from "../../components/chain/TransactionFlow";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { Metric } from "../../components/explorer/Visuals";
 import { useEffect, useRef } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
@@ -289,6 +289,17 @@ export default function TxDetail() {
         eyebrow="Follow the value"
         title="Transaction explorer"
         symbol="⇄"
+        action={
+          transactionCborQuery.data?.cbor && (
+            <Link
+              className="experience-primary"
+              to="/wallet/tools/transactions"
+              state={{ transactionCbor: transactionCborQuery.data.cbor }}
+            >
+              Inspect & export transaction →
+            </Link>
+          )
+        }
       />
       <Panel title="Transaction">
         <QueryState

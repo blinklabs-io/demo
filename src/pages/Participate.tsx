@@ -135,6 +135,15 @@ export default function Participate() {
           </p>
           <strong>Open governance ↗</strong>
         </Link>
+        <Link to="/explorer/dreps">
+          <span>04 · Representation</span>
+          <h2>Find your representative</h2>
+          <p>
+            Explore DRep profiles and activity before choosing who represents
+            your stake.
+          </p>
+          <strong>Meet the representatives ↗</strong>
+        </Link>
       </div>
       <section id="holder-actions">
         <Panel title="Governance actions · holder answers">

@@ -1,11 +1,22 @@
+import { ChainSnapshot } from "../components/explorer/ChainSnapshot";
 import { useState } from "react";
 import { Link } from "react-router";
 import { type NodeHealth, useNodeHealth } from "../lib/dingo/nodeHealth";
 import { useMempoolStore } from "../stores/mempoolStore";
-import { useWalletStore } from "../stores/walletStore";
 import { BlockMosaic } from "../components/chain/BlockMosaic";
 
 const experiences = [
+  {
+    to: "/wallet/tools/transactions",
+    title: "Build it. Take it anywhere.",
+    category: "Create",
+    symbol: "⌁",
+    description:
+      "Compose unsigned payments without an extension. Inspect CBOR, add a wallet witness, and export to cardano-cli.",
+    tag: "Transaction studio · No wallet needed",
+    art: "flow",
+    action: "Build a transaction",
+  },
   {
     to: "/participate",
     title: "Make your voice count",
@@ -71,17 +82,6 @@ const experiences = [
     tag: "UTxO workshop",
     art: "utxo",
     action: "Open the workshop",
-  },
-  {
-    to: "/explorer/governance",
-    title: "Enter the chamber",
-    category: "Participate",
-    symbol: "⚑",
-    description:
-      "Explore governance actions, inspect the voting chamber, and cast a vote if you’re a DRep.",
-    tag: "Governance in motion",
-    art: "voice",
-    action: "Explore governance",
   },
   {
     to: "/wallet/tools/batch",
@@ -164,23 +164,23 @@ export default function Experiences() {
   const shownBlock = inspectedBlock ?? health.data;
   const pending = useMempoolStore((s) => s.pendingTxs.size);
   const stream = useMempoolStore((s) => s.status);
-  const wallet = useWalletStore((s) => s.status);
-  const tokens = useWalletStore((s) => s.tokens.length);
 
   return (
     <div className="experience-page">
       <section className="experience-hero">
         <div>
-          <span className="eyebrow">Dingo playground · Cardano Preview</span>
+          <span className="eyebrow">Build with Dingo · Cardano Preview</span>
           <h1>
-            A node.
-            <br />A world of
+            Build apps.
             <br />
-            <em>possibilities.</em>
+            Move value.
+            <br />
+            <em>Make it real.</em>
           </h1>
           <p>
-            Create. Trade. Participate. Follow the chain in motion. Every
-            experience here runs on Dingo’s APIs.
+            A Cardano node is an app platform. Trade, create, participate, and
+            follow the chain in motion. These working apps show what you can
+            build with Dingo’s APIs. No wallet needed to explore.
           </p>
           <div className="experience-actions">
             <a className="experience-primary" href="#experiences">
@@ -243,24 +243,7 @@ export default function Experiences() {
           </Link>
         </div>
       </section>
-      {wallet === "connected" && (
-        <section className="experience-next">
-          <span className="eyebrow">Your wallet opens more doors</span>
-          <h2>
-            {tokens
-              ? `${tokens} assets. What will you do with them?`
-              : "You’re connected. Make your next move."}
-          </h2>
-          <div>
-            <Link to="/wallet">Your portfolio & rewards →</Link>
-            <Link to="/wallet/send">Build an asset bundle →</Link>
-            <Link to={tokens ? "/wallet/swap" : "/wallet/tools/mint"}>
-              {tokens ? "Find a swap →" : "Create your first token →"}
-            </Link>
-            <Link to="/participate">Answer a governance action →</Link>
-          </div>
-        </section>
-      )}
+      <ChainSnapshot />
       <section id="experiences">
         <header className="experience-section-heading">
           <div>

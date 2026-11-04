@@ -1,5 +1,5 @@
 import { PageIntro } from "../../components/explorer/Visuals";
-import { WalletWelcome } from "../../components/explorer/WalletWelcome";
+import { WalletConnectSummary } from "../../components/layout/WalletConnectSummary";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -57,6 +57,7 @@ function hasKnownDecimals(
 
 interface SwapResult {
   txHash: string;
+  connectionId: number;
 }
 
 function createQueryProvider(): DingoSundaeQueryProvider {
@@ -78,6 +79,7 @@ export default function WalletSwap() {
   const tokens = useWalletStore((state) => state.tokens);
   const refreshBalance = useWalletStore((state) => state.refreshBalance);
 
+  const connected = status === "connected" && Boolean(walletApi);
   const queryProvider = useMemo(() => createQueryProvider(), []);
 
   // This app's Sundae V3 integration is hardcoded to Preview (script hashes,
@@ -90,12 +92,11 @@ export default function WalletSwap() {
     queryKey: ["dingo", "assert-network"],
     queryFn: () => assertDingoNetwork(getDingoProvider()),
     retry: false,
-    enabled: status === "connected",
   });
   const referencesCheck = useQuery({
     queryKey: ["sundae", "validate-references"],
     queryFn: () => queryProvider.validateProtocolReferences(),
-    enabled: status === "connected" && networkCheck.isSuccess,
+    enabled: connected && networkCheck.isSuccess,
     retry: false,
   });
 
@@ -112,7 +113,7 @@ export default function WalletSwap() {
     queryFn: () => queryProvider.discoverPools(),
     staleTime: 300_000,
     retry: false,
-    enabled: status === "connected",
+    enabled: networkCheck.isSuccess,
   });
 
   const discoveredAdaPools = (discoveredQuery.data ?? []).filter(
@@ -149,7 +150,7 @@ export default function WalletSwap() {
   const poolDetailQuery = useQuery({
     queryKey: ["sundae", "pool", effectiveIdent],
     queryFn: () => queryProvider.findPoolDataByIdent({ ident: effectiveIdent }),
-    enabled: status === "connected" && Boolean(effectiveIdent),
+    enabled: networkCheck.isSuccess && Boolean(effectiveIdent),
     initialData: discoveredPool,
     refetchInterval: 15_000,
     retry: false,
@@ -170,22 +171,23 @@ export default function WalletSwap() {
     ? receivedAssetForDirection(pool, direction)
     : undefined;
 
-  const available = offered
-    ? offered.assetId === ADA_METADATA.assetId
-      ? balanceLovelace
-      : balanceLovelace === null
-        ? null
-        : (tokens.find(
-            (token) => token.assetId === unitFromAssetId(offered.assetId),
-          )?.quantity ?? 0n)
-    : null;
+  const available =
+    connected && offered
+      ? offered.assetId === ADA_METADATA.assetId
+        ? balanceLovelace
+        : balanceLovelace === null
+          ? null
+          : (tokens.find(
+              (token) => token.assetId === unitFromAssetId(offered.assetId),
+            )?.quantity ?? 0n)
+      : null;
   const walletBalanceQuery = useQuery({
     queryKey: ["wallet", "swap-balance", connectionId],
     queryFn: async () => {
       await refreshBalance();
       return Date.now();
     },
-    enabled: status === "connected",
+    enabled: connected,
     refetchInterval: 30_000,
     retry: false,
   });
@@ -274,9 +276,9 @@ export default function WalletSwap() {
     }
   }
 
-  const swapMutation = useMutation<SwapResult, Error>({
-    mutationFn: async () => {
-      if (!walletApi) {
+  const swapMutation = useMutation<SwapResult, Error, number>({
+    mutationFn: async (originatingConnection) => {
+      if (!connected || !walletApi || connectionId !== originatingConnection) {
         throw new Error("Connect a wallet first.");
       }
       if (!pool || poolDetailQuery.isError) {
@@ -292,7 +294,11 @@ export default function WalletSwap() {
       }
       await refreshBalance();
       const current = useWalletStore.getState();
-      if (current.walletApi !== walletApi || current.status !== "connected")
+      if (
+        current.walletApi !== walletApi ||
+        current.status !== "connected" ||
+        current.connectionId !== connectionId
+      )
         throw new Error("Wallet connection changed. Review the order again.");
       const currentBalance =
         offered.assetId === ADA_METADATA.assetId
@@ -321,37 +327,17 @@ export default function WalletSwap() {
         slippagePercent,
       });
       const txHash = await built.signAndSubmit();
-      return { txHash };
+      return { txHash, connectionId: originatingConnection };
     },
-    onSuccess: () => {
-      void refreshBalance();
+    onSuccess: (result) => {
+      const current = useWalletStore.getState();
+      if (
+        current.status === "connected" &&
+        current.connectionId === result.connectionId
+      )
+        void refreshBalance();
     },
   });
-
-  if (status !== "connected") {
-    return <WalletWelcome purpose="prepare a SundaeSwap order" />;
-  }
-
-  if (networkCheck.isError || referencesCheck.isError) {
-    const error = (networkCheck.error ?? referencesCheck.error) as Error;
-    return (
-      <div className="rounded-md border border-red-900 bg-red-950 p-6 text-center text-sm text-red-200">
-        Can't build SundaeSwap orders against this Dingo instance:{" "}
-        {error.message}
-      </div>
-    );
-  }
-
-  if (
-    networkCheck.isLoading ||
-    (networkCheck.isSuccess && referencesCheck.isLoading)
-  ) {
-    return (
-      <div className="rounded-md border border-slate-800 p-6 text-center text-sm text-slate-400">
-        Checking Dingo is on Preview with Sundae V3 reference UTxOs indexed…
-      </div>
-    );
-  }
 
   return (
     <div className="wallet-workbench swap-workbench">
@@ -364,11 +350,31 @@ export default function WalletSwap() {
         Order construction through Dingo UTxO RPC only.{" "}
         {usingDiscovered
           ? "Pools discovered live from Dingo."
-          : discoveredQuery.isLoading
-            ? "Discovering pools from Dingo…"
-            : "Dingo returned no ADA-paired pools; showing the curated Preview pool list."}
+          : discoveredQuery.isError
+            ? "Pool discovery failed; select from the known Preview pools below."
+            : discoveredQuery.isFetching
+              ? "Discovering pools from Dingo…"
+              : !networkCheck.isSuccess
+                ? "Pool discovery will start after network verification."
+                : "Dingo returned no ADA-paired pools; showing the curated Preview pool list."}
       </p>
 
+      {networkCheck.isError && (
+        <div
+          role="alert"
+          className="rounded-md border border-red-900 p-4 text-sm text-red-300"
+        >
+          Cannot verify Dingo’s Preview network: {networkCheck.error.message}{" "}
+          <button type="button" onClick={() => void networkCheck.refetch()}>
+            Retry network check
+          </button>
+        </div>
+      )}
+      {networkCheck.isPending && (
+        <p role="status" className="text-sm text-slate-400">
+          Checking Dingo’s Preview network…
+        </p>
+      )}
       <section className="swap-venue-card" aria-label="Swap venue">
         <div>
           <span className="eyebrow">Execution venue</span>
@@ -430,7 +436,12 @@ export default function WalletSwap() {
           <div className="swap-market-heading">
             <span className="eyebrow">Pool exchange rate</span>
             <span className="live-tag">
-              ● {poolDetailQuery.isError ? "Update failed" : "Live · 15 sec"}
+              ●{" "}
+              {networkCheck.isError || poolDetailQuery.isError
+                ? "Update failed"
+                : !networkCheck.isSuccess || poolDetailQuery.isPending
+                  ? "Connecting…"
+                  : "Live · 15 sec"}
             </span>
           </div>
           <h2>
@@ -438,7 +449,13 @@ export default function WalletSwap() {
             {received ? labelFor(received) : "…"}
           </h2>
           <p className="swap-spot-price">{spotPrice}</p>
-          {history.isPending ? (
+          {!pool ? (
+            <div className="price-chart-empty" role="status">
+              {poolDetailQuery.isError || networkCheck.isError
+                ? "Price history is unavailable until pool data can be loaded."
+                : "Loading pool data…"}
+            </div>
+          ) : history.isPending ? (
             <div className="price-chart-empty" role="status">
               Loading weekly pool history…
             </div>
@@ -513,10 +530,13 @@ export default function WalletSwap() {
               Available:{" "}
               {available !== null && offered
                 ? `${formatAssetAmount(available, offered.decimals)} ${labelFor(offered)}`
-                : "Checking wallet…"}
+                : connected
+                  ? "Checking wallet…"
+                  : "Connect a wallet to see your balance"}
             </span>
             <button
               type="button"
+              disabled={!connected}
               onClick={() => void walletBalanceQuery.refetch()}
             >
               Refresh
@@ -611,7 +631,7 @@ export default function WalletSwap() {
                 Amount exceeds your wallet balance.
               </p>
             )}
-          {walletBalanceQuery.isError && (
+          {connected && walletBalanceQuery.isError && (
             <p role="alert" className="text-sm text-red-400">
               Wallet balance refresh failed: {walletBalanceQuery.error.message}
             </p>
@@ -623,9 +643,32 @@ export default function WalletSwap() {
             </p>
           )}
 
+          {connected && referencesCheck.isError && (
+            <p role="alert" className="text-sm text-red-400">
+              Order reference checks failed: {referencesCheck.error.message}{" "}
+              <button
+                type="button"
+                onClick={() => void referencesCheck.refetch()}
+              >
+                Retry order checks
+              </button>
+            </p>
+          )}
+          {!connected && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-slate-400">
+                Explore pools, charts, and quotes without a wallet. Connect to
+                sign and submit an order.
+              </p>
+              <WalletConnectSummary />
+            </div>
+          )}
           <button
             type="button"
             disabled={
+              !connected ||
+              !networkCheck.isSuccess ||
+              !referencesCheck.isSuccess ||
               !pool ||
               poolDetailQuery.isError ||
               walletBalanceQuery.isError ||
@@ -637,31 +680,41 @@ export default function WalletSwap() {
             }
             onClick={() => {
               swapMutation.reset();
-              swapMutation.mutate();
+              swapMutation.mutate(connectionId);
             }}
             className="rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500 disabled:opacity-50"
           >
             {swapMutation.isPending
               ? "Building, signing, submitting…"
-              : !pool
-                ? "Loading pool…"
-                : "Sign & submit swap order"}
+              : !connected
+                ? "Connect wallet to trade"
+                : !networkCheck.isSuccess || !referencesCheck.isSuccess
+                  ? "Order checks pending"
+                  : !pool
+                    ? "Loading pool…"
+                    : "Sign & submit swap order"}
           </button>
 
-          {swapMutation.isError && (
-            <p className="text-sm text-red-400">{swapMutation.error.message}</p>
-          )}
-          {swapMutation.isSuccess && (
-            <p className="text-sm text-emerald-400">
-              Order submitted. Swap execution is separate.{" "}
-              <Link
-                to={`/explorer/tx/${swapMutation.data.txHash}`}
-                className="underline"
-              >
-                View order transaction
-              </Link>
-            </p>
-          )}
+          {connected &&
+            swapMutation.variables === connectionId &&
+            swapMutation.isError && (
+              <p className="text-sm text-red-400">
+                {swapMutation.error.message}
+              </p>
+            )}
+          {connected &&
+            swapMutation.isSuccess &&
+            swapMutation.data.connectionId === connectionId && (
+              <p className="text-sm text-emerald-400">
+                Order submitted. Swap execution is separate.{" "}
+                <Link
+                  to={`/explorer/tx/${swapMutation.data.txHash}`}
+                  className="underline"
+                >
+                  View order transaction
+                </Link>
+              </p>
+            )}
         </div>
       </div>
     </div>

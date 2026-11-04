@@ -1,15 +1,9 @@
 import { BlockConveyor } from "../../components/chain/BlockConveyor";
 import { RecentHeaderVersions } from "../../components/explorer/RecentHeaderVersions";
 import { BlockHeaderVersion } from "../../components/explorer/BlockHeaderVersion";
-import { compactAda, epochProgress } from "../../lib/visualFormat";
+import { epochProgress } from "../../lib/visualFormat";
 import { useState } from "react";
-import {
-  BarChart,
-  Distribution,
-  Metric,
-  Gauge,
-  PageIntro,
-} from "../../components/explorer/Visuals";
+import { BarChart, Metric, PageIntro } from "../../components/explorer/Visuals";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Panel } from "../../components/explorer/Panel";
@@ -30,18 +24,6 @@ interface BlockSummary {
   size: number;
   previous_block: string;
   slot_leader: string;
-}
-
-interface NetworkResponse {
-  supply: {
-    max: string;
-    total: string;
-    circulating: string;
-    locked: string;
-    treasury: string;
-    reserves: string;
-  };
-  stake: { live: string; active: string };
 }
 
 interface GenesisResponse {
@@ -96,11 +78,6 @@ export default function ExplorerOverview() {
     queryFn: fetchRecentBlocks,
     refetchInterval: 20_000,
   });
-  const networkQuery = useQuery({
-    queryKey: ["dingo", "network"],
-    queryFn: () => blockfrostFetch<NetworkResponse>("/api/v0/network"),
-    refetchInterval: 60_000,
-  });
   const genesisQuery = useQuery({
     queryKey: ["dingo", "genesis"],
     queryFn: () => blockfrostFetch<GenesisResponse>("/api/v0/genesis"),
@@ -108,7 +85,6 @@ export default function ExplorerOverview() {
   });
   const blocks = blocksQuery.data?.blocks ?? [];
   const latest = blocks[0];
-  const network = networkQuery.data;
   const chronological = [...blocks].reverse();
   const intervals = chronological
     .slice(1)
@@ -212,77 +188,6 @@ export default function ExplorerOverview() {
               <p className="mt-2 text-xs text-amber-300">
                 Only available blocks are shown.
               </p>
-            )}
-          </QueryState>
-        </Panel>
-        <Panel
-          title="ADA supply"
-          action={
-            <Link className="text-xs text-sky-400" to="/explorer/network">
-              Network ↗
-            </Link>
-          }
-        >
-          <QueryState
-            isLoading={networkQuery.isLoading}
-            error={networkQuery.error}
-          >
-            {network && (
-              <Distribution
-                title="ADA supply"
-                unit={compactAda(network.supply.max)}
-                items={[
-                  {
-                    label: "Circulating",
-                    value: BigInt(network.supply.circulating),
-                    display: compactAda(network.supply.circulating),
-                  },
-                  {
-                    label: "Treasury",
-                    value: BigInt(network.supply.treasury),
-                    display: compactAda(network.supply.treasury),
-                  },
-                  {
-                    label: "Reserves",
-                    value: BigInt(network.supply.reserves),
-                    display: compactAda(network.supply.reserves),
-                  },
-                  {
-                    label: "Locked",
-                    value: BigInt(network.supply.locked),
-                    display: compactAda(network.supply.locked),
-                  },
-                ]}
-              />
-            )}
-          </QueryState>
-        </Panel>
-      </div>
-      <div className="visual-grid">
-        <Panel
-          title={latest ? `Epoch ${latest.epoch}` : "Epoch progress"}
-          action={
-            <Link className="text-xs text-sky-400" to="/explorer/epoch">
-              Explore epoch ↗
-            </Link>
-          }
-        >
-          <QueryState
-            isLoading={blocksQuery.isLoading || genesisQuery.isLoading}
-            error={blocksQuery.error || genesisQuery.error}
-          >
-            {latest && progress !== null && (
-              <>
-                <Gauge
-                  label="Epoch elapsed"
-                  value={progress}
-                  detail={`${latest.epoch_slot.toLocaleString()} of ${genesisQuery.data!.epoch_length.toLocaleString()} slots`}
-                />
-                <div className="mt-5 flex justify-between text-xs text-slate-400">
-                  <span>Epoch {latest.epoch}</span>
-                  <span>Next → {latest.epoch + 1}</span>
-                </div>
-              </>
             )}
           </QueryState>
         </Panel>

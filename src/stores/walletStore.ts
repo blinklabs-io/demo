@@ -153,7 +153,8 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         if (connectGeneration === requestGeneration) {
           set({
             status: "error",
-            error: `Connected wallet reports unsupported network id ${networkId}. This app only supports a testnet-connected wallet (Preview/Preprod) - switch the wallet's network and reconnect.`,
+            error:
+              "Wrong network. Switch your wallet to Preview, then reconnect.",
           });
         }
         return;
