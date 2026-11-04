@@ -1,3 +1,4 @@
+import { metadataJson } from "../../lib/tools/cip25";
 import { useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -195,6 +196,17 @@ export function ToolTransaction({
                 ))}
             </div>
           </details>
+          {draft.action.kind === "mint" &&
+            draft.tx.auxiliaryData()?.metadata()?.toCore().get(721n) && (
+              <details className="metadata-json" open>
+                <summary>CIP-25 metadata · actual unsigned transaction</summary>
+                <pre>
+                  {metadataJson(
+                    draft.tx.auxiliaryData()!.metadata()!.toCore().get(721n)!,
+                  )}
+                </pre>
+              </details>
+            )}
           {draft.policyCbor && (
             <div className="tool-policy-save">
               <button type="button" onClick={() => downloadPolicy(draft)}>

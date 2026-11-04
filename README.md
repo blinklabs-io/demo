@@ -1,7 +1,8 @@
 # Dingo Demo
 
-A browser demo for the Dingo v0.85.0 node APIs. It combines a chain explorer,
-CIP-30 wallet flows, and read-only API consoles in one app.
+A browser playground for Dingo node APIs. Discover creation tools, governance
+participation, live chain visualizations, a CIP-30 wallet, and read-only API
+consoles from one landing page.
 
 ## Run it
 
@@ -38,6 +39,11 @@ storage mode. Wallet send and swap pages submit transactions to the selected
 node, so use a test network and connect a test wallet.
 
 ## Included views
+
+- Experience landing page with direct access to token minting, document proofs,
+  swaps, wallet workshops, live data, and governance participation
+- Participation hub connecting CIP-204 holder opinions, CIP-179 surveys, and
+  official DRep voting
 
 - Explorer overview with recent blocks, block activity, epoch progress, supply
   and stake, and a protocol snapshot
@@ -148,6 +154,49 @@ inclusion data, reuses immutable reads, and limits concurrent verifications.
 Publishing, responding, and cancelling each require an explicit transaction
 review and wallet signature; public metadata is permanent.
 
+## Holder answers on governance actions
+
+CIP-204 records public Yes, No, or Abstain opinions directly against governance
+entries, without a separately published survey. The participation hub and each
+action page expose the answer flow. These opinions do not cast official votes.
+
+The transaction uses label 1695 with ascending integer keys, a stake-key
+credential, the action reference, and the selected answer. The wallet must sign
+with that stake key through CIP-30. The app verifies the returned stake witness
+before submitting through Dingo and bounds drafts to ten minutes or the next
+epoch boundary, whichever comes first.
+
+Eligibility reads the complete registration history and transaction inclusion
+order. A stake key must be registered before the action's transaction and remain
+registered without interruption through the tally point or closing epoch.
+Ratification alone does not close answers. The earliest enactment, removal,
+expiration, or action-lifetime boundary does.
+
+Verified recounts load on request. They page through label 1695 metadata from
+Dingo and read full proofs only for records referencing the selected action. They
+validate confirmed transaction CBOR, auxiliary-data hashes, successful phase-2
+validation, canonical keys, and required signers. The latest eligible answer per
+action and stake credential counts. Malformed records are excluded, while API
+failures prevent a partial recount from being presented as complete. Counts
+represent stake credentials, not unique people or ADA-weighted voting power.
+Each recount uses a fixed block-height snapshot so later registrations and
+answers do not change the point being counted. CIP-204 remains a proposed
+standard. The snapshot block hash is checked again before results are shown to
+detect a rollback during the recount.
+
+Expensive REST reads share bounded queues matching Dingo v0.90.5's per-client
+admission limits. GET requests honor bounded `Retry-After` responses; mutations
+are never automatically retried. Swap flows use SundaeSwap core 3.4.0 with the
+Dingo query provider; this dependency upgrade does not enable V4 order placement.
+
+## Sending asset bundles
+
+Send keeps a required ADA amount separate from additional native assets. The
+visual chooser uses asset artwork, instant name or ID filtering, twelve assets
+per page, and a persistent selection list with raw-unit quantities. Transaction
+construction checks selected quantities against fresh wallet UTxOs and verifies
+the recipient output's exact ADA and asset bundle before review and signing.
+
 ## Preview wallet tools
 
 The wallet Tools section uses the connected CIP-30 wallet and existing Dingo
@@ -162,9 +211,12 @@ APIs. It includes:
   verification against confirmed transaction CBOR. Files are never uploaded;
   only the file name, digest, and message are published. A proof establishes the
   fingerprint's existence by the block timestamp, not authorship or ownership.
-- Native token minting with CIP-25 metadata, inline SVG artwork, and a signature-and-expiry policy,
-  plus burning using an exported policy. The policy is not a supply cap or a
-  uniqueness guarantee. Minting and burning both stop when the policy expires.
+- Native token minting with editable CIP-25 metadata: a display name,
+  description, artwork URI or generated SVG, file references, and custom
+  properties. Per-asset JSON imports and exports preserve supported custom
+  fields. Review shows metadata from the actual unsigned transaction.
+  Signature-and-expiry policies can be exported for burning; they do not cap
+  supply or guarantee uniqueness. Minting and burning stop at policy expiry.
 - CIP-95 DRep registration with the current deposit read from Dingo, and an
   explicit activity update that clears the metadata anchor.
 - Direct Preview treasury donations using the ledger transaction field.
@@ -179,6 +231,11 @@ Illustrative data, captured at desktop and mobile widths.
 
 | View               | Desktop                                                                     | Mobile                                                                    |
 | ------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Experiences | [Desktop](docs/screenshots/discover1500.jpg) | [Mobile](docs/screenshots/discover390.jpg) |
+| Participation | [Desktop](docs/screenshots/participate1500.jpg) | [Mobile](docs/screenshots/participate390.jpg) |
+| Holder answer review | [Desktop](docs/screenshots/answer1500.jpg) | [Mobile](docs/screenshots/answer390.jpg) |
+| Token metadata | [Desktop](docs/screenshots/cip251500.jpg) | [Mobile](docs/screenshots/cip25390.jpg) |
+| Asset bundles | [Desktop](docs/screenshots/sendassets1500.jpg) | [Mobile](docs/screenshots/sendassets390.jpg) |
 | Block conveyor     | [Desktop](docs/screenshots/conveyor1500.jpg)           | [Mobile](docs/screenshots/conveyor390.jpg)           |
 | Transaction flow   | [Desktop](docs/screenshots/flow1500.jpg)                   | [Mobile](docs/screenshots/flow390.jpg)                   |
 | Block mosaic       | [Desktop](docs/screenshots/mosaic1500.jpg)               | [Mobile](docs/screenshots/mosaic390.jpg)               |

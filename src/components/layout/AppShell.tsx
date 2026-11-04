@@ -6,7 +6,10 @@ import { useMempoolStore } from "../../stores/mempoolStore";
 import { useTipStore } from "../../stores/tipStore";
 
 export function AppShell() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    if (!hash) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [pathname, hash]);
   const restoreConnection = useWalletStore((state) => state.restoreConnection);
   useEffect(() => {
     void restoreConnection();

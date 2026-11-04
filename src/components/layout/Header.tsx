@@ -7,6 +7,10 @@ import { useNodeHealth } from "../../lib/dingo/nodeHealth";
 import { BlockfrostError } from "../../lib/dingo/blockfrost";
 
 const links = [
+  ["/", "Discover", "✦"],
+  ["/participate", "Participate", "◉"],
+  ["/wallet/swap", "Swap", "⇄"],
+  ["/wallet/tools", "Create & build", "⌁"],
   ["/explorer", "Overview", "◫"],
   ["/explorer/network", "Network", "◎"],
   ["/explorer/epoch", "Epochs", "◷"],
@@ -25,12 +29,12 @@ export function Header() {
   return (
     <>
       <aside className="sidebar">
-        <NavLink to="/explorer" className="brand">
+        <NavLink to="/" className="brand">
           <span className="brand-mark" aria-hidden="true">
             d
           </span>
           <span>
-            dingo<span className="brand-sub">NETWORK EXPLORER</span>
+            dingo<span className="brand-sub">DINGO PLAYGROUND</span>
           </span>
         </NavLink>
         <p className="nav-caption">WORKSPACE</p>
@@ -56,7 +60,7 @@ export function Header() {
               <NavLink
                 key={to}
                 to={to}
-                end={to === "/explorer"}
+                end={to === "/explorer" || to === "/" || to === "/wallet"}
                 className={({ isActive }) =>
                   `side-link ${isActive || (to === "/explorer/governance" && pathname.startsWith("/explorer/proposal/")) ? "selected" : ""}`
                 }
@@ -71,7 +75,7 @@ export function Header() {
         </nav>
         <div className="sidebar-footer">
           <span className="live-dot" /> Powered by Dingo
-          <p>Explore the chain. Follow the data.</p>
+          <p>Create. Trade. Participate.</p>
         </div>
       </aside>
       <header className="workspace-header">

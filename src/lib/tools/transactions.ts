@@ -1,3 +1,4 @@
+import { buildCip25, type Cip25Draft } from "./cip25";
 import { Core } from "@blaze-cardano/sdk";
 import type { Cip30WalletApi } from "../dingo/cip30";
 import { getBlaze } from "../dingo/blaze";
@@ -14,6 +15,12 @@ import { formatAda } from "../format";
 export type Payment = { address: string; amount: string; asset: string };
 export type ToolAction =
   | { kind: "batch"; payments: Payment[] }
+  | {
+      kind: "send";
+      address: string;
+      ada: string;
+      assets: { assetId: string; quantity: string }[];
+    }
   | { kind: "consolidate"; inputs: string[] }
   | { kind: "split"; count: string; amount: string }
   | { kind: "proof"; name: string; digest: string; message: string }
@@ -23,6 +30,7 @@ export type ToolAction =
       quantity: string;
       minutes: string;
       description: string;
+      metadata?: Cip25Draft;
     }
   | { kind: "burn"; asset: string; quantity: string; policy: string }
   | { kind: "drep"; operation: "register" | "renew" }
@@ -153,6 +161,10 @@ export async function prepareToolTransaction(
   action: ToolAction,
   assertConnection: () => void,
 ) {
+  const mintMetadata =
+    action.kind === "mint"
+      ? buildCip25(action.name, action.description, action.metadata)
+      : undefined;
   const who = await identity(api, assertConnection);
   const slot = await timing();
   const { blaze } = await getBlaze(api);
@@ -171,8 +183,53 @@ export async function prepareToolTransaction(
     coin?: bigint;
     unit?: string;
     quantity?: bigint;
+    assets?: Map<Core.AssetId, bigint>;
   }[] = [];
-  if (action.kind === "batch") {
+  if (action.kind === "send") {
+    let address: Core.Address;
+    try {
+      address = Core.Address.fromBech32(action.address.trim());
+    } catch {
+      throw new Error("Enter a valid recipient address.");
+    }
+    if (address.getNetworkId() !== 0 || !address.getProps().paymentPart)
+      throw new Error("Recipient must be a testnet payment address.");
+    const coin = parseAdaToLovelace(action.ada);
+    if (coin <= 0n)
+      throw new Error(
+        "Enter a positive ADA amount; every output requires ADA.",
+      );
+    if (action.assets.length > 24)
+      throw new Error("Select at most 24 additional assets.");
+    const assets = new Map<Core.AssetId, bigint>();
+    for (const row of action.assets) {
+      if (!/^[a-f0-9]{56}([a-f0-9]{2}){0,32}$/.test(row.assetId))
+        throw new Error("Select a valid native asset.");
+      const id = Core.AssetId(row.assetId),
+        quantity = positive(row.quantity, "raw token quantity");
+      if (assets.has(id))
+        throw new Error("An asset was selected more than once.");
+      const held = ownedOutputs.reduce(
+        (n, u) => n + (u.output().amount().multiasset()?.get(id) ?? 0n),
+        0n,
+      );
+      if (quantity > held)
+        throw new Error(
+          `Wallet holds only ${held} raw units of ${assetName(id)}.`,
+        );
+      assets.set(id, quantity);
+    }
+    builder.payAssets(
+      address,
+      new Core.Value(coin, assets.size ? assets : undefined),
+    );
+    exactPayments.push({ address: address.toBech32(), coin, assets });
+    facts.push(
+      { label: "Recipient", value: address.toBech32() },
+      { label: "ADA", value: formatAda(coin) },
+      { label: "Additional assets", value: String(assets.size) },
+    );
+  } else if (action.kind === "batch") {
     if (!action.payments.length || action.payments.length > 40)
       throw new Error("Add between 1 and 40 recipients.");
     for (const payment of action.payments) {
@@ -361,28 +418,7 @@ export async function prepareToolTransaction(
         new Map([[name, action.kind === "burn" ? -quantity : quantity]]),
       );
     if (action.kind === "mint") {
-      const initials = [...action.name]
-        .slice(0, 2)
-        .join("")
-        .replace(
-          /[&<>"']/g,
-          (c) =>
-            ({
-              "&": "&amp;",
-              "<": "&lt;",
-              ">": "&gt;",
-              '"': "&quot;",
-              "'": "&apos;",
-            })[c]!,
-        );
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#0c1b26"/><circle cx="128" cy="128" r="94" fill="#174d40" stroke="#53d4b4" stroke-width="4"/><text x="128" y="149" text-anchor="middle" font-family="sans-serif" font-size="64" font-weight="bold" fill="#96f6d7">${initials}</text></svg>`;
-      const image = `data:image/svg+xml;base64,${btoa(String.fromCharCode(...new TextEncoder().encode(svg)))}`;
-      const metadata = new Map<Core.Cardano.Metadatum, Core.Cardano.Metadatum>([
-        ["name", action.name],
-        ["image", textChunks(image)],
-        ["mediaType", "image/svg+xml"],
-        ["description", textChunks(action.description)],
-      ]);
+      const metadata = mintMetadata!;
       builder.setMetadata(
         Core.Metadata.fromCore(
           new Map([
@@ -466,7 +502,12 @@ export async function prepareToolTransaction(
         actual.amount().coin() !== intended.coin) ||
       (intended.unit &&
         actual.amount().multiasset()?.get(Core.AssetId(intended.unit)) !==
-          intended.quantity)
+          intended.quantity) ||
+      (intended.assets !== undefined &&
+        ((actual.amount().multiasset()?.size ?? 0) !== intended.assets.size ||
+          [...intended.assets].some(
+            ([id, n]) => actual.amount().multiasset()?.get(id) !== n,
+          )))
     )
       throw new Error(
         `Output ${i + 1} differs from the draft, often because its ADA is below the minimum output value. Increase its amount.`,

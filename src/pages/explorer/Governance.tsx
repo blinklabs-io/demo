@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { HolderResults } from "../../components/explorer/HolderResults";
+import { HolderAnswer } from "../../components/explorer/HolderAnswer";
 import { GovernanceChamber } from "../../components/chain/GovernanceChamber";
 import { ProposalVoting } from "../../components/explorer/ProposalVoting";
 import {
@@ -7,7 +10,7 @@ import {
   Distribution,
   PageIntro,
 } from "../../components/explorer/Visuals";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useLocation } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
@@ -207,12 +210,20 @@ export default function Governance() {
 
 export function ProposalDetail() {
   const { id } = useParams();
+  const { hash } = useLocation();
   const path = `/api/v0/governance/proposals/${encodeURIComponent(id ?? "")}`;
   const proposal = useQuery({
     queryKey: ["dingo", "proposal", id],
     queryFn: () => blockfrostFetch<Proposal>(path),
     enabled: Boolean(id),
   });
+  const loadedId = proposal.data?.id;
+  useEffect(() => {
+    if (loadedId && hash === "#holder-answer")
+      document
+        .getElementById("holder-answer")
+        ?.scrollIntoView({ block: "start" });
+  }, [loadedId, hash]);
 
   return (
     <div className="flex flex-col gap-4 detail-showcase">
@@ -337,7 +348,9 @@ export function ProposalDetail() {
           )}
         </QueryState>
       </Panel>
+      {proposal.data && <HolderAnswer proposal={proposal.data} />}
       {proposal.data && <ProposalVoting proposal={proposal.data} />}
+      {proposal.data && <HolderResults proposal={proposal.data} />}
       {proposal.data && <GovernanceChamber proposalId={id!} />}
     </div>
   );

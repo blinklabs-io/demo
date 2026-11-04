@@ -61,10 +61,15 @@ function decode(row: Raw): Record {
     kind,
   };
 }
-export function BlockMosaic({ hash, total }: { hash: string; total: number }) {
-  return <Mosaic key={hash} hash={hash} total={total} />;
+interface MosaicProps {
+  hash: string;
+  total: number;
+  onExplore?: () => void;
 }
-function Mosaic({ hash, total }: { hash: string; total: number }) {
+export function BlockMosaic({ hash, total, onExplore }: MosaicProps) {
+  return <Mosaic key={hash} hash={hash} total={total} onExplore={onExplore} />;
+}
+function Mosaic({ hash, total, onExplore }: MosaicProps) {
   const compact = useCompactVisual();
   const mapWidth = compact ? 700 : 1000,
     mapHeight = compact ? 700 : 540;
@@ -128,13 +133,27 @@ function Mosaic({ hash, total }: { hash: string; total: number }) {
           <span className="eyebrow">A block, under the microscope</span>
           <h2>Every transaction has a shape.</h2>
         </div>
-        {!open && (
-          <button onClick={() => setOpen(true)} disabled={total === 0}>
+        {!open && total > 0 && (
+          <button
+            onClick={() => {
+              onExplore?.();
+              setOpen(true);
+            }}
+            disabled={total === 0}
+          >
             Explore {total.toLocaleString()} transactions
           </button>
         )}
       </header>
-      {!open ? (
+      {total === 0 ? (
+        <div className="chain-empty">
+          <strong>This block was empty.</strong>
+          <p>
+            There are no transactions to map. Open the block to explore its
+            header and producer.
+          </p>
+        </div>
+      ) : !open ? (
         <div className="mosaic-teaser" aria-hidden="true">
           <span />
           <span />
