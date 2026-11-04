@@ -11,15 +11,21 @@ const body = "a3008001800200";
 const witnesses = "a0";
 const auxiliary = "a1016161";
 
+function metadataBody() {
+  const decoded = Core.TransactionBody.fromCbor(Core.HexBlob(body));
+  decoded.setAuxiliaryDataHash(Core.blake2b_256(Core.HexBlob(auxiliary)));
+  return decoded.toCbor();
+}
+
 describe("transaction envelopes", () => {
   it("preserves the false script-validity flag and auxiliary bytes independently", () => {
-    const cbor = `84${body}${witnesses}f4${auxiliary}`;
+    const cbor = `84${metadataBody()}${witnesses}f4${auxiliary}`;
     expect(readChainTransactionEnvelope(cbor)).toEqual({
-      bodyCbor: body,
+      bodyCbor: metadataBody(),
       witnessCbor: witnesses,
       auxiliaryCbor: auxiliary,
       validity: false,
-      bodyBytes: body.length / 2,
+      bodyBytes: metadataBody().length / 2,
       witnessBytes: witnesses.length / 2,
     });
     const tx = Core.Transaction.fromCbor(Core.TxCBOR(cbor));
@@ -125,4 +131,44 @@ describe("transaction activity classification", () => {
       ),
     ).toBe("Stake & identity");
   });
+});
+
+it("authenticates metadata bytes against the body commitment", () => {
+  const cbor = `84${metadataBody()}${witnesses}f5${auxiliary}`;
+  const hash = String(Core.Transaction.fromCbor(Core.TxCBOR(cbor)).getId());
+  expect(inspectChainTransaction(cbor, hash).metadata).toEqual([[1n, "a"]]);
+  for (const data of ["a1016162", "f6"]) {
+    expect(() =>
+      inspectChainTransaction(`84${metadataBody()}${witnesses}f5${data}`, hash),
+    ).toThrow(/auxiliary data/);
+  }
+  const uncommitted = `84${body}${witnesses}f5${auxiliary}`;
+  const uncommittedHash = String(
+    Core.Transaction.fromCbor(Core.TxCBOR(uncommitted)).getId(),
+  );
+  expect(() => inspectChainTransaction(uncommitted, uncommittedHash)).toThrow(
+    /auxiliary data/,
+  );
+});
+
+it("fully inspects three-item envelopes with committed metadata", () => {
+  const cbor = `83${metadataBody()}${witnesses}${auxiliary}`;
+  const hash = String(Core.Transaction.fromCbor(Core.TxCBOR(cbor)).getId());
+  const result = inspectChainTransaction(cbor, hash);
+  expect(result.metadata).toEqual([[1n, "a"]]);
+  expect(result.tx.isValid()).toBe(true);
+  expect(result.totalBytes).toBe(cbor.length / 2);
+});
+
+it("rejects a complete envelope above the decoding size limit", () => {
+  const large = `5a00020000${"00".repeat(131072)}`;
+  expect(() =>
+    readChainTransactionEnvelope(`84${body}${witnesses}f5${large}`),
+  ).toThrow(/invalid or oversized/);
+});
+
+it("rejects a body with a different requested transaction ID", () => {
+  expect(() =>
+    inspectChainTransaction(`84${body}${witnesses}f5f6`, "00".repeat(32)),
+  ).toThrow(/requested transaction ID/);
 });

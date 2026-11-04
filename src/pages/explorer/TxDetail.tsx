@@ -393,10 +393,10 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
                 </p>
               </Panel>
             )}
-            {inspection?.data && utxosQuery.data && (
+            {inspection?.data && (
               <TransactionInsights
                 inspection={inspection.data}
-                inputs={utxosQuery.data.inputs}
+                inputs={utxosQuery.data?.inputs}
                 valid={tx.valid_contract}
               />
             )}

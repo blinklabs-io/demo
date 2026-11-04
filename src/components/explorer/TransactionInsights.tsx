@@ -267,7 +267,9 @@ export function TransactionOutputs({
                 </strong>
                 <div className="ti-edge-status">
                   <span>{applied}</span>
-                  {scope === "outputs" && valid && row.consumed_by_tx && (
+                  {scope === "outputs" &&
+                    (valid ? !row.collateral : row.collateral) &&
+                    row.consumed_by_tx && (
                     <Link to={`/explorer/tx/${row.consumed_by_tx}`}>
                       Spent later ↗
                     </Link>
@@ -509,7 +511,9 @@ function Execution({
   const references = [
     ...new Set(
       inputs
-        .filter((r) => r.reference && r.reference_script_hash)
+        .filter(
+          (r) => (r.reference || !r.collateral) && r.reference_script_hash,
+        )
         .map((r) => r.reference_script_hash!),
     ),
   ];
@@ -597,7 +601,7 @@ function Execution({
             </header>
             <Identifier value={hash} label="script hash" />
             <p className="ti-note">
-              Read from a reference input; not carried in the witness set.
+              Available from an input; not carried in the witness set.
             </p>
           </article>
         ))}
@@ -794,13 +798,17 @@ export function TransactionInsights({
   valid,
 }: {
   inspection: TransactionInspection;
-  inputs: LedgerUtxo[];
+  inputs?: LedgerUtxo[];
   valid: boolean;
 }) {
   return (
     <div className="ti-insights">
-      <AssetActivity inspection={inspection} inputs={inputs} valid={valid} />
-      <Execution inspection={inspection} inputs={inputs} />
+      {inputs && (
+        <>
+          <AssetActivity inspection={inspection} inputs={inputs} valid={valid} />
+          <Execution inspection={inspection} inputs={inputs} />
+        </>
+      )}
       <LedgerActions inspection={inspection} valid={valid} />
       <div className="ti-detail-columns">
         <Signing inspection={inspection} />

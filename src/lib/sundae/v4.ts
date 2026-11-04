@@ -4,6 +4,7 @@ import {
   DatumBuilderV4,
   EContractVersion,
   EPoolCurve,
+  ORDER_DEPOSIT_DEFAULT,
   SundaeUtils,
   TxBuilderV4,
   type IPoolData,
@@ -13,8 +14,10 @@ import {
 import { blockfrostFetch } from "../dingo/blockfrost";
 import {
   assertDingoNetwork,
+  getDingoProvider,
   type DingoProvider,
 } from "../dingo/utxorpc/provider";
+import { hexToBytes } from "../dingo/utxorpc/bytes";
 import { metadataFor, unitFromAssetId } from "./assets";
 import { DingoSundaeQueryProvider } from "./dingoQueryProvider";
 
@@ -95,20 +98,61 @@ function plutus(cbor: string) {
   return Core.PlutusData.fromCbor(Core.HexBlob(cbor));
 }
 async function addressOutputs(hash: string, signal?: AbortSignal) {
-  const result: Output[] = [];
-  for (let page = 1; page <= 4; page++) {
-    const rows = await blockfrostFetch<Output[]>(
-      `/api/v0/addresses/${scriptAddress(hash)}/utxos?count=100&page=${page}`,
-      { signal },
-    );
-    if (!Array.isArray(rows))
-      throw new Error("Dingo returned invalid V4 UTxOs.");
-    result.push(...rows);
-    if (rows.length < 100) return result;
-  }
-  throw new Error(
-    "V4 address exceeds the bounded 400-output discovery window.",
+  const address = Core.Address.fromBech32(scriptAddress(hash));
+  const response = await getDingoProvider().queryClient.inner.searchUtxos(
+    {
+      predicate: {
+        match: {
+          utxoPattern: {
+            case: "cardano",
+            value: { address: { exactAddress: hexToBytes(address.toBytes()) } },
+          },
+        },
+      },
+      maxItems: 400,
+    },
+    { signal },
   );
+  if (response.nextToken || response.items.length > 400)
+    throw new Error(
+      "V4 address exceeds the bounded 400-output discovery snapshot.",
+    );
+  const seen = new Set<string>();
+  return response.items.map((item) => {
+    if (
+      !item.txoRef ||
+      item.txoRef.hash.length !== 32 ||
+      !Number.isSafeInteger(item.txoRef.index) ||
+      item.txoRef.index < 0 ||
+      !item.nativeBytes.length
+    )
+      throw new Error("Dingo returned an invalid V4 UTxO reference.");
+    const output = Core.TransactionOutput.fromCbor(
+      Core.HexBlob.fromBytes(item.nativeBytes),
+    );
+    if (output.address().toBytes() !== address.toBytes())
+      throw new Error("Dingo returned a V4 UTxO from another address.");
+    const tx_hash = Core.toHex(item.txoRef.hash),
+      output_index = item.txoRef.index,
+      key = `${tx_hash}#${output_index}`;
+    if (seen.has(key)) throw new Error("Dingo returned duplicate V4 UTxOs.");
+    seen.add(key);
+    return {
+      address: address.toBech32(),
+      tx_hash,
+      output_index,
+      inline_datum: output.datum()?.asInlineData()?.toCbor() ?? null,
+      amount: [
+        { unit: "lovelace", quantity: output.amount().coin().toString() },
+        ...[...(output.amount().multiasset() ?? [])].map(
+          ([unit, quantity]) => ({
+            unit: String(unit),
+            quantity: String(quantity),
+          }),
+        ),
+      ],
+    };
+  });
 }
 export interface V4Pool {
   ident: string;
@@ -223,6 +267,12 @@ function committedConfig(tx: Core.Transaction, hash: string): Core.PlutusData {
   }
   for (const redeemer of tx.witnessSet().redeemers()?.values() ?? [])
     walk(redeemer.data(), 0);
+  for (const datum of tx.witnessSet().plutusData()?.values() ?? [])
+    walk(datum, 0);
+  for (const output of tx.body().outputs()) {
+    const datum = output.datum()?.asInlineData();
+    if (datum) walk(datum, 0);
+  }
   if (!found)
     throw new Error(
       "Dingo transaction does not contain the pool's committed curve configuration.",
@@ -407,6 +457,20 @@ export async function buildV4Swap(
   assertConnection: () => void,
 ) {
   assertConnection();
+  if ((offeredIndex !== 0 && offeredIndex !== 1) || amount <= 0n || budget < 0n)
+    throw new Error("Invalid V4 offered amount or fee cap.");
+  const offeredAda =
+    snapshot.assets[offeredIndex]?.assetId === "ada.lovelace" ? amount : 0n;
+  const checkAda = async (required: bigint) => {
+    assertConnection();
+    const balance = await blaze.wallet.getBalance();
+    assertConnection();
+    if (balance.coin() < required)
+      throw new Error(
+        `Insufficient ADA: this V4 intent requires ${required} lovelace for the offered ADA, order deposit, service-fee cap and any calculated network fee.`,
+      );
+  };
+  await checkAda(offeredAda + ORDER_DEPOSIT_DEFAULT + budget);
   await assertDingoNetwork(blaze.provider);
   const [settings, pools, resolved] = await Promise.all([
     loadV4Settings(),
@@ -477,28 +541,44 @@ export async function buildV4Swap(
     maxPerExecution: budget,
     configToken: settings.configToken,
   });
-  const built = await composed.build();
+  const built = await composed.build().catch((error: unknown) => {
+    if (error instanceof Core.UTxOSelectionError && error.dearth.coin() > 0n)
+      throw new Error(
+        `Insufficient ADA to build this V4 intent: ${error.dearth.coin()} additional lovelace required.`,
+        { cause: error },
+      );
+    throw error;
+  });
   assertConnection();
+  const requiredAda =
+    offeredAda +
+    composed.fees.deposit.amount +
+    budget +
+    built.builtTx.body().fee();
+  await checkAda(requiredAda);
   return {
     cbor: built.cbor,
     fee: built.builtTx.body().fee(),
     deposit: composed.fees.deposit.amount,
     budget,
+    requiredAda,
     async signAndSubmit() {
       assertConnection();
       const networkBeforeSigning = await blaze.wallet.getNetworkId();
       assertConnection();
       if (networkBeforeSigning !== Core.NetworkId.Testnet)
         throw new Error(
-          "Connect a Preview wallet before signing this V4 intent.",
+          "Connect a testnet wallet before signing this V4 intent.",
         );
+      await checkAda(requiredAda);
+      assertConnection();
       const signed = await built.sign();
       assertConnection();
       const networkAfterSigning = await blaze.wallet.getNetworkId();
       assertConnection();
       if (networkAfterSigning !== Core.NetworkId.Testnet)
         throw new Error(
-          "Wallet network changed while signing. Review the V4 intent again on Preview.",
+          "Wallet network changed while signing. Review the V4 intent again on testnet.",
         );
       return String(
         await blaze.provider.postTransactionToChain(

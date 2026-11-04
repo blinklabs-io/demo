@@ -796,7 +796,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
       (p.curveHash === V4_DEPLOYMENT.constantSum ||
         p.curveHash === V4_DEPLOYMENT.stableswap),
   );
-  const snapshot = pools.find((p) => p.ident === selected) ?? supported[0];
+  const snapshot = supported.find((p) => p.ident === selected) ?? supported[0];
   const details = useQuery({
     queryKey: [
       "sundae",
@@ -852,6 +852,17 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
     quoteError = e instanceof Error ? e.message : "Quote unavailable.";
   }
   const connected = wallet.status === "connected" && !!wallet.walletApi;
+  const walletBalanceQuery = useQuery({
+    queryKey: ["wallet", "swap-balance", wallet.connectionId],
+    queryFn: async () => {
+      await wallet.refreshBalance();
+      return Date.now();
+    },
+    enabled: connected,
+    refetchInterval: 30000,
+    retry: false,
+  });
+
   const available =
     connected && offered
       ? offered.assetId === ADA_METADATA.assetId
@@ -904,13 +915,31 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
   const currentDraftKey = useRef(draftKey);
   const revision = useRef(0);
   const [review, setReview] = useState<PreparedIntent | null>(null);
+  const [reviewContext, setReviewContext] = useState(draftKey);
+  if (reviewContext !== draftKey) {
+    setReviewContext(draftKey);
+    if (review) setReview(null);
+  }
   useLayoutEffect(() => {
+    if (currentDraftKey.current !== draftKey) revision.current++;
     currentDraftKey.current = draftKey;
   }, [draftKey]);
   const prepared =
     review?.key === draftKey && review.connection === wallet.connectionId
       ? review
       : null;
+  const offeredAda = offered?.assetId === ADA_METADATA.assetId ? parsed : 0n;
+  const requiredAda =
+    prepared?.built.requiredAda ?? offeredAda + ORDER_DEPOSIT_DEFAULT + budget;
+  const adaError =
+    connected && wallet.balanceLovelace === null
+      ? "ADA balance unavailable. Refresh the wallet before building."
+      : connected &&
+          wallet.balanceLovelace !== null &&
+          wallet.balanceLovelace < requiredAda
+        ? `Insufficient ADA: need ${formatAssetAmount(requiredAda, 6)} ADA for this intent${prepared ? ", including its network fee" : " before the network fee"}.`
+        : null;
+
   const prepare = useMutation<
     PreparedIntent,
     Error,
@@ -961,6 +990,16 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
             )?.quantity ?? 0n);
       if (held === null || parsed > held)
         throw new Error("Insufficient or unavailable wallet balance.");
+      const minimumAda = offeredAda + ORDER_DEPOSIT_DEFAULT + budget;
+      if (current.balanceLovelace === null)
+        throw new Error(
+          "ADA balance unavailable. Refresh your wallet and try again.",
+        );
+      if (current.balanceLovelace < minimumAda)
+        throw new Error(
+          `Insufficient ADA: need at least ${formatAssetAmount(minimumAda, 6)} ADA before the network fee.`,
+        );
+
       const { blaze } = await getBlaze(api);
       assert();
       const built = await buildV4Swap(
@@ -1200,12 +1239,26 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           >
             Reverse direction ⇄
           </button>
-          <p className="swap-balance-row">
-            Available:{" "}
-            {available === null
-              ? "Connect a wallet to see your balance"
-              : `${formatAssetAmount(available, offered?.decimals)} ${offered ? labelFor(offered) : ""}${offered?.assetId === ADA_METADATA.assetId ? "" : " raw units"}`}
-          </p>
+          <div className="swap-balance-row">
+            <span>
+              Available:{" "}
+              {available === null
+                ? "Connect a wallet to see your balance"
+                : `${formatAssetAmount(available, offered?.decimals)} ${offered ? labelFor(offered) : ""}${offered?.assetId === ADA_METADATA.assetId ? "" : " raw units"}`}
+            </span>
+            <button
+              type="button"
+              disabled={!connected || busy || walletBalanceQuery.isFetching}
+              onClick={() => void walletBalanceQuery.refetch()}
+            >
+              Refresh
+            </button>
+          </div>
+          {walletBalanceQuery.error && (
+            <p role="alert" className="text-red-300">
+              {walletBalanceQuery.error.message}
+            </p>
+          )}
           <label>
             {offered ? labelFor(offered) : "Asset"} offered{" "}
             {offered?.assetId !== ADA_METADATA.assetId && "· raw units"}
@@ -1315,6 +1368,11 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
               {quoteError}
             </p>
           )}
+          {adaError && (
+            <p role="alert" className="text-amber-300">
+              {adaError}
+            </p>
+          )}
           {!connected && <WalletConnectSummary />}
           <button
             type="button"
@@ -1325,6 +1383,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
               !snapshot ||
               !!error ||
               !!quoteError ||
+              !!adaError ||
               !minimum ||
               !settings.data ||
               busy ||
@@ -1392,7 +1451,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
               <button
                 type="button"
                 className="experience-primary"
-                disabled={busy || !connected || !!error}
+                disabled={busy || !connected || !!error || !!adaError}
                 onClick={() => submit.mutate(prepared)}
               >
                 {submit.isPending

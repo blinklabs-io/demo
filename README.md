@@ -173,7 +173,8 @@ registration.
 
 The swap view opens SundaeSwap V4 on Preview, with V3 markets available in the
 same view. V4 discovers authenticated pool NFTs and verifies the deployed order,
-settings and constraint scripts through Dingo. Constant-sum and stableswap pools
+settings and constraint scripts through Dingo. Discovery uses one bounded
+UTxORPC snapshot per contract address. Constant-sum and stableswap pools
 support reference quotes and swap intents; pools using other curve modules remain
 visible without offering unsupported quotes. Assets without verified decimal
 metadata use explicitly labelled raw units.
@@ -195,7 +196,9 @@ paginated input/output cards, declared execution-budget bars, verified key
 signatures, decoded metadata and byte anatomy. Failed Plutus transactions
 separate collateral effects from unapplied outputs and actions. Reference inputs,
 datums and script witnesses can be inspected without connecting a wallet.
-Additional technical REST records load only when their disclosure is opened.
+Metadata is checked against the transaction body’s auxiliary-data commitment
+before display. Additional technical REST records load only when their
+disclosure is opened.
 
 ## On-chain surveys
 

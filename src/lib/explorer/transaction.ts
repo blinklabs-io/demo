@@ -87,6 +87,14 @@ export function inspectChainTransaction(cbor: string, hash: string) {
       "Decoded transaction validity flag does not match its envelope.",
     );
   const { bodyBytes, witnessBytes } = envelope;
+  const auxiliaryHash = body.auxiliaryDataHash();
+  const auxiliaryIsNull = envelope.auxiliaryCbor === "f6";
+  if (
+    auxiliaryIsNull
+      ? auxiliaryHash !== undefined
+      : auxiliaryHash !== Core.blake2b_256(Core.HexBlob(envelope.auxiliaryCbor))
+  )
+    throw new Error("Transaction auxiliary data does not match the body hash.");
   const totalBytes = cbor.length / 2;
   const signatures = (witness.vkeys()?.values() ?? []).map((w) => {
     const key = Core.Ed25519PublicKey.fromHex(w.vkey());
