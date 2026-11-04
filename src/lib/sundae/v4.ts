@@ -243,7 +243,110 @@ export async function discoverV4Pools(signal?: AbortSignal) {
     return pool ? [pool] : [];
   });
 }
-function committedConfig(tx: Core.Transaction, hash: string): Core.PlutusData {
+function updatedStableConfigs(tx: Core.Transaction): Core.PlutusData[] {
+  const constructor = (data: Core.PlutusData, tag: bigint, count: number) => {
+    const value = data.asConstrPlutusData();
+    if (
+      !value ||
+      value.getAlternative() !== tag ||
+      value.getData().getLength() !== count
+    )
+      throw new Error("Invalid canonical V4 rate update.");
+    return Array.from({ length: count }, (_, i) => value.getData().get(i));
+  };
+  const withdrawals = [...(tx.body().withdrawals()?.keys() ?? [])]
+    .map((account) => Core.Address.fromBech32(account))
+    .sort((a, b) => a.toBytes().localeCompare(b.toBytes()));
+  const withdrawalIndex = withdrawals.findIndex((address) => {
+    const credential = address.asReward()?.getPaymentCredential();
+    return (
+      credential?.type === Core.CredentialType.ScriptHash &&
+      credential.hash === V4_DEPLOYMENT.stableswap
+    );
+  });
+  if (withdrawalIndex < 0) return [];
+  const redeemers = tx.witnessSet().redeemers()?.values() ?? [];
+  const module = redeemers.find(
+    (r) =>
+      r.tag() === Core.RedeemerTag.Reward &&
+      r.index() === BigInt(withdrawalIndex),
+  );
+  if (!module) return [];
+  const inputs = [...tx.body().inputs().values()].sort((a, b) => {
+    const hashOrder = String(a.transactionId()).localeCompare(
+      String(b.transactionId()),
+    );
+    return (
+      hashOrder || (a.index() < b.index() ? -1 : a.index() > b.index() ? 1 : 0)
+    );
+  });
+  const candidates: Core.PlutusData[] = [];
+  try {
+    const [entries] = constructor(module.data(), 1n, 1);
+    for (const entry of list(entries)) {
+      try {
+        const [reference, original, invariant] = constructor(entry, 0n, 3);
+        integer(invariant);
+        const [hash, index] = constructor(reference, 0n, 2);
+        const inputHash = bytes(hash),
+          inputIndex = integer(index);
+        if (inputHash.length !== 64) continue;
+        const spendIndex = inputs.findIndex(
+          (input) =>
+            String(input.transactionId()) === inputHash &&
+            input.index() === inputIndex,
+        );
+        if (spendIndex < 0) continue;
+        const spend = redeemers.find(
+          (r) =>
+            r.tag() === Core.RedeemerTag.Spend &&
+            r.index() === BigInt(spendIndex),
+        );
+        if (!spend) continue;
+        const [tag, transcript, poolInput, poolOutput] = constructor(
+          spend.data(),
+          3n,
+          4,
+        );
+        integer(tag);
+        integer(poolInput);
+        integer(poolOutput);
+        const first = list(transcript)[0];
+        if (!first) continue;
+        const [, budget, operationTag, update] = constructor(first, 0n, 4);
+        integer(budget);
+        if (integer(operationTag) !== 7n) continue;
+        const [rates, nextInvariant] = constructor(update, 0n, 2);
+        integer(nextInvariant);
+        const config = constructor(original, 0n, 6);
+        const updatedRates = list(rates).map(integer);
+        if (
+          updatedRates.length !== list(config[2]).length ||
+          updatedRates.some((rate) => rate <= 0n)
+        )
+          continue;
+        config[2] = rates;
+        const data = new Core.PlutusList();
+        for (const field of config) data.add(field);
+        candidates.push(
+          Core.PlutusData.newConstrPlutusData(
+            new Core.ConstrPlutusData(0n, data),
+          ),
+        );
+      } catch {
+        // Other pools' malformed or unrelated operations cannot supply a config.
+      }
+    }
+  } catch {
+    return [];
+  }
+  return candidates;
+}
+function committedConfig(
+  tx: Core.Transaction,
+  hash: string,
+  curveHash: string,
+): Core.PlutusData {
   if (!/^[0-9a-f]{64}$/.test(hash))
     throw new Error("V4 curve has no valid config commitment.");
   let seen = 0,
@@ -272,6 +375,12 @@ function committedConfig(tx: Core.Transaction, hash: string): Core.PlutusData {
   for (const output of tx.body().outputs()) {
     const datum = output.datum()?.asInlineData();
     if (datum) walk(datum, 0);
+  }
+  if (!found && curveHash === V4_DEPLOYMENT.stableswap) {
+    found = updatedStableConfigs(tx).find(
+      (candidate) =>
+        Core.blake2b_256(Core.HexBlob(candidate.toCbor())).toString() === hash,
+    );
   }
   if (!found)
     throw new Error(
@@ -309,7 +418,11 @@ function poolDataFromTransaction(
   const sum = pool.curveHash === V4_DEPLOYMENT.constantSum,
     stable = pool.curveHash === V4_DEPLOYMENT.stableswap;
   const config = fields(
-    committedConfig(tx, pool.configHashes.get(pool.curveHash) ?? ""),
+    committedConfig(
+      tx,
+      pool.configHashes.get(pool.curveHash) ?? "",
+      pool.curveHash,
+    ),
   );
   if ((config.length !== 4 && sum) || (config.length !== 6 && stable))
     throw new Error("Unsupported V4 curve configuration layout.");
