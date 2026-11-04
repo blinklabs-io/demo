@@ -48,11 +48,12 @@ export function useChainReconciliation() {
     // A reconnect only means events may have been missed; clearing cached
     // records is reserved for confirmed rollbacks and resets.
     const rollback = state.lastAction === "undo" || state.lastAction === "reset";
-    const filter = {
-      type: "active" as const,
-      predicate: (query: { queryKey: QueryKey }) => isMutableChainQuery(query.queryKey, rollback),
-    };
-    if (rollback) void client.resetQueries(filter);
-    else void client.invalidateQueries(filter);
+    const predicate = (query: { queryKey: QueryKey }) => isMutableChainQuery(query.queryKey, rollback);
+    if (rollback) {
+      // Unobserved records would otherwise render as confirmed from cache when
+      // remounted, even though their transactions may be off the canonical chain.
+      client.removeQueries({ type: "inactive", predicate });
+      void client.resetQueries({ type: "active", predicate });
+    } else void client.invalidateQueries({ type: "active", predicate });
   }), [client]);
 }

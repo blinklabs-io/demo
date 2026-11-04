@@ -63,7 +63,7 @@ it("reconciles mutable aggregates on rollback without restarting immutable bytes
   expect(isMutableChainQuery(["dingo", "holder-results", "id"], true)).toBe(false);
 });
 
-it("clears an active orphaned record before reconciliation while retaining immutable and inactive data", async () => {
+it("clears active and inactive orphaned records on rollback while retaining immutable data", async () => {
   const { act, createElement } = await import("react");
   const { createRoot } = await import("react-dom/client");
   const { QueryClient, QueryClientProvider, QueryObserver } = await import("@tanstack/react-query");
@@ -89,7 +89,7 @@ it("clears an active orphaned record before reconciliation while retaining immut
     expect(client.getQueryData(record)).toBeUndefined();
     expect(client.getQueryState(record)?.fetchStatus).toBe("fetching");
     expect(client.getQueryData(bytes)).toBe("abcd");
-    expect(client.getQueryData(inactive)).toEqual({ confirmed: true });
+    expect(client.getQueryData(inactive)).toBeUndefined();
   } finally {
     await act(async () => root.unmount());
     unsubscribe();
