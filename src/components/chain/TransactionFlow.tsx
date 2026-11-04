@@ -6,7 +6,7 @@ import { formatAda, shortenHash } from "../../lib/format";
 import { assetName } from "../../lib/tools/transactions";
 interface Utxo {
   address: string;
-  tx_hash: string;
+  tx_hash?: string;
   output_index: number;
   amount: { unit: string; quantity: string }[];
   collateral: boolean;

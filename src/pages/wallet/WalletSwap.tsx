@@ -1,3 +1,13 @@
+import "./wallet-swap.css";
+import {
+  buildV4Swap,
+  discoverV4Pools,
+  loadV4Pool,
+  loadV4Settings,
+  readWeeklyV4Prices,
+  v4ReferencePrice,
+  V4_DEPLOYMENT,
+} from "../../lib/sundae/v4";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { WalletConnectSummary } from "../../components/layout/WalletConnectSummary";
 import { useMemo, useState } from "react";
@@ -72,6 +82,34 @@ function createQueryProvider(): DingoSundaeQueryProvider {
 }
 
 export default function WalletSwap() {
+  const [version, setVersion] = useState<"V3" | "V4">("V4");
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      <nav className="swap-version-nav" aria-label="SundaeSwap market version">
+        <div className="swap-version-switch">
+          {(["V3", "V4"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={version === v}
+              disabled={busy}
+              onClick={() => setVersion(v)}
+            >
+              SundaeSwap {v}
+            </button>
+          ))}
+        </div>
+      </nav>
+      {version === "V4" ? (
+        <V4Swap onBusy={setBusy} />
+      ) : (
+        <V3Swap onBusy={setBusy} />
+      )}
+    </>
+  );
+}
+function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
   const status = useWalletStore((state) => state.status);
   const walletApi = useWalletStore((state) => state.walletApi);
   const connectionId = useWalletStore((state) => state.connectionId);
@@ -277,6 +315,8 @@ export default function WalletSwap() {
   }
 
   const swapMutation = useMutation<SwapResult, Error, number>({
+    onMutate: () => onBusy(true),
+    onSettled: () => onBusy(false),
     mutationFn: async (originatingConnection) => {
       if (!connected || !walletApi || connectionId !== originatingConnection) {
         throw new Error("Connect a wallet first.");
@@ -716,6 +756,519 @@ export default function WalletSwap() {
               </p>
             )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
+  const wallet = useWalletStore();
+  const [selected, setSelected] = useState("");
+  const [offerIndex, setOfferIndex] = useState(0);
+  const [amount, setAmount] = useState("1000");
+  const [slippage, setSlippage] = useState("1");
+  const [feeCap, setFeeCap] = useState("3");
+  const [showHistory, setShowHistory] = useState(false);
+  const network = useQuery({
+    queryKey: ["dingo", "assert-network"],
+    queryFn: () => assertDingoNetwork(getDingoProvider()),
+    retry: false,
+  });
+  const discovery = useQuery({
+    queryKey: ["sundae", "v4", "pools"],
+    queryFn: ({ signal }) => discoverV4Pools(signal),
+    enabled: network.isSuccess,
+    refetchInterval: 30000,
+    retry: false,
+  });
+  const settings = useQuery({
+    queryKey: ["sundae", "v4", "settings"],
+    queryFn: ({ signal }) => loadV4Settings(signal),
+    enabled: network.isSuccess,
+    refetchInterval: 60000,
+    retry: false,
+  });
+  const pools = discovery.data ?? [];
+  const supported = pools.filter(
+    (p) =>
+      p.assets.length === 2 &&
+      (p.curveHash === V4_DEPLOYMENT.constantSum ||
+        p.curveHash === V4_DEPLOYMENT.stableswap),
+  );
+  const snapshot = pools.find((p) => p.ident === selected) ?? supported[0];
+  const details = useQuery({
+    queryKey: [
+      "sundae",
+      "v4",
+      "pool",
+      snapshot?.ident,
+      snapshot?.output.tx_hash,
+      snapshot?.output.output_index,
+    ],
+    queryFn: ({ signal }) => loadV4Pool(snapshot!, signal),
+    enabled: !!snapshot,
+    retry: false,
+    staleTime: 30000,
+  });
+  const pool = details.data;
+  const offered = pool && (offerIndex === 0 ? pool.assetA : pool.assetB),
+    received = pool && (offerIndex === 0 ? pool.assetB : pool.assetA);
+  let parsed = 0n,
+    minimum = 0n,
+    estimate = 0n,
+    budget = 0n,
+    quoteError = "";
+  try {
+    if (pool && offered) {
+      parsed = parseAssetAmount(
+        amount,
+        offered.decimals ?? 0,
+        labelFor(offered),
+      );
+      budget = parseAssetAmount(feeCap, 6, "maximum service fee");
+      const slippageBps = parseAssetAmount(slippage, 2, "slippage percentage");
+      const tolerance = Number(slippageBps) / 10000;
+      if (
+        parsed <= 0n ||
+        !Number.isFinite(tolerance) ||
+        tolerance < 0 ||
+        tolerance > 0.5
+      )
+        throw new Error("Enter a positive amount and valid slippage.");
+      const input = new AssetAmount(parsed, offered);
+      estimate = SundaeUtils.getSwapOutput(pool, input).output;
+      minimum = (estimate * (10000n - slippageBps)) / 10000n;
+      if (minimum <= 0n)
+        throw new Error(
+          "The minimum received rounds to zero. Increase the amount.",
+        );
+      if (settings.data && budget < settings.data.baseFee)
+        throw new Error(
+          "The maximum service fee must cover the live base fee.",
+        );
+    }
+  } catch (e) {
+    quoteError = e instanceof Error ? e.message : "Quote unavailable.";
+  }
+  const connected = wallet.status === "connected" && !!wallet.walletApi;
+  const available =
+    connected && offered
+      ? offered.assetId === ADA_METADATA.assetId
+        ? wallet.balanceLovelace
+        : (wallet.tokens.find(
+            (t) => t.assetId === unitFromAssetId(offered.assetId),
+          )?.quantity ?? 0n)
+      : null;
+  const history = useQuery({
+    queryKey: ["sundae", "v4", "weekly", snapshot?.ident],
+    queryFn: ({ signal }) => readWeeklyV4Prices(snapshot!, signal),
+    enabled: showHistory && !!snapshot && !!pool,
+    retry: false,
+    staleTime: 6 * 3600000,
+  });
+  const livePrice = pool ? v4ReferencePrice(pool) : 0;
+  const points = [
+    ...(history.data ?? []),
+    ...(livePrice > 0
+      ? [{ time: details.dataUpdatedAt, price: livePrice }]
+      : []),
+  ].map((p) => ({
+    time: p.time,
+    value: offerIndex === 0 ? p.price : 1 / p.price,
+  }));
+  const swap = useMutation<{ hash: string; connection: number }, Error, number>(
+    {
+      onMutate: () => onBusy(true),
+      onSettled: () => onBusy(false),
+      mutationFn: async (connection) => {
+        const api = wallet.walletApi;
+        const assert = () => {
+          const current = useWalletStore.getState();
+          if (
+            current.status !== "connected" ||
+            current.connectionId !== connection ||
+            current.walletApi !== api
+          )
+            throw new Error(
+              "Wallet connection changed. Review the order again.",
+            );
+        };
+        assert();
+        if (
+          !api ||
+          !snapshot ||
+          !offered ||
+          !received ||
+          quoteError ||
+          !minimum ||
+          discovery.isError ||
+          details.isError ||
+          settings.isError
+        )
+          throw new Error("Review a current valid V4 quote first.");
+        await wallet.refreshBalance();
+        assert();
+        const current = useWalletStore.getState();
+        const held =
+          offered.assetId === ADA_METADATA.assetId
+            ? current.balanceLovelace
+            : (current.tokens.find(
+                (t) => t.assetId === unitFromAssetId(offered.assetId),
+              )?.quantity ?? 0n);
+        if (held === null || parsed > held)
+          throw new Error("Insufficient or unavailable wallet balance.");
+        const { blaze } = await getBlaze(api);
+        assert();
+        const built = await buildV4Swap(
+          blaze,
+          snapshot,
+          offerIndex,
+          parsed,
+          minimum,
+          budget,
+          assert,
+        );
+        const hash = await built.signAndSubmit();
+        if (useWalletStore.getState().connectionId === connection)
+          void wallet.refreshBalance();
+        return { hash, connection };
+      },
+    },
+  );
+  const error =
+    network.error ?? discovery.error ?? settings.error ?? details.error;
+  return (
+    <div className="wallet-workbench swap-workbench swap-v4">
+      <PageIntro
+        eyebrow="SundaeSwap V4 · on Dingo"
+        title="More ways to exchange."
+        symbol="⇄"
+      />
+      <section className="swap-venue-card" aria-label="V4 execution venue">
+        <div>
+          <span className="eyebrow">Execution venue</span>
+          <h2>
+            SundaeSwap <span>V4</span>
+          </h2>
+          <p>Cardano Preview · modular liquidity</p>
+        </div>
+        <ol className="swap-execution-path">
+          <li>
+            <strong>01</strong>Set a minimum
+          </li>
+          <li>
+            <strong>02</strong>Sign an intent
+          </li>
+          <li>
+            <strong>03</strong>Scooper routes the trade
+          </li>
+        </ol>
+        <p>
+          The selected pool provides a reference quote. Your V4 intent is not
+          bound to that pool: a scooper may route or split the trade across
+          eligible V4 pools while honoring your exact minimum received. Funds
+          enter the order contract; submission does not complete the swap.
+        </p>
+        <details>
+          <summary>Verified Preview deployment</summary>
+          <dl>
+            {[
+              ["Order contract", V4_DEPLOYMENT.order],
+              ["Pool contract", V4_DEPLOYMENT.pool],
+              ["Settings policy", V4_DEPLOYMENT.settingsPolicy],
+            ].map(([name, hash]) => (
+              <div key={name}>
+                <dt>{name}</dt>
+                <dd>
+                  <code>{hash}</code>
+                </dd>
+              </div>
+            ))}
+            <dt>Data source</dt>
+            <dd>Dingo only · on-chain UTxOs, settings and transaction CBOR</dd>
+          </dl>
+        </details>
+      </section>
+      {error && (
+        <p role="alert" className="text-red-300">
+          {error.message}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              void network.refetch();
+              void discovery.refetch();
+              void settings.refetch();
+              void details.refetch();
+            }}
+          >
+            Retry market data
+          </button>
+        </p>
+      )}
+      <div className="swap-trading-layout">
+        <section className="swap-market-card">
+          <div className="swap-market-heading">
+            <span className="eyebrow">
+              Reference pool · {snapshot?.curveLabel ?? "Discovering"}
+            </span>
+            <span className="live-tag">
+              ●{" "}
+              {discovery.isError || details.isError
+                ? "Update failed"
+                : discovery.isFetching
+                  ? "Refreshing…"
+                  : discovery.data
+                    ? "30 sec snapshots"
+                    : "Connecting…"}
+            </span>
+          </div>
+          <h2>
+            {offered ? labelFor(offered) : "…"} /{" "}
+            {received ? labelFor(received) : "…"}
+          </h2>
+          <p className="swap-spot-price">
+            {offered && received && Number.isFinite(livePrice)
+              ? `1 ${labelFor(offered)}${offered.assetId === ADA_METADATA.assetId ? "" : " raw unit"} = ${(offerIndex === 0 ? livePrice : 1 / livePrice).toLocaleString(undefined, { maximumSignificantDigits: 8 })} ${labelFor(received)}${received.assetId === ADA_METADATA.assetId ? "" : " raw units"}`
+              : "Loading authenticated curve data…"}
+          </p>
+          <MarketChart points={points} label="V4 reference curve price" />
+          <p className="swap-chart-caption">
+            Curve-aware prices from Dingo. Token amounts use raw on-chain units;
+            ADA uses six decimals. Historical six-hour snapshots load on demand.
+          </p>
+          <button
+            type="button"
+            className="v4-market-button"
+            disabled={!pool || history.isFetching}
+            onClick={() => {
+              setShowHistory(true);
+              if (showHistory) void history.refetch();
+            }}
+          >
+            {history.isFetching
+              ? "Loading weekly history…"
+              : showHistory && history.data
+                ? "Refresh weekly price chart"
+                : "Load weekly price chart"}
+          </button>
+          {history.error && (
+            <p role="alert" className="text-red-300">
+              {history.error.message}
+            </p>
+          )}
+          <div className="swap-market-stats">
+            <div>
+              <small>V4 pools discovered</small>
+              <strong>{pools.length}</strong>
+            </div>
+            <div>
+              <small>Supported reference curves</small>
+              <strong>{supported.length}</strong>
+            </div>
+            <div>
+              <small>Pool fee</small>
+              <strong>
+                {pool ? `${(pool.currentFee * 100).toFixed(3)}%` : "—"}
+              </strong>
+            </div>
+          </div>
+          <p className="tool-help">
+            Unknown curve modules remain visible in the market list but cannot
+            produce local quotes or orders. Multi-asset pools require a separate
+            market view.
+          </p>
+        </section>
+        <section className="wallet-form-card swap-order-card flex flex-col gap-3">
+          <label>
+            Reference pool
+            <select
+              aria-label="V4 reference pool"
+              value={snapshot?.ident ?? ""}
+              disabled={swap.isPending}
+              onChange={(e) => {
+                setSelected(e.target.value);
+                setOfferIndex(0);
+                setAmount("1000");
+                setShowHistory(false);
+                swap.reset();
+              }}
+            >
+              {pools.map((p) => (
+                <option
+                  key={p.ident}
+                  value={p.ident}
+                  disabled={!supported.includes(p)}
+                >
+                  {p.assets.map(labelFor).join(" / ")} · {p.curveLabel} ·{" "}
+                  {p.ident.slice(0, 6)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="v4-market-button"
+            disabled={!pool || swap.isPending}
+            onClick={() => {
+              setOfferIndex((i) => 1 - i);
+              setAmount("1000");
+              swap.reset();
+            }}
+          >
+            Reverse direction ⇄
+          </button>
+          <p className="swap-balance-row">
+            Available:{" "}
+            {available === null
+              ? "Connect a wallet to see your balance"
+              : `${formatAssetAmount(available, offered?.decimals)} ${offered ? labelFor(offered) : ""}${offered?.assetId === ADA_METADATA.assetId ? "" : " raw units"}`}
+          </p>
+          <label>
+            {offered ? labelFor(offered) : "Asset"} offered{" "}
+            {offered?.assetId !== ADA_METADATA.assetId && "· raw units"}
+            <input
+              className="v4-offer-amount"
+              aria-label="V4 amount offered"
+              value={amount}
+              inputMode="decimal"
+              disabled={!pool || swap.isPending}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                swap.reset();
+              }}
+            />
+          </label>
+          <div className="v4-order-settings">
+            <label>
+              Slippage
+              <select
+                aria-label="V4 slippage"
+                value={slippage}
+                disabled={swap.isPending}
+                onChange={(e) => {
+                  setSlippage(e.target.value);
+                  swap.reset();
+                }}
+              >
+                {["0.1", "0.5", "1", "2", "5"].map((s) => (
+                  <option key={s} value={s}>
+                    {s}%
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Maximum service fee · ADA
+              <input
+                aria-label="V4 maximum service fee"
+                value={feeCap}
+                inputMode="decimal"
+                disabled={swap.isPending}
+                onChange={(e) => {
+                  setFeeCap(e.target.value);
+                  swap.reset();
+                }}
+              />
+            </label>
+          </div>
+          <dl className="v4-order-summary">
+            <dt>Estimated received</dt>
+            <dd>
+              {received && !quoteError
+                ? `${formatAssetAmount(estimate, received.decimals)} ${labelFor(received)}${received.assetId === ADA_METADATA.assetId ? "" : " raw units"}`
+                : "—"}
+            </dd>
+            <dt>Minimum received</dt>
+            <dd className="text-emerald-300">
+              {received && !quoteError
+                ? `${formatAssetAmount(minimum, received.decimals)} ${labelFor(received)}${received.assetId === ADA_METADATA.assetId ? "" : " raw units"}`
+                : "—"}
+            </dd>
+            <dt>Live base service fee</dt>
+            <dd>
+              {settings.data
+                ? `${formatAssetAmount(settings.data.baseFee, 6)} ADA`
+                : "Loading…"}
+            </dd>
+            <dt>Maximum service fee</dt>
+            <dd>{feeCap} ADA</dd>
+            <dt>Refundable order deposit</dt>
+            <dd>2 ADA</dd>
+            <dt>Network fee</dt>
+            <dd>Calculated before wallet approval</dd>
+          </dl>
+          <p className="tool-help">
+            The full service-fee cap is reserved with the order, separately from
+            the deposit and Cardano network fee. Execution can charge up to that
+            cap. Review the exact amounts in your wallet.
+          </p>
+          {snapshot && (
+            <details>
+              <summary>Reference assets and pool</summary>
+              <dl>
+                {snapshot.assets.map((a) => (
+                  <div key={a.assetId}>
+                    <dt>{labelFor(a)}</dt>
+                    <dd>
+                      <Link
+                        to={`/explorer/asset/${unitFromAssetId(a.assetId)}`}
+                      >
+                        {a.assetId}
+                      </Link>
+                    </dd>
+                  </div>
+                ))}
+                <dt>Pool identifier</dt>
+                <dd>
+                  <code>{snapshot.ident}</code>
+                </dd>
+              </dl>
+            </details>
+          )}
+          {quoteError && (
+            <p role="alert" className="text-amber-300">
+              {quoteError}
+            </p>
+          )}
+          {!connected && <WalletConnectSummary />}
+          <button
+            type="button"
+            className="experience-primary"
+            disabled={
+              !connected ||
+              !pool ||
+              !snapshot ||
+              !!error ||
+              !!quoteError ||
+              !minimum ||
+              !settings.data ||
+              swap.isPending ||
+              (available !== null && parsed > available)
+            }
+            onClick={() => swap.mutate(wallet.connectionId)}
+          >
+            {swap.isPending
+              ? "Building & signing intent…"
+              : connected
+                ? "Sign & submit V4 intent"
+                : "Connect wallet to submit"}
+          </button>
+          {connected &&
+            swap.variables === wallet.connectionId &&
+            swap.error && (
+              <p role="alert" className="text-red-300">
+                {swap.error.message}
+              </p>
+            )}
+          {connected && swap.data?.connection === wallet.connectionId && (
+            <p className="text-emerald-300">
+              Intent submitted; execution is separate.{" "}
+              <Link to={`/explorer/tx/${swap.data.hash}`}>
+                View order transaction →
+              </Link>
+            </p>
+          )}
+        </section>
       </div>
     </div>
   );

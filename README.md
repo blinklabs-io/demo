@@ -104,7 +104,7 @@ inspection live in **Create & build**, alongside token tools and document proofs
   certificate records, redeemers, treasury donations, and required signers
 - CIP-119 DRep names and anchor links, plus active, retired, and expired DRep
   filters
-- Wallet balance, reward withdrawals, send, pool delegation, and SundaeSwap V3 Preview order flows
+- Wallet balance, reward withdrawals, send, pool delegation, and SundaeSwap V3 and V4 Preview order flows
 - DRep Yes, No, and Abstain votes from governance action pages, with fee review,
   CIP-95 wallet signing, and submission through Dingo
 - Blockfrost-compatible GET console and read-only Mesh POST console
@@ -171,14 +171,31 @@ identified and omitted without inferring balances. Addresses are displayed in
 full with copy controls. Wallets exposing CIP-95 can also show their DRep
 registration.
 
-The swap view identifies SundaeSwap V3 on Preview, the selected liquidity pool,
-and the order contracts. Quotes show estimated and minimum received amounts,
-slippage, price impact, and connected-wallet balances. The weekly price chart samples pool reserves every six hours using the pool
-NFT’s transaction history and reserve outputs from Dingo, with a live price
-point and an interactive crosshair. History is cached for six hours and repeated
-samples reuse the same transaction output. These are reserve snapshots, not
-trade candles. Submitting an order is
-separate from its execution by a scooper.
+The swap view opens SundaeSwap V4 on Preview, with V3 markets available in the
+same view. V4 discovers authenticated pool NFTs and verifies the deployed order,
+settings and constraint scripts through Dingo. Constant-sum and stableswap pools
+support reference quotes and swap intents; pools using other curve modules remain
+visible without offering unsupported quotes. Assets without verified decimal
+metadata use explicitly labelled raw units.
+
+V4 orders specify offered assets, minimum received assets and an execution fee
+budget. The selected pool supplies a reference quote; a scooper chooses the
+execution route and may split execution across eligible pools. The view identifies
+the order contract, minimum output, slippage, execution fee cap, refundable deposit
+and network fee before signing. V3 retains its pool-specific order flow.
+
+Weekly price charts sample pool reserves every six hours using pool NFT history
+and transaction outputs from Dingo. History is cached for six hours; repeated
+samples share transaction reads. V4 history reads at most 500 NFT transactions
+and fetches CBOR only for the selected samples. These are reserve snapshots,
+not trade candles. Order submission is separate from scooper execution.
+
+Confirmed transactions have a visual passport, ADA and native-asset flow,
+paginated input/output cards, declared execution-budget bars, verified key
+signatures, decoded metadata and byte anatomy. Failed Plutus transactions
+separate collateral effects from unapplied outputs and actions. Reference inputs,
+datums and script witnesses can be inspected without connecting a wallet.
+Technical REST records load only when their disclosure is opened.
 
 ## On-chain surveys
 
@@ -236,7 +253,7 @@ detect a rollback during the recount.
 Expensive REST reads share bounded queues matching Dingo v0.90.5's per-client
 admission limits. GET requests honor bounded `Retry-After` responses; mutations
 are never automatically retried. Swap flows use SundaeSwap core 3.4.0 with the
-Dingo query provider; this dependency upgrade does not enable V4 order placement.
+Dingo query provider and verified Preview V4 deployment configuration.
 
 ## Sending asset bundles
 
