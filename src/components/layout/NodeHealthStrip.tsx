@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { networkName } from "../../lib/dingo/networkNames";
 import { EraName } from "../explorer/EraName";
 import { useNodeHealth } from "../../lib/dingo/nodeHealth";
@@ -13,7 +13,7 @@ function formatAge(seconds: number): string {
 }
 
 export function NodeHealthStrip() {
-  const { data, isError, isLoading } = useNodeHealth();
+  const { data, error, isError, isLoading } = useNodeHealth();
   const liveTip = useTipStore((state) => state.tip);
   const tipStatus = useTipStore((state) => state.status);
   const now = useNow();
@@ -32,7 +32,11 @@ export function NodeHealthStrip() {
     return (
       <span className="flex items-center gap-1.5 text-red-400">
         <span className="h-2 w-2 rounded-full bg-red-500" />
-        Dingo unreachable
+        {error instanceof BlockfrostError && error.status >= 400
+          ? `Dingo API returned ${error.status}`
+          : error instanceof BlockfrostError && error.status > 0
+            ? "Invalid Dingo response"
+            : "Dingo unreachable"}
       </span>
     );
   }

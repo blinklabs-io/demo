@@ -7,6 +7,10 @@ import { useNodeHealth } from "../../lib/dingo/nodeHealth";
 import { BlockfrostError } from "../../lib/dingo/blockfrost";
 
 const links = [
+  ["/", "Discover", "✦"],
+  ["/participate", "Participate", "◉"],
+  ["/wallet/swap", "Swap", "⇄"],
+  ["/wallet/tools", "Create & build", "⌁"],
   ["/explorer", "Overview", "◫"],
   ["/explorer/network", "Network", "◎"],
   ["/explorer/epoch", "Epochs", "◷"],
@@ -22,30 +26,32 @@ const links = [
 export function Header() {
   const { pathname } = useLocation();
   const { error } = useNodeHealth();
+  function groupedActive(to: string) {
+    return to === "/wallet"
+      ? pathname === "/wallet" ||
+          /^\/wallet\/(send|delegate)(\/|$)/.test(pathname)
+      : pathname === to || pathname.startsWith("/explorer/proposal/");
+  }
   return (
     <>
       <aside className="sidebar">
-        <NavLink to="/explorer" className="brand">
+        <NavLink to="/" className="brand">
           <span className="brand-mark" aria-hidden="true">
             d
           </span>
           <span>
-            dingo<span className="brand-sub">NETWORK EXPLORER</span>
+            dingo<span className="brand-sub">DINGO PLAYGROUND</span>
           </span>
         </NavLink>
         <p className="nav-caption">WORKSPACE</p>
         <nav aria-label="Main navigation">
           {links.map(([to, label, icon]) =>
-            to === "/explorer/governance" ? (
+            to === "/explorer/governance" || to === "/wallet" ? (
               <Link
                 key={to}
                 to={to}
-                className={`side-link ${pathname === to || pathname.startsWith("/explorer/proposal/") ? "selected" : ""}`}
-                aria-current={
-                  pathname === to || pathname.startsWith("/explorer/proposal/")
-                    ? "page"
-                    : undefined
-                }
+                className={`side-link ${groupedActive(to) ? "selected" : ""}`}
+                aria-current={groupedActive(to) ? "page" : undefined}
               >
                 <span className="nav-icon" aria-hidden="true">
                   {icon}
@@ -56,9 +62,9 @@ export function Header() {
               <NavLink
                 key={to}
                 to={to}
-                end={to === "/explorer"}
+                end={to === "/explorer" || to === "/" || to === "/wallet"}
                 className={({ isActive }) =>
-                  `side-link ${isActive || (to === "/explorer/governance" && pathname.startsWith("/explorer/proposal/")) ? "selected" : ""}`
+                  `side-link ${isActive ? "selected" : ""}`
                 }
               >
                 <span className="nav-icon" aria-hidden="true">
@@ -71,7 +77,7 @@ export function Header() {
         </nav>
         <div className="sidebar-footer">
           <span className="live-dot" /> Powered by Dingo
-          <p>Explore the chain. Follow the data.</p>
+          <p>Create. Trade. Participate.</p>
         </div>
       </aside>
       <header className="workspace-header">

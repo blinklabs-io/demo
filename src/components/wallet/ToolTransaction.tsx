@@ -1,3 +1,4 @@
+import { metadataJson } from "../../lib/tools/cip25";
 import { useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,9 +19,13 @@ import { formatAda } from "../../lib/format";
 export function ToolTransaction({
   action,
   ready = true,
+  formId,
+  assertDraft,
 }: {
   action: () => ToolAction;
   ready?: boolean;
+  formId?: string;
+  assertDraft?: () => void;
 }) {
   const api = useWalletStore((s) => s.walletApi),
     connectionId = useWalletStore((s) => s.connectionId);
@@ -35,6 +40,7 @@ export function ToolTransaction({
       s.connectionId !== connectionId
     )
       throw new Error("Wallet connection changed. Review a new draft.");
+    assertDraft?.();
   };
   const prepare = useMutation({
     mutationFn: async () => {
@@ -122,16 +128,23 @@ export function ToolTransaction({
   return (
     <div className="tool-transaction">
       {!draft && !submit.data && (
-        <button
-          className="tool-primary"
-          disabled={busy || !ready}
-          onClick={() => {
+        <form
+          id={formId}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (busy || !ready) return;
             submit.reset();
             prepare.mutate();
           }}
         >
-          {prepare.isPending ? "Building with Dingo…" : "Review transaction"}
-        </button>
+          <button
+            type="submit"
+            className="tool-primary"
+            disabled={busy || !ready}
+          >
+            {prepare.isPending ? "Building with Dingo…" : "Review transaction"}
+          </button>
+        </form>
       )}
       {draft && (
         <section className="tool-review" aria-label="Transaction review">
@@ -195,6 +208,17 @@ export function ToolTransaction({
                 ))}
             </div>
           </details>
+          {draft.action.kind === "mint" &&
+            draft.tx.auxiliaryData()?.metadata()?.toCore().get(721n) && (
+              <details className="metadata-json" open>
+                <summary>CIP-25 metadata · actual unsigned transaction</summary>
+                <pre>
+                  {metadataJson(
+                    draft.tx.auxiliaryData()!.metadata()!.toCore().get(721n)!,
+                  )}
+                </pre>
+              </details>
+            )}
           {draft.policyCbor && (
             <div className="tool-policy-save">
               <button type="button" onClick={() => downloadPolicy(draft)}>

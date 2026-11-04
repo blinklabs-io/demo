@@ -1,9 +1,10 @@
+import Experiences from "./pages/Experiences";
+import Participate from "./pages/Participate";
 import PolicyDetail from "./pages/explorer/PolicyDetail";
 import HandleLookup from "./pages/explorer/HandleLookup";
 import {
   createBrowserRouter,
   isRouteErrorResponse,
-  Navigate,
   useRouteError,
 } from "react-router";
 import { AppShell } from "./components/layout/AppShell";
@@ -57,7 +58,8 @@ export const router = createBrowserRouter([
       {
         errorElement: <RouteError />,
         children: [
-          { index: true, element: <Navigate to="/explorer" replace /> },
+          { index: true, element: <Experiences /> },
+          { path: "participate", element: <Participate /> },
           { path: "explorer", element: <ExplorerOverview /> },
           { path: "explorer/network", element: <NetworkDetail /> },
           { path: "explorer/surveys", element: <Surveys /> },

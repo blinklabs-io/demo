@@ -1,3 +1,5 @@
+import { Cip25Editor } from "../../components/wallet/Cip25Editor";
+import { emptyCip25, type Cip25Draft } from "../../lib/tools/cip25";
 import { UtxoConstellation } from "../../components/chain/UtxoConstellation";
 import { useMemo, useRef, useState } from "react";
 import { Link, NavLink, useParams } from "react-router";
@@ -565,6 +567,10 @@ function Proof() {
   );
 }
 function Mint() {
+  const [metadata, setMetadata] = useState<Cip25Draft>({
+    ...emptyCip25,
+    files: [],
+  });
   const tokens = useWalletStore((s) => s.tokens);
   const [mode, setMode] = useState<"mint" | "burn">("mint");
   const [name, setName] = useState(""),
@@ -616,14 +622,13 @@ function Mint() {
                 />
                 <small>{bytes} / 32 UTF-8 bytes</small>
               </label>
-              <label>
-                Public description
-                <textarea
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </label>
+              <Cip25Editor
+                assetName={name}
+                description={description}
+                value={metadata}
+                onChange={setMetadata}
+                onDescription={setDescription}
+              />
               <label>
                 Policy lifetime · minutes
                 <input
@@ -690,23 +695,43 @@ function Mint() {
             ready={mode === "mint" ? !!name : !!asset && !!policy}
             action={() =>
               mode === "mint"
-                ? { kind: "mint", name, quantity, minutes, description }
+                ? {
+                    kind: "mint",
+                    name,
+                    quantity,
+                    minutes,
+                    description,
+                    metadata: {
+                      ...metadata,
+                      files: metadata.files.map((f) => ({ ...f })),
+                    },
+                  }
                 : { kind: "burn", asset, quantity, policy }
             }
           />
         </section>
         <aside className="tool-token-preview data-panel">
-          <div className="tool-token" aria-hidden="true">
-            <span>
-              {mode === "burn" ? "−" : name.slice(0, 2).toUpperCase() || "✦"}
-            </span>
-          </div>
+          {mode === "burn" && (
+            <div className="tool-token" aria-hidden="true">
+              <span>−</span>
+            </div>
+          )}
           <span className="eyebrow">Native Cardano asset · Preview</span>
           <h3>
             {mode === "burn"
               ? assetName(asset) || "Select an asset"
-              : name || "Your next token"}
+              : metadata.displayName || name || "Your next token"}
           </h3>
+          {mode === "mint" && (
+            <p className="tool-help">
+              Ledger asset name: <code>{name || "Not entered"}</code>
+              <br />
+              {metadata.artwork === "generated"
+                ? "Generated artwork"
+                : "Published artwork URI"}{" "}
+              · CIP-25 metadata
+            </p>
+          )}
           <strong>
             {quantity || "0"}
             <small>raw units {mode === "burn" ? "to burn" : "to mint"}</small>
