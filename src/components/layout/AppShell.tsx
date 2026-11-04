@@ -6,13 +6,7 @@ import {
   exploreSections,
   participationSections,
 } from "../../lib/navigation";
-import {
-  Link,
-  NavLink,
-  Outlet,
-  useLocation,
-  useNavigationType,
-} from "react-router";
+import { Link, Outlet, useLocation, useNavigationType } from "react-router";
 import { Header } from "./Header";
 import { useMempoolStore } from "../../stores/mempoolStore";
 import { useTipStore } from "../../stores/tipStore";
@@ -84,14 +78,14 @@ export function AppShell() {
                 ["/wallet/send", "Send"],
                 ["/wallet/delegate", "Delegate"],
               ].map(([to, label]) => (
-                <NavLink
+                <Link
                   key={to}
-                  end={to !== "/wallet/tools"}
                   to={to}
-                  className={({ isActive }) => (isActive ? "selected" : "")}
+                  className={pathname === to ? "selected" : ""}
+                  aria-current={pathname === to ? "page" : undefined}
                 >
                   {label}
-                </NavLink>
+                </Link>
               ))}
             </nav>
           </div>
