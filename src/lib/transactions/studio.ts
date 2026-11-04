@@ -188,10 +188,13 @@ export async function buildPayment(
     throw new Error("Each payment must be greater than zero.");
   const provider = getDingoProvider();
   await assertDingoNetwork(provider);
-  const [outputs, tip] = await Promise.all([
+  const [outputs, tip, genesis] = await Promise.all([
     provider.getUnspentOutputs(address),
     blockfrostFetch<{ slot: number }>("/api/v0/blocks/latest"),
+    blockfrostFetch<{ network_magic: number }>("/api/v0/genesis"),
   ]);
+  if (genesis.network_magic !== 2)
+    throw new Error("Blockfrost API must serve Preview (network magic 2).");
   if (!Number.isSafeInteger(tip.slot) || tip.slot < 0)
     throw new Error("Dingo returned an invalid tip slot.");
   const funds = outputs.filter(

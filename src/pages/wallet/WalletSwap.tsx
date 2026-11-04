@@ -436,7 +436,12 @@ export default function WalletSwap() {
           <div className="swap-market-heading">
             <span className="eyebrow">Pool exchange rate</span>
             <span className="live-tag">
-              ● {poolDetailQuery.isError ? "Update failed" : "Live · 15 sec"}
+              ●{" "}
+              {networkCheck.isError || poolDetailQuery.isError
+                ? "Update failed"
+                : !networkCheck.isSuccess || poolDetailQuery.isPending
+                  ? "Connecting…"
+                  : "Live · 15 sec"}
             </span>
           </div>
           <h2>
