@@ -1,0 +1,189 @@
+.swap-version-nav {
+  margin-bottom: 22px;
+}
+.swap-version-switch {
+  display: inline-flex;
+  padding: 5px;
+  gap: 5px;
+  border: 1px solid #274451;
+  border-radius: 13px;
+  background: #0c1722;
+}
+.swap-version-switch button {
+  padding: 9px 18px;
+  border-radius: 9px;
+  color: #93a9bf;
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    background 150ms,
+    color 150ms;
+}
+.swap-version-switch button[aria-pressed="true"] {
+  background: #43d8c3;
+  color: #062c2b;
+  box-shadow: 0 2px 12px #14b8a625;
+}
+.swap-version-switch button:hover:not(:disabled):not([aria-pressed="true"]) {
+  color: #e2f9f6;
+  background: #19323a;
+}
+.swap-version-switch button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.swap-v4 .v4-market-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #345361;
+  border-radius: 10px;
+  background: #122c35;
+  padding: 10px 15px;
+  color: #7de9db;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.swap-v4 .v4-market-button:hover:not(:disabled) {
+  background: #1d3d46;
+  border-color: #59c5b9;
+}
+.swap-v4 .v4-market-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.swap-v4 .swap-order-card > label,
+.swap-v4 .v4-order-settings > label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: #a8bccf;
+  font-size: 12px;
+}
+.swap-v4 .swap-order-card input,
+.swap-v4 .swap-order-card select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 13px;
+  border: 1px solid #284653;
+  border-radius: 10px;
+  background: #0a1a26;
+  color: #eff7ff;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.swap-v4 .swap-order-card input:focus-visible,
+.swap-v4 .swap-order-card select:focus-visible,
+.swap-v4 button:focus-visible,
+.swap-version-switch button:focus-visible {
+  outline: 2px solid #5eead4;
+  outline-offset: 3px;
+}
+.swap-v4 .swap-order-card .v4-offer-amount {
+  padding: 16px;
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+.swap-v4 .v4-order-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.5fr);
+  gap: 12px;
+}
+.wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  align-items: baseline;
+  gap: 12px;
+  margin: 4px 0;
+  border: 1px solid #31594f;
+  border-radius: 13px;
+  padding: 18px;
+  background: #102e27;
+  font-size: 12px;
+}
+.wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary dt {
+  color: #9cbab7;
+}
+.wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  color: #e4f8f3;
+  font-variant-numeric: tabular-nums;
+}
+.wallet-workbench.swap-v4
+  .swap-order-card
+  dl.v4-order-summary
+  dd.text-emerald-300 {
+  color: #58f2c1;
+  font-weight: 700;
+}
+.swap-v4 .swap-order-card details {
+  font-size: 12px;
+  color: #b5c9d9;
+}
+.swap-v4 .swap-order-card details summary {
+  cursor: pointer;
+  color: #6cddcf;
+}
+.swap-v4 .swap-order-card details dl {
+  margin-top: 14px;
+}
+.swap-v4 .swap-order-card details dd {
+  margin: 4px 0 14px;
+  overflow-wrap: anywhere;
+  color: #d9e8f4;
+}
+.swap-v4 .swap-spot-price {
+  font-size: clamp(13px, 1.2vw, 17px);
+  line-height: 1.7;
+}
+@media (max-width: 600px) {
+  .swap-version-nav {
+    margin-bottom: 18px;
+  }
+  .swap-version-switch {
+    display: flex;
+  }
+  .swap-version-switch button {
+    flex: 1;
+    padding-inline: 10px;
+  }
+  .wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary {
+    padding: 14px;
+    gap: 12px 10px;
+  }
+  .swap-v4 .v4-order-settings {
+    gap: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swap-version-switch button {
+    transition: none;
+  }
+}
+
+.swap-v4 .v4-built-review {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #3f8a78;
+  border-radius: 12px;
+  padding: 16px;
+  background: #0b2725;
+}
+.swap-v4 .v4-built-review h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #d3fff3;
+}
+.swap-v4 .v4-built-review p {
+  font-size: 12px;
+  color: #9ebeb9;
+}
+.swap-v4 .v4-built-review .experience-primary {
+  width: 100%;
+  margin-top: 4px;
+}

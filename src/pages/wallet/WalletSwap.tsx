@@ -1,10 +1,21 @@
+import "./wallet-swap.css";
+import {
+  buildV4Swap,
+  discoverV4Pools,
+  loadV4Pool,
+  loadV4Settings,
+  readWeeklyV4Prices,
+  v4ReferencePrice,
+  V4_DEPLOYMENT,
+} from "../../lib/sundae/v4";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { WalletConnectSummary } from "../../components/layout/WalletConnectSummary";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   ADA_METADATA,
+  ORDER_DEPOSIT_DEFAULT,
   SundaeUtils,
   DatumBuilderV3,
   type IPoolDataAsset,
@@ -72,6 +83,34 @@ function createQueryProvider(): DingoSundaeQueryProvider {
 }
 
 export default function WalletSwap() {
+  const [version, setVersion] = useState<"V3" | "V4">("V4");
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      <nav className="swap-version-nav" aria-label="SundaeSwap market version">
+        <div className="swap-version-switch">
+          {(["V3", "V4"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={version === v}
+              disabled={busy}
+              onClick={() => setVersion(v)}
+            >
+              SundaeSwap {v}
+            </button>
+          ))}
+        </div>
+      </nav>
+      {version === "V4" ? (
+        <V4Swap onBusy={setBusy} />
+      ) : (
+        <V3Swap onBusy={setBusy} />
+      )}
+    </>
+  );
+}
+function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
   const status = useWalletStore((state) => state.status);
   const walletApi = useWalletStore((state) => state.walletApi);
   const connectionId = useWalletStore((state) => state.connectionId);
@@ -277,6 +316,8 @@ export default function WalletSwap() {
   }
 
   const swapMutation = useMutation<SwapResult, Error, number>({
+    onMutate: () => onBusy(true),
+    onSettled: () => onBusy(false),
     mutationFn: async (originatingConnection) => {
       if (!connected || !walletApi || connectionId !== originatingConnection) {
         throw new Error("Connect a wallet first.");
@@ -716,6 +757,725 @@ export default function WalletSwap() {
               </p>
             )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
+  const wallet = useWalletStore();
+  const [selected, setSelected] = useState("");
+  const [offerIndex, setOfferIndex] = useState(0);
+  const [amount, setAmount] = useState("1000");
+  const [slippage, setSlippage] = useState("1");
+  const [feeCap, setFeeCap] = useState("3");
+  const [showHistory, setShowHistory] = useState(false);
+  const network = useQuery({
+    queryKey: ["dingo", "assert-network"],
+    queryFn: () => assertDingoNetwork(getDingoProvider()),
+    retry: false,
+  });
+  const discovery = useQuery({
+    queryKey: ["sundae", "v4", "pools"],
+    queryFn: ({ signal }) => discoverV4Pools(signal),
+    enabled: network.isSuccess,
+    refetchInterval: 30000,
+    retry: false,
+  });
+  const settings = useQuery({
+    queryKey: ["sundae", "v4", "settings"],
+    queryFn: ({ signal }) => loadV4Settings(signal),
+    enabled: network.isSuccess,
+    refetchInterval: 60000,
+    retry: false,
+  });
+  const pools = discovery.data ?? [];
+  const supported = pools.filter(
+    (p) =>
+      p.assets.length === 2 &&
+      (p.curveHash === V4_DEPLOYMENT.constantSum ||
+        p.curveHash === V4_DEPLOYMENT.stableswap),
+  );
+  const snapshot = supported.find((p) => p.ident === selected) ?? supported[0];
+  const details = useQuery({
+    queryKey: [
+      "sundae",
+      "v4",
+      "pool",
+      snapshot?.ident,
+      snapshot?.output.tx_hash,
+      snapshot?.output.output_index,
+    ],
+    queryFn: ({ signal }) => loadV4Pool(snapshot!, signal),
+    enabled: !!snapshot,
+    retry: false,
+    staleTime: 30000,
+  });
+  const pool = details.data;
+  const offered = pool && (offerIndex === 0 ? pool.assetA : pool.assetB),
+    received = pool && (offerIndex === 0 ? pool.assetB : pool.assetA);
+  let parsed = 0n,
+    minimum = 0n,
+    estimate = 0n,
+    budget = 0n,
+    quoteError = "";
+  try {
+    if (pool && offered) {
+      parsed = parseAssetAmount(
+        amount,
+        offered.decimals ?? 0,
+        labelFor(offered),
+      );
+      budget = parseAssetAmount(feeCap, 6, "maximum service fee");
+      const slippageBps = parseAssetAmount(slippage, 2, "slippage percentage");
+      const tolerance = Number(slippageBps) / 10000;
+      if (
+        parsed <= 0n ||
+        !Number.isFinite(tolerance) ||
+        tolerance < 0 ||
+        tolerance > 0.5
+      )
+        throw new Error("Enter a positive amount and valid slippage.");
+      const input = new AssetAmount(parsed, offered);
+      estimate = SundaeUtils.getSwapOutput(pool, input).output;
+      minimum = (estimate * (10000n - slippageBps)) / 10000n;
+      if (minimum <= 0n)
+        throw new Error(
+          "The minimum received rounds to zero. Increase the amount.",
+        );
+      if (settings.data && budget < settings.data.baseFee)
+        throw new Error(
+          "The maximum service fee must cover the live base fee.",
+        );
+    }
+  } catch (e) {
+    quoteError = e instanceof Error ? e.message : "Quote unavailable.";
+  }
+  const connected = wallet.status === "connected" && !!wallet.walletApi;
+  const walletBalanceQuery = useQuery({
+    queryKey: ["wallet", "swap-balance", wallet.connectionId],
+    queryFn: async () => {
+      await wallet.refreshBalance();
+      return Date.now();
+    },
+    enabled: connected,
+    refetchInterval: 30000,
+    retry: false,
+  });
+
+  const available =
+    connected && offered
+      ? offered.assetId === ADA_METADATA.assetId
+        ? wallet.balanceLovelace
+        : (wallet.tokens.find(
+            (t) => t.assetId === unitFromAssetId(offered.assetId),
+          )?.quantity ?? 0n)
+      : null;
+  const history = useQuery({
+    queryKey: ["sundae", "v4", "weekly", snapshot?.ident],
+    queryFn: ({ signal }) => readWeeklyV4Prices(snapshot!, signal),
+    enabled: showHistory && !!snapshot && !!pool,
+    retry: false,
+    staleTime: 6 * 3600000,
+  });
+  const livePrice = pool ? v4ReferencePrice(pool) : 0;
+  const points = [
+    ...(history.data ?? []),
+    ...(livePrice > 0
+      ? [{ time: details.dataUpdatedAt, price: livePrice }]
+      : []),
+  ].map((p) => ({
+    time: p.time,
+    value: offerIndex === 0 ? p.price : 1 / p.price,
+  }));
+  type PreparedIntent = {
+    built: Awaited<ReturnType<typeof buildV4Swap>>;
+    connection: number;
+    key: string;
+    revision: number;
+    minimum: bigint;
+    received: IPoolDataAsset;
+  };
+  const draftKey = JSON.stringify([
+    snapshot?.ident,
+    snapshot?.output.tx_hash,
+    snapshot?.output.output_index,
+    amount,
+    offerIndex,
+    slippage,
+    feeCap,
+    wallet.connectionId,
+    wallet.changeAddress,
+    settings.data?.baseFee.toString(),
+    settings.data?.configToken,
+    settings.data?.entries.map(
+      (entry) => `${entry.txIn.hash}#${entry.txIn.index}`,
+    ),
+  ]);
+  const currentDraftKey = useRef(draftKey);
+  const revision = useRef(0);
+  const [review, setReview] = useState<PreparedIntent | null>(null);
+  const [reviewContext, setReviewContext] = useState(draftKey);
+  if (reviewContext !== draftKey) {
+    setReviewContext(draftKey);
+    if (review) setReview(null);
+  }
+  useLayoutEffect(() => {
+    if (currentDraftKey.current !== draftKey) revision.current++;
+    currentDraftKey.current = draftKey;
+  }, [draftKey]);
+  const prepared =
+    review?.key === draftKey && review.connection === wallet.connectionId
+      ? review
+      : null;
+  const offeredAda = offered?.assetId === ADA_METADATA.assetId ? parsed : 0n;
+  const requiredAda =
+    prepared?.built.requiredAda ?? offeredAda + ORDER_DEPOSIT_DEFAULT + budget;
+  const adaError =
+    connected && wallet.balanceLovelace === null
+      ? "ADA balance unavailable. Refresh the wallet before building."
+      : connected &&
+          wallet.balanceLovelace !== null &&
+          wallet.balanceLovelace < requiredAda
+        ? `Insufficient ADA: need ${formatAssetAmount(requiredAda, 6)} ADA for this intent${prepared ? ", including its network fee" : " before the network fee"}.`
+        : null;
+
+  const prepare = useMutation<
+    PreparedIntent,
+    Error,
+    { connection: number; key: string; revision: number }
+  >({
+    onMutate: () => onBusy(true),
+    onSettled: () => onBusy(false),
+    onSuccess: setReview,
+    mutationFn: async (request) => {
+      const api = wallet.walletApi;
+      const assert = () => {
+        const current = useWalletStore.getState();
+        if (
+          current.status !== "connected" ||
+          current.connectionId !== request.connection ||
+          current.walletApi !== api
+        )
+          throw new Error("Wallet connection changed. Review the order again.");
+        if (
+          currentDraftKey.current !== request.key ||
+          revision.current !== request.revision
+        )
+          throw new Error(
+            "V4 intent details changed. Build and review a new intent.",
+          );
+      };
+      assert();
+      if (
+        !api ||
+        !snapshot ||
+        !offered ||
+        !received ||
+        quoteError ||
+        !minimum ||
+        discovery.isError ||
+        details.isError ||
+        settings.isError
+      )
+        throw new Error("Review a current valid V4 quote first.");
+      await wallet.refreshBalance();
+      assert();
+      const current = useWalletStore.getState();
+      const held =
+        offered.assetId === ADA_METADATA.assetId
+          ? current.balanceLovelace
+          : (current.tokens.find(
+              (t) => t.assetId === unitFromAssetId(offered.assetId),
+            )?.quantity ?? 0n);
+      if (held === null || parsed > held)
+        throw new Error("Insufficient or unavailable wallet balance.");
+      const minimumAda = offeredAda + ORDER_DEPOSIT_DEFAULT + budget;
+      if (current.balanceLovelace === null)
+        throw new Error(
+          "ADA balance unavailable. Refresh your wallet and try again.",
+        );
+      if (current.balanceLovelace < minimumAda)
+        throw new Error(
+          `Insufficient ADA: need at least ${formatAssetAmount(minimumAda, 6)} ADA before the network fee.`,
+        );
+
+      const { blaze } = await getBlaze(api);
+      assert();
+      const built = await buildV4Swap(
+        blaze,
+        snapshot,
+        offerIndex,
+        parsed,
+        minimum,
+        budget,
+        assert,
+      );
+      assert();
+      return {
+        built,
+        connection: request.connection,
+        key: request.key,
+        revision: request.revision,
+        minimum,
+        received,
+      };
+    },
+  });
+  const submit = useMutation<
+    { hash: string; connection: number },
+    Error,
+    PreparedIntent
+  >({
+    onMutate: () => onBusy(true),
+    onSettled: () => onBusy(false),
+    onError: () => setReview(null),
+    onSuccess: (result) => {
+      setReview(null);
+      if (useWalletStore.getState().connectionId === result.connection)
+        void wallet.refreshBalance();
+    },
+    mutationFn: async (intent) => {
+      if (
+        currentDraftKey.current !== intent.key ||
+        revision.current !== intent.revision
+      )
+        throw new Error(
+          "V4 intent details changed. Build and review a new intent.",
+        );
+      const hash = await intent.built.signAndSubmit();
+      return { hash, connection: intent.connection };
+    },
+  });
+  const busy = prepare.isPending || submit.isPending;
+  function edit(update: () => void) {
+    revision.current++;
+    setReview(null);
+    prepare.reset();
+    submit.reset();
+    update();
+  }
+  const error =
+    network.error ?? discovery.error ?? settings.error ?? details.error;
+  return (
+    <div className="wallet-workbench swap-workbench swap-v4">
+      <PageIntro
+        eyebrow="SundaeSwap V4 · on Dingo"
+        title="More ways to exchange."
+        symbol="⇄"
+      />
+      <section className="swap-venue-card" aria-label="V4 execution venue">
+        <div>
+          <span className="eyebrow">Execution venue</span>
+          <h2>
+            SundaeSwap <span>V4</span>
+          </h2>
+          <p>Cardano Preview · modular liquidity</p>
+        </div>
+        <ol className="swap-execution-path">
+          <li>
+            <strong>01</strong>Set a minimum
+          </li>
+          <li>
+            <strong>02</strong>Sign an intent
+          </li>
+          <li>
+            <strong>03</strong>Scooper routes the trade
+          </li>
+        </ol>
+        <p>
+          The selected pool provides a reference quote. Your V4 intent is not
+          bound to that pool: a scooper may route or split the trade across
+          eligible V4 pools while honoring your exact minimum received. Funds
+          enter the order contract; submission does not complete the swap.
+        </p>
+        <details>
+          <summary>Verified Preview deployment</summary>
+          <dl>
+            {[
+              ["Order contract", V4_DEPLOYMENT.order],
+              ["Pool contract", V4_DEPLOYMENT.pool],
+              ["Settings policy", V4_DEPLOYMENT.settingsPolicy],
+            ].map(([name, hash]) => (
+              <div key={name}>
+                <dt>{name}</dt>
+                <dd>
+                  <code>{hash}</code>
+                </dd>
+              </div>
+            ))}
+            <dt>Data source</dt>
+            <dd>Dingo only · on-chain UTxOs, settings and transaction CBOR</dd>
+          </dl>
+        </details>
+      </section>
+      {error && (
+        <p role="alert" className="text-red-300">
+          {error.message}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              void network.refetch();
+              void discovery.refetch();
+              void settings.refetch();
+              if (snapshot) void details.refetch();
+            }}
+          >
+            Retry market data
+          </button>
+        </p>
+      )}
+      <div className="swap-trading-layout">
+        <section className="swap-market-card">
+          <div className="swap-market-heading">
+            <span className="eyebrow">
+              Reference pool · {snapshot?.curveLabel ?? "Discovering"}
+            </span>
+            <span className="live-tag">
+              ●{" "}
+              {discovery.isError || details.isError
+                ? "Update failed"
+                : discovery.isFetching
+                  ? "Refreshing…"
+                  : discovery.data
+                    ? "30 sec snapshots"
+                    : "Connecting…"}
+            </span>
+          </div>
+          <h2>
+            {offered ? labelFor(offered) : "…"} /{" "}
+            {received ? labelFor(received) : "…"}
+          </h2>
+          <p className="swap-spot-price">
+            {offered && received && Number.isFinite(livePrice)
+              ? `1 ${labelFor(offered)}${offered.assetId === ADA_METADATA.assetId ? "" : " raw unit"} = ${(offerIndex === 0 ? livePrice : 1 / livePrice).toLocaleString(undefined, { maximumSignificantDigits: 8 })} ${labelFor(received)}${received.assetId === ADA_METADATA.assetId ? "" : " raw units"}`
+              : "Loading authenticated curve data…"}
+          </p>
+          <MarketChart points={points} label="V4 reference curve price" />
+          <p className="swap-chart-caption">
+            Curve-aware prices from Dingo. Token amounts use raw on-chain units;
+            ADA uses six decimals. Historical six-hour snapshots load on demand.
+          </p>
+          <button
+            type="button"
+            className="v4-market-button"
+            disabled={!pool || history.isFetching}
+            onClick={() => {
+              setShowHistory(true);
+              if (showHistory) void history.refetch();
+            }}
+          >
+            {history.isFetching
+              ? "Loading weekly history…"
+              : showHistory && history.data
+                ? "Refresh weekly price chart"
+                : "Load weekly price chart"}
+          </button>
+          {history.error && (
+            <p role="alert" className="text-red-300">
+              {history.error.message}
+            </p>
+          )}
+          <div className="swap-market-stats">
+            <div>
+              <small>V4 pools discovered</small>
+              <strong>{pools.length}</strong>
+            </div>
+            <div>
+              <small>Supported reference curves</small>
+              <strong>{supported.length}</strong>
+            </div>
+            <div>
+              <small>Pool fee</small>
+              <strong>
+                {pool ? `${(pool.currentFee * 100).toFixed(3)}%` : "—"}
+              </strong>
+            </div>
+          </div>
+          <p className="tool-help">
+            Unknown curve modules remain visible in the market list but cannot
+            produce local quotes or orders. Multi-asset pools require a separate
+            market view.
+          </p>
+        </section>
+        <section className="wallet-form-card swap-order-card flex flex-col gap-3">
+          <label>
+            Reference pool
+            <select
+              aria-label="V4 reference pool"
+              value={snapshot?.ident ?? ""}
+              disabled={busy}
+              onChange={(e) => {
+                edit(() => {
+                  setSelected(e.target.value);
+                  setOfferIndex(0);
+                  setAmount("1000");
+                  setShowHistory(false);
+                });
+              }}
+            >
+              {pools.map((p) => (
+                <option
+                  key={p.ident}
+                  value={p.ident}
+                  disabled={!supported.includes(p)}
+                >
+                  {p.assets.map(labelFor).join(" / ")} · {p.curveLabel} ·{" "}
+                  {p.ident.slice(0, 6)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="v4-market-button"
+            disabled={!pool || busy}
+            onClick={() => {
+              edit(() => {
+                setOfferIndex((i) => 1 - i);
+                setAmount("1000");
+              });
+            }}
+          >
+            Reverse direction ⇄
+          </button>
+          <div className="swap-balance-row">
+            <span>
+              Available:{" "}
+              {available === null
+                ? "Connect a wallet to see your balance"
+                : `${formatAssetAmount(available, offered?.decimals)} ${offered ? labelFor(offered) : ""}${offered?.assetId === ADA_METADATA.assetId ? "" : " raw units"}`}
+            </span>
+            <button
+              type="button"
+              disabled={!connected || busy || walletBalanceQuery.isFetching}
+              onClick={() => void walletBalanceQuery.refetch()}
+            >
+              Refresh
+            </button>
+          </div>
+          {walletBalanceQuery.error && (
+            <p role="alert" className="text-red-300">
+              {walletBalanceQuery.error.message}
+            </p>
+          )}
+          <label>
+            {offered ? labelFor(offered) : "Asset"} offered{" "}
+            {offered?.assetId !== ADA_METADATA.assetId && "· raw units"}
+            <input
+              className="v4-offer-amount"
+              aria-label="V4 amount offered"
+              value={amount}
+              inputMode="decimal"
+              disabled={!pool || busy}
+              onChange={(e) => {
+                edit(() => setAmount(e.target.value));
+              }}
+            />
+          </label>
+          <div className="v4-order-settings">
+            <label>
+              Slippage
+              <select
+                aria-label="V4 slippage"
+                value={slippage}
+                disabled={busy}
+                onChange={(e) => {
+                  edit(() => setSlippage(e.target.value));
+                }}
+              >
+                {["0.1", "0.5", "1", "2", "5"].map((s) => (
+                  <option key={s} value={s}>
+                    {s}%
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Maximum service fee · ADA
+              <input
+                aria-label="V4 maximum service fee"
+                value={feeCap}
+                inputMode="decimal"
+                disabled={busy}
+                onChange={(e) => {
+                  edit(() => setFeeCap(e.target.value));
+                }}
+              />
+            </label>
+          </div>
+          {!prepared && (
+            <dl className="v4-order-summary">
+              <dt>Estimated received</dt>
+              <dd>
+                {received && !quoteError
+                  ? `${formatAssetAmount(estimate, received.decimals)} ${labelFor(received)}${received.assetId === ADA_METADATA.assetId ? "" : " raw units"}`
+                  : "—"}
+              </dd>
+              <dt>Minimum received</dt>
+              <dd className="text-emerald-300">
+                {received && !quoteError
+                  ? `${formatAssetAmount(minimum, received.decimals)} ${labelFor(received)}${received.assetId === ADA_METADATA.assetId ? "" : " raw units"}`
+                  : "—"}
+              </dd>
+              <dt>Live base service fee</dt>
+              <dd>
+                {settings.data
+                  ? `${formatAssetAmount(settings.data.baseFee, 6)} ADA`
+                  : "Loading…"}
+              </dd>
+              <dt>Maximum service fee</dt>
+              <dd>{feeCap} ADA</dd>
+              <dt>Refundable order deposit</dt>
+              <dd>
+                {formatAssetAmount(ORDER_DEPOSIT_DEFAULT, 6)} ADA · estimate
+              </dd>
+              <dt>Network fee</dt>
+              <dd>Build to calculate</dd>
+            </dl>
+          )}
+          <p className="tool-help">
+            The full service-fee cap is reserved with the order, separately from
+            the deposit and Cardano network fee. Execution can charge up to that
+            cap. Build the unsigned intent to review its exact costs before
+            signing.
+          </p>
+          {snapshot && (
+            <details>
+              <summary>Reference assets and pool</summary>
+              <dl>
+                {snapshot.assets.map((a) => (
+                  <div key={a.assetId}>
+                    <dt>{labelFor(a)}</dt>
+                    <dd>
+                      <Link
+                        to={`/explorer/asset/${unitFromAssetId(a.assetId)}`}
+                      >
+                        {a.assetId}
+                      </Link>
+                    </dd>
+                  </div>
+                ))}
+                <dt>Pool identifier</dt>
+                <dd>
+                  <code>{snapshot.ident}</code>
+                </dd>
+              </dl>
+            </details>
+          )}
+          {quoteError && (
+            <p role="alert" className="text-amber-300">
+              {quoteError}
+            </p>
+          )}
+          {adaError && (
+            <p role="alert" className="text-amber-300">
+              {adaError}
+            </p>
+          )}
+          {!connected && <WalletConnectSummary />}
+          <button
+            type="button"
+            className={prepared ? "v4-market-button" : "experience-primary"}
+            disabled={
+              !connected ||
+              !pool ||
+              !snapshot ||
+              !!error ||
+              !!quoteError ||
+              !!adaError ||
+              !minimum ||
+              !settings.data ||
+              busy ||
+              (available !== null && parsed > available)
+            }
+            onClick={() => {
+              setReview(null);
+              submit.reset();
+              prepare.mutate({
+                connection: wallet.connectionId,
+                key: draftKey,
+                revision: revision.current,
+              });
+            }}
+          >
+            {prepare.isPending
+              ? "Building unsigned intent…"
+              : connected
+                ? prepared
+                  ? "Rebuild unsigned intent"
+                  : "Build & review V4 intent"
+                : "Connect wallet to build"}
+          </button>
+          {connected &&
+            prepare.variables?.connection === wallet.connectionId &&
+            prepare.variables?.key === draftKey &&
+            prepare.error && (
+              <p role="alert" className="text-red-300">
+                {prepare.error.message}
+              </p>
+            )}
+          {prepared && (
+            <section
+              className="v4-built-review"
+              aria-label="Unsigned V4 intent review"
+            >
+              <span className="eyebrow">
+                Unsigned intent · ready for review
+              </span>
+              <h3>Your exact transaction costs</h3>
+              <p>Nothing has been signed or submitted.</p>
+              <dl className="v4-order-summary">
+                <dt>Minimum received</dt>
+                <dd className="text-emerald-300">
+                  {formatAssetAmount(
+                    prepared.minimum,
+                    prepared.received.decimals,
+                  )}{" "}
+                  {labelFor(prepared.received)}
+                  {prepared.received.assetId === ADA_METADATA.assetId
+                    ? ""
+                    : " raw units"}
+                </dd>
+                <dt>Network fee</dt>
+                <dd>{formatAssetAmount(prepared.built.fee, 6)} ADA</dd>
+                <dt>Refundable order deposit</dt>
+                <dd>{formatAssetAmount(prepared.built.deposit, 6)} ADA</dd>
+                <dt>Reserved service-fee cap</dt>
+                <dd>{formatAssetAmount(prepared.built.budget, 6)} ADA</dd>
+              </dl>
+              <details>
+                <summary>Unsigned transaction CBOR</summary>
+                <code className="break-all">{prepared.built.cbor}</code>
+              </details>
+              <button
+                type="button"
+                className="experience-primary"
+                disabled={busy || !connected || !!error || !!adaError}
+                onClick={() => submit.mutate(prepared)}
+              >
+                {submit.isPending
+                  ? "Signing & submitting…"
+                  : "Sign & submit reviewed V4 intent"}
+              </button>
+            </section>
+          )}
+          {connected &&
+            submit.variables?.connection === wallet.connectionId &&
+            submit.error && (
+              <p role="alert" className="text-red-300">
+                {submit.error.message}
+              </p>
+            )}
+          {connected && submit.data?.connection === wallet.connectionId && (
+            <p className="text-emerald-300">
+              Intent submitted; execution is separate.{" "}
+              <Link to={`/explorer/tx/${submit.data.hash}`}>
+                View order transaction →
+              </Link>
+            </p>
+          )}
+        </section>
       </div>
     </div>
   );
