@@ -112,13 +112,13 @@ export default function EpochDetail() {
   });
 
   const paramsQuery = useQuery({
-    queryKey: ["dingo", "epoch", String(selectedEpoch), "parameters"],
+    queryKey: ["dingo", "epoch", epoch ? String(Number(epoch)) : "latest", "parameters"],
     queryFn: ({ signal }) =>
       blockfrostFetch<ProtocolParamsResponse>(
-        `/api/v0/epochs/${selectedEpoch}/parameters`,
+        `/api/v0/epochs/${epoch ? Number(epoch) : "latest"}/parameters`,
         { signal },
       ),
-    enabled: !invalidEpoch && selectedEpoch !== undefined,
+    enabled: !invalidEpoch,
   });
 
   if (invalidEpoch)

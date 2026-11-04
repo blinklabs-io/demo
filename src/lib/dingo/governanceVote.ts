@@ -1,3 +1,4 @@
+import { assertSignedWithKey } from "./signatureWitness";
 import { assertWalletSession } from "./walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import { blockfrostFetch, BlockfrostError } from "./blockfrost";
@@ -181,25 +182,11 @@ export async function submitGovernanceVote(
   await assertWalletSession(api, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
   await assertWalletSession(api, assertConnection);
-  const witness = signed
-    .witnessSet()
-    .vkeys()
-    ?.toCore()
-    .find(
-      ([key]) =>
-        Core.Ed25519PublicKey.fromHex(key).hash().hex() === prepared.drepHash,
-    );
-  // Partial signing can return payment witnesses without the governance witness.
-  if (
-    !witness ||
-    !Core.Ed25519PublicKey.fromHex(witness[0]).verify(
-      Core.Ed25519Signature.fromHex(witness[1]),
-      Core.HexBlob(signed.getId()),
-    )
-  )
-    throw new Error(
-      "The wallet did not sign with your DRep key. No vote was submitted.",
-    );
+  assertSignedWithKey(
+    signed,
+    prepared.drepHash,
+    "The wallet did not sign with your DRep key. No vote was submitted.",
+  );
   assertConnection();
   const hash = await prepared.blaze.submitTransaction(signed, true);
   return hash.toString();

@@ -57,7 +57,7 @@ export default function PoolDetail() {
         title={metadataQuery.data?.name || "Stake pool"}
         detail={metadataQuery.data?.description}
         symbol="⬡"
-        action={poolId && poolQuery.isSuccess && (
+        action={poolId && poolQuery.data !== undefined && (
           <Link className="experience-primary" to={`/wallet/delegate?pool=${encodeURIComponent(poolId)}`}>
             Delegate to this pool
           </Link>

@@ -25,6 +25,12 @@ export function NodeHealthStrip() {
     staleTime: Infinity,
   });
 
+  if (
+    !isError &&
+    (lastAction === "undo" || lastAction === "reset") &&
+    lastEventAt !== null && dataUpdatedAt <= lastEventAt
+  ) return <span role="status" className="text-amber-300">Reconciling chain…</span>;
+
   if (isLoading) {
     return <span className="text-slate-500">Connecting to Dingo…</span>;
   }
@@ -41,11 +47,6 @@ export function NodeHealthStrip() {
       </span>
     );
   }
-
-  if (
-    lastAction !== null && lastAction !== "apply" &&
-    lastEventAt !== null && dataUpdatedAt <= lastEventAt
-  ) return <span role="status" className="text-amber-300">Reconciling chain…</span>;
 
   const usingLiveTip = tipStatus === "live" && liveTip !== null;
   const tipHeight = usingLiveTip ? liveTip.height : data.tipHeight;

@@ -7,7 +7,10 @@ import { useWalletStore } from "../../stores/walletStore";
 import { WalletConnectSummary } from "../layout/WalletConnectSummary";
 import { CopyButton } from "../explorer/CopyButton";
 import { governanceError } from "../../lib/dingo/governanceVote";
-import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
+import {
+  isRetryableConfirmation,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
 import {
   prepareToolTransaction,
   submitToolTransaction,
@@ -280,7 +283,7 @@ export function ToolTransaction({
           {error.message}
         </p>
       )}
-      {confirmation.error && (
+      {isRetryableConfirmation(confirmation.error) && (
         <button onClick={() => void confirmation.refetch()}>
           Retry confirmation
         </button>

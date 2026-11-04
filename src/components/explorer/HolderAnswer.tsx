@@ -3,7 +3,10 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import { useNodeHealth } from "../../lib/dingo/nodeHealth";
-import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
+import {
+  isRetryableConfirmation,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
 import {
   governanceError,
   type VotingProposal,
@@ -240,7 +243,7 @@ function AnswerForm({
                 : "Submitted · waiting for confirmation"}
             </strong>
             <HashLink kind="tx" id={submit.data} />
-            {confirmation.error && (
+            {isRetryableConfirmation(confirmation.error) && (
               <button type="button" onClick={() => void confirmation.refetch()}>
                 Retry confirmation
               </button>

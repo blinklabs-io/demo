@@ -866,6 +866,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
             </section>
           )}
           {prepare.variables?.connectionId === connectionId &&
+            prepare.variables?.key === draftKey &&
             prepare.error && (
               <p role="alert" className="tool-error">
                 {prepare.error.message}

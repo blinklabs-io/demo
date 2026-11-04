@@ -1,3 +1,4 @@
+import { assertSignedWithKey } from "./signatureWitness";
 import { assertWalletSession } from "./walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import { getBlaze } from "./blaze";
@@ -92,23 +93,10 @@ export async function submitRewardWithdrawal(
   await assertWalletSession(api, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
   await assertWalletSession(api, assertConnection);
-  const witness = signed
-    .witnessSet()
-    .vkeys()
-    ?.toCore()
-    .find(
-      ([key]) =>
-        Core.Ed25519PublicKey.fromHex(key).hash().hex() === prepared.stakeHash,
-    );
-  if (
-    !witness ||
-    !Core.Ed25519PublicKey.fromHex(witness[0]).verify(
-      Core.Ed25519Signature.fromHex(witness[1]),
-      Core.HexBlob(signed.getId()),
-    )
-  )
-    throw new Error(
-      "The wallet did not sign with your stake key. No withdrawal was submitted.",
-    );
+  assertSignedWithKey(
+    signed,
+    prepared.stakeHash,
+    "The wallet did not sign with your stake key. No withdrawal was submitted.",
+  );
   return (await prepared.blaze.submitTransaction(signed, true)).toString();
 }

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { BlockfrostError } from "../../lib/dingo/blockfrost";
 
 export function QueryState({
@@ -15,17 +15,13 @@ export function QueryState({
   children: ReactNode;
 }) {
   const notFound = error instanceof BlockfrostError && error.status === 404;
-  if (error && hasData && !notFound) {
-    return (
-      <>
-        <p role="status" className="mb-3 text-sm text-amber-300">
-          Update unavailable. Showing previously loaded data.{" "}
-          {error instanceof Error ? error.message : "Could not refresh."}
-        </p>
-        {children}
-      </>
-    );
-  }
+  // React Query keeps the last successful data after a 404, so a later
+  // transient error would otherwise resurrect a record known to be gone.
+  const [gone, setGone] = useState(false);
+  if (notFound && !gone) setGone(true);
+  else if (!error && gone) setGone(false);
+  const stale = Boolean(error) && hasData && !notFound && !gone;
+
   if (isLoading && !hasData) {
     return (
       <div role="status" aria-label="Loading data">
@@ -34,7 +30,7 @@ export function QueryState({
       </div>
     );
   }
-  if (error) {
+  if (error && !stale) {
     if (notFound) {
       return (
         <p className="text-sm text-slate-500">
@@ -48,5 +44,15 @@ export function QueryState({
       </p>
     );
   }
-  return <>{children}</>;
+  return (
+    <>
+      {stale && (
+        <p role="status" className="mb-3 text-sm text-amber-300">
+          Update unavailable. Showing previously loaded data.{" "}
+          {error instanceof Error ? error.message : "Could not refresh."}
+        </p>
+      )}
+      {children}
+    </>
+  );
 }

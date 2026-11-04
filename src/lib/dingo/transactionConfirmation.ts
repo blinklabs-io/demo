@@ -1,5 +1,11 @@
 import { blockfrostFetch, BlockfrostError } from "./blockfrost";
 
+export class TransactionFailedError extends Error {}
+
+export function isRetryableConfirmation(error: unknown): boolean {
+  return Boolean(error) && !(error instanceof TransactionFailedError);
+}
+
 export async function readTransactionConfirmation(
   hash: string,
   signal?: AbortSignal,
@@ -10,10 +16,12 @@ export async function readTransactionConfirmation(
       block: string;
       valid_contract: boolean;
     }>(`/api/v0/txs/${hash}`, { signal });
-    if (tx.hash !== hash || !tx.block)
+    if (tx.hash !== hash || typeof tx.block !== "string" || !tx.block)
       throw new Error("Dingo returned an invalid transaction confirmation.");
     if (tx.valid_contract === false)
-      throw new Error("Transaction was included but failed script validation.");
+      throw new TransactionFailedError(
+        "Transaction was included but failed script validation.",
+      );
     if (tx.valid_contract !== true)
       throw new Error("Dingo did not verify the transaction as valid.");
     return tx;

@@ -6,6 +6,8 @@ describe("chain transition query ownership", () => {
     ["dingo", "block", "hash"],
     ["dingo", "tx", "hash"],
     ["dingo", "tx", "hash", "utxos"],
+    ["dingo", "pool", "pool1"],
+    ["dingo", "drep", "drep1"],
     ["dingo", "address", "addr", "transactions", 1],
   ])("reconciles active mutable records %j", (...key) => {
     expect(isMutableChainQuery(key)).toBe(true);
@@ -28,6 +30,30 @@ describe("chain transition query ownership", () => {
   ])("does not restart immutable or user-requested expensive reads %j", (...key) => {
     expect(isMutableChainQuery(key)).toBe(false);
   });
+});
+
+it("clears active records on rollback but keeps them through a stream reconnect", async () => {
+  const { act, createElement } = await import("react");
+  const { createRoot } = await import("react-dom/client");
+  const { QueryClient, QueryClientProvider, QueryObserver } = await import("@tanstack/react-query");
+  const { useTipStore } = await import("../../stores/tipStore");
+  const { useChainReconciliation } = await import("./useChainReconciliation");
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+  const record = ["dingo", "tx", "reconnect"];
+  client.setQueryData(record, { confirmed: true });
+  const observer = new QueryObserver(client, { queryKey: record, queryFn: () => new Promise<never>(() => {}) });
+  const unsubscribe = observer.subscribe(() => {});
+  function Reconcile() { useChainReconciliation(); return null; }
+  const root = createRoot(document.createElement("div"));
+  try {
+    await act(async () => root.render(createElement(QueryClientProvider, { client }, createElement(Reconcile))));
+    await act(async () => useTipStore.setState((state) => ({ revision: state.revision + 1, lastAction: "connect" })));
+    expect(client.getQueryData(record)).toEqual({ confirmed: true });
+  } finally {
+    await act(async () => root.unmount());
+    unsubscribe();
+    client.clear();
+  }
 });
 
 it("reconciles mutable aggregates on rollback without restarting immutable bytes or manual recounts", () => {

@@ -52,7 +52,10 @@ export default function DRepDetail() {
           "Delegated representative"
         }
         symbol="◈"
-        action={drepId && drepQuery.isSuccess && !drepQuery.data.retired && (
+        action={drepId &&
+          drepQuery.data !== undefined &&
+          !drepQuery.data.retired &&
+          !drepId.startsWith("drep_always_") && (
           <Link className="experience-primary" to={`/wallet/delegate?drep=${encodeURIComponent(drepId)}`}>
             Delegate voting power
           </Link>

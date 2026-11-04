@@ -2,7 +2,10 @@ import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
-import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
+import {
+  isRetryableConfirmation,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
 import { walletStakeAccount } from "../../lib/dingo/wallet";
 import {
   prepareRewardWithdrawal,
@@ -106,6 +109,10 @@ function RewardsForm({
       void useWalletStore.getState().refreshBalance();
     }
   }, [confirmation.data, queryClient]);
+  const confirmationFailed =
+    Boolean(confirmation.error) && !isRetryableConfirmation(confirmation.error);
+  const awaitingConfirmation =
+    submit.isSuccess && !confirmation.data && !confirmationFailed;
   const busy = prepare.isPending || submit.isPending;
   const amount = account.data?.withdrawable_amount;
   const available =
@@ -150,7 +157,7 @@ function RewardsForm({
               !api ||
               !available ||
               account.isError ||
-              (submit.isSuccess && !confirmation.data)
+              awaitingConfirmation
             }
             onClick={() => {
               submit.reset();
@@ -159,7 +166,7 @@ function RewardsForm({
           >
             {prepare.isPending
               ? "Creating transaction…"
-              : submit.isSuccess && !confirmation.data
+              : awaitingConfirmation
                 ? "Withdrawal submitted"
                 : "Create withdrawal transaction →"}
           </button>
@@ -219,17 +226,23 @@ function RewardsForm({
       )}
       {confirmation.error && (
         <p role="alert" className="mt-3 text-sm text-red-300">
-          Unable to check confirmation: {confirmation.error.message}{" "}
-          <button type="button" onClick={() => void confirmation.refetch()}>
-            Retry confirmation
-          </button>
+          {isRetryableConfirmation(confirmation.error)
+            ? `Unable to check confirmation: ${confirmation.error.message} `
+            : `Withdrawal failed: ${confirmation.error.message} `}
+          {isRetryableConfirmation(confirmation.error) && (
+            <button type="button" onClick={() => void confirmation.refetch()}>
+              Retry confirmation
+            </button>
+          )}
         </p>
       )}
       {submit.data && (
         <div role="status" className="mt-4 text-sm text-teal-200">
           {confirmation.data
             ? "Withdrawal confirmed."
-            : "Withdrawal submitted. Waiting for confirmation."}{" "}
+            : confirmationFailed
+              ? "Withdrawal failed."
+              : "Withdrawal submitted. Waiting for confirmation."}{" "}
           <HashLink kind="tx" id={submit.data} />
         </div>
       )}

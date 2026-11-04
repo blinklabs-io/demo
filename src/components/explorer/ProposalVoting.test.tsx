@@ -27,7 +27,7 @@ vi.mock("../../lib/dingo/governanceVote", () => ({
 }));
 afterEach(() => { vi.useRealTimers(); notifyManager.setScheduler((callback) => setTimeout(callback, 0)); });
 
-it.each([true, false])("tracks a submitted vote through not-indexed, valid=%s, and confirmation retry", async (valid) => {
+it.each([true, false])("tracks a submitted vote through not-indexed and valid=%s confirmation", async (valid) => {
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
   notifyManager.setScheduler(queueMicrotask);
   const hash = "11".repeat(32);
@@ -57,9 +57,11 @@ it.each([true, false])("tracks a submitted vote through not-indexed, valid=%s, a
     expect(fetch).toHaveBeenCalledTimes(2);
     if (!valid) {
       expect(container.textContent).toContain("failed script validation");
-      expect(container.textContent).toContain("Confirmation unavailable.");
+      expect(container.textContent).toContain("Vote failed");
       expect(container.textContent).not.toContain("Vote confirmed");
-      await click("Retry confirmation");
+      expect(container.textContent).not.toContain("Retry confirmation");
+      expect(fetch).toHaveBeenCalledTimes(2);
+      return;
     }
     expect(container.textContent).toContain("Vote confirmed");
     expect(container.textContent).toContain("Included on chain.");

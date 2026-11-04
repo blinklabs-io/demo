@@ -6,7 +6,7 @@ import { epochProgress } from "../../lib/visualFormat";
 import { useState } from "react";
 import { BarChart, Metric, PageIntro } from "../../components/explorer/Visuals";
 import { Link } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Panel } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
 import { HashLink } from "../../components/explorer/HashLink";
@@ -38,9 +38,20 @@ export default function ExplorerOverview() {
   const now = useNow(15_000);
   const pendingCount = useMempoolStore((state) => state.pendingTxs.size);
   const mempoolStatus = useMempoolStore((state) => state.status);
+  const queryClient = useQueryClient();
   const blocksQuery = useQuery({
     queryKey: ["dingo", "recent-blocks"],
-    queryFn: ({ signal }) => fetchRecentBlocks(signal),
+    queryFn: async ({ signal }) => {
+      const result = await fetchRecentBlocks(signal);
+      const cached = queryClient.getQueryData<typeof result>([
+        "dingo",
+        "recent-blocks",
+      ]);
+      // A truncated refresh would replace a complete cached window.
+      if (result.incomplete && cached && !cached.incomplete)
+        throw new Error("Could not refresh recent blocks.");
+      return result;
+    },
     refetchInterval: 20_000,
   });
   const genesisQuery = useQuery({

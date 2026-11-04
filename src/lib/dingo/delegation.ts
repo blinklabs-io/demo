@@ -6,6 +6,7 @@ import {
 } from "./blaze";
 import { blockfrostFetch, BlockfrostError } from "./blockfrost";
 import type { Cip30WalletApi } from "./cip30";
+import { assertSignedWithKey } from "./signatureWitness";
 import { assertWalletSession } from "./walletSession";
 import { assertDingoNetwork, getDingoProvider } from "./utxorpc/provider";
 
@@ -56,6 +57,24 @@ async function identity(
     throw new Error("Connect a testnet wallet.");
   return { stakeHash: credential.hash, change };
 }
+async function assertTargetRegistered(kind: DelegationTarget["kind"], id: string) {
+  try {
+    await blockfrostFetch(
+      kind === "pool"
+        ? `/api/v0/pools/${encodeURIComponent(id)}`
+        : `/api/v0/governance/dreps/${encodeURIComponent(id)}`,
+    );
+  } catch (error) {
+    if (error instanceof BlockfrostError && error.status === 404)
+      throw new Error(
+        kind === "pool"
+          ? "That stake pool is not registered."
+          : "That DRep is not registered.",
+        { cause: error },
+      );
+    throw error;
+  }
+}
 export async function prepareDelegation(
   api: Cip30WalletApi,
   address: string,
@@ -74,6 +93,7 @@ export async function prepareDelegation(
   const [account, tip] = await Promise.all([
     delegationAccount(address),
     blockfrostFetch<{ slot: number }>("/api/v0/blocks/latest"),
+    assertTargetRegistered(target.kind, id),
   ]);
   assertCurrent();
   if (
@@ -133,24 +153,11 @@ export async function submitDelegation(
     throw new Error(
       "Wallet changed the transaction body. Nothing was submitted.",
     );
-  const witness = signed
-    .witnessSet()
-    .vkeys()
-    ?.toCore()
-    .find(
-      ([key]) =>
-        Core.Ed25519PublicKey.fromHex(key).hash().hex() === who.stakeHash,
-    );
-  if (
-    !witness ||
-    !Core.Ed25519PublicKey.fromHex(witness[0]).verify(
-      Core.Ed25519Signature.fromHex(witness[1]),
-      Core.HexBlob(signed.getId()),
-    )
-  )
-    throw new Error(
-      "Wallet did not sign with your stake key. Nothing was submitted.",
-    );
+  assertSignedWithKey(
+    signed,
+    who.stakeHash,
+    "Wallet did not sign with your stake key. Nothing was submitted.",
+  );
   assertCurrent();
   return String(await draft.blaze.submitTransaction(signed, true));
 }

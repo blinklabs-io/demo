@@ -11,7 +11,10 @@ import {
   type PreparedSurvey,
 } from "../../lib/surveys/transactions";
 import { governanceError } from "../../lib/dingo/governanceVote";
-import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
+import {
+  isRetryableConfirmation,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
 import { formatAda } from "../../lib/format";
 import { HashLink } from "./HashLink";
 import { answerLabel, questionNames } from "../../lib/surveys/cip179";
@@ -31,7 +34,8 @@ export function SurveyTransaction({
   const assertDraft = useDraftGuard(key);
   return (
     <TransactionForm
-      key={key}
+      key={connectionId}
+      draftKey={key}
       assertDraft={assertDraft}
       action={action}
       label={label}
@@ -41,12 +45,14 @@ export function SurveyTransaction({
   );
 }
 function TransactionForm({
+  draftKey,
   action,
   label,
   connectionId,
   ready,
   assertDraft,
 }: {
+  draftKey: string;
   assertDraft: () => void;
   action: () => SurveyAction;
   label: string;
@@ -55,7 +61,13 @@ function TransactionForm({
 }) {
   const api = useWalletStore((s) => s.walletApi);
   const client = useQueryClient();
-  const [prepared, setPrepared] = useState<PreparedSurvey | null>(null);
+  const [draft, setDraft] = useState<{
+    key: string;
+    value: PreparedSurvey;
+  } | null>(null);
+  const prepared = draft?.key === draftKey ? draft.value : null;
+  const setPrepared = (value: PreparedSurvey | null) =>
+    setDraft(value && { key: draftKey, value });
   const [submittedAction, setSubmittedAction] = useState<SurveyAction | null>(
     null,
   );
@@ -240,12 +252,28 @@ function TransactionForm({
           <strong>
             {confirmation.data
               ? "Confirmed on chain"
-              : "Submitted · waiting for confirmation"}
+              : confirmation.error && !isRetryableConfirmation(confirmation.error)
+                ? "Failed · script validation rejected the transaction"
+                : "Submitted · waiting for confirmation"}
           </strong>
           <HashLink kind="tx" id={submit.data} />
-          {confirmation.error && (
+          {isRetryableConfirmation(confirmation.error) && (
             <button type="button" onClick={() => void confirmation.refetch()}>
               Retry confirmation
+            </button>
+          )}
+          {(confirmation.data ||
+            (confirmation.error &&
+              !isRetryableConfirmation(confirmation.error))) && (
+            <button
+              type="button"
+              onClick={() => {
+                submit.reset();
+                prepare.reset();
+                setSubmittedAction(null);
+              }}
+            >
+              Review another transaction
             </button>
           )}
           {confirmation.data && (

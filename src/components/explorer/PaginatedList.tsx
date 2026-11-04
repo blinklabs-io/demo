@@ -16,7 +16,12 @@ interface PaginatedListProps<T> {
 }
 
 export function PaginatedList<T>(props: PaginatedListProps<T>) {
-  return <PaginatedListPage key={JSON.stringify([props.queryKey, props.pageSize ?? 20])} {...props} />;
+  return (
+    <PaginatedListPage
+      key={JSON.stringify([props.queryKey, props.pageSize ?? 20])}
+      {...props}
+    />
+  );
 }
 
 function PaginatedListPage<T>({
@@ -38,24 +43,30 @@ function PaginatedListPage<T>({
   });
 
   return (
-    <QueryState hasData={query.data !== undefined} isLoading={query.isLoading} error={query.error}>
-      {query.data?.length === 0 && (
-        <div className="list-empty">
-          <span aria-hidden="true">◇</span>
-          <p>{emptyLabel}</p>
-        </div>
-      )}
-      {query.data && query.data.length > 0 && visualize?.(query.data)}
-      <ul className="activity-list">
-        {query.data?.map((item, index) => (
-          <li key={keyFor(item, index)}>{renderItem(item)}</li>
-        ))}
-      </ul>
+    <>
+      <QueryState
+        hasData={query.data !== undefined}
+        isLoading={query.isLoading}
+        error={query.error}
+      >
+        {query.data?.length === 0 && (
+          <div className="list-empty">
+            <span aria-hidden="true">◇</span>
+            <p>{page > 1 ? "No more results." : emptyLabel}</p>
+          </div>
+        )}
+        {query.data && query.data.length > 0 && visualize?.(query.data)}
+        <ul className="activity-list">
+          {query.data?.map((item, index) => (
+            <li key={keyFor(item, index)}>{renderItem(item)}</li>
+          ))}
+        </ul>
+      </QueryState>
       <Pagination
         page={page}
         onPageChange={setPage}
         hasNextPage={(query.data?.length ?? 0) === pageSize}
       />
-    </QueryState>
+    </>
   );
 }

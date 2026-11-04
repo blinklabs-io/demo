@@ -1,6 +1,9 @@
-import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
+import {
+  isRetryableConfirmation,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
 import { useDraftGuard } from "../../lib/useDraftGuard";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { useWalletStore } from "../../stores/walletStore";
@@ -140,6 +143,11 @@ function VotingForm({
     refetchInterval: (query) =>
       query.state.data || query.state.error ? false : 10000,
   });
+  const isFailedConfirmation =
+    Boolean(confirmation.error) && !isRetryableConfirmation(confirmation.error);
+  useEffect(() => {
+    if (confirmation.data) void useWalletStore.getState().refreshBalance();
+  }, [confirmation.data]);
   const busy = prepare.isPending || submit.isPending;
   const eligible = Boolean(
     api?.cip95 && role.data && !role.data.retired && !closed && health.data,
@@ -319,16 +327,22 @@ function VotingForm({
         {submit.data && (
           <div className="vote-success" role="status">
             <strong>
-              {confirmation.data ? "Vote confirmed" : "Vote submitted"}
+              {confirmation.data
+                ? "Vote confirmed"
+                : isFailedConfirmation
+                  ? "Vote failed"
+                  : "Vote submitted"}
             </strong>
             <p>
               {confirmation.data
                 ? "Included on chain."
-                : confirmation.error
-                  ? "Confirmation unavailable."
+                : isFailedConfirmation
+                  ? "The transaction was included but failed script validation. Review the vote and submit a new one."
+                  : confirmation.error
+                    ? "Confirmation unavailable."
                   : "Waiting for on-chain confirmation."}
             </p>
-            {confirmation.error && (
+            {isRetryableConfirmation(confirmation.error) && (
               <button type="button" onClick={() => void confirmation.refetch()}>
                 Retry confirmation
               </button>

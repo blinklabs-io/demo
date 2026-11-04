@@ -2,7 +2,7 @@ import { useDraftGuard } from "../../lib/useDraftGuard";
 import { governanceError } from "../../lib/dingo/governanceVote";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { WalletConnectSummary } from "../../components/layout/WalletConnectSummary";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
@@ -15,6 +15,10 @@ import {
   type DelegationTarget,
   type PreparedDelegation,
 } from "../../lib/dingo/delegation";
+import {
+  isRetryableConfirmation,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
 
 export default function WalletDelegate() {
   const [search] = useSearchParams();
@@ -124,6 +128,24 @@ function DelegationForm({ connection, poolId, drepId, setPoolId, setDrepId }: {
       void client.invalidateQueries({ queryKey: ["dingo", "wallet"] });
     },
   });
+  const confirmation = useQuery({
+    queryKey: ["dingo", "delegation-confirmation", submit.data],
+    queryFn: ({ signal }) => readTransactionConfirmation(submit.data!, signal),
+    enabled: Boolean(submit.data),
+    retry: false,
+    refetchInterval: (query) =>
+      query.state.data || query.state.error ? false : 10_000,
+  });
+  useEffect(() => {
+    if (!confirmation.data) return;
+    void useWalletStore.getState().refreshBalance();
+    void accountQuery.refetch();
+    void client.invalidateQueries({ queryKey: ["dingo", "wallet"] });
+    void client.invalidateQueries({ queryKey: ["dingo", "pool"] });
+    void client.invalidateQueries({ queryKey: ["dingo", "drep"] });
+    // accountQuery is a fresh object each render; only a new confirmation matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmation.data, client]);
   const busy = prepare.isPending || submit.isPending;
   function edit(update: () => void) {
     revision.current++;
@@ -330,14 +352,23 @@ function DelegationForm({ connection, poolId, drepId, setPoolId, setDrepId }: {
           </div>
         </section>
       )}
-      {(prepare.error || submit.error) && (
+      {(prepare.error || submit.error || confirmation.error) && (
         <p className="tool-error" role="alert">
-          {(prepare.error || submit.error)!.message}
+          {(prepare.error || submit.error || confirmation.error)!.message}
         </p>
+      )}
+      {isRetryableConfirmation(confirmation.error) && (
+        <button onClick={() => void confirmation.refetch()}>
+          Retry confirmation
+        </button>
       )}
       {submit.data && (
         <p role="status">
-          Submitted to Dingo.{" "}
+          {confirmation.data
+            ? "Delegation confirmed on chain."
+            : confirmation.error && !isRetryableConfirmation(confirmation.error)
+              ? "Delegation failed."
+              : "Submitted to Dingo. Waiting for confirmation."}{" "}
           <Link to={`/explorer/tx/${submit.data}`}>View transaction →</Link>
         </p>
       )}

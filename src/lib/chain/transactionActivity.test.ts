@@ -5,7 +5,8 @@ import { transactionActivity } from "./transactionActivity";
 import { inspectChainTransaction, transactionKind } from "../explorer/transaction";
 
 const mintBody = `a400800180020009a1581c${"11".repeat(28)}a1414101`;
-const scriptWitness = "a1058184000000820000";
+// Plutus V2 script witness and a Mint-tagged redeemer for policy index 0.
+const scriptWitness = "a2058184010000820000" + "0681" + "4101";
 function mintTransaction() {
   return Core.Transaction.fromCbor(Core.TxCBOR(`84${mintBody}${scriptWitness}f5f6`));
 }

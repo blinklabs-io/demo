@@ -31,7 +31,7 @@ export function isMutableChainQuery(key: QueryKey, rollback = false): boolean {
       return rollback && key.length === 3;
     case "pool":
     case "drep":
-      return rollback && key.length === 3;
+      return key.length === 3 || (rollback && key[3] === "delegators");
     case "proposal":
       return rollback && (key.length === 3 || key[3] === "chamber-votes");
     case "wallet":
@@ -45,7 +45,9 @@ export function useChainReconciliation() {
   const client = useQueryClient();
   useEffect(() => useTipStore.subscribe((state, previous) => {
     if (state.revision === previous.revision) return;
-    const rollback = state.lastAction !== "apply";
+    // A reconnect only means events may have been missed; clearing cached
+    // records is reserved for confirmed rollbacks and resets.
+    const rollback = state.lastAction === "undo" || state.lastAction === "reset";
     const filter = {
       type: "active" as const,
       predicate: (query: { queryKey: QueryKey }) => isMutableChainQuery(query.queryKey, rollback),

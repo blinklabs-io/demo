@@ -6,6 +6,7 @@ import { type NodeHealth, useNodeHealth } from "../lib/dingo/nodeHealth";
 import { useMempoolStore } from "../stores/mempoolStore";
 import { BlockMosaic } from "../components/chain/BlockMosaic";
 
+// Lowercase only a leading capital so acronyms such as UTxO and DRep survive.
 function creationExperience(id: CreationToolId, art: string, tag: string, category = "Create") {
   const tool = creationTools.find((tool) => tool.id === id)!;
   return {
@@ -16,7 +17,7 @@ function creationExperience(id: CreationToolId, art: string, tag: string, catego
     description: tool.description,
     tag,
     art,
-    action: `Open ${tool.name.toLowerCase()}`,
+    action: `Open ${tool.name.replace(/^([A-Z])(?![A-Z])/, (c) => c.toLowerCase())}`,
   };
 }
 
