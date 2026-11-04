@@ -96,12 +96,24 @@ function AssetOptions() {
   );
 }
 function Batch() {
+  const connection = useWalletStore((state) => state.connectionId);
+  const [draftConnection, setDraftConnection] = useState(connection);
   const [rows, setRows] = useState<(Payment & { id: number })[]>([
     { id: 0, address: "", amount: "", asset: "lovelace" },
   ]);
   const next = useRef(1);
   const [csv, setCsv] = useState("");
   const [error, setError] = useState("");
+  if (draftConnection !== connection) {
+    setDraftConnection(connection);
+    setRows((current) =>
+      current.map((row) =>
+        row.asset === "lovelace"
+          ? row
+          : { ...row, asset: "lovelace", amount: "" },
+      ),
+    );
+  }
   const update = (id: number, part: Partial<Payment>) =>
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...part } : r)));
   const total = rows
@@ -254,6 +266,11 @@ function Utxos() {
   const api = useWalletStore((s) => s.walletApi),
     connection = useWalletStore((s) => s.connectionId);
   const [selected, setSelected] = useState<string[]>([]);
+  const [selectionConnection, setSelectionConnection] = useState(connection);
+  if (selectionConnection !== connection) {
+    setSelectionConnection(connection);
+    setSelected([]);
+  }
   const [mode, setMode] = useState<"consolidate" | "split">("consolidate");
   const [count, setCount] = useState("4"),
     [amount, setAmount] = useState("5");
@@ -592,6 +609,8 @@ function Mint() {
     files: [],
   });
   const tokens = useWalletStore((s) => s.tokens);
+  const connection = useWalletStore((state) => state.connectionId);
+  const [selectionConnection, setSelectionConnection] = useState(connection);
   const [mode, setMode] = useState<"mint" | "burn">("mint");
   const [name, setName] = useState(""),
     [quantity, setQuantity] = useState("1000"),
@@ -600,6 +619,10 @@ function Mint() {
     [asset, setAsset] = useState(""),
     [policy, setPolicy] = useState(""),
     [importError, setImportError] = useState("");
+  if (selectionConnection !== connection) {
+    setSelectionConnection(connection);
+    setAsset("");
+  }
   const bytes = new TextEncoder().encode(name).length;
   async function importPolicy(file: File) {
     try {
@@ -961,7 +984,7 @@ export default function WalletTools() {
               </NavLink>
             ))}
           </nav>
-          {!connected && tool !== "transactions" && (
+          {!connected && tool !== "transactions" && tool !== "utxos" && (
             <p className="tool-help">
               Explore the tools and edit your drafts without connecting. Wallet
               funds and transaction signing require a connected Preview wallet.

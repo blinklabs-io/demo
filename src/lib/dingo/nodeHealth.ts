@@ -12,6 +12,7 @@ interface BlockResponse {
   slot: number;
   epoch: number;
   tx_count: number;
+  epoch_slot: number;
 }
 
 export interface NodeHealth {
@@ -19,6 +20,7 @@ export interface NodeHealth {
   tipHeight: number;
   tipSlot: number;
   tipEpoch: number;
+  tipEpochSlot: number;
   tipHash: string;
   tipTxCount: number;
   secondsSinceTip: number;
@@ -35,6 +37,7 @@ async function fetchNodeHealth(): Promise<NodeHealth> {
     tipHeight: latestBlock.height,
     tipSlot: latestBlock.slot,
     tipEpoch: latestBlock.epoch,
+    tipEpochSlot: latestBlock.epoch_slot,
     tipHash: latestBlock.hash,
     tipTxCount: latestBlock.tx_count,
     secondsSinceTip: Math.max(

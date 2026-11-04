@@ -57,6 +57,7 @@ function hasKnownDecimals(
 
 interface SwapResult {
   txHash: string;
+  connectionId: number;
 }
 
 function createQueryProvider(): DingoSundaeQueryProvider {
@@ -275,9 +276,9 @@ export default function WalletSwap() {
     }
   }
 
-  const swapMutation = useMutation<SwapResult, Error>({
-    mutationFn: async () => {
-      if (!connected || !walletApi) {
+  const swapMutation = useMutation<SwapResult, Error, number>({
+    mutationFn: async (originatingConnection) => {
+      if (!connected || !walletApi || connectionId !== originatingConnection) {
         throw new Error("Connect a wallet first.");
       }
       if (!pool || poolDetailQuery.isError) {
@@ -326,10 +327,15 @@ export default function WalletSwap() {
         slippagePercent,
       });
       const txHash = await built.signAndSubmit();
-      return { txHash };
+      return { txHash, connectionId: originatingConnection };
     },
-    onSuccess: () => {
-      void refreshBalance();
+    onSuccess: (result) => {
+      const current = useWalletStore.getState();
+      if (
+        current.status === "connected" &&
+        current.connectionId === result.connectionId
+      )
+        void refreshBalance();
     },
   });
 
@@ -669,7 +675,7 @@ export default function WalletSwap() {
             }
             onClick={() => {
               swapMutation.reset();
-              swapMutation.mutate();
+              swapMutation.mutate(connectionId);
             }}
             className="rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500 disabled:opacity-50"
           >
@@ -684,20 +690,26 @@ export default function WalletSwap() {
                     : "Sign & submit swap order"}
           </button>
 
-          {swapMutation.isError && (
-            <p className="text-sm text-red-400">{swapMutation.error.message}</p>
-          )}
-          {swapMutation.isSuccess && (
-            <p className="text-sm text-emerald-400">
-              Order submitted. Swap execution is separate.{" "}
-              <Link
-                to={`/explorer/tx/${swapMutation.data.txHash}`}
-                className="underline"
-              >
-                View order transaction
-              </Link>
-            </p>
-          )}
+          {connected &&
+            swapMutation.variables === connectionId &&
+            swapMutation.isError && (
+              <p className="text-sm text-red-400">
+                {swapMutation.error.message}
+              </p>
+            )}
+          {connected &&
+            swapMutation.isSuccess &&
+            swapMutation.data.connectionId === connectionId && (
+              <p className="text-sm text-emerald-400">
+                Order submitted. Swap execution is separate.{" "}
+                <Link
+                  to={`/explorer/tx/${swapMutation.data.txHash}`}
+                  className="underline"
+                >
+                  View order transaction
+                </Link>
+              </p>
+            )}
         </div>
       </div>
     </div>

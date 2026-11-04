@@ -6,6 +6,17 @@ import { AssetChooser } from "../../components/wallet/AssetChooser";
 import { CopyButton } from "../../components/explorer/CopyButton";
 export default function WalletSend() {
   const connection = useWalletStore((state) => state.connectionId);
+  const address = useWalletStore((state) => state.changeAddress);
+  const tokens = useWalletStore((state) => state.tokens);
+  const [bundle, setBundle] = useState<{
+    owner: string | null;
+    selected: Map<string, string>;
+  }>({ owner: null, selected: new Map() });
+  const available = new Set(tokens.map((token) => token.assetId));
+  const selected =
+    bundle.owner === address
+      ? new Map([...bundle.selected].filter(([id]) => available.has(id)))
+      : new Map<string, string>();
   const [recipient, setRecipient] = useState("");
   const [ada, setAda] = useState("");
   return (
@@ -15,6 +26,8 @@ export default function WalletSend() {
       ada={ada}
       onRecipient={setRecipient}
       onAda={setAda}
+      selected={selected}
+      onAssets={(selected) => setBundle({ owner: address, selected })}
     />
   );
 }
@@ -23,11 +36,15 @@ function SendForm({
   ada,
   onRecipient,
   onAda,
+  selected,
+  onAssets,
 }: {
   recipient: string;
   ada: string;
   onRecipient: (value: string) => void;
   onAda: (value: string) => void;
+  selected: Map<string, string>;
+  onAssets: (value: Map<string, string>) => void;
 }) {
   const formId = useId();
   const status = useWalletStore((s) => s.status),
@@ -39,7 +56,6 @@ function SendForm({
     setRevision(generation.current);
     update();
   }
-  const [selected, setSelected] = useState<Map<string, string>>(new Map());
   return (
     <div className="wallet-workbench send-page">
       <PageIntro
@@ -84,7 +100,7 @@ function SendForm({
               formId={formId}
               tokens={tokens}
               selected={selected}
-              onChange={(next) => edit(() => setSelected(next))}
+              onChange={(next) => edit(() => onAssets(next))}
             />
           ) : (
             <section className="additional-assets">

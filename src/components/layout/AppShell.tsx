@@ -1,7 +1,9 @@
-import { useWalletStore } from "../../stores/walletStore";
 import { useEffect } from "react";
 import {
   isParticipationPath,
+  isExplorePath,
+  normalizePath,
+  exploreSections,
   participationSections,
 } from "../../lib/navigation";
 import {
@@ -16,7 +18,8 @@ import { useMempoolStore } from "../../stores/mempoolStore";
 import { useTipStore } from "../../stores/tipStore";
 
 export function AppShell() {
-  const { pathname, hash } = useLocation();
+  const { pathname: rawPathname, hash } = useLocation();
+  const pathname = normalizePath(rawPathname);
   const navigationType = useNavigationType();
   useEffect(() => {
     if (navigationType === "POP" && !hash) return;
@@ -24,10 +27,6 @@ export function AppShell() {
     if (target) target.scrollIntoView({ block: "start" });
     else window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname, hash, navigationType]);
-  const restoreConnection = useWalletStore((state) => state.restoreConnection);
-  useEffect(() => {
-    void restoreConnection();
-  }, [restoreConnection]);
   const startMempoolFeed = useMempoolStore((state) => state.start);
   const startTipFeed = useTipStore((state) => state.start);
 
@@ -44,6 +43,22 @@ export function AppShell() {
     <div className="app-shell min-h-screen bg-slate-950 text-slate-100">
       <Header />
       <main className="workspace-main">
+        {isExplorePath(pathname) && (
+          <div className="wallet-nav">
+            <nav aria-label="Explorer navigation">
+              {exploreSections.map(({ to, label, matches }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className={matches(pathname) ? "selected" : ""}
+                  aria-current={matches(pathname) ? "page" : undefined}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
         {isParticipationPath(pathname) && (
           <div className="wallet-nav">
             <nav aria-label="Participation navigation">

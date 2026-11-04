@@ -45,11 +45,15 @@ Browse the explorer, governance and survey results; preview SundaeSwap markets,
 weekly charts, amounts and slippage quotes; edit Send recipients, token metadata
 and survey drafts. Connect a Preview wallet when you want to sign or submit.
 Wallet balances and wallet-owned assets are available only after connecting.
+Send keeps asset choices when reconnecting the same payment address and filters
+them against that wallet’s current assets; another address starts a separate bundle.
+Browsing does not enable a wallet extension automatically. Connect when a
+workflow needs keys, and manage or disconnect the connection from Wallet.
 
 ### Transaction studio
 
-Open **Create & build → Transactions** (`/wallet/tools/transactions`) to build an unsigned ADA payment from a
-Preview payment-key address, without a wallet extension. Dingo supplies that
+Open **Create & build → Transactions** (`/wallet/tools/transactions`) to build an
+unsigned ADA payment from a Preview payment-key address, without a wallet extension. Dingo supplies that
 address’s UTxOs, current protocol parameters and the current slot. Change returns
 to the funding address; outputs carrying datums or reference scripts are excluded
 from automatic funding. You can add up to 20 recipients.
@@ -62,10 +66,11 @@ metadata, scripts, redeemers and governance fields. It does not infer input
 balances from input references or claim ledger validation.
 
 Exports use cardano-cli JSON text envelopes with `type`, `description` and
-`cborHex` fields, downloaded as `.tx` files. Unsigned exports use
-`Unwitnessed Tx ConwayEra`; after adding key witnesses they use
-`Witnessed Tx ConwayEra` (or the imported Babbage era). The CBOR is a complete
-transaction, including the witness set and auxiliary data.
+`cborHex` fields, downloaded as `.tx` files. The type is `Tx ConwayEra` or
+`Tx BabbageEra`, matching the selected or imported era. The CBOR is a complete
+transaction, including its existing witness set and auxiliary data. Both
+unsigned and partially witnessed transactions use this format; the inspector
+shows the number of key witnesses separately.
 
 A connected wallet can add a CIP-30 partial witness to payment, native-script or
 Plutus transactions when it supports the required signing keys. Dingo must first
@@ -77,7 +82,9 @@ transaction; export it for a separate signing or submission workflow. No private
 keys or recovery phrases are requested.
 
 Governance actions, surveys and the representative directory share one
-**Participate** section with contextual navigation. Transaction creation and
+**Participate** section with contextual navigation. **Discover** combines app
+experiences with live epoch progress and ADA supply; **Explore** groups blocks,
+mempool, epochs, stake pools and network details. Transaction creation and
 inspection live in **Create & build**, alongside token tools and document proofs.
 
 ## Included views
@@ -87,8 +94,8 @@ inspection live in **Create & build**, alongside token tools and document proofs
 - Participation hub connecting CIP-204 holder opinions, CIP-179 surveys, and
   official DRep voting
 
-- Explorer overview with recent blocks, block activity, epoch progress, supply
-  and stake, and a protocol snapshot
+- Discover snapshot with epoch progress and ADA supply; Explore with recent
+  blocks, activity, header versions, mempool, epochs, pools and network details
 - Network supply, genesis settings, and era timing
 - Blocks, transactions, addresses, stake accounts, assets, epochs, stake pools,
   DReps, mempool, and numeric transaction metadata labels (`metadata:123`);

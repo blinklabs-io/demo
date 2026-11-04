@@ -139,8 +139,8 @@ export default function Participate() {
           <span>04 · Representation</span>
           <h2>Find your representative</h2>
           <p>
-            Explore DRep profiles, activity, and voting records before choosing
-            who represents your stake.
+            Explore DRep profiles and activity before choosing who represents
+            your stake.
           </p>
           <strong>Meet the representatives ↗</strong>
         </Link>

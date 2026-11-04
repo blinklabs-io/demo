@@ -1,3 +1,4 @@
+import { WalletConnectSummary } from "../components/layout/WalletConnectSummary";
 import { useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { Panel } from "../components/explorer/Panel";
@@ -29,7 +30,7 @@ export default function TransactionStudio() {
   const [source, setSource] = useState("");
   const [payments, setPayments] = useState([{ address: "", ada: "" }]);
   const [input, setInput] = useState(imported);
-  const [era, setEra] = useState<Era>("ConwayEra");
+  const [era, setEra] = useState<Era | "">("");
   const [transaction, setTransaction] = useState<StudioTransaction | null>(
     null,
   );
@@ -37,6 +38,11 @@ export default function TransactionStudio() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const revision = useRef(0);
+  function inspect(value: string) {
+    if (!value.trim().startsWith("{") && !era)
+      throw new Error("Choose the transaction era before inspecting raw CBOR.");
+    return readTransaction(value, era || undefined);
+  }
   function invalidate() {
     revision.current++;
     setTransaction(null);
@@ -126,6 +132,7 @@ export default function TransactionStudio() {
           action={
             <div className="tool-segment">
               <button
+                disabled={busy}
                 aria-pressed={mode === "build"}
                 onClick={() => {
                   invalidate();
@@ -135,6 +142,7 @@ export default function TransactionStudio() {
                 Build
               </button>
               <button
+                disabled={busy}
                 aria-pressed={mode === "inspect"}
                 onClick={() => {
                   invalidate();
@@ -298,7 +306,7 @@ export default function TransactionStudio() {
                     const text = await file.text();
                     if (request !== revision.current) return;
                     setInput(text);
-                    setTransaction(readTransaction(text, era));
+                    setTransaction(inspect(text));
                   } catch (error) {
                     if (request === revision.current)
                       setError(
@@ -319,9 +327,10 @@ export default function TransactionStudio() {
                   disabled={busy}
                   onChange={(e) => {
                     invalidate();
-                    setEra(e.target.value as Era);
+                    setEra(e.target.value as Era | "");
                   }}
                 >
+                  <option value="">Choose era for raw hex</option>
                   <option value="ConwayEra">Conway</option>
                   <option value="BabbageEra">Babbage</option>
                 </select>
@@ -330,7 +339,7 @@ export default function TransactionStudio() {
                 id="transaction-cbor"
                 className="tx-studio-input tx-cbor-input"
                 spellCheck={false}
-                placeholder='84a… or { "type": "Unwitnessed Tx ConwayEra", … }'
+                placeholder='84a… or { "type": "Tx ConwayEra", … }'
                 value={input}
                 disabled={busy}
                 onChange={(e) => {
@@ -349,7 +358,7 @@ export default function TransactionStudio() {
                 onClick={() => {
                   invalidate();
                   try {
-                    setTransaction(readTransaction(input, era));
+                    setTransaction(inspect(input));
                   } catch (e) {
                     setError(
                       e instanceof Error ? e.message : "Invalid transaction.",
@@ -444,6 +453,7 @@ export default function TransactionStudio() {
                 </div>
               </Panel>
               <Panel title="Add a wallet witness">
+                {wallet.status !== "connected" && <WalletConnectSummary />}
                 <p className="tool-help">
                   Review the full transaction before approving your wallet.
                   Partial signing supports payment, native-script and Plutus

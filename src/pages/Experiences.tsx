@@ -1,8 +1,8 @@
+import { ChainSnapshot } from "../components/explorer/ChainSnapshot";
 import { useState } from "react";
 import { Link } from "react-router";
 import { type NodeHealth, useNodeHealth } from "../lib/dingo/nodeHealth";
 import { useMempoolStore } from "../stores/mempoolStore";
-import { useWalletStore } from "../stores/walletStore";
 import { BlockMosaic } from "../components/chain/BlockMosaic";
 
 const experiences = [
@@ -164,8 +164,6 @@ export default function Experiences() {
   const shownBlock = inspectedBlock ?? health.data;
   const pending = useMempoolStore((s) => s.pendingTxs.size);
   const stream = useMempoolStore((s) => s.status);
-  const wallet = useWalletStore((s) => s.status);
-  const tokens = useWalletStore((s) => s.tokens.length);
 
   return (
     <div className="experience-page">
@@ -245,24 +243,7 @@ export default function Experiences() {
           </Link>
         </div>
       </section>
-      {wallet === "connected" && (
-        <section className="experience-next">
-          <span className="eyebrow">Your wallet opens more doors</span>
-          <h2>
-            {tokens
-              ? `${tokens} assets. What will you do with them?`
-              : "You’re connected. Make your next move."}
-          </h2>
-          <div>
-            <Link to="/wallet">Your portfolio & rewards →</Link>
-            <Link to="/wallet/send">Build an asset bundle →</Link>
-            <Link to={tokens ? "/wallet/swap" : "/wallet/tools/mint"}>
-              {tokens ? "Find a swap →" : "Create your first token →"}
-            </Link>
-            <Link to="/participate">Answer a governance action →</Link>
-          </div>
-        </section>
-      )}
+      <ChainSnapshot />
       <section id="experiences">
         <header className="experience-section-heading">
           <div>

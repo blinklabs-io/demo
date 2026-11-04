@@ -29,7 +29,7 @@ export function WalletConnectSummary() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  if (status === "connected" && changeAddress) {
+  if (status === "connected") {
     return (
       <div ref={containerRef} className="relative">
         <button
@@ -39,15 +39,17 @@ export function WalletConnectSummary() {
         >
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
           {walletName}
-          <span className="text-slate-400" title={changeAddress}>
-            {shortenHash(changeAddress, 6)}
+          <span className="text-slate-400" title={changeAddress ?? undefined}>
+            {changeAddress ? shortenHash(changeAddress, 6) : "Connected"}
           </span>
         </button>
         {open && (
           <div className="absolute right-0 z-10 mt-2 w-64 rounded-md border border-slate-700 bg-slate-900 p-3 text-sm shadow-lg">
             <p className="text-slate-400">Change address</p>
             <p className="mt-1 break-all text-slate-200">
-              <HashLink kind="address" id={changeAddress} full />
+              {changeAddress && (
+                <HashLink kind="address" id={changeAddress} full />
+              )}
             </p>
             <button
               type="button"
@@ -102,7 +104,40 @@ export function WalletConnectSummary() {
           ))}
         </div>
       )}
-      {error && <p className="mt-1 max-w-56 text-xs text-red-400">{error}</p>}
+      {status === "connecting" && (
+        <button
+          type="button"
+          aria-label="Cancel wallet connection"
+          title="Cancel connection"
+          className="ml-2 p-2 text-slate-400"
+          onClick={() => {
+            disconnect();
+            setOpen(false);
+          }}
+        >
+          ×
+        </button>
+      )}
+      {error && (
+        <div
+          className="mt-2 flex max-w-sm items-start gap-2 text-xs text-red-400"
+          role="alert"
+        >
+          <p>{error}</p>
+          <button
+            type="button"
+            aria-label="Disconnect wallet"
+            title="Dismiss wallet connection"
+            className="shrink-0 rounded border border-slate-700 px-2 py-1 text-slate-300"
+            onClick={() => {
+              disconnect();
+              setOpen(false);
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }

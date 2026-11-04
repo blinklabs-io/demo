@@ -64,7 +64,7 @@ function entries(cbor: string): Map<number, string> {
     throw new Error("Unexpected data after CBOR map.");
   return result;
 }
-export function readTransaction(input: string, selectedEra: Era = "ConwayEra") {
+export function readTransaction(input: string, selectedEra?: Era) {
   if (input.length > MAX_HEX + 4096)
     throw new Error("Transaction file is too large (maximum 64 KiB of CBOR).");
   let value = input.trim(),
@@ -86,6 +86,8 @@ export function readTransaction(input: string, selectedEra: Era = "ConwayEra") {
     era = match[1] as Era;
     value = envelope.cborHex;
   }
+  if (!era)
+    throw new Error("Choose the transaction era before inspecting raw CBOR.");
   const cbor = hex(value),
     encoded = parts(cbor);
   // The SDK retains original body bytes; reject duplicate body/witness keys before decoding.
@@ -94,8 +96,53 @@ export function readTransaction(input: string, selectedEra: Era = "ConwayEra") {
     throw new Error(
       "Transaction contains fields introduced after Babbage. Choose Conway.",
     );
-  entries(encoded[1]);
+  if (era === "ConwayEra" && [...fields.keys()].some((key) => key >= 23))
+    throw new Error("Transaction contains fields introduced after Conway.");
+  if (era === "ConwayEra" && fields.has(6))
+    throw new Error(
+      "Legacy protocol updates are not supported in Conway. Choose Babbage.",
+    );
+  const witnessFields = entries(encoded[1]);
+  const maxWitnessKey = era === "BabbageEra" ? 6 : 7;
+  if ([...witnessFields.keys()].some((key) => key > maxWitnessKey))
+    throw new Error(
+      `Transaction contains witness fields unsupported in ${era}.`,
+    );
   const tx = Core.Transaction.fromCbor(Core.TxCBOR(cbor));
+  for (const certificate of tx.body().certs()?.values() ?? []) {
+    const kind = certificate.kind();
+    if (era === "BabbageEra" && kind >= 7)
+      throw new Error(
+        "Transaction contains Conway certificates. Choose Conway.",
+      );
+    if (era === "ConwayEra" && (kind === 5 || kind === 6))
+      throw new Error(
+        "Genesis delegation and MIR certificates are not supported in Conway. Choose Babbage.",
+      );
+  }
+  const auxiliary = tx.auxiliaryData();
+  if (
+    auxiliary?.plutusV4Scripts()?.length ||
+    (era === "BabbageEra" && auxiliary?.plutusV3Scripts()?.length)
+  )
+    throw new Error(
+      `Transaction contains auxiliary scripts unsupported in ${era}.`,
+    );
+  const collateralReturn = tx.body().collateralReturn();
+  const outputs = [
+    ...tx.body().outputs(),
+    ...(collateralReturn ? [collateralReturn] : []),
+  ];
+  const maxScriptLanguage = era === "BabbageEra" ? 2 : 3;
+  if (
+    outputs.some((output) => {
+      const script = output.scriptRef();
+      return script && script.language() > maxScriptLanguage;
+    })
+  )
+    throw new Error(
+      `Transaction contains reference scripts unsupported in ${era}.`,
+    );
   if (tx.body().toCbor() !== encoded[0])
     throw new Error("Decoder did not preserve the transaction body.");
   return { cbor, tx, era, encoded, id: String(tx.getId()) };
@@ -105,7 +152,7 @@ export function transactionEnvelope(transaction: StudioTransaction) {
   return (
     JSON.stringify(
       {
-        type: `${transaction.tx.witnessSet().vkeys()?.size() || transaction.tx.witnessSet().bootstraps()?.size() ? "Witnessed Tx" : "Unwitnessed Tx"} ${transaction.era}`,
+        type: `Tx ${transaction.era}`,
         description: "Ledger Cddl Format",
         cborHex: transaction.cbor,
       },
@@ -216,7 +263,7 @@ export async function buildPayment(
     [...assets.values()].some((amount) => amount !== 0n)
   )
     throw new Error("Transaction failed value conservation.");
-  return readTransaction(tx.toCbor());
+  return readTransaction(tx.toCbor(), "ConwayEra");
 }
 export async function addWalletWitness(
   transaction: StudioTransaction,
@@ -301,11 +348,12 @@ export async function addWalletWitness(
   }
   if (merged.size === existing.length)
     throw new Error("This wallet has already witnessed this transaction.");
-  const keySet = Core.CborSet.fromCore(
-    [...merged.values()].map((w) => w.toCore()),
-    Core.VkeyWitness.fromCore,
-  );
-  original.set(0, keySet.toCbor());
+  const keySet = new Core.CborWriter();
+  if (transaction.era === "ConwayEra") keySet.writeTag(258);
+  keySet.writeStartArray(merged.size);
+  for (const witness of merged.values())
+    keySet.writeEncodedValue(Core.fromHex(witness.toCbor()));
+  original.set(0, keySet.encodeAsHex());
   const map = new Core.CborWriter().writeStartMap(original.size);
   // Preserve all script, datum and redeemer encodings: only the vkey entry changes.
   for (const [key, value] of original)

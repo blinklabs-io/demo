@@ -1,3 +1,4 @@
+import { WalletConnectSummary } from "../../components/layout/WalletConnectSummary";
 import { WalletRewards } from "../../components/explorer/WalletRewards";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
@@ -163,6 +164,7 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
   return (
     <div className="flex flex-col gap-4 wallet-portfolio">
       <PageIntro
+        action={<WalletConnectSummary />}
         eyebrow="Connected through Dingo"
         title="Your corner of the chain."
         symbol="▣"

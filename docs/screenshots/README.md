@@ -14,3 +14,7 @@ Screenshots show synthetic Preview wallet data.
 - [Disconnected swap preview](swap-preview1500.jpg) and [mobile](swap-preview390.jpg), using Dingo market data
 
 - [Participation navigation](participation-section1500.jpg) and [mobile](participation-section390.jpg)
+
+- [Explore navigation](explore-section1500.jpg) and [mobile](explore-section390.jpg)
+
+- [Compact desktop header](compact-header1500.jpg), [mobile](compact-header390.jpg), and [dismissible wallet error](wallet-error390.jpg) with a synthetic wallet

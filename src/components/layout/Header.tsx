@@ -1,36 +1,34 @@
-import { isParticipationPath } from "../../lib/navigation";
+import {
+  isParticipationPath,
+  isExplorePath,
+  normalizePath,
+} from "../../lib/navigation";
 import { Link, NavLink, useLocation } from "react-router";
 import { NodeHealthStrip } from "./NodeHealthStrip";
 import { GlobalLookup } from "./GlobalLookup";
-import { WalletConnectSummary } from "./WalletConnectSummary";
-import { ConnectDingoBanner } from "./ConnectDingoBanner";
-import { useNodeHealth } from "../../lib/dingo/nodeHealth";
-import { BlockfrostError } from "../../lib/dingo/blockfrost";
 
 const links = [
   ["/", "Discover", "✦"],
+  ["/explorer", "Explore", "◫"],
   ["/participate", "Participate", "◉"],
   ["/wallet/swap", "Swap", "⇄"],
   ["/wallet/tools", "Create & build", "⌁"],
-  ["/explorer", "Overview", "◫"],
-  ["/explorer/network", "Network", "◎"],
-  ["/explorer/epoch", "Epochs", "◷"],
-  ["/explorer/pools", "Stake pools", "◈"],
-  ["/explorer/mempool", "Mempool", "≋"],
   ["/wallet", "Wallet", "▣"],
   ["/api", "API playground", "⌘"],
 ];
 
 export function Header() {
-  const { pathname } = useLocation();
-  const { error } = useNodeHealth();
+  const { pathname: rawPathname } = useLocation();
+  const pathname = normalizePath(rawPathname);
   function groupedActive(to: string) {
-    return to === "/participate"
-      ? isParticipationPath(pathname)
-      : to === "/wallet"
-        ? pathname === "/wallet" ||
-          /^\/wallet\/(send|delegate)(\/|$)/.test(pathname)
-        : pathname === to;
+    return to === "/explorer"
+      ? isExplorePath(pathname)
+      : to === "/participate"
+        ? isParticipationPath(pathname)
+        : to === "/wallet"
+          ? pathname === "/wallet" ||
+            /^\/wallet\/(send|delegate)(\/|$)/.test(pathname)
+          : pathname === to;
   }
   return (
     <>
@@ -46,7 +44,7 @@ export function Header() {
         <p className="nav-caption">APPS & EXPLORER</p>
         <nav aria-label="Main navigation">
           {links.map(([to, label, icon]) =>
-            to === "/participate" || to === "/wallet" ? (
+            to === "/explorer" || to === "/participate" || to === "/wallet" ? (
               <Link
                 key={to}
                 to={to}
@@ -82,13 +80,9 @@ export function Header() {
       </aside>
       <header className="workspace-header">
         <GlobalLookup />
-        <WalletConnectSummary />
         <div className="health-row">
           <NodeHealthStrip />
         </div>
-        {error instanceof BlockfrostError && error.status === 0 && (
-          <ConnectDingoBanner error={error} />
-        )}
       </header>
     </>
   );
