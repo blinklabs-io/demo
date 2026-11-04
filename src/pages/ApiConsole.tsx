@@ -1,5 +1,5 @@
 import { PageIntro } from "../components/explorer/Visuals";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import {
   blockfrostFetchResponse,
@@ -136,12 +136,28 @@ export default function ApiConsole() {
   const [result, setResult] = useState<ConsoleResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const generation = useRef(0);
+  const pending = useRef<AbortController | null>(null);
+  useEffect(() => () => {
+    generation.current++;
+    pending.current?.abort();
+  }, []);
+
+  function editRequest(update: () => void) {
+    generation.current++;
+    pending.current?.abort();
+    pending.current = null;
+    setLoading(false);
+    setResult(null);
+    setError(null);
+    update();
+  }
   const presets = target === "mesh" ? MESH_PRESETS : BLOCKFROST_PRESETS;
   const baseUrl =
     target === "mesh" ? DINGO_CONFIG.meshUrl : DINGO_CONFIG.blockfrostUrl;
 
   function changeTarget(nextTarget: ApiTarget) {
-    setTarget(nextTarget);
+    editRequest(() => setTarget(nextTarget));
     const nextPresets =
       nextTarget === "mesh" ? MESH_PRESETS : BLOCKFROST_PRESETS;
     setPath(nextPresets[0].path);
@@ -182,6 +198,11 @@ export default function ApiConsole() {
       }
     }
 
+    pending.current?.abort();
+    const controller = new AbortController();
+    pending.current = controller;
+    const requestGeneration = ++generation.current;
+    const isCurrent = () => generation.current === requestGeneration;
     setLoading(true);
     setError(null);
     setResult(null);
@@ -192,15 +213,18 @@ export default function ApiConsole() {
       if (target === "blockfrost") {
         response = await blockfrostFetchResponse(requestedPath, {
           method: "GET",
+          signal: controller.signal,
         });
       } else {
         response = await fetch(`${DINGO_CONFIG.meshUrl}${requestedPath}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: requestBody,
+          signal: controller.signal,
         });
       }
       const responseBody = await readResponseBody(response);
+      if (!isCurrent()) return;
       setResult({
         status: response.status,
         duration: Math.round(performance.now() - startedAt),
@@ -212,6 +236,7 @@ export default function ApiConsole() {
         );
       }
     } catch (cause) {
+      if (!isCurrent()) return;
       const message =
         cause instanceof Error ? cause.message : "The request failed.";
       setError(message);
@@ -228,7 +253,10 @@ export default function ApiConsole() {
         isJson: errorBody !== undefined && typeof errorBody !== "string",
       });
     } finally {
-      setLoading(false);
+      if (isCurrent()) {
+        pending.current = null;
+        setLoading(false);
+      }
     }
   }
 
@@ -237,7 +265,7 @@ export default function ApiConsole() {
       <div className="api-console-heading">
         <PageIntro
           eyebrow="Talk directly to Dingo"
-          title="Under the hood."
+          title="API playground"
           detail="Explore the APIs powering every view in this demo."
           symbol="{ }"
         />
@@ -278,7 +306,7 @@ export default function ApiConsole() {
               <input
                 id="api-endpoint"
                 value={path}
-                onChange={(event) => setPath(event.target.value)}
+                onChange={(event) => editRequest(() => setPath(event.target.value))}
                 className="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-sky-500"
                 inputMode="url"
                 spellCheck={false}
@@ -287,7 +315,7 @@ export default function ApiConsole() {
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:cursor-wait disabled:opacity-60"
+                className="experience-primary disabled:cursor-wait disabled:opacity-60"
               >
                 {loading
                   ? "Loading…"
@@ -312,7 +340,7 @@ export default function ApiConsole() {
               <textarea
                 id="mesh-request"
                 value={body}
-                onChange={(event) => setBody(event.target.value)}
+                onChange={(event) => editRequest(() => setBody(event.target.value))}
                 rows={7}
                 spellCheck={false}
                 className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-slate-100 outline-none focus:border-sky-500"
@@ -332,8 +360,10 @@ export default function ApiConsole() {
                   (preset) => preset.path === event.target.value,
                 );
                 if (preset) {
-                  setPath(preset.path);
-                  setBody(preset.body ?? "{}");
+                  editRequest(() => {
+                    setPath(preset.path);
+                    setBody(preset.body ?? "{}");
+                  });
                 }
               }}
               className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-slate-100"

@@ -1,3 +1,4 @@
+import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
 import { useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router";
@@ -143,7 +144,7 @@ function PoolDirectory() {
     <div className="flex flex-col gap-4">
       <PageIntro
         eyebrow="Meet the block makers"
-        title="Built by pools."
+        title="Stake pools"
         detail="Find your pool. Explore the operators securing the chain."
         symbol="⬡"
       />
@@ -283,8 +284,7 @@ function PoolDirectory() {
           hasNextPage={page * pageSize < matches.length}
         />
       </Panel>
-      <details className="detail-disclosure">
-        <summary>Retiring pools</summary>
+      <LazyDisclosure title="Retiring pools">
         <Panel title="Retiring pools">
           <PaginatedList<PoolRetiringRow>
             queryKey={["dingo", "pools", "retiring"]}
@@ -301,7 +301,7 @@ function PoolDirectory() {
             )}
           />
         </Panel>
-      </details>
+      </LazyDisclosure>
     </div>
   );
 }

@@ -97,7 +97,7 @@ function AddressDetailContent({ address }: { address?: string }) {
           </>
         }
       >
-        <QueryState
+        <QueryState hasData={summaryQuery.data !== undefined}
           isLoading={summaryQuery.isLoading}
           error={summaryQuery.error}
           notFoundLabel="Address not found (no on-chain activity yet)."
@@ -161,7 +161,7 @@ function AddressDetailContent({ address }: { address?: string }) {
       </Panel>
 
       <Panel title="UTxOs">
-        <QueryState isLoading={utxosQuery.isLoading} error={utxosQuery.error}>
+        <QueryState hasData={utxosQuery.data !== undefined} isLoading={utxosQuery.isLoading} error={utxosQuery.error}>
           {utxosQuery.data?.length === 0 && (
             <p className="text-sm text-slate-500">No unspent UTxOs.</p>
           )}
@@ -192,7 +192,7 @@ function AddressDetailContent({ address }: { address?: string }) {
                 <HashLink kind="tx" id={utxo.tx_hash} visible={12} />
                 <span className="text-slate-500">#{utxo.output_index}</span>
                 <div className="mt-1">
-                  <AdaAmount amount={utxo.amount} />
+                  <AdaAmount amount={utxo.amount} assetLimit={3} />
                 </div>
                 {(utxo.data_hash ||
                   utxo.inline_datum ||
@@ -230,7 +230,7 @@ function AddressDetailContent({ address }: { address?: string }) {
       </Panel>
 
       <Panel title="Transactions">
-        <QueryState isLoading={txsQuery.isLoading} error={txsQuery.error}>
+        <QueryState hasData={txsQuery.data !== undefined} isLoading={txsQuery.isLoading} error={txsQuery.error}>
           {txsQuery.data?.length === 0 && (
             <p className="text-sm text-slate-500">No transactions yet.</p>
           )}

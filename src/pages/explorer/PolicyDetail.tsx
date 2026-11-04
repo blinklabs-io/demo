@@ -112,12 +112,12 @@ function PolicyAssets({ policyId }: { policyId: string }) {
             />
           </span>
         </label>
-        <QueryState
+        <QueryState hasData={assets.data !== undefined}
           isLoading={assets.isLoading}
           error={assets.error}
           notFoundLabel="No assets found under this policy."
         >
-          {assets.isSuccess && (
+          {(assets.data !== undefined) && (
             <>
               <p className="my-4 text-xs text-slate-500">
                 {visible.length} of {assets.data.length} assets on this page ·

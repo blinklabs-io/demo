@@ -1,3 +1,4 @@
+import { assertWalletSession } from "../dingo/walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import type { Cip30WalletApi } from "../dingo/cip30";
 import { getBlaze } from "../dingo/blaze";
@@ -160,9 +161,9 @@ export async function submitSurveyTransaction(
   const tip = await validateAction(prepared.action, identity.key);
   if (tip.slot >= prepared.validUntil)
     throw new Error("This transaction draft expired.");
-  assertConnection();
+  await assertWalletSession(api, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
-  assertConnection();
+  await assertWalletSession(api, assertConnection);
   const witness = signed
     .witnessSet()
     .vkeys()

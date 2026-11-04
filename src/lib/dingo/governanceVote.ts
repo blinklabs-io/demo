@@ -1,3 +1,4 @@
+import { assertWalletSession } from "./walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import { blockfrostFetch, BlockfrostError } from "./blockfrost";
 import { getBlaze } from "./blaze";
@@ -177,8 +178,9 @@ export async function submitGovernanceVote(
     throw new Error(
       "This vote draft expired. Review a new draft before signing.",
     );
+  await assertWalletSession(api, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
-  assertConnection();
+  await assertWalletSession(api, assertConnection);
   const witness = signed
     .witnessSet()
     .vkeys()

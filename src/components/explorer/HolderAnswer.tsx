@@ -1,8 +1,9 @@
+import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import { useNodeHealth } from "../../lib/dingo/nodeHealth";
-import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
+import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
 import {
   governanceError,
   type VotingProposal,
@@ -37,6 +38,7 @@ function AnswerForm({
   proposal: VotingProposal;
   connection: number;
 }) {
+  const assertActive = useDraftGuard("holder-answer");
   const api = useWalletStore((s) => s.walletApi);
   const health = useNodeHealth();
   const [choice, setChoice] = useState<VoteChoice | null>(null);
@@ -54,6 +56,7 @@ function AnswerForm({
     );
   }
   function assertConnection() {
+    assertActive();
     const state = useWalletStore.getState();
     if (
       state.status !== "connected" ||
@@ -96,22 +99,7 @@ function AnswerForm({
     enabled: Boolean(submit.data),
     retry: false,
     refetchInterval: (q) => (q.state.data || q.state.error ? false : 10000),
-    queryFn: async () => {
-      try {
-        const tx = await blockfrostFetch<{
-          hash: string;
-          block: string;
-          valid_contract: boolean;
-        }>(`/api/v0/txs/${submit.data}`);
-        if (tx.hash !== submit.data || !tx.block || !tx.valid_contract)
-          throw new Error("Answer was not included in a valid transaction.");
-        return tx;
-      } catch (error) {
-        if (error instanceof BlockfrostError && error.status === 404)
-          return null;
-        throw error;
-      }
-    },
+    queryFn: ({ signal }) => readTransactionConfirmation(submit.data!, signal),
   });
   const busy = prepare.isPending || submit.isPending;
   const error =

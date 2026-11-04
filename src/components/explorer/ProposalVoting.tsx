@@ -1,5 +1,7 @@
+import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
+import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { useWalletStore } from "../../stores/walletStore";
 import { useWalletDRep } from "../../lib/dingo/useWalletDRep";
@@ -56,6 +58,7 @@ function VotingForm({
   api: ReturnType<typeof useWalletStore.getState>["walletApi"];
   connectionId: number;
 }) {
+  const assertActive = useDraftGuard("proposal-voting");
   const role = useWalletDRep();
   const health = useNodeHealth();
   const queryClient = useQueryClient();
@@ -63,6 +66,7 @@ function VotingForm({
   const [prepared, setPrepared] = useState<PreparedVote | null>(null);
   const closed = health.data && votingClosed(proposal, health.data.tipEpoch);
   function assertConnection() {
+    assertActive();
     const current = useWalletStore.getState();
     if (
       current.status !== "connected" ||
@@ -109,7 +113,7 @@ function VotingForm({
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["dingo", "proposal", proposal.id, "votes"],
+        queryKey: ["dingo", "proposal", proposal.id, "chamber-votes"],
       });
       void queryClient.invalidateQueries({
         queryKey: ["dingo", "wallet", "drep-role", connectionId],
@@ -117,11 +121,30 @@ function VotingForm({
       void useWalletStore.getState().refreshBalance();
     },
   });
+  const confirmation = useQuery({
+    queryKey: ["dingo", "vote-confirmation", submit.data],
+    enabled: Boolean(submit.data),
+    retry: false,
+    queryFn: async ({ signal }) => {
+      const tx = await readTransactionConfirmation(submit.data!, signal);
+      if (tx) {
+        void queryClient.invalidateQueries({
+          queryKey: ["dingo", "proposal", proposal.id, "chamber-votes"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["dingo", "wallet", "drep-role", connectionId],
+        });
+      }
+      return tx;
+    },
+    refetchInterval: (query) =>
+      query.state.data || query.state.error ? false : 10000,
+  });
   const busy = prepare.isPending || submit.isPending;
   const eligible = Boolean(
     api?.cip95 && role.data && !role.data.retired && !closed && health.data,
   );
-  const error = prepare.error || submit.error;
+  const error = prepare.error || submit.error || confirmation.error;
   return (
     <div id="drep-vote">
       <Panel
@@ -295,8 +318,21 @@ function VotingForm({
         )}
         {submit.data && (
           <div className="vote-success" role="status">
-            <strong>Vote submitted</strong>
-            <p>Waiting for on-chain confirmation.</p>
+            <strong>
+              {confirmation.data ? "Vote confirmed" : "Vote submitted"}
+            </strong>
+            <p>
+              {confirmation.data
+                ? "Included on chain."
+                : confirmation.error
+                  ? "Confirmation unavailable."
+                  : "Waiting for on-chain confirmation."}
+            </p>
+            {confirmation.error && (
+              <button type="button" onClick={() => void confirmation.refetch()}>
+                Retry confirmation
+              </button>
+            )}
             <Link
               to={`/explorer/tx/${submit.data}`}
               className="font-mono break-all"

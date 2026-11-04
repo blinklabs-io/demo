@@ -1,3 +1,4 @@
+import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
@@ -10,7 +11,7 @@ import {
   type PreparedSurvey,
 } from "../../lib/surveys/transactions";
 import { governanceError } from "../../lib/dingo/governanceVote";
-import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
+import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
 import { formatAda } from "../../lib/format";
 import { HashLink } from "./HashLink";
 import { answerLabel, questionNames } from "../../lib/surveys/cip179";
@@ -18,15 +19,20 @@ export function SurveyTransaction({
   action,
   label,
   ready,
+  draftKey,
 }: {
+  draftKey: string;
   action: () => SurveyAction;
   label: string;
   ready: boolean;
 }) {
   const connectionId = useWalletStore((s) => s.connectionId);
+  const key = JSON.stringify([connectionId, draftKey]);
+  const assertDraft = useDraftGuard(key);
   return (
     <TransactionForm
-      key={connectionId}
+      key={key}
+      assertDraft={assertDraft}
       action={action}
       label={label}
       connectionId={connectionId}
@@ -39,7 +45,9 @@ function TransactionForm({
   label,
   connectionId,
   ready,
+  assertDraft,
 }: {
+  assertDraft: () => void;
   action: () => SurveyAction;
   label: string;
   connectionId: number;
@@ -52,6 +60,7 @@ function TransactionForm({
     null,
   );
   function assertConnection() {
+    assertDraft();
     const s = useWalletStore.getState();
     if (
       s.status !== "connected" ||
@@ -94,26 +103,19 @@ function TransactionForm({
     queryKey: ["dingo", "surveys", "confirmation", submit.data],
     enabled: Boolean(submit.data),
     retry: false,
-    refetchInterval: (q) => (q.state.data || q.state.error ? false : 10000),
-    queryFn: async () => {
-      try {
-        const tx = await blockfrostFetch<{ hash: string; block: string }>(
-          `/api/v0/txs/${submit.data}`,
-        );
-        if (tx.hash !== submit.data || !tx.block)
-          throw new Error("Transaction is not confirmed.");
+    queryFn: async ({ signal }) => {
+      const tx = await readTransactionConfirmation(submit.data!, signal);
+      if (tx) {
         await client.invalidateQueries({
           queryKey: ["dingo", "surveys", "results"],
         });
         await client.invalidateQueries({
           queryKey: ["dingo", "surveys", "directory"],
         });
-        return tx;
-      } catch (e) {
-        if (e instanceof BlockfrostError && e.status === 404) return null;
-        throw e;
       }
+      return tx;
     },
+    refetchInterval: (q) => (q.state.data || q.state.error ? false : 10000),
   });
   if (!api)
     return (

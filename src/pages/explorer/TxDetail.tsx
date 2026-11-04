@@ -87,7 +87,7 @@ function JsonQueryPanel({
 }: JsonQueryPanelProps) {
   return (
     <Panel title={title}>
-      <QueryState isLoading={isLoading} error={error}>
+      <QueryState hasData={data !== undefined} isLoading={isLoading} error={error}>
         {Array.isArray(data) && data.length === 0 ? (
           <p className="text-sm text-slate-500">
             No {title.toLowerCase()} recorded.
@@ -174,7 +174,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
     enabled: Boolean(hash) && !isPending,
   });
 
-  const tx = txQuery.data;
+  const tx = isNotFoundOnChain ? undefined : txQuery.data;
 
   const delegationsQuery = useQuery({
     queryKey: ["dingo", "tx", hash, "delegations"],
@@ -329,7 +329,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
 
   return (
     <div className="transaction-explorer" key={hash}>
-      <QueryState
+      <QueryState hasData={txQuery.data !== undefined}
         isLoading={txQuery.isLoading}
         error={txQuery.error}
         notFoundLabel="Transaction not found."
@@ -362,7 +362,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
       </QueryState>
       {tx && (
         <>
-          <QueryState isLoading={utxosQuery.isLoading} error={utxosQuery.error}>
+          <QueryState hasData={utxosQuery.data !== undefined} isLoading={utxosQuery.isLoading} error={utxosQuery.error}>
             {utxosQuery.data && (
               <>
                 <TransactionFlow
@@ -381,7 +381,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
               </>
             )}
           </QueryState>
-          <QueryState
+          <QueryState hasData={transactionCborQuery.data !== undefined}
             isLoading={transactionCborQuery.isLoading}
             error={transactionCborQuery.error}
           >

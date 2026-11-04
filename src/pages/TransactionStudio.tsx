@@ -1,3 +1,4 @@
+import { useDraftGuard } from "../lib/useDraftGuard";
 import { WalletConnectSummary } from "../components/layout/WalletConnectSummary";
 import { useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
@@ -17,6 +18,7 @@ import {
 import "./transaction-studio.css";
 
 export default function TransactionStudio() {
+  const assertActive = useDraftGuard("transaction-studio");
   const location = useLocation();
   const imported =
     typeof location.state?.transactionCbor === "string" &&
@@ -55,7 +57,9 @@ export default function TransactionStudio() {
     setError("");
     setNotice("");
     try {
+      assertActive();
       const result = await action();
+      assertActive();
       if (request === revision.current) {
         setTransaction(result);
         setNotice(
@@ -98,11 +102,7 @@ export default function TransactionStudio() {
       <section className="tx-studio-hero">
         <div>
           <span className="eyebrow">Build with Dingo · Transaction studio</span>
-          <h1>
-            Build it.
-            <br />
-            <em>Take it anywhere.</em>
-          </h1>
+          <h1>Transaction studio</h1>
           <p>
             Turn an address into an unsigned payment. Open a transaction,
             understand its intent, and add your wallet’s witness when you’re
@@ -466,8 +466,14 @@ export default function TransactionStudio() {
                   }
                   onClick={() => {
                     const api = wallet.walletApi!,
-                      connection = wallet.connectionId;
+                      connection = wallet.connectionId,
+                      draftRevision = revision.current;
                     const assert = () => {
+                      assertActive();
+                      if (revision.current !== draftRevision)
+                        throw new Error(
+                          "Draft details changed. Review a new transaction.",
+                        );
                       const current = useWalletStore.getState();
                       if (
                         current.walletApi !== api ||

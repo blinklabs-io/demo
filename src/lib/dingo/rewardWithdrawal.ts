@@ -1,3 +1,4 @@
+import { assertWalletSession } from "./walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import { getBlaze } from "./blaze";
 import { blockfrostFetch } from "./blockfrost";
@@ -88,8 +89,9 @@ export async function submitRewardWithdrawal(
     );
   if (tip.slot >= prepared.validUntil)
     throw new Error("This withdrawal draft expired. Create a new transaction.");
+  await assertWalletSession(api, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
-  assertConnection();
+  await assertWalletSession(api, assertConnection);
   const witness = signed
     .witnessSet()
     .vkeys()

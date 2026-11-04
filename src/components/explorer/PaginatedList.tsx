@@ -4,10 +4,9 @@ import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { QueryState } from "./QueryState";
 import { Pagination } from "./Pagination";
 
-const PAGE_SIZE = 20;
-
 interface PaginatedListProps<T> {
   queryKey: unknown[];
+  pageSize?: number;
   visualize?: (items: T[]) => ReactNode;
   staleTime?: number;
   buildUrl: (page: number, pageSize: number) => string;
@@ -17,11 +16,12 @@ interface PaginatedListProps<T> {
 }
 
 export function PaginatedList<T>(props: PaginatedListProps<T>) {
-  return <PaginatedListPage key={JSON.stringify(props.queryKey)} {...props} />;
+  return <PaginatedListPage key={JSON.stringify([props.queryKey, props.pageSize ?? 20])} {...props} />;
 }
 
 function PaginatedListPage<T>({
   queryKey,
+  pageSize = 20,
   buildUrl,
   renderItem,
   emptyLabel = "Nothing here yet.",
@@ -31,14 +31,14 @@ function PaginatedListPage<T>({
 }: PaginatedListProps<T>) {
   const [page, setPage] = useState(1);
   const query = useQuery({
-    queryKey: [...queryKey, page],
+    queryKey: [...queryKey, pageSize, page],
     queryFn: ({ signal }) =>
-      blockfrostFetch<T[]>(buildUrl(page, PAGE_SIZE), { signal }),
+      blockfrostFetch<T[]>(buildUrl(page, pageSize), { signal }),
     staleTime,
   });
 
   return (
-    <QueryState isLoading={query.isLoading} error={query.error}>
+    <QueryState hasData={query.data !== undefined} isLoading={query.isLoading} error={query.error}>
       {query.data?.length === 0 && (
         <div className="list-empty">
           <span aria-hidden="true">◇</span>
@@ -54,7 +54,7 @@ function PaginatedListPage<T>({
       <Pagination
         page={page}
         onPageChange={setPage}
-        hasNextPage={(query.data?.length ?? 0) === PAGE_SIZE}
+        hasNextPage={(query.data?.length ?? 0) === pageSize}
       />
     </QueryState>
   );

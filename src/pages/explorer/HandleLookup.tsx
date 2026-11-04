@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { resolveHandle } from "../../lib/dingo/handles";
 import { Panel } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
-import { EmptyState } from "../../components/explorer/Visuals";
+import { EmptyState, PageIntro } from "../../components/explorer/Visuals";
 
 export default function HandleLookup() {
   const { handle } = useParams();
@@ -15,7 +15,9 @@ export default function HandleLookup() {
     retry: false,
   });
   return (
-    <Panel title={`$${handle}`}>
+    <div className="flex flex-col gap-4">
+    <PageIntro title={handle ? `$${handle}` : "Handle lookup"} eyebrow="On-chain address resolution" />
+    <Panel title="Resolved address">
       {query.isPending && (
         <div role="status" className="visual-empty">
           <span className="empty-orbit" aria-hidden="true">
@@ -50,5 +52,6 @@ export default function HandleLookup() {
           />
         ))}
     </Panel>
+    </div>
   );
 }

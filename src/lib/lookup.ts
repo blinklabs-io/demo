@@ -1,3 +1,5 @@
+import { Core } from "@blaze-cardano/sdk";
+
 // Powers the global lookup bar: given whatever a visitor pastes in, decide
 // what kind of on-chain entity it is and where in the Explorer to send them.
 // This is the seam that makes Explorer and Wallet feel like one app rather
@@ -44,11 +46,20 @@ export function detectEntityKind(rawQuery: string): LookupResult | null {
       route: `/explorer/pools?ticker=${explicitTicker[1].toUpperCase()}`,
     };
 
-  if (/^(addr|addr_test)1[0-9a-z]+$/i.test(query)) {
-    return { kind: "address", route: `/explorer/address/${query}` };
-  }
-  if (/^(stake|stake_test)1[0-9a-z]+$/i.test(query)) {
-    return { kind: "account", route: `/explorer/account/${query}` };
+  try {
+    const address = /^(?:addr(?:_test)?|stake(?:_test)?)1/i.test(query) ||
+      Core.Address.isValidByron(query)
+      ? Core.Address.fromString(query)
+      : null;
+    if (address) {
+      const kind = address.asReward() ? "account" : "address";
+      const normalized = address.asByron()
+        ? address.toBase58()
+        : address.toBech32();
+      return { kind, route: `/explorer/${kind}/${normalized}` };
+    }
+  } catch {
+    // Invalid address encodings may still be another kind of lookup key.
   }
   if (/^pool1[0-9a-z]+$/i.test(query)) {
     return { kind: "pool", route: `/explorer/pool/${query}` };

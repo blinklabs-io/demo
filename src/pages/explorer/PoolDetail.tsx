@@ -1,6 +1,6 @@
 import { PoolIdentity } from "../../components/explorer/PoolIdentity";
 import { Gauge, Metric, PageIntro } from "../../components/explorer/Visuals";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
@@ -57,6 +57,11 @@ export default function PoolDetail() {
         title={metadataQuery.data?.name || "Stake pool"}
         detail={metadataQuery.data?.description}
         symbol="⬡"
+        action={poolId && poolQuery.isSuccess && (
+          <Link className="experience-primary" to={`/wallet/delegate?pool=${encodeURIComponent(poolId)}`}>
+            Delegate to this pool
+          </Link>
+        )}
       />
       <Panel
         title={
@@ -67,7 +72,7 @@ export default function PoolDetail() {
           )
         }
       >
-        <QueryState
+        <QueryState hasData={poolQuery.data !== undefined}
           isLoading={poolQuery.isLoading}
           error={poolQuery.error}
           notFoundLabel="Pool not found."

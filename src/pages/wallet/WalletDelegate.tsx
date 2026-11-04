@@ -1,147 +1,170 @@
+import { useDraftGuard } from "../../lib/useDraftGuard";
+import { governanceError } from "../../lib/dingo/governanceVote";
 import { PageIntro } from "../../components/explorer/Visuals";
-import { WalletWelcome } from "../../components/explorer/WalletWelcome";
-import { useState } from "react";
-import { Link } from "react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Core } from "@blaze-cardano/sdk";
+import { WalletConnectSummary } from "../../components/layout/WalletConnectSummary";
+import { useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
-import {
-  getBlaze,
-  stakeCredentialFromRewardAddress,
-  credentialFromDRepId,
-} from "../../lib/dingo/blaze";
-import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { HashLink } from "../../components/explorer/HashLink";
-
-interface AccountResponse {
-  registered: boolean;
-  pool_id: string | null;
-  drep_id: string | null;
-}
-
-interface DelegateResult {
-  txHash: string;
-}
-
-type DelegationTarget =
-  | { kind: "pool"; id: string }
-  | { kind: "drep"; id: string };
+import { formatAda } from "../../lib/format";
+import {
+  delegationAccount,
+  prepareDelegation,
+  submitDelegation,
+  type DelegationTarget,
+  type PreparedDelegation,
+} from "../../lib/dingo/delegation";
 
 export default function WalletDelegate() {
+  const [search] = useSearchParams();
+  const pool = search.get("pool") ?? "";
+  const drep = search.get("drep") ?? "";
+  return (
+    <DelegationWorkspace
+      key={JSON.stringify([pool, drep])}
+      initialPool={pool}
+      initialDrep={drep}
+    />
+  );
+}
+
+function DelegationWorkspace({ initialPool, initialDrep }: {
+  initialPool: string;
+  initialDrep: string;
+}) {
+  const connection = useWalletStore((s) => s.connectionId);
+  const [poolId, setPoolId] = useState(initialPool);
+  const [drepId, setDrepId] = useState(initialDrep);
+  return (
+    <DelegationForm
+      key={connection}
+      connection={connection}
+      poolId={poolId}
+      drepId={drepId}
+      setPoolId={setPoolId}
+      setDrepId={setDrepId}
+    />
+  );
+}
+function DelegationForm({ connection, poolId, drepId, setPoolId, setDrepId }: {
+  connection: number;
+  poolId: string;
+  drepId: string;
+  setPoolId: (value: string) => void;
+  setDrepId: (value: string) => void;
+}) {
+  const assertActive = useDraftGuard("delegation");
   const status = useWalletStore((state) => state.status);
   const walletApi = useWalletStore((state) => state.walletApi);
   const rewardAddress = useWalletStore((state) => state.rewardAddress);
-  const refreshBalance = useWalletStore((state) => state.refreshBalance);
-
-  const [poolId, setPoolId] = useState("");
-  const [drepId, setDrepId] = useState("");
-
+  const [draft, setDraft] = useState<PreparedDelegation | null>(null);
+  const revision = useRef(0);
+  const client = useQueryClient();
   const accountQuery = useQuery({
     queryKey: ["dingo", "account", rewardAddress],
-    queryFn: async (): Promise<AccountResponse> => {
+    queryFn: () => delegationAccount(rewardAddress!),
+    enabled: !!rewardAddress,
+  });
+  const assertSession = (expectedRevision: number) => {
+    assertActive();
+    const current = useWalletStore.getState();
+    if (
+      current.status !== "connected" ||
+      current.walletApi !== walletApi ||
+      current.connectionId !== connection ||
+      current.rewardAddress !== rewardAddress ||
+      revision.current !== expectedRevision
+    )
+      throw new Error(
+        "Wallet connection or delegation changed. Review a new draft.",
+      );
+  };
+  const prepare = useMutation({
+    mutationFn: async (target: DelegationTarget) => {
+      if (!walletApi || !rewardAddress)
+        throw new Error("Connect a wallet first.");
+      const expected = revision.current;
       try {
-        return await blockfrostFetch<AccountResponse>(
-          `/api/v0/accounts/${rewardAddress}`,
-        );
-      } catch (err) {
-        // A stake credential Dingo has never indexed activity for 404s -
-        // that's just "not registered yet", not an error.
-        if (err instanceof BlockfrostError && err.status === 404) {
-          return { registered: false, pool_id: null, drep_id: null };
-        }
-        throw err;
+        return {
+          draft: await prepareDelegation(walletApi, rewardAddress, target, () =>
+            assertSession(expected),
+          ),
+          revision: expected,
+        };
+      } catch (error) {
+        throw governanceError(error, "Unable to prepare the delegation.");
       }
     },
-    enabled: Boolean(rewardAddress),
+    onSuccess: (result) => {
+      assertSession(result.revision);
+      setDraft(result.draft);
+    },
   });
-
-  async function submitDelegation(
-    target: DelegationTarget,
-  ): Promise<DelegateResult> {
-    if (!walletApi || !rewardAddress) {
-      throw new Error("Connect a wallet first.");
-    }
-    if (!accountQuery.isSuccess || !accountQuery.data) {
-      throw new Error(
-        "Unable to verify the stake account registration status.",
-      );
-    }
-
-    const targetId = target.id.trim();
-    if (!targetId) {
-      throw new Error(
-        target.kind === "pool" ? "Enter a stake pool ID." : "Enter a DRep ID.",
-      );
-    }
-
-    const credential = stakeCredentialFromRewardAddress(rewardAddress);
-    const drepCredential =
-      target.kind === "drep" ? credentialFromDRepId(targetId) : null;
-    const { blaze } = await getBlaze(walletApi);
-    let builder = blaze.newTransaction();
-    if (!accountQuery.data.registered) {
-      builder = builder.addRegisterStake(credential);
-    }
-    builder =
-      target.kind === "pool"
-        ? builder.addDelegation(credential, Core.PoolId(targetId))
-        : builder.addVoteDelegation(credential, drepCredential!);
-
-    const tx = await builder.complete();
-    const signed = await blaze.signTransaction(tx);
-    const txId = await blaze.submitTransaction(signed, true);
-    return { txHash: txId.toString() };
-  }
-
-  function refreshDelegation() {
-    void refreshBalance();
-    void accountQuery.refetch();
-  }
-
-  const poolMutation = useMutation<DelegateResult, Error>({
-    mutationFn: () => submitDelegation({ kind: "pool", id: poolId }),
-    onSuccess: refreshDelegation,
+  const submit = useMutation({
+    mutationFn: async () => {
+      if (!draft || !walletApi) throw new Error("Review a draft first.");
+      const expected = revision.current;
+      try {
+        return await submitDelegation(walletApi, draft, () =>
+          assertSession(expected),
+        );
+      } catch (error) {
+        throw governanceError(
+          error,
+          "Unable to sign or submit the delegation.",
+        );
+      } finally {
+        setDraft(null);
+      }
+    },
+    onSuccess: () => {
+      void useWalletStore.getState().refreshBalance();
+      void accountQuery.refetch();
+      void client.invalidateQueries({ queryKey: ["dingo", "wallet"] });
+    },
   });
-
-  const drepMutation = useMutation<DelegateResult, Error>({
-    mutationFn: () => submitDelegation({ kind: "drep", id: drepId }),
-    onSuccess: refreshDelegation,
-  });
-
-  if (status !== "connected") {
-    return <WalletWelcome purpose="delegate your stake" />;
+  const busy = prepare.isPending || submit.isPending;
+  function edit(update: () => void) {
+    revision.current++;
+    setDraft(null);
+    prepare.reset();
+    submit.reset();
+    update();
   }
-
-  if (!rewardAddress) {
-    return (
-      <div className="rounded-md border border-red-900 bg-red-950 p-6 text-center text-sm text-red-200">
-        The connected wallet did not provide a reward address, so delegation is
-        unavailable.
-      </div>
-    );
+  function review(target: DelegationTarget) {
+    if (busy) return;
+    setDraft(null);
+    submit.reset();
+    prepare.mutate(target);
   }
-
+  const connected = status === "connected";
   const registered = accountQuery.data?.registered ?? false;
   const accountUnavailable = !accountQuery.isSuccess;
-  const registerNote = accountQuery.isLoading
+  const registerNote = !connected || !rewardAddress || !accountQuery.isSuccess
     ? ""
-    : accountQuery.isError
-      ? " Unable to verify stake account registration."
-      : registered
-        ? ""
-        : " Your stake credential isn't registered yet - this will register and delegate in one transaction.";
+    : registered
+      ? ""
+      : " Your stake credential is not registered yet; the transaction will register and delegate it.";
 
   return (
     <div className="wallet-workbench delegate-workbench flex flex-col gap-6">
       <PageIntro
-        eyebrow="Stake in what comes next"
-        title="Back your builders."
+        eyebrow="Stake pools & governance"
+        title="Delegation"
+        detail="Choose a stake pool or representative. Connect only when you are ready to review and sign."
         symbol="⬡"
+        action={<WalletConnectSummary />}
       />
+      {connected && !rewardAddress && (
+        <p role="alert" className="tool-error">
+          This wallet did not provide a reward address. Delegation cannot be built.
+        </p>
+      )}
       <div>
         <p className="text-sm text-slate-500">
           {accountQuery.isLoading && "Checking current delegation…"}
-          {!accountQuery.isLoading && (
+          {accountQuery.isSuccess && (
             <>
               Currently delegated to pool{" "}
               {accountQuery.data?.pool_id ? (
@@ -167,6 +190,14 @@ export default function WalletDelegate() {
             </>
           )}
         </p>
+        {accountQuery.error && (
+          <p role="alert" className="tool-error">
+            Unable to read current delegation: {accountQuery.error.message}{" "}
+            <button type="button" onClick={() => void accountQuery.refetch()}>
+              Retry
+            </button>
+          </p>
+        )}
       </div>
 
       <div className="wallet-form-card">
@@ -176,8 +207,7 @@ export default function WalletDelegate() {
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            poolMutation.reset();
-            poolMutation.mutate();
+            review({ kind: "pool", id: poolId });
           }}
           className="flex flex-col gap-3"
         >
@@ -190,39 +220,20 @@ export default function WalletDelegate() {
             </span>
             <input
               value={poolId}
-              onChange={(event) => setPoolId(event.target.value)}
+              disabled={busy}
+              onChange={(event) => edit(() => setPoolId(event.target.value))}
               placeholder="pool1..."
               className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:border-slate-500 focus:outline-none"
             />
           </label>
           <button
             type="submit"
-            disabled={poolMutation.isPending || accountUnavailable}
+            disabled={busy || !connected || !rewardAddress || accountUnavailable}
             className="self-start rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500 disabled:opacity-50"
           >
-            {poolMutation.isPending
-              ? "Building, signing, submitting…"
-              : registered
-                ? "Delegate"
-                : "Register & delegate"}
+            {prepare.isPending ? "Building with Dingo…" : "Review delegation"}
           </button>
         </form>
-        {poolMutation.isError && (
-          <p className="mt-2 text-sm text-red-400">
-            {poolMutation.error.message}
-          </p>
-        )}
-        {poolMutation.isSuccess && (
-          <p className="mt-2 text-sm text-emerald-400">
-            Submitted.{" "}
-            <Link
-              to={`/explorer/tx/${poolMutation.data.txHash}`}
-              className="underline"
-            >
-              View in Explorer
-            </Link>
-          </p>
-        )}
       </div>
 
       <div className="wallet-form-card">
@@ -232,8 +243,7 @@ export default function WalletDelegate() {
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            drepMutation.reset();
-            drepMutation.mutate();
+            review({ kind: "drep", id: drepId });
           }}
           className="flex flex-col gap-3"
         >
@@ -246,40 +256,91 @@ export default function WalletDelegate() {
             </span>
             <input
               value={drepId}
-              onChange={(event) => setDrepId(event.target.value)}
+              disabled={busy}
+              onChange={(event) => edit(() => setDrepId(event.target.value))}
               placeholder="drep1..."
               className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:border-slate-500 focus:outline-none"
             />
           </label>
           <button
             type="submit"
-            disabled={drepMutation.isPending || accountUnavailable}
+            disabled={busy || !connected || !rewardAddress || accountUnavailable}
             className="self-start rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500 disabled:opacity-50"
           >
-            {drepMutation.isPending
-              ? "Building, signing, submitting…"
-              : registered
-                ? "Delegate"
-                : "Register & delegate"}
+            {prepare.isPending ? "Building with Dingo…" : "Review delegation"}
           </button>
         </form>
-        {drepMutation.isError && (
-          <p className="mt-2 text-sm text-red-400">
-            {drepMutation.error.message}
-          </p>
-        )}
-        {drepMutation.isSuccess && (
-          <p className="mt-2 text-sm text-emerald-400">
-            Submitted.{" "}
-            <Link
-              to={`/explorer/tx/${drepMutation.data.txHash}`}
-              className="underline"
-            >
-              View in Explorer
-            </Link>
-          </p>
-        )}
       </div>
+      {draft && (
+        <section
+          className="tool-review tool-transaction"
+          aria-label="Delegation review"
+        >
+          <span className="eyebrow">Unsigned delegation · Preview</span>
+          <h3>
+            {draft.target.kind === "pool"
+              ? "Stake pool delegation"
+              : "DRep vote delegation"}
+          </h3>
+          <dl className="tool-facts">
+            <div>
+              <dt>Target</dt>
+              <dd>
+                <HashLink kind={draft.target.kind} id={draft.target.id} full />
+              </dd>
+            </div>
+            <div>
+              <dt>Stake account</dt>
+              <dd>
+                <HashLink kind="account" id={draft.address} full />
+              </dd>
+            </div>
+            <div>
+              <dt>Network fee</dt>
+              <dd>{formatAda(draft.tx.body().fee())}</dd>
+            </div>
+            <div>
+              <dt>Registration deposit</dt>
+              <dd>{formatAda(draft.deposit)}</dd>
+            </div>
+            <div>
+              <dt>Stake registration</dt>
+              <dd>
+                {draft.registered
+                  ? "Already registered"
+                  : "Included in this transaction"}
+              </dd>
+            </div>
+          </dl>
+          <p>
+            Your wallet approves this fixed draft. Edits require a new review.
+            Submission goes through Dingo.
+          </p>
+          <div className="tool-button-row">
+            <button
+              className="tool-primary"
+              disabled={busy}
+              onClick={() => submit.mutate()}
+            >
+              {submit.isPending ? "Waiting for wallet…" : "Sign & submit"}
+            </button>
+            <button disabled={busy} onClick={() => edit(() => {})}>
+              Discard draft
+            </button>
+          </div>
+        </section>
+      )}
+      {(prepare.error || submit.error) && (
+        <p className="tool-error" role="alert">
+          {(prepare.error || submit.error)!.message}
+        </p>
+      )}
+      {submit.data && (
+        <p role="status">
+          Submitted to Dingo.{" "}
+          <Link to={`/explorer/tx/${submit.data}`}>View transaction →</Link>
+        </p>
+      )}
     </div>
   );
 }

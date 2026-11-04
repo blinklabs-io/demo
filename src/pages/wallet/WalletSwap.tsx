@@ -1,3 +1,4 @@
+import { useDraftGuard } from "../../lib/useDraftGuard";
 import "./wallet-swap.css";
 import {
   buildV4Swap,
@@ -111,6 +112,7 @@ export default function WalletSwap() {
   );
 }
 function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
+  const assertActive = useDraftGuard("v3-swap");
   const status = useWalletStore((state) => state.status);
   const walletApi = useWalletStore((state) => state.walletApi);
   const connectionId = useWalletStore((state) => state.connectionId);
@@ -315,13 +317,69 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
     }
   }
 
-  const swapMutation = useMutation<SwapResult, Error, number>({
+  const changeAddress = useWalletStore((s) => s.changeAddress);
+  const draftKey = JSON.stringify([
+    effectiveIdent,
+    amount,
+    direction,
+    slippagePercent,
+    connectionId,
+    changeAddress,
+  ]);
+  const currentKey = useRef(draftKey);
+  const revision = useRef(0);
+  useLayoutEffect(() => {
+    if (currentKey.current !== draftKey) {
+      revision.current++;
+      currentKey.current = draftKey;
+    }
+  }, [draftKey]);
+  type Review = {
+    built: Awaited<ReturnType<typeof buildSwapOrder>>;
+    key: string;
+    revision: number;
+    connectionId: number;
+    received: IPoolDataAsset;
+  };
+  const [review, setReview] = useState<Review | null>(null);
+  const [reviewContext, setReviewContext] = useState(draftKey);
+  if (reviewContext !== draftKey) {
+    setReviewContext(draftKey);
+    setReview(null);
+  }
+  const prepared =
+    review?.key === draftKey && review.connectionId === connectionId
+      ? review
+      : null;
+  function assertReview(request: {
+    key: string;
+    revision: number;
+    connectionId: number;
+  }) {
+    assertActive();
+    const current = useWalletStore.getState();
+    if (
+      current.status !== "connected" ||
+      current.walletApi !== walletApi ||
+      current.connectionId !== request.connectionId ||
+      currentKey.current !== request.key ||
+      revision.current !== request.revision
+    )
+      throw new Error(
+        "Wallet connection or order changed. Review a new draft.",
+      );
+  }
+  const prepare = useMutation({
     onMutate: () => onBusy(true),
     onSettled: () => onBusy(false),
-    mutationFn: async (originatingConnection) => {
-      if (!connected || !walletApi || connectionId !== originatingConnection) {
-        throw new Error("Connect a wallet first.");
-      }
+    mutationFn: async (request: {
+      key: string;
+      revision: number;
+      connectionId: number;
+    }) => {
+      assertReview(request);
+      if (!walletApi || !received) throw new Error("Connect a wallet first.");
+      const assertCurrent = () => assertReview(request);
       if (!pool || poolDetailQuery.isError) {
         throw new Error("Pool is still loading.");
       }
@@ -334,13 +392,8 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
         throw new Error("This token does not have known decimal metadata.");
       }
       await refreshBalance();
+      assertCurrent();
       const current = useWalletStore.getState();
-      if (
-        current.walletApi !== walletApi ||
-        current.status !== "connected" ||
-        current.connectionId !== connectionId
-      )
-        throw new Error("Wallet connection changed. Review the order again.");
       const currentBalance =
         offered.assetId === ADA_METADATA.assetId
           ? current.balanceLovelace
@@ -359,6 +412,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           "Insufficient or unavailable wallet balance. Refresh your wallet and try again.",
         );
       const { blaze } = await getBlaze(walletApi);
+      assertCurrent();
       const built = await buildSwapOrder({
         blaze,
         queryProvider,
@@ -366,25 +420,40 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
         amount,
         direction,
         slippagePercent,
+        assertConnection: assertCurrent,
       });
-      const txHash = await built.signAndSubmit();
-      return { txHash, connectionId: originatingConnection };
+
+      assertCurrent();
+      return { built, ...request, received };
+    },
+    onSuccess: setReview,
+  });
+  const swapMutation = useMutation<SwapResult, Error, Review>({
+    onMutate: () => onBusy(true),
+    onSettled: () => onBusy(false),
+    mutationFn: async (request) => {
+      assertReview(request);
+      try {
+        return {
+          txHash: await request.built.signAndSubmit(),
+          connectionId: request.connectionId,
+        };
+      } finally {
+        setReview(null);
+      }
     },
     onSuccess: (result) => {
-      const current = useWalletStore.getState();
-      if (
-        current.status === "connected" &&
-        current.connectionId === result.connectionId
-      )
+      if (useWalletStore.getState().connectionId === result.connectionId)
         void refreshBalance();
     },
   });
+  const busy = prepare.isPending || swapMutation.isPending;
 
   return (
     <div className="wallet-workbench swap-workbench">
       <PageIntro
         eyebrow="SundaeSwap V3 · on Dingo"
-        title="Make the exchange."
+        title="Asset swaps"
         symbol="⇄"
       />
       <p className="mb-4 text-sm text-slate-500">
@@ -638,26 +707,28 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
             </select>
           </label>
 
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-slate-800 p-3 text-sm">
-            <dt className="text-slate-500">Spot price</dt>
-            <dd className="text-slate-200">{spotPrice}</dd>
-            <dt className="text-slate-500">Receive (est.)</dt>
-            <dd className="text-slate-200">{estimatedReceive}</dd>
-            <dt className="text-slate-500">Minimum received</dt>
-            <dd className="text-emerald-300">{minimumReceive}</dd>
-            <dt className="text-slate-500">Slippage tolerance</dt>
-            <dd>{slippagePercent}%</dd>
-            <dt className="text-slate-500">Price impact</dt>
-            <dd className="text-slate-200">{priceImpact}</dd>
-            {pool && (
-              <>
-                <dt className="text-slate-500">LP fee</dt>
-                <dd className="text-slate-200">
-                  {(pool.currentFee * 100).toFixed(3)}%
-                </dd>
-              </>
-            )}
-          </dl>
+          {!prepared && (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-slate-800 p-3 text-sm">
+              <dt className="text-slate-500">Spot price</dt>
+              <dd className="text-slate-200">{spotPrice}</dd>
+              <dt className="text-slate-500">Receive (est.)</dt>
+              <dd className="text-slate-200">{estimatedReceive}</dd>
+              <dt className="text-slate-500">Minimum received</dt>
+              <dd className="text-emerald-300">{minimumReceive}</dd>
+              <dt className="text-slate-500">Slippage tolerance</dt>
+              <dd>{slippagePercent}%</dd>
+              <dt className="text-slate-500">Price impact</dt>
+              <dd className="text-slate-200">{priceImpact}</dd>
+              {pool && (
+                <>
+                  <dt className="text-slate-500">LP fee</dt>
+                  <dd className="text-slate-200">
+                    {(pool.currentFee * 100).toFixed(3)}%
+                  </dd>
+                </>
+              )}
+            </dl>
+          )}
 
           <p className="swap-chart-caption">
             The minimum received is encoded in your order. Slippage limits
@@ -717,27 +788,92 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
               (parsedAmount !== null && parsedAmount > available) ||
               !parsedAmount ||
               parsedAmount <= 0n ||
-              swapMutation.isPending
+              busy
             }
             onClick={() => {
               swapMutation.reset();
-              swapMutation.mutate(connectionId);
+              setReview(null);
+              prepare.mutate({
+                key: draftKey,
+                revision: revision.current,
+                connectionId,
+              });
             }}
             className="rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500 disabled:opacity-50"
           >
-            {swapMutation.isPending
-              ? "Building, signing, submitting…"
+            {prepare.isPending
+              ? "Building with Dingo…"
               : !connected
                 ? "Connect wallet to trade"
                 : !networkCheck.isSuccess || !referencesCheck.isSuccess
                   ? "Order checks pending"
                   : !pool
                     ? "Loading pool…"
-                    : "Sign & submit swap order"}
+                    : prepared
+                      ? "Rebuild unsigned order"
+                      : "Build & review swap order"}
           </button>
 
+          {prepared && (
+            <section
+              className="tool-review tool-transaction"
+              aria-label="Swap order review"
+            >
+              <span className="eyebrow">Unsigned order · SundaeSwap V3</span>
+              <h3>Review the fixed order.</h3>
+              <dl className="tool-facts">
+                <div>
+                  <dt>Minimum received</dt>
+                  <dd>
+                    {formatAssetAmount(
+                      prepared.built.minimumReceived,
+                      prepared.received.decimals ?? 0,
+                    )}{" "}
+                    {labelFor(prepared.received)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Network fee</dt>
+                  <dd>{formatAssetAmount(prepared.built.txFee, 6)} ADA</dd>
+                </div>
+                <div>
+                  <dt>Order deposit</dt>
+                  <dd>{formatAssetAmount(prepared.built.deposit, 6)} ADA</dd>
+                </div>
+                <div>
+                  <dt>Scooper fee</dt>
+                  <dd>{formatAssetAmount(prepared.built.scooperFee, 6)} ADA</dd>
+                </div>
+              </dl>
+              <p>
+                Submission creates a SundaeSwap V3 order through Dingo.
+                Execution by a scooper is separate. Edits require a new draft.
+              </p>
+              <div className="tool-button-row">
+                <button
+                  className="tool-primary"
+                  disabled={busy}
+                  onClick={() => swapMutation.mutate(prepared)}
+                >
+                  {swapMutation.isPending
+                    ? "Waiting for wallet…"
+                    : "Sign & submit reviewed order"}
+                </button>
+                <button disabled={busy} onClick={() => setReview(null)}>
+                  Discard draft
+                </button>
+              </div>
+            </section>
+          )}
+          {prepare.variables?.connectionId === connectionId &&
+            prepare.error && (
+              <p role="alert" className="tool-error">
+                {prepare.error.message}
+              </p>
+            )}
+
           {connected &&
-            swapMutation.variables === connectionId &&
+            swapMutation.variables?.connectionId === connectionId &&
             swapMutation.isError && (
               <p className="text-sm text-red-400">
                 {swapMutation.error.message}
@@ -763,6 +899,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
 }
 
 function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
+  const assertActive = useDraftGuard("v4-swap");
   const wallet = useWalletStore();
   const [selected, setSelected] = useState("");
   const [offerIndex, setOfferIndex] = useState(0);
@@ -951,6 +1088,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
     mutationFn: async (request) => {
       const api = wallet.walletApi;
       const assert = () => {
+        assertActive();
         const current = useWalletStore.getState();
         if (
           current.status !== "connected" ||
@@ -1061,7 +1199,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
     <div className="wallet-workbench swap-workbench swap-v4">
       <PageIntro
         eyebrow="SundaeSwap V4 · on Dingo"
-        title="More ways to exchange."
+        title="Asset swaps"
         symbol="⇄"
       />
       <section className="swap-venue-card" aria-label="V4 execution venue">

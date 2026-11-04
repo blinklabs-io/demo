@@ -31,8 +31,7 @@ function Distribution({
   supply: bigint;
 }) {
   const compact = useCompactVisual();
-  const mapWidth = compact ? 600 : 1000,
-    mapHeight = compact ? 600 : 480;
+  const mapWidth = compact ? 600 : 1000;
   const uid = useId(),
     [history, setHistory] = useState(false);
   const holders = useInfiniteQuery({
@@ -96,6 +95,7 @@ function Distribution({
       color: "#42576c",
       href: "",
     });
+  const mapHeight = entries.length === 1 ? 180 : compact ? 600 : 480;
   const tiles = treemap(entries, mapWidth, mapHeight),
     mintRows = events.data?.pages.flat() ?? [],
     maximum = mintRows.reduce(

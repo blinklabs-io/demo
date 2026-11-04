@@ -27,7 +27,12 @@ export default function WalletHome() {
   const status = useWalletStore((state) => state.status);
   const changeAddress = useWalletStore((state) => state.changeAddress);
   if (status !== "connected" || !changeAddress)
-    return <WalletWelcome purpose="explore your portfolio" />;
+    return (
+      <div className="wallet-workbench">
+        <PageIntro eyebrow="Wallet workspace" title="Portfolio" symbol="▣" />
+        <WalletWelcome purpose="explore your portfolio" />
+      </div>
+    );
   return <ConnectedWallet key={changeAddress} changeAddress={changeAddress} />;
 }
 
@@ -166,7 +171,7 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
       <PageIntro
         action={<WalletConnectSummary />}
         eyebrow="Connected through Dingo"
-        title="Your corner of the chain."
+        title="Portfolio"
         symbol="▣"
       />
       <section className="wallet-balance-hero">
@@ -230,8 +235,8 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
       <WalletRewards address={stakeAddress} />
       {stakeAddress && (
         <Panel title="Your delegation">
-          <QueryState isLoading={account.isLoading} error={account.error}>
-            {account.isSuccess && (
+          <QueryState hasData={account.data !== undefined} isLoading={account.isLoading} error={account.error}>
+            {account.data !== undefined && (
               <div className="wallet-role-grid">
                 <section className="wallet-role-card">
                   <span className="wallet-role-icon" aria-hidden="true">

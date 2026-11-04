@@ -1,3 +1,4 @@
+import { assertWalletSession } from "../dingo/walletSession";
 import { buildCip25, type Cip25Draft } from "./cip25";
 import { Core } from "@blaze-cardano/sdk";
 import type { Cip30WalletApi } from "../dingo/cip30";
@@ -586,9 +587,9 @@ export async function submitToolTransaction(
     )
       throw new Error("DRep registration changed. Build a new draft.");
   }
-  assertConnection();
+  await assertWalletSession(api, assertConnection);
   const signed = await draft.blaze.signTransaction(draft.tx);
-  assertConnection();
+  await assertWalletSession(api, assertConnection);
   if (signed.getId() !== draft.tx.getId())
     throw new Error("Wallet changed the transaction body.");
   const keys = [

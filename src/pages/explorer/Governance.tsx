@@ -1,3 +1,4 @@
+import { governanceName } from "../../lib/governanceMetadata";
 import { useEffect } from "react";
 import { HolderResults } from "../../components/explorer/HolderResults";
 import { HolderAnswer } from "../../components/explorer/HolderAnswer";
@@ -52,13 +53,13 @@ function ProposalCard({ row }: { row: ProposalSummary }) {
   const metadata = useQuery({
     queryKey: ["dingo", "proposal", row.id, "metadata"],
     queryFn: () =>
-      blockfrostFetch<{ json_metadata?: { body?: { title?: unknown } } }>(
+      blockfrostFetch<{ json_metadata?: unknown }>(
         `/api/v0/governance/proposals/${encodeURIComponent(row.id)}/metadata`,
       ),
     staleTime: 300_000,
     retry: false,
   });
-  const title = metadata.data?.json_metadata?.body?.title;
+  const title = governanceName(metadata.data?.json_metadata);
   return (
     <div className={`proposal-card proposal-${row.governance_type}`}>
       <span className="proposal-emblem" aria-hidden="true">
@@ -76,9 +77,7 @@ function ProposalCard({ row }: { row: ProposalSummary }) {
         to={`/explorer/proposal/${encodeURIComponent(row.id)}`}
         className="text-sky-400 hover:underline"
       >
-        {typeof title === "string" && title.trim()
-          ? title
-          : row.governance_type.replaceAll("_", " ")}{" "}
+        {title ?? row.governance_type.replaceAll("_", " ")}{" "}
         <span aria-hidden="true">↗</span>
       </Link>
       <span className="status-badge">
@@ -99,7 +98,7 @@ export default function Governance() {
     <div className="flex flex-col gap-4">
       <PageIntro
         eyebrow="The next chapter is on chain"
-        title="Decisions that matter."
+        title="Governance"
         detail="Proposals, votes, and the people entrusted with the protocol."
         symbol="§"
       />
@@ -142,7 +141,7 @@ export default function Governance() {
         />
       </Panel>
       <Panel title="Constitutional committee">
-        <QueryState isLoading={committee.isLoading} error={committee.error}>
+        <QueryState hasData={committee.data !== undefined} isLoading={committee.isLoading} error={committee.error}>
           {committee.data && (
             <>
               <div className="committee-cockpit">
@@ -236,7 +235,7 @@ export function ProposalDetail() {
       </Link>
       <PageIntro
         eyebrow="On-chain governance"
-        title="A proposal for the network."
+        title="Governance action"
         symbol="§"
       />
       <Panel
@@ -249,7 +248,7 @@ export function ProposalDetail() {
           )
         }
       >
-        <QueryState
+        <QueryState hasData={proposal.data !== undefined}
           isLoading={proposal.isLoading}
           error={proposal.error}
           notFoundLabel="Proposal not found."

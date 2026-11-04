@@ -23,7 +23,7 @@ export default function MempoolFeed() {
     <div className="flex flex-col gap-4">
       <PageIntro
         eyebrow="Before the next block"
-        title="The waiting room."
+        title="Mempool"
         detail="Live transaction arrivals, streamed directly from Dingo."
         symbol="≋"
       />

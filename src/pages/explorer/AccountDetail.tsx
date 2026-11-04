@@ -1,3 +1,4 @@
+import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
 import { StakeJourney } from "../../components/chain/StakeJourney";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { compactAda } from "../../lib/visualFormat";
@@ -67,7 +68,7 @@ export default function AccountDetail() {
           </>
         }
       >
-        <QueryState
+        <QueryState hasData={summaryQuery.data !== undefined}
           isLoading={summaryQuery.isLoading}
           error={summaryQuery.error}
           notFoundLabel="Stake account not found."
@@ -190,8 +191,7 @@ export default function AccountDetail() {
 
       {summaryQuery.data && <StakeJourney stakeAddress={stakeAddress!} />}
 
-      <details className="detail-disclosure">
-        <summary>UTxOs</summary>
+      <LazyDisclosure key={`${stakeAddress}:utxos`} title="UTxOs">
         <Panel title="UTxOs">
           <PaginatedList<AccountUtxoRow>
             queryKey={["dingo", "account", stakeAddress, "utxos"]}
@@ -209,10 +209,9 @@ export default function AccountDetail() {
             )}
           />
         </Panel>
-      </details>
+      </LazyDisclosure>
 
-      <details className="detail-disclosure">
-        <summary>Associated addresses</summary>
+      <LazyDisclosure key={`${stakeAddress}:addresses`} title="Associated addresses">
         <Panel title="Associated addresses">
           <PaginatedList<AssociatedAddressRow>
             queryKey={["dingo", "account", stakeAddress, "addresses"]}
@@ -226,7 +225,7 @@ export default function AccountDetail() {
             )}
           />
         </Panel>
-      </details>
+      </LazyDisclosure>
 
       <Panel title="Transactions">
         <PaginatedList<AccountTransactionRow>

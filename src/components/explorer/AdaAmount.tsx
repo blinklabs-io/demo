@@ -27,29 +27,50 @@ function assetName(unit: string): string {
   }
 }
 
-export function AdaAmount({ amount }: { amount: AmountEntry[] }) {
+function AssetChips({ assets }: { assets: AmountEntry[] }) {
+  return (
+    <span className="asset-chips">
+      {assets.map((asset) => (
+        <Link
+          key={asset.unit}
+          to={`/explorer/asset/${asset.unit}`}
+          title={`${asset.unit}: ${asset.quantity} raw units`}
+          aria-label={`Asset ${asset.unit}: ${asset.quantity} raw units`}
+        >
+          <span>{assetName(asset.unit)}</span>
+          <strong>{BigInt(asset.quantity).toLocaleString()}</strong>
+        </Link>
+      ))}
+    </span>
+  );
+}
+export function AdaAmount({
+  amount,
+  assetLimit,
+}: {
+  amount: AmountEntry[];
+  assetLimit?: number;
+}) {
   const lovelace = amount.find((entry) => entry.unit === "lovelace");
   const assets = amount.filter((entry) => entry.unit !== "lovelace");
+  const visible = assetLimit === undefined ? assets : assets.slice(0, assetLimit);
+  const remaining = assets.slice(visible.length);
   return (
-    <span className="amount-bundle">
-      <span className="ada-quantity">
-        {lovelace ? formatAda(BigInt(lovelace.quantity)) : formatAda(0n)}
-      </span>
-      {assets.length > 0 && (
-        <span className="asset-chips">
-          {assets.map((asset) => (
-            <Link
-              key={asset.unit}
-              to={`/explorer/asset/${asset.unit}`}
-              title={`${asset.unit}: ${asset.quantity} raw units`}
-              aria-label={`Asset ${asset.unit}: ${asset.quantity} raw units`}
-            >
-              <span>{assetName(asset.unit)}</span>
-              <strong>{BigInt(asset.quantity).toLocaleString()}</strong>
-            </Link>
-          ))}
+    <>
+      <span className="amount-bundle">
+        <span className="ada-quantity">
+          {lovelace ? formatAda(BigInt(lovelace.quantity)) : formatAda(0n)}
         </span>
+        {visible.length > 0 && <AssetChips assets={visible} />}
+      </span>
+      {remaining.length > 0 && (
+        <details className="mt-2 text-xs text-slate-400">
+          <summary className="cursor-pointer">
+            {remaining.length} more native assets · {assets.length} total
+          </summary>
+          <AssetChips assets={remaining} />
+        </details>
       )}
-    </span>
+    </>
   );
 }

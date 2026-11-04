@@ -1,3 +1,4 @@
+import { creationTools, type CreationToolId } from "../lib/creationTools";
 import { ChainSnapshot } from "../components/explorer/ChainSnapshot";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -5,21 +6,25 @@ import { type NodeHealth, useNodeHealth } from "../lib/dingo/nodeHealth";
 import { useMempoolStore } from "../stores/mempoolStore";
 import { BlockMosaic } from "../components/chain/BlockMosaic";
 
+function creationExperience(id: CreationToolId, art: string, tag: string, category = "Create") {
+  const tool = creationTools.find((tool) => tool.id === id)!;
+  return {
+    to: tool.to,
+    title: tool.name,
+    category,
+    symbol: tool.icon,
+    description: tool.description,
+    tag,
+    art,
+    action: `Open ${tool.name.toLowerCase()}`,
+  };
+}
+
 const experiences = [
-  {
-    to: "/wallet/tools/transactions",
-    title: "Build it. Take it anywhere.",
-    category: "Create",
-    symbol: "⌁",
-    description:
-      "Compose unsigned payments without an extension. Inspect CBOR, add a wallet witness, and export to cardano-cli.",
-    tag: "Transaction studio · No wallet needed",
-    art: "flow",
-    action: "Build a transaction",
-  },
+  creationExperience("transactions", "flow", "Compose · Inspect · Export"),
   {
     to: "/participate",
-    title: "Make your voice count",
+    title: "Participation",
     category: "Participate",
     symbol: "◉",
     description:
@@ -28,20 +33,10 @@ const experiences = [
     art: "voice",
     action: "Join the conversation",
   },
-  {
-    to: "/wallet/tools/mint",
-    title: "Make something yours",
-    category: "Create",
-    symbol: "✦",
-    description:
-      "Give native tokens artwork, metadata, and a minting policy. Create and burn assets from your wallet.",
-    tag: "CIP-25 · Token studio",
-    art: "mint",
-    action: "Open token studio",
-  },
+  creationExperience("mint", "mint", "CIP-25 · Native assets"),
   {
     to: "/wallet/swap",
-    title: "Trade on the chain",
+    title: "Asset swaps",
     category: "Use",
     symbol: "⇄",
     description:
@@ -52,7 +47,7 @@ const experiences = [
   },
   {
     to: "/explorer/mempool",
-    title: "Watch value move",
+    title: "Live mempool",
     category: "Explore",
     symbol: "≋",
     description:
@@ -61,42 +56,12 @@ const experiences = [
     art: "flow",
     action: "Follow the flow",
   },
-  {
-    to: "/wallet/tools/proof",
-    title: "Prove it existed",
-    category: "Create",
-    symbol: "⌁",
-    description:
-      "Hash a document locally and anchor its fingerprint on chain. Your file stays with you.",
-    tag: "Document proofs",
-    art: "proof",
-    action: "Create or verify a proof",
-  },
-  {
-    to: "/wallet/tools/utxos",
-    title: "Shape your wallet",
-    category: "Use",
-    symbol: "◫",
-    description:
-      "See your UTxOs as a constellation. Consolidate scattered funds or split spending outputs.",
-    tag: "UTxO workshop",
-    art: "utxo",
-    action: "Open the workshop",
-  },
-  {
-    to: "/wallet/tools/batch",
-    title: "One transaction. Many people.",
-    category: "Use",
-    symbol: "↗",
-    description:
-      "Build a batch payment to multiple recipients and review every output before signing.",
-    tag: "Batch payments",
-    art: "flow",
-    action: "Build a payment",
-  },
+  creationExperience("proof", "proof", "Local hashing · On-chain proofs"),
+  creationExperience("utxos", "utxo", "Consolidate · Split", "Use"),
+  creationExperience("batch", "flow", "Multiple recipients · CSV import", "Use"),
   {
     to: "/explorer/network",
-    title: "Read the network’s pulse",
+    title: "Network operations",
     category: "Explore",
     symbol: "◎",
     description:
@@ -179,12 +144,13 @@ export default function Experiences() {
           </h1>
           <p>
             A Cardano node is an app platform. Trade, create, participate, and
-            follow the chain in motion. These working apps show what you can
-            build with Dingo’s APIs. No wallet needed to explore.
+            follow the chain in motion. This workspace shows how Dingo services dApp development and
+            operation. No wallet is needed to explore; connect only when you
+            need to sign.
           </p>
           <div className="experience-actions">
             <a className="experience-primary" href="#experiences">
-              Find your next experiment ↓
+              Explore Dingo capabilities ↓
             </a>
             <a href="#live-block">See a block come alive ↓</a>
           </div>
@@ -248,7 +214,7 @@ export default function Experiences() {
         <header className="experience-section-heading">
           <div>
             <span className="eyebrow">Real transactions. Real chain data.</span>
-            <h2>Pick a possibility.</h2>
+            <h2>Dingo capabilities.</h2>
           </div>
           <div
             className="experience-filters"
@@ -349,7 +315,7 @@ export default function Experiences() {
         )}
       </section>
       <footer className="experience-footnote">
-        <strong>Built on Dingo. Built for trying things.</strong>
+        <strong>Built with Dingo. From development to operation.</strong>
         <p>
           Preview is a public test network. Transactions use test ADA. Your
           wallet signs; Dingo provides chain data and submits transactions.

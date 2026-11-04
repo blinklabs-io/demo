@@ -1,3 +1,4 @@
+import { activityLabels, transactionActivity } from "../chain/transactionActivity";
 import { useMemo } from "react";
 import { Core } from "@blaze-cardano/sdk";
 
@@ -171,27 +172,8 @@ export function inspectChainTransaction(cbor: string, hash: string) {
   };
 }
 export type TransactionInspection = ReturnType<typeof inspectChainTransaction>;
-const governanceCertificates = new Set<Core.CertificateType>([
-  ...Core.VoteDelegationCredentialCertificateTypes,
-  Core.CertificateType.AuthorizeCommitteeHot,
-  Core.CertificateType.ResignCommitteeCold,
-  Core.CertificateType.RegisterDelegateRepresentative,
-  Core.CertificateType.UnregisterDelegateRepresentative,
-  Core.CertificateType.UpdateDelegateRepresentative,
-]);
 export function transactionKind(inspection: TransactionInspection) {
-  const { body, redeemers, certs } = inspection;
-  if (
-    body.votingProcedures() ||
-    body.proposalProcedures() ||
-    certs.some((cert) => governanceCertificates.has(cert.__typename))
-  )
-    return "Governance";
-  if (body.mint()?.size) return "Asset creation & burn";
-  if (redeemers.length) return "Smart contract interaction";
-  if (certs.length) return "Stake & identity";
-  if (body.withdrawals()?.size) return "Reward withdrawal";
-  return "Value transfer";
+  return activityLabels[transactionActivity(inspection.tx)];
 }
 export function readableName(name: string) {
   return name.replace(/([a-z])([A-Z])/g, "$1 $2").replaceAll("_", " ");

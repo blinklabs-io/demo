@@ -1,7 +1,8 @@
+import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
-import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
+import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
 import { walletStakeAccount } from "../../lib/dingo/wallet";
 import {
   prepareRewardWithdrawal,
@@ -30,6 +31,7 @@ function RewardsForm({
   address?: string;
   connectionId: number;
 }) {
+  const assertActive = useDraftGuard("reward-withdrawal");
   const api = useWalletStore((state) => state.walletApi);
   const queryClient = useQueryClient();
   const [prepared, setPrepared] = useState<PreparedWithdrawal | null>(null);
@@ -41,6 +43,7 @@ function RewardsForm({
     refetchInterval: 30_000,
   });
   function assertConnection() {
+    assertActive();
     const current = useWalletStore.getState();
     if (
       current.status !== "connected" ||
@@ -91,22 +94,7 @@ function RewardsForm({
   });
   const confirmation = useQuery({
     queryKey: ["dingo", "reward-withdrawal", submit.data],
-    queryFn: async () => {
-      try {
-        const tx = await blockfrostFetch<{ hash: string; block: string }>(
-          `/api/v0/txs/${submit.data}`,
-        );
-        if (tx.hash !== submit.data || !tx.block)
-          throw new Error(
-            "Dingo did not return the submitted transaction's confirmation.",
-          );
-        return tx;
-      } catch (error) {
-        if (error instanceof BlockfrostError && error.status === 404)
-          return null;
-        throw error;
-      }
-    },
+    queryFn: ({ signal }) => readTransactionConfirmation(submit.data!, signal),
     enabled: Boolean(submit.data),
     retry: false,
     refetchInterval: (query) =>

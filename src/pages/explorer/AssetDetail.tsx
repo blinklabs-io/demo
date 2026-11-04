@@ -38,7 +38,7 @@ export default function AssetDetail() {
         symbol={<ChainMark value={assetId ?? ""} />}
       />
       <Panel title="Asset">
-        <QueryState
+        <QueryState hasData={assetQuery.data !== undefined}
           isLoading={assetQuery.isLoading}
           error={assetQuery.error}
           notFoundLabel="Asset not found."

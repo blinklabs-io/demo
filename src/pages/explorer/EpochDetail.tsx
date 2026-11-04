@@ -51,10 +51,6 @@ export default function EpochDetail() {
       !Number.isSafeInteger(Number(epoch)) ||
       Number(epoch) < 0);
   const now = useNow(15_000);
-  const path = epoch
-    ? `/api/v0/epochs/${epoch}/parameters`
-    : "/api/v0/epochs/latest/parameters";
-
   const tipQuery = useQuery({
     queryKey: ["dingo", "epoch-clock-tip"],
     queryFn: () =>
@@ -116,9 +112,13 @@ export default function EpochDetail() {
   });
 
   const paramsQuery = useQuery({
-    queryKey: ["dingo", "epoch", epoch ?? "latest", "parameters"],
-    queryFn: () => blockfrostFetch<ProtocolParamsResponse>(path),
-    enabled: !invalidEpoch,
+    queryKey: ["dingo", "epoch", String(selectedEpoch), "parameters"],
+    queryFn: ({ signal }) =>
+      blockfrostFetch<ProtocolParamsResponse>(
+        `/api/v0/epochs/${selectedEpoch}/parameters`,
+        { signal },
+      ),
+    enabled: !invalidEpoch && selectedEpoch !== undefined,
   });
 
   if (invalidEpoch)
@@ -136,7 +136,7 @@ export default function EpochDetail() {
     <div className="flex flex-col gap-4">
       <PageIntro
         eyebrow="The network's heartbeat"
-        title={epoch ? `Epoch ${epoch}` : "Against the clock."}
+        title={selectedEpoch !== undefined ? `Epoch ${selectedEpoch}` : "Epoch"}
         detail="One cycle. Thousands of blocks. A network moving forward."
         symbol="◷"
       />
@@ -147,9 +147,9 @@ export default function EpochDetail() {
             : "Epoch timing"
         }
       >
-        <QueryState
-          isLoading={tipQuery.isLoading || erasQuery.isLoading}
-          error={tipQuery.error || erasQuery.error}
+        <QueryState hasData={Boolean(era && selectedEpoch !== undefined)}
+          isLoading={(epoch === undefined && tipQuery.isLoading) || erasQuery.isLoading}
+          error={(epoch === undefined ? tipQuery.error : null) || erasQuery.error}
         >
           {progress !== undefined &&
           starts !== undefined &&
@@ -210,7 +210,7 @@ export default function EpochDetail() {
             parameters are available independently.
           </div>
         ) : (
-          <QueryState
+          <QueryState hasData={epochQuery.data !== undefined}
             isLoading={false}
             error={epochQuery.error}
             notFoundLabel="Epoch not found."
@@ -255,7 +255,7 @@ export default function EpochDetail() {
       )}
 
       <Panel title="Protocol parameters">
-        <QueryState isLoading={paramsQuery.isLoading} error={paramsQuery.error}>
+        <QueryState hasData={paramsQuery.data !== undefined} isLoading={paramsQuery.isLoading} error={paramsQuery.error}>
           {paramsQuery.data && (
             <div>
               <Field

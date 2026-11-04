@@ -4,7 +4,7 @@ import { HashLink } from "../../components/explorer/HashLink";
 import { shortenHash } from "../../lib/format";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { Metric, Timeline, BarChart } from "../../components/explorer/Visuals";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
@@ -52,9 +52,14 @@ export default function DRepDetail() {
           "Delegated representative"
         }
         symbol="◈"
+        action={drepId && drepQuery.isSuccess && !drepQuery.data.retired && (
+          <Link className="experience-primary" to={`/wallet/delegate?drep=${encodeURIComponent(drepId)}`}>
+            Delegate voting power
+          </Link>
+        )}
       />
       <Panel title="DRep">
-        <QueryState
+        <QueryState hasData={drepQuery.data !== undefined}
           isLoading={drepQuery.isLoading}
           error={drepQuery.error}
           notFoundLabel="DRep not found."

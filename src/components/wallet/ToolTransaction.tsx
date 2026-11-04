@@ -1,3 +1,4 @@
+import { useDraftGuard } from "../../lib/useDraftGuard";
 import { metadataJson } from "../../lib/tools/cip25";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -6,7 +7,7 @@ import { useWalletStore } from "../../stores/walletStore";
 import { WalletConnectSummary } from "../layout/WalletConnectSummary";
 import { CopyButton } from "../explorer/CopyButton";
 import { governanceError } from "../../lib/dingo/governanceVote";
-import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
+import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
 import {
   prepareToolTransaction,
   submitToolTransaction,
@@ -29,10 +30,12 @@ export function ToolTransaction({
 }) {
   const api = useWalletStore((s) => s.walletApi),
     connectionId = useWalletStore((s) => s.connectionId);
+  const assertActive = useDraftGuard("tool-transaction");
   const [draft, setDraft] = useState<PreparedTool | null>(null);
   const [savedPolicy, setSavedPolicy] = useState<PreparedTool | null>(null);
   const queryClient = useQueryClient();
   const assertConnection = () => {
+    assertActive();
     const s = useWalletStore.getState();
     if (
       s.status !== "connected" ||
@@ -76,24 +79,15 @@ export function ToolTransaction({
     enabled: !!submit.data,
     retry: false,
     refetchInterval: (q) => (q.state.data || q.state.error ? false : 10000),
-    queryFn: async () => {
-      try {
-        const tx = await blockfrostFetch<{
-          hash: string;
-          block: string;
-          valid_contract: boolean;
-        }>(`/api/v0/txs/${submit.data}`);
-        if (tx.hash !== submit.data || !tx.block || tx.valid_contract !== true)
-          throw new Error("Transaction is not confirmed as valid.");
+    queryFn: async ({ signal }) => {
+      const tx = await readTransactionConfirmation(submit.data!, signal);
+      if (tx) {
         void useWalletStore.getState().refreshBalance();
         void queryClient.invalidateQueries({
           queryKey: ["wallet-tools", "utxos"],
         });
-        return tx;
-      } catch (e) {
-        if (e instanceof BlockfrostError && e.status === 404) return null;
-        throw e;
       }
+      return tx;
     },
   });
   const busy = prepare.isPending || submit.isPending;
