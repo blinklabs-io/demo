@@ -339,6 +339,7 @@ export function SurveyCreate() {
       <PageIntro
         eyebrow="CIP-179 survey studio"
         title="Ask something worth answering."
+        detail="Design and preview your questions without a wallet. Connect when you are ready to publish on chain."
         symbol="+"
       />
       <div className="survey-studio">

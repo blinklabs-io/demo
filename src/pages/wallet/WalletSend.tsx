@@ -1,15 +1,34 @@
 import { useId, useRef, useState } from "react";
 import { PageIntro } from "../../components/explorer/Visuals";
-import { WalletWelcome } from "../../components/explorer/WalletWelcome";
 import { useWalletStore } from "../../stores/walletStore";
 import { ToolTransaction } from "../../components/wallet/ToolTransaction";
 import { AssetChooser } from "../../components/wallet/AssetChooser";
 import { CopyButton } from "../../components/explorer/CopyButton";
 export default function WalletSend() {
   const connection = useWalletStore((state) => state.connectionId);
-  return <SendForm key={connection} />;
+  const [recipient, setRecipient] = useState("");
+  const [ada, setAda] = useState("");
+  return (
+    <SendForm
+      key={connection}
+      recipient={recipient}
+      ada={ada}
+      onRecipient={setRecipient}
+      onAda={setAda}
+    />
+  );
 }
-function SendForm() {
+function SendForm({
+  recipient,
+  ada,
+  onRecipient,
+  onAda,
+}: {
+  recipient: string;
+  ada: string;
+  onRecipient: (value: string) => void;
+  onAda: (value: string) => void;
+}) {
   const formId = useId();
   const status = useWalletStore((s) => s.status),
     tokens = useWalletStore((s) => s.tokens);
@@ -20,11 +39,7 @@ function SendForm() {
     setRevision(generation.current);
     update();
   }
-  const [recipient, setRecipient] = useState(""),
-    [ada, setAda] = useState(""),
-    [selected, setSelected] = useState<Map<string, string>>(new Map());
-  if (status !== "connected")
-    return <WalletWelcome purpose="send ADA and tokens" />;
+  const [selected, setSelected] = useState<Map<string, string>>(new Map());
   return (
     <div className="wallet-workbench send-page">
       <PageIntro
@@ -41,7 +56,7 @@ function SendForm() {
               form={formId}
               aria-label="Recipient address"
               value={recipient}
-              onChange={(e) => edit(() => setRecipient(e.target.value))}
+              onChange={(e) => edit(() => onRecipient(e.target.value))}
               placeholder="addr_test1…"
             />
           </label>
@@ -56,7 +71,7 @@ function SendForm() {
                 aria-label="ADA amount"
                 value={ada}
                 inputMode="decimal"
-                onChange={(e) => edit(() => setAda(e.target.value))}
+                onChange={(e) => edit(() => onAda(e.target.value))}
                 placeholder="5"
               />
               <small>
@@ -64,12 +79,22 @@ function SendForm() {
               </small>
             </label>
           </section>
-          <AssetChooser
-            formId={formId}
-            tokens={tokens}
-            selected={selected}
-            onChange={(next) => edit(() => setSelected(next))}
-          />
+          {status === "connected" ? (
+            <AssetChooser
+              formId={formId}
+              tokens={tokens}
+              selected={selected}
+              onChange={(next) => edit(() => setSelected(next))}
+            />
+          ) : (
+            <section className="additional-assets">
+              <h2>Additional assets</h2>
+              <p className="metadata-hint">
+                Enter a recipient and ADA amount to plan your transfer. Connect
+                a wallet to choose from its assets and review the transaction.
+              </p>
+            </section>
+          )}
           <ToolTransaction
             key={revision}
             assertDraft={() => {

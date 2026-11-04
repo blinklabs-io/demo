@@ -1,8 +1,9 @@
-# Dingo Demo
+# Build with Dingo
 
-A browser playground for Dingo node APIs. Discover creation tools, governance
-participation, live chain visualizations, a CIP-30 wallet, and read-only API
-consoles from one landing page.
+Working Cardano apps built on Dingo: transaction creation, trading, governance,
+and live chain visualizations. This demo shows what a node can power, with
+source you can reuse and API consoles to explore the underlying data. Chain
+data and transaction services come from Dingo; no external indexer is required.
 
 ## Run it
 
@@ -37,6 +38,47 @@ Dingo’s CORS allowlist for the exact browser origin when the site and node use
 different origins. The explorer’s index-dependent pages need Dingo `api`
 storage mode. Wallet send and swap pages submit transactions to the selected
 node, so use a test network and connect a test wallet.
+
+## Explore without a wallet
+
+Browse the explorer, governance and survey results; preview SundaeSwap markets,
+weekly charts, amounts and slippage quotes; edit Send recipients, token metadata
+and survey drafts. Connect a Preview wallet when you want to sign or submit.
+Wallet balances and wallet-owned assets are available only after connecting.
+
+### Transaction studio
+
+Open **Create & build → Transactions** (`/wallet/tools/transactions`) to build an unsigned ADA payment from a
+Preview payment-key address, without a wallet extension. Dingo supplies that
+address’s UTxOs, current protocol parameters and the current slot. Change returns
+to the funding address; outputs carrying datums or reference scripts are excluded
+from automatic funding. You can add up to 20 recipients.
+
+Import a complete Babbage or Conway transaction using CBOR hex or a cardano-cli
+JSON envelope. Raw hex requires an explicit era selection; envelopes carry the
+era. Inspection decodes locally and does not need a wallet or a working backend.
+The view exposes outputs, assets, collateral, references, validity bounds,
+metadata, scripts, redeemers and governance fields. It does not infer input
+balances from input references or claim ledger validation.
+
+Exports use cardano-cli JSON text envelopes with `type`, `description` and
+`cborHex` fields, downloaded as `.tx` files. Unsigned exports use
+`Unwitnessed Tx ConwayEra`; after adding key witnesses they use
+`Witnessed Tx ConwayEra` (or the imported Babbage era). The CBOR is a complete
+transaction, including the witness set and auxiliary data.
+
+A connected wallet can add a CIP-30 partial witness to payment, native-script or
+Plutus transactions when it supports the required signing keys. Dingo must first
+resolve all spending, collateral and reference inputs on Preview. The merge
+verifies returned signatures and preserves the original body, script witnesses,
+datums, redeemers, validity flag and auxiliary data. Witness count alone does not
+prove a transaction is fully signed or valid. The studio never submits a
+transaction; export it for a separate signing or submission workflow. No private
+keys or recovery phrases are requested.
+
+Governance actions, surveys and the representative directory share one
+**Participate** section with contextual navigation. Transaction creation and
+inspection live in **Create & build**, alongside token tools and document proofs.
 
 ## Included views
 
@@ -231,20 +273,20 @@ payment and DRep witnesses are verified before submission through Dingo.
 
 Illustrative data, captured at desktop and mobile widths.
 
-| View               | Desktop                                                                     | Mobile                                                                    |
-| ------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Experiences | [Desktop](docs/screenshots/discover1500.jpg) | [Mobile](docs/screenshots/discover390.jpg) |
-| Participation | [Desktop](docs/screenshots/participate1500.jpg) | [Mobile](docs/screenshots/participate390.jpg) |
-| Holder answer review | [Desktop](docs/screenshots/answer1500.jpg) | [Mobile](docs/screenshots/answer390.jpg) |
-| Token metadata | [Desktop](docs/screenshots/cip251500.jpg) | [Mobile](docs/screenshots/cip25390.jpg) |
-| Asset bundles | [Desktop](docs/screenshots/sendassets1500.jpg) | [Mobile](docs/screenshots/sendassets390.jpg) |
-| Block conveyor     | [Desktop](docs/screenshots/conveyor1500.jpg)           | [Mobile](docs/screenshots/conveyor390.jpg)           |
-| Transaction flow   | [Desktop](docs/screenshots/flow1500.jpg)                   | [Mobile](docs/screenshots/flow390.jpg)                   |
-| Block mosaic       | [Desktop](docs/screenshots/mosaic1500.jpg)               | [Mobile](docs/screenshots/mosaic390.jpg)               |
-| UTxO constellation | [Desktop](docs/screenshots/constellation1500.jpg) | [Mobile](docs/screenshots/constellation390.jpg) |
-| Governance chamber | [Desktop](docs/screenshots/chamber1500.jpg)             | [Mobile](docs/screenshots/chamber390.jpg)             |
-| Asset landscape    | [Desktop](docs/screenshots/asset1500.jpg)                 | [Mobile](docs/screenshots/asset390.jpg)                 |
-| Stake journey      | [Desktop](docs/screenshots/stake1500.jpg)                 | [Mobile](docs/screenshots/stake390.jpg)                 |
-| Epoch fingerprints | [Desktop](docs/screenshots/epoch1500.jpg)                 | [Mobile](docs/screenshots/epoch390.jpg)                 |
-| Pool logos & saturation | [Desktop](docs/screenshots/poollogos1500.jpg) | [Mobile](docs/screenshots/poollogos390.jpg) |
-| Wallet pool saturation | [Desktop](docs/screenshots/walletsaturation1500.jpg) | [Mobile](docs/screenshots/walletsaturation390.jpg) |
+| View                    | Desktop                                              | Mobile                                             |
+| ----------------------- | ---------------------------------------------------- | -------------------------------------------------- |
+| Experiences             | [Desktop](docs/screenshots/discover1500.jpg)         | [Mobile](docs/screenshots/discover390.jpg)         |
+| Participation           | [Desktop](docs/screenshots/participate1500.jpg)      | [Mobile](docs/screenshots/participate390.jpg)      |
+| Holder answer review    | [Desktop](docs/screenshots/answer1500.jpg)           | [Mobile](docs/screenshots/answer390.jpg)           |
+| Token metadata          | [Desktop](docs/screenshots/cip251500.jpg)            | [Mobile](docs/screenshots/cip25390.jpg)            |
+| Asset bundles           | [Desktop](docs/screenshots/sendassets1500.jpg)       | [Mobile](docs/screenshots/sendassets390.jpg)       |
+| Block conveyor          | [Desktop](docs/screenshots/conveyor1500.jpg)         | [Mobile](docs/screenshots/conveyor390.jpg)         |
+| Transaction flow        | [Desktop](docs/screenshots/flow1500.jpg)             | [Mobile](docs/screenshots/flow390.jpg)             |
+| Block mosaic            | [Desktop](docs/screenshots/mosaic1500.jpg)           | [Mobile](docs/screenshots/mosaic390.jpg)           |
+| UTxO constellation      | [Desktop](docs/screenshots/constellation1500.jpg)    | [Mobile](docs/screenshots/constellation390.jpg)    |
+| Governance chamber      | [Desktop](docs/screenshots/chamber1500.jpg)          | [Mobile](docs/screenshots/chamber390.jpg)          |
+| Asset landscape         | [Desktop](docs/screenshots/asset1500.jpg)            | [Mobile](docs/screenshots/asset390.jpg)            |
+| Stake journey           | [Desktop](docs/screenshots/stake1500.jpg)            | [Mobile](docs/screenshots/stake390.jpg)            |
+| Epoch fingerprints      | [Desktop](docs/screenshots/epoch1500.jpg)            | [Mobile](docs/screenshots/epoch390.jpg)            |
+| Pool logos & saturation | [Desktop](docs/screenshots/poollogos1500.jpg)        | [Mobile](docs/screenshots/poollogos390.jpg)        |
+| Wallet pool saturation  | [Desktop](docs/screenshots/walletsaturation1500.jpg) | [Mobile](docs/screenshots/walletsaturation390.jpg) |

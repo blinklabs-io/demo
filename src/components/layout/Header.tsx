@@ -1,3 +1,4 @@
+import { isParticipationPath } from "../../lib/navigation";
 import { Link, NavLink, useLocation } from "react-router";
 import { NodeHealthStrip } from "./NodeHealthStrip";
 import { GlobalLookup } from "./GlobalLookup";
@@ -15,9 +16,6 @@ const links = [
   ["/explorer/network", "Network", "◎"],
   ["/explorer/epoch", "Epochs", "◷"],
   ["/explorer/pools", "Stake pools", "◈"],
-  ["/explorer/dreps", "Representatives", "♧"],
-  ["/explorer/surveys", "Surveys", "◉"],
-  ["/explorer/governance", "Governance", "⚑"],
   ["/explorer/mempool", "Mempool", "≋"],
   ["/wallet", "Wallet", "▣"],
   ["/api", "API playground", "⌘"],
@@ -27,10 +25,12 @@ export function Header() {
   const { pathname } = useLocation();
   const { error } = useNodeHealth();
   function groupedActive(to: string) {
-    return to === "/wallet"
-      ? pathname === "/wallet" ||
+    return to === "/participate"
+      ? isParticipationPath(pathname)
+      : to === "/wallet"
+        ? pathname === "/wallet" ||
           /^\/wallet\/(send|delegate)(\/|$)/.test(pathname)
-      : pathname === to || pathname.startsWith("/explorer/proposal/");
+        : pathname === to;
   }
   return (
     <>
@@ -40,13 +40,13 @@ export function Header() {
             d
           </span>
           <span>
-            dingo<span className="brand-sub">DINGO PLAYGROUND</span>
+            dingo<span className="brand-sub">BUILD WITH DINGO</span>
           </span>
         </NavLink>
-        <p className="nav-caption">WORKSPACE</p>
+        <p className="nav-caption">APPS & EXPLORER</p>
         <nav aria-label="Main navigation">
           {links.map(([to, label, icon]) =>
-            to === "/explorer/governance" || to === "/wallet" ? (
+            to === "/participate" || to === "/wallet" ? (
               <Link
                 key={to}
                 to={to}
@@ -77,7 +77,7 @@ export function Header() {
         </nav>
         <div className="sidebar-footer">
           <span className="live-dot" /> Powered by Dingo
-          <p>Create. Trade. Participate.</p>
+          <p>Apps powered by a Cardano node.</p>
         </div>
       </aside>
       <header className="workspace-header">

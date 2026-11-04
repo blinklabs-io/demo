@@ -7,6 +7,17 @@ import { BlockMosaic } from "../components/chain/BlockMosaic";
 
 const experiences = [
   {
+    to: "/wallet/tools/transactions",
+    title: "Build it. Take it anywhere.",
+    category: "Create",
+    symbol: "⌁",
+    description:
+      "Compose unsigned payments without an extension. Inspect CBOR, add a wallet witness, and export to cardano-cli.",
+    tag: "Transaction studio · No wallet needed",
+    art: "flow",
+    action: "Build a transaction",
+  },
+  {
     to: "/participate",
     title: "Make your voice count",
     category: "Participate",
@@ -71,17 +82,6 @@ const experiences = [
     tag: "UTxO workshop",
     art: "utxo",
     action: "Open the workshop",
-  },
-  {
-    to: "/explorer/governance",
-    title: "Enter the chamber",
-    category: "Participate",
-    symbol: "⚑",
-    description:
-      "Explore governance actions, inspect the voting chamber, and cast a vote if you’re a DRep.",
-    tag: "Governance in motion",
-    art: "voice",
-    action: "Explore governance",
   },
   {
     to: "/wallet/tools/batch",
@@ -171,16 +171,18 @@ export default function Experiences() {
     <div className="experience-page">
       <section className="experience-hero">
         <div>
-          <span className="eyebrow">Dingo playground · Cardano Preview</span>
+          <span className="eyebrow">Build with Dingo · Cardano Preview</span>
           <h1>
-            A node.
-            <br />A world of
+            Build apps.
             <br />
-            <em>possibilities.</em>
+            Move value.
+            <br />
+            <em>Make it real.</em>
           </h1>
           <p>
-            Create. Trade. Participate. Follow the chain in motion. Every
-            experience here runs on Dingo’s APIs.
+            A Cardano node is an app platform. Trade, create, participate, and
+            follow the chain in motion. These working apps show what you can
+            build with Dingo’s APIs. No wallet needed to explore.
           </p>
           <div className="experience-actions">
             <a className="experience-primary" href="#experiences">
