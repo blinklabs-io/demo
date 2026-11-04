@@ -467,7 +467,7 @@
     height: 32px;
   }
 }
-.tool-transaction button {
+.tool-transaction button:not(.copy-identifier) {
   cursor: pointer;
   background: #162a38;
   border: 1px solid #365365;
@@ -476,11 +476,11 @@
   color: #bdd5e3;
   font-size: 13px;
 }
-.tool-transaction button:disabled {
+.tool-transaction button:not(.copy-identifier):disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.tool-transaction button:hover:not(:disabled) {
+.tool-transaction button:not(.copy-identifier):hover:not(:disabled) {
   border-color: #46d8bc;
 }
 .tool-transaction button.tool-primary {

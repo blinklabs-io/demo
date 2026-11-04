@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { WalletWelcome } from "../../components/explorer/WalletWelcome";
 import { useWalletStore } from "../../stores/walletStore";
@@ -6,8 +6,20 @@ import { ToolTransaction } from "../../components/wallet/ToolTransaction";
 import { AssetChooser } from "../../components/wallet/AssetChooser";
 import { CopyButton } from "../../components/explorer/CopyButton";
 export default function WalletSend() {
+  const connection = useWalletStore((state) => state.connectionId);
+  return <SendForm key={connection} />;
+}
+function SendForm() {
+  const formId = useId();
   const status = useWalletStore((s) => s.status),
     tokens = useWalletStore((s) => s.tokens);
+  const generation = useRef(0);
+  const [revision, setRevision] = useState(0);
+  function edit(update: () => void) {
+    generation.current++;
+    setRevision(generation.current);
+    update();
+  }
   const [recipient, setRecipient] = useState(""),
     [ada, setAda] = useState(""),
     [selected, setSelected] = useState<Map<string, string>>(new Map());
@@ -26,9 +38,10 @@ export default function WalletSend() {
           <label>
             Recipient address
             <input
+              form={formId}
               aria-label="Recipient address"
               value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
+              onChange={(e) => edit(() => setRecipient(e.target.value))}
               placeholder="addr_test1…"
             />
           </label>
@@ -39,10 +52,11 @@ export default function WalletSend() {
             <label>
               ADA amount · required
               <input
+                form={formId}
                 aria-label="ADA amount"
                 value={ada}
                 inputMode="decimal"
-                onChange={(e) => setAda(e.target.value)}
+                onChange={(e) => edit(() => setAda(e.target.value))}
                 placeholder="5"
               />
               <small>
@@ -51,11 +65,20 @@ export default function WalletSend() {
             </label>
           </section>
           <AssetChooser
+            formId={formId}
             tokens={tokens}
             selected={selected}
-            onChange={setSelected}
+            onChange={(next) => edit(() => setSelected(next))}
           />
           <ToolTransaction
+            key={revision}
+            assertDraft={() => {
+              if (generation.current !== revision)
+                throw new Error(
+                  "Transfer details changed. Review a new transaction.",
+                );
+            }}
+            formId={formId}
             ready={!!recipient && !!ada}
             action={() => ({
               kind: "send",

@@ -19,9 +19,13 @@ import { formatAda } from "../../lib/format";
 export function ToolTransaction({
   action,
   ready = true,
+  formId,
+  assertDraft,
 }: {
   action: () => ToolAction;
   ready?: boolean;
+  formId?: string;
+  assertDraft?: () => void;
 }) {
   const api = useWalletStore((s) => s.walletApi),
     connectionId = useWalletStore((s) => s.connectionId);
@@ -36,6 +40,7 @@ export function ToolTransaction({
       s.connectionId !== connectionId
     )
       throw new Error("Wallet connection changed. Review a new draft.");
+    assertDraft?.();
   };
   const prepare = useMutation({
     mutationFn: async () => {
@@ -123,16 +128,23 @@ export function ToolTransaction({
   return (
     <div className="tool-transaction">
       {!draft && !submit.data && (
-        <button
-          className="tool-primary"
-          disabled={busy || !ready}
-          onClick={() => {
+        <form
+          id={formId}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (busy || !ready) return;
             submit.reset();
             prepare.mutate();
           }}
         >
-          {prepare.isPending ? "Building with Dingo…" : "Review transaction"}
-        </button>
+          <button
+            type="submit"
+            className="tool-primary"
+            disabled={busy || !ready}
+          >
+            {prepare.isPending ? "Building with Dingo…" : "Review transaction"}
+          </button>
+        </form>
       )}
       {draft && (
         <section className="tool-review" aria-label="Transaction review">

@@ -41,9 +41,18 @@ function AnswerForm({
   const health = useNodeHealth();
   const [choice, setChoice] = useState<VoteChoice | null>(null);
   const [draft, setDraft] = useState<PreparedHolderAnswer | null>(null);
-  const closed = health.data
-    ? health.data.tipEpoch >= holderClosingEpoch(proposal)
-    : undefined;
+  let closed: boolean | undefined;
+  let deadlineError: Error | undefined;
+  try {
+    const closing = holderClosingEpoch(proposal);
+    if (health.data && !health.isError)
+      closed = health.data.tipEpoch >= closing;
+  } catch (error) {
+    deadlineError = governanceError(
+      error,
+      "Dingo returned an invalid answer deadline.",
+    );
+  }
   function assertConnection() {
     const state = useWalletStore.getState();
     if (
@@ -105,7 +114,8 @@ function AnswerForm({
     },
   });
   const busy = prepare.isPending || submit.isPending;
-  const error = prepare.error ?? submit.error ?? confirmation.error;
+  const error =
+    deadlineError ?? prepare.error ?? submit.error ?? confirmation.error;
   return (
     <Panel title="Your voice · CIP-204">
       <div id="holder-answer" className="holder-answer">
@@ -152,7 +162,7 @@ function AnswerForm({
                     key={value}
                     className={`holder-choice ${value}`}
                     aria-pressed={choice === value}
-                    disabled={busy}
+                    disabled={busy || !!deadlineError}
                     onClick={() => setChoice(value)}
                   >
                     <span aria-hidden="true">{icon}</span>
@@ -170,7 +180,7 @@ function AnswerForm({
               <button
                 className="survey-primary"
                 type="button"
-                disabled={!choice || busy || closed === undefined}
+                disabled={!choice || busy || !!deadlineError}
                 onClick={() => prepare.mutate()}
               >
                 {prepare.isPending
@@ -208,7 +218,7 @@ function AnswerForm({
               <button
                 className="survey-primary"
                 type="button"
-                disabled={busy}
+                disabled={busy || closed === true || !!deadlineError}
                 onClick={() => submit.mutate()}
               >
                 {submit.isPending

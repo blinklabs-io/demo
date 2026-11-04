@@ -160,7 +160,7 @@ export async function holderEligibility(
   if (!crossed) eligibleAtSubmission = registered;
   return eligibleAtSubmission && uninterrupted;
 }
-async function walletIdentity(
+async function walletIdentities(
   api: Cip30WalletApi,
   assertConnection: () => void,
 ) {
@@ -173,16 +173,20 @@ async function walletIdentity(
   assertConnection();
   if (network !== 0 || !addresses.length)
     throw new Error("Connect a Preview wallet with a stake key.");
-  const address = Core.Address.fromBytes(Core.HexBlob(addresses[0]));
-  const credential = address.asReward()?.getPaymentCredential();
-  if (
-    address.getNetworkId() !== 0 ||
-    credential?.type !== Core.Cardano.CredentialType.KeyHash
-  )
+  const identities = addresses.flatMap((hex) => {
+    const address = Core.Address.fromBytes(Core.HexBlob(hex));
+    const credential = address.asReward()?.getPaymentCredential();
+    return address.getNetworkId() === 0 &&
+      credential?.type === Core.Cardano.CredentialType.KeyHash
+      ? [{ stakeAddress: address.toBech32(), key: credential.hash.toString() }]
+      : [];
+  });
+  if (!identities.length)
     throw new Error("CIP-204 requires a Preview stake signing key.");
-  return { stakeAddress: address.toBech32(), key: credential.hash.toString() };
+  return identities;
 }
-async function validate(proposal: VotingProposal, stakeAddress: string) {
+
+async function validate(proposal: VotingProposal) {
   const [current, tip, genesis] = await Promise.all([
     blockfrostFetch<VotingProposal>(
       `/api/v0/governance/proposals/${encodeURIComponent(proposal.id)}`,
@@ -213,10 +217,6 @@ async function validate(proposal: VotingProposal, stakeAddress: string) {
     throw new Error("Dingo did not return valid Preview timing.");
   if (tip.epoch >= holderClosingEpoch(current))
     throw new Error("Holder answers have closed for this action.");
-  if (!(await holderEligibility(stakeAddress, current)))
-    throw new Error(
-      "Your stake key must have been registered before this action, without a later deregistration.",
-    );
   return {
     current,
     tip,
@@ -232,12 +232,20 @@ export async function prepareHolderAnswer(
   choice: VoteChoice,
   assertConnection: () => void,
 ) {
-  const identity = await walletIdentity(api, assertConnection);
-  const record = holderRecord(identity.key, proposal, choice);
-  const { current, validUntil } = await validate(
-    proposal,
-    identity.stakeAddress,
-  );
+  const identities = await walletIdentities(api, assertConnection);
+  const { current, validUntil } = await validate(proposal);
+  let identity: (typeof identities)[number] | undefined;
+  for (const candidate of identities) {
+    if (await holderEligibility(candidate.stakeAddress, current)) {
+      identity = candidate;
+      break;
+    }
+  }
+  if (!identity)
+    throw new Error(
+      "Your stake key must have been registered before this action, without a later deregistration.",
+    );
+  const record = holderRecord(identity.key, current, choice);
   const { blaze } = await getBlaze(api);
   assertConnection();
   const tx = await blaze
@@ -257,13 +265,19 @@ export async function submitHolderAnswer(
   prepared: PreparedHolderAnswer,
   assertConnection: () => void,
 ) {
-  const identity = await walletIdentity(api, assertConnection);
-  if (
-    identity.key !== prepared.identity.key ||
-    identity.stakeAddress !== prepared.identity.stakeAddress
-  )
+  const identities = await walletIdentities(api, assertConnection);
+  const identity = identities.find(
+    (candidate) =>
+      candidate.key === prepared.identity.key &&
+      candidate.stakeAddress === prepared.identity.stakeAddress,
+  );
+  if (!identity)
     throw new Error("Wallet account changed. Review a new answer.");
-  const { tip } = await validate(prepared.proposal, identity.stakeAddress);
+  const { tip, current } = await validate(prepared.proposal);
+  if (!(await holderEligibility(identity.stakeAddress, current)))
+    throw new Error(
+      "Your stake registration no longer qualifies for this answer.",
+    );
   if (tip.slot >= prepared.validUntil)
     throw new Error("This answer draft expired.");
   assertConnection();

@@ -46,10 +46,12 @@ export function AssetChooser({
   tokens,
   selected,
   onChange,
+  formId,
 }: {
   tokens: { assetId: string; quantity: bigint }[];
   selected: Map<string, string>;
   onChange: (value: Map<string, string>) => void;
+  formId?: string;
 }) {
   const [search, setSearch] = useState(""),
     [page, setPage] = useState(1);
@@ -171,6 +173,7 @@ export function AssetChooser({
               <label>
                 Raw units
                 <input
+                  form={formId}
                   aria-label={`Quantity of ${assetName(id)}`}
                   inputMode="numeric"
                   value={amount}

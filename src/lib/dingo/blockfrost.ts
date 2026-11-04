@@ -32,7 +32,18 @@ export async function blockfrostFetch<T>(
 ): Promise<T> {
   const response = await blockfrostFetchResponse(path, init);
 
-  return (await response.json()) as T;
+  try {
+    return (await response.json()) as T;
+  } catch (cause) {
+    init?.signal?.throwIfAborted();
+    throw new BlockfrostError(
+      "Dingo returned invalid JSON.",
+      response.status,
+      path,
+      undefined,
+      cause,
+    );
+  }
 }
 
 // Use this when a caller needs response metadata or a non-JSON body, such as
@@ -43,8 +54,22 @@ export async function blockfrostFetchResponse(
   init?: RequestInit,
 ): Promise<Response> {
   const release = await acquireReadSlot(path, init);
+  const controller = new AbortController();
+  const abort = () => controller.abort(init?.signal?.reason);
+  init?.signal?.addEventListener("abort", abort, { once: true });
+  if (init?.signal?.aborted) abort();
+  const timeout = setTimeout(
+    () =>
+      controller.abort(
+        new DOMException("Dingo request timed out.", "TimeoutError"),
+      ),
+    60000,
+  );
   try {
-    const response = await request(path, init);
+    const response = await request(path, {
+      ...init,
+      signal: controller.signal,
+    });
     // Dingo holds admission until the response body has been written.
     const bytes = await response.arrayBuffer();
     return new Response(
@@ -55,7 +80,21 @@ export async function blockfrostFetchResponse(
         headers: response.headers,
       },
     );
+  } catch (cause) {
+    init?.signal?.throwIfAborted();
+    if (cause instanceof BlockfrostError) throw cause;
+    throw new BlockfrostError(
+      controller.signal.aborted
+        ? "Dingo request timed out."
+        : "Could not read Dingo's response body.",
+      0,
+      path,
+      undefined,
+      cause,
+    );
   } finally {
+    clearTimeout(timeout);
+    init?.signal?.removeEventListener("abort", abort);
     release();
   }
 }

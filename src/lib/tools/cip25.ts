@@ -71,8 +71,10 @@ function uri(text: string, label: string, image = false) {
       throw new Error(`${label} contains invalid base64.`);
     }
     if (
-      !/^data:[\w.+-]+\/[\w.+-]+;base64,[A-Za-z0-9+/]+={0,2}$/.test(text) ||
-      (image && !text.startsWith("data:image/"))
+      !/^data:[\w.+-]+\/[\w.+-]+(?:;[\w.+-]+=[^;,]+)*;base64,[A-Za-z0-9+/]+={0,2}$/i.test(
+        text,
+      ) ||
+      (image && !/^data:image\//i.test(text))
     )
       throw new Error(
         `${label} needs a valid base64 data URI${image ? " for an image" : ""}.`,
@@ -186,7 +188,7 @@ export function buildCip25(
             custom(v, `File ${i + 1}.${k}`),
           );
         }
-        if (f.name) file.set("name", short(f.name, `File ${i + 1} name`));
+        file.set("name", short(f.name, `File ${i + 1} name`));
         file.set("mediaType", short(f.mediaType, `File ${i + 1} media type`));
         file.set("src", chunks(uri(f.src, `File ${i + 1} source`)));
         return file;

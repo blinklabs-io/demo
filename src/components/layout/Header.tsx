@@ -26,6 +26,12 @@ const links = [
 export function Header() {
   const { pathname } = useLocation();
   const { error } = useNodeHealth();
+  function groupedActive(to: string) {
+    return to === "/wallet"
+      ? pathname === "/wallet" ||
+          /^\/wallet\/(send|delegate)(\/|$)/.test(pathname)
+      : pathname === to || pathname.startsWith("/explorer/proposal/");
+  }
   return (
     <>
       <aside className="sidebar">
@@ -40,16 +46,12 @@ export function Header() {
         <p className="nav-caption">WORKSPACE</p>
         <nav aria-label="Main navigation">
           {links.map(([to, label, icon]) =>
-            to === "/explorer/governance" ? (
+            to === "/explorer/governance" || to === "/wallet" ? (
               <Link
                 key={to}
                 to={to}
-                className={`side-link ${pathname === to || pathname.startsWith("/explorer/proposal/") ? "selected" : ""}`}
-                aria-current={
-                  pathname === to || pathname.startsWith("/explorer/proposal/")
-                    ? "page"
-                    : undefined
-                }
+                className={`side-link ${groupedActive(to) ? "selected" : ""}`}
+                aria-current={groupedActive(to) ? "page" : undefined}
               >
                 <span className="nav-icon" aria-hidden="true">
                   {icon}
@@ -62,7 +64,7 @@ export function Header() {
                 to={to}
                 end={to === "/explorer" || to === "/" || to === "/wallet"}
                 className={({ isActive }) =>
-                  `side-link ${isActive || (to === "/explorer/governance" && pathname.startsWith("/explorer/proposal/")) ? "selected" : ""}`
+                  `side-link ${isActive ? "selected" : ""}`
                 }
               >
                 <span className="nav-icon" aria-hidden="true">

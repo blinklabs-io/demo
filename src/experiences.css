@@ -481,29 +481,21 @@
   font-size: 13px;
   margin-top: auto;
 }
-.participation-action {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  width: 100%;
-  padding: 14px 0;
-}
 .participation-action h3 {
-  grid-column: 1;
-  font-size: 19px;
-  text-transform: capitalize;
+  font-size: 22px;
+  line-height: 1.25;
+  text-transform: none;
+  padding-right: 30px;
   color: #d8e9f3;
 }
 .participation-action code {
   font-size: 11px;
   color: #8aa4b5;
-  grid-column: 1;
 }
 .participation-action strong {
-  grid-column: 2;
-  grid-row: 2/4;
-  align-self: center;
-  justify-self: end;
+  align-self: stretch;
+  margin-top: auto;
+  padding-top: 18px;
   color: #a4efd4;
   font-size: 13px;
 }
@@ -519,6 +511,7 @@
 .holder-answer {
   display: grid;
   gap: 22px;
+  scroll-margin-top: 140px;
 }
 .holder-intro {
   display: flex;
@@ -749,14 +742,6 @@
   .participation-paths {
     grid-template-columns: 1fr;
   }
-  .participation-action {
-    grid-template-columns: 1fr;
-  }
-  .participation-action strong {
-    grid-column: 1;
-    grid-row: auto;
-    justify-self: start;
-  }
   .holder-intro {
     gap: 15px;
   }
@@ -861,14 +846,6 @@
 .holder-intro > div {
   min-width: 0;
 }
-@media (max-width: 440px) {
-  .art-swap svg {
-    position: absolute;
-    width: 125px;
-    left: -16px;
-    transform: rotate(-70deg) translateX(-10px);
-  }
-}
 
 .participation-page .activity-list {
   display: grid;
@@ -883,6 +860,8 @@
 }
 .participation-action {
   position: relative;
+  width: 100%;
+  gap: 8px;
   display: flex;
   flex-direction: column;
   align-items: start;
@@ -897,17 +876,6 @@
 }
 .participation-action:hover {
   border-color: #9f8bc9;
-}
-.participation-action h3 {
-  font-size: 22px;
-  line-height: 1.25;
-  text-transform: none;
-  padding-right: 30px;
-}
-.participation-action strong {
-  align-self: stretch;
-  margin-top: auto;
-  padding-top: 18px;
 }
 .participation-action small {
   font-size: 11px;
@@ -934,10 +902,6 @@
   .participation-action {
     min-height: 230px;
   }
-}
-
-.holder-answer {
-  scroll-margin-top: 140px;
 }
 
 .experience-section-heading .experience-actions {

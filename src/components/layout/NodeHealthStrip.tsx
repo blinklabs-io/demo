@@ -32,9 +32,11 @@ export function NodeHealthStrip() {
     return (
       <span className="flex items-center gap-1.5 text-red-400">
         <span className="h-2 w-2 rounded-full bg-red-500" />
-        {error instanceof BlockfrostError && error.status > 0
+        {error instanceof BlockfrostError && error.status >= 400
           ? `Dingo API returned ${error.status}`
-          : "Dingo unreachable"}
+          : error instanceof BlockfrostError && error.status > 0
+            ? "Invalid Dingo response"
+            : "Dingo unreachable"}
       </span>
     );
   }

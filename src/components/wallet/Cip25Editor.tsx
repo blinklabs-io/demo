@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   buildCip25,
   importCip25,
@@ -19,6 +19,7 @@ export function Cip25Editor({
   onChange: (value: Cip25Draft) => void;
   onDescription: (value: string) => void;
 }) {
+  const importRequest = useRef(0);
   const [importError, setImportError] = useState(""),
     [loadedImage, setLoadedImage] = useState("");
   let json = "",
@@ -29,8 +30,11 @@ export function Cip25Editor({
   } catch (e) {
     error = (e as Error).message;
   }
-  const update = (patch: Partial<Cip25Draft>) =>
+  const update = (patch: Partial<Cip25Draft>) => {
+    importRequest.current++;
+    setImportError("");
     onChange({ ...value, ...patch });
+  };
   const image =
     value.artwork === "generated"
       ? tokenArtwork(value.displayName || assetName || "✦")
@@ -38,14 +42,18 @@ export function Cip25Editor({
   const browserImage =
     /^https?:\/\//.test(image) || /^data:image\//.test(image);
   async function load(file: File) {
+    const request = ++importRequest.current;
     try {
       if (file.size > 32768) throw new Error("Metadata import exceeds 32 KiB.");
-      const result = importCip25(await file.text());
+      const text = await file.text();
+      if (request !== importRequest.current) return;
+      const result = importCip25(text);
       onChange(result.draft);
       onDescription(result.description);
       setImportError("");
     } catch (e) {
-      setImportError((e as Error).message);
+      if (request === importRequest.current)
+        setImportError((e as Error).message);
     }
   }
   function download() {
@@ -157,7 +165,11 @@ export function Cip25Editor({
           aria-label="Public description"
           rows={3}
           value={description}
-          onChange={(e) => onDescription(e.target.value)}
+          onChange={(e) => {
+            importRequest.current++;
+            setImportError("");
+            onDescription(e.target.value);
+          }}
         />
         <small>
           {new TextEncoder().encode(description).length} / 512 UTF-8 bytes

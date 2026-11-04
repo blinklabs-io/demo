@@ -148,10 +148,7 @@ function Mosaic({ hash, total, onExplore }: MosaicProps) {
       {total === 0 ? (
         <div className="chain-empty">
           <strong>This block was empty.</strong>
-          <p>
-            There are no transactions to map. Open the block to explore its
-            header and producer.
-          </p>
+          <p>There are no transactions to map.</p>
         </div>
       ) : !open ? (
         <div className="mosaic-teaser" aria-hidden="true">

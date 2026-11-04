@@ -216,6 +216,7 @@ export function ProposalDetail() {
     queryKey: ["dingo", "proposal", id],
     queryFn: () => blockfrostFetch<Proposal>(path),
     enabled: Boolean(id),
+    refetchInterval: 60000,
   });
   const loadedId = proposal.data?.id;
   useEffect(() => {

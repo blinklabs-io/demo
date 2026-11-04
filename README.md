@@ -196,6 +196,8 @@ visual chooser uses asset artwork, instant name or ID filtering, twelve assets
 per page, and a persistent selection list with raw-unit quantities. Transaction
 construction checks selected quantities against fresh wallet UTxOs and verifies
 the recipient output's exact ADA and asset bundle before review and signing.
+Editing transfer details discards the draft and prevents an outstanding signature
+from being submitted for the earlier details.
 
 ## Preview wallet tools
 
@@ -212,7 +214,7 @@ APIs. It includes:
   only the file name, digest, and message are published. A proof establishes the
   fingerprint's existence by the block timestamp, not authorship or ownership.
 - Native token minting with editable CIP-25 metadata: a display name,
-  description, artwork URI or generated SVG, file references, and custom
+  description, artwork URI or generated SVG, named file references, and custom
   properties. Per-asset JSON imports and exports preserve supported custom
   fields. Review shows metadata from the actual unsigned transaction.
   Signature-and-expiry policies can be exported for burning; they do not cap

@@ -228,7 +228,13 @@ export default function Experiences() {
           <Link to="/explorer/mempool">
             <span>Mempool · {stream}</span>
             <strong>
-              {stream === "live" ? `${pending} pending` : "Connecting…"}
+              {stream === "live"
+                ? `${pending} pending`
+                : stream === "error"
+                  ? "Reconnecting…"
+                  : stream === "idle"
+                    ? "Not started"
+                    : "Connecting…"}
             </strong>
           </Link>
           <Link to="/api">

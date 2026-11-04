@@ -25,6 +25,7 @@ function ActionCard({ action }: { action: Action }) {
       return proposal;
     },
     staleTime: 30000,
+    refetchInterval: 60000,
   });
   const metadata = useQuery({
     queryKey: ["dingo", "proposal", action.id, "metadata"],
@@ -38,7 +39,7 @@ function ActionCard({ action }: { action: Action }) {
   });
   const title = governanceName(metadata.data?.json_metadata);
   const open =
-    query.data && health.data
+    query.data && health.data && !query.isError && !health.isError
       ? health.data.tipEpoch < holderClosingEpoch(query.data)
       : undefined;
   return (
@@ -48,7 +49,7 @@ function ActionCard({ action }: { action: Action }) {
     >
       <span className={`participation-status ${open ? "open" : ""}`}>
         {open === undefined
-          ? query.error
+          ? query.error || health.error
             ? "Status unavailable"
             : "Checking status…"
           : open
