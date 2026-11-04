@@ -195,7 +195,7 @@ paginated input/output cards, declared execution-budget bars, verified key
 signatures, decoded metadata and byte anatomy. Failed Plutus transactions
 separate collateral effects from unapplied outputs and actions. Reference inputs,
 datums and script witnesses can be inspected without connecting a wallet.
-Technical REST records load only when their disclosure is opened.
+Additional technical REST records load only when their disclosure is opened.
 
 ## On-chain surveys
 

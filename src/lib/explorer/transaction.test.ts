@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Core } from "@blaze-cardano/sdk";
 import {
   inspectChainTransaction,
+  transactionKind,
   readChainTransactionEnvelope,
 } from "./transaction";
 
@@ -54,5 +55,74 @@ describe("transaction envelopes", () => {
     `82${body}${witnesses}`,
   ])("rejects incomplete, oversized and misaligned frames: %s", (cbor) => {
     expect(() => readChainTransactionEnvelope(cbor)).toThrow();
+  });
+});
+
+const credential = {
+  type: Core.CredentialType.KeyHash,
+  hash: Core.Hash28ByteBase16("11".repeat(28)),
+};
+type Certificate = Parameters<typeof Core.Certificate.fromCore>[0];
+const governanceCertificates: Certificate[] = [
+  {
+    __typename: Core.CertificateType.RegisterDelegateRepresentative,
+    dRepCredential: credential,
+    deposit: 500000000n,
+    anchor: null,
+  },
+  {
+    __typename: Core.CertificateType.UnregisterDelegateRepresentative,
+    dRepCredential: credential,
+    deposit: 500000000n,
+  },
+  {
+    __typename: Core.CertificateType.UpdateDelegateRepresentative,
+    dRepCredential: credential,
+    anchor: null,
+  },
+  {
+    __typename: Core.CertificateType.AuthorizeCommitteeHot,
+    coldCredential: credential,
+    hotCredential: credential,
+  },
+  {
+    __typename: Core.CertificateType.ResignCommitteeCold,
+    coldCredential: credential,
+    anchor: null,
+  },
+  {
+    __typename: Core.CertificateType.VoteDelegation,
+    stakeCredential: credential,
+    dRep: { __typename: "AlwaysAbstain" },
+  },
+];
+
+function certificateInspection(certificate: Certificate) {
+  const core = Core.Transaction.fromCbor(
+    Core.TxCBOR(`84${body}${witnesses}f5f6`),
+  ).toCore();
+  core.body.certificates = [certificate];
+  const tx = Core.Transaction.fromCore(core);
+  return inspectChainTransaction(tx.toCbor(), String(tx.getId()));
+}
+
+describe("transaction activity classification", () => {
+  it.each(governanceCertificates)(
+    "identifies $__typename without requiring a vote or proposal",
+    (certificate) => {
+      expect(transactionKind(certificateInspection(certificate))).toBe(
+        "Governance",
+      );
+    },
+  );
+  it("keeps ordinary stake registration distinct from governance", () => {
+    expect(
+      transactionKind(
+        certificateInspection({
+          __typename: Core.CertificateType.StakeRegistration,
+          stakeCredential: credential,
+        }),
+      ),
+    ).toBe("Stake & identity");
   });
 });

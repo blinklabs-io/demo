@@ -92,7 +92,7 @@
   grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.5fr);
   gap: 12px;
 }
-.swap-v4 .v4-order-summary {
+.wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
   align-items: baseline;
@@ -104,17 +104,20 @@
   background: #102e27;
   font-size: 12px;
 }
-.swap-v4 .v4-order-summary dt {
+.wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary dt {
   color: #9cbab7;
 }
-.swap-v4 .v4-order-summary dd {
+.wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary dd {
   margin: 0;
   text-align: right;
   overflow-wrap: anywhere;
   color: #e4f8f3;
   font-variant-numeric: tabular-nums;
 }
-.swap-v4 .v4-order-summary dd.text-emerald-300 {
+.wallet-workbench.swap-v4
+  .swap-order-card
+  dl.v4-order-summary
+  dd.text-emerald-300 {
   color: #58f2c1;
   font-weight: 700;
 }
@@ -149,7 +152,7 @@
     flex: 1;
     padding-inline: 10px;
   }
-  .swap-v4 .v4-order-summary {
+  .wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary {
     padding: 14px;
     gap: 12px 10px;
   }
@@ -161,4 +164,26 @@
   .swap-version-switch button {
     transition: none;
   }
+}
+
+.swap-v4 .v4-built-review {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #3f8a78;
+  border-radius: 12px;
+  padding: 16px;
+  background: #0b2725;
+}
+.swap-v4 .v4-built-review h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #d3fff3;
+}
+.swap-v4 .v4-built-review p {
+  font-size: 12px;
+  color: #9ebeb9;
+}
+.swap-v4 .v4-built-review .experience-primary {
+  width: 100%;
+  margin-top: 4px;
 }
