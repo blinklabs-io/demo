@@ -49,7 +49,6 @@ export function Header() {
                 key={to}
                 to={to}
                 className={`side-link ${groupedActive(to) ? "selected" : ""}`}
-                aria-current={groupedActive(to) ? "page" : undefined}
               >
                 <span className="nav-icon" aria-hidden="true">
                   {icon}
