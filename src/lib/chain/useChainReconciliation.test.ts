@@ -16,7 +16,7 @@ describe("chain transition query ownership", () => {
     ["dingo", "account", "stake", "journey", "rewards"],
     ["dingo", "proposal", "id", "chamber-votes"],
     ["dingo", "tx", "hash", "cbor"],
-    ["dingo", "block-header-version", "hash"],
+    ["dingo", "block-native", "hash"],
     ["dingo", "epoch", "10", "parameters"],
     ["dingo", "genesis"],
     ["dingo", "network", "eras"],
@@ -39,6 +39,7 @@ it("reconciles mutable aggregates and census snapshots on rollback while preserv
 
 it.each([
   ["dingo", "tx", "orphan"],
+  ["dingo", "epoch", "10", "parameters"],
   ["dingo", "asset", "orphan"],
   ["dingo", "asset", "orphan", "holder-map"],
   ["dingo", "policy-assets", "policy", 1],

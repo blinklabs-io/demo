@@ -1,9 +1,10 @@
+import { BlockCapacity } from "../../components/explorer/BlockCapacity";
 import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
 import { PaginatedList } from "../../components/explorer/PaginatedList";
 import { BlockMosaic } from "../../components/chain/BlockMosaic";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { BlockHeaderVersion } from "../../components/explorer/BlockHeaderVersion";
-import { Metric, Timeline, Gauge } from "../../components/explorer/Visuals";
+import { Metric, Timeline } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
@@ -45,15 +46,6 @@ export default function BlockDetail() {
     ? undefined
     : blockQuery.data;
 
-  const limitsQuery = useQuery({
-    queryKey: ["dingo", "epoch", String(block?.epoch), "parameters"],
-    queryFn: () =>
-      blockfrostFetch<{ max_block_size: number }>(
-        `/api/v0/epochs/${block!.epoch}/parameters`,
-      ),
-    enabled: Boolean(block),
-    staleTime: Infinity,
-  });
 
   return (
     <div className="flex flex-col gap-4 detail-showcase">
@@ -93,25 +85,7 @@ export default function BlockDetail() {
                     slot={block.slot}
                   />
                 </div>
-                <QueryState hasData={limitsQuery.data !== undefined}
-                  isLoading={limitsQuery.isLoading}
-                  error={limitsQuery.error}
-                >
-                  {limitsQuery.data && (
-                    <Gauge
-                      label="Block capacity used"
-                      value={
-                        limitsQuery.data.max_block_size > 0
-                          ? (block.size /
-                              limitsQuery.data.max_block_size) *
-                            100
-                          : 0
-                      }
-                      detail={`${block.size.toLocaleString()} / ${limitsQuery.data.max_block_size.toLocaleString()} bytes · epoch ${block.epoch}`}
-                      tone="violet"
-                    />
-                  )}
-                </QueryState>
+                <BlockCapacity hash={block.hash} slot={block.slot} epoch={block.epoch} />
               </div>
               <div className="block-chain-timeline my-6">
                 <Timeline

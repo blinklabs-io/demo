@@ -101,6 +101,8 @@ states, transaction lifecycles and Dingo API responsibilities.
 - Discover snapshot with epoch progress and ADA supply; Explore with recent
   blocks, activity, header versions, mempool, epochs, pools and network details
 - Network supply, genesis settings, and era timing
+- Block capacity as the highest utilization of block-body bytes, declared execution memory,
+  or declared execution steps, against that block's epoch limits
 - Blocks, transactions, addresses, stake accounts, assets, epochs, stake pools,
   DReps, mempool, and numeric transaction metadata labels (`metadata:123`);
   historical protocol parameters are searchable as `epoch:123`

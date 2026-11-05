@@ -1,3 +1,4 @@
+import { queryOptions } from "@tanstack/react-query";
 import { Core } from "@blaze-cardano/sdk";
 import { bytesToHex } from "./utxorpc/bytes";
 import { getSyncClient } from "./utxorpc/streaming";
@@ -28,14 +29,18 @@ export function decodeHeaderVersion(bytes: Uint8Array): HeaderVersion {
   return { major, minor };
 }
 
-export async function readHeaderVersion(
-  hash: string,
-  slot: number,
-): Promise<HeaderVersion> {
-  const block = await getSyncClient().fetchBlock({ hash, slot });
-  if (!block?.nativeBytes?.length)
-    throw new Error("Block header bytes unavailable");
-  if (bytesToHex(block.parsedBlock.header?.hash ?? new Uint8Array()) !== hash)
-    throw new Error("Returned block does not match the requested hash");
-  return decodeHeaderVersion(block.nativeBytes);
+export function blockBytesQuery(hash: string, slot: number) {
+  return queryOptions({
+    queryKey: ["dingo", "block-native", hash],
+    staleTime: Infinity,
+    retry: false,
+    queryFn: async () => {
+      const block = await getSyncClient().fetchBlock({ hash, slot });
+      if (!block?.nativeBytes?.length)
+        throw new Error("Block bytes unavailable");
+      if (bytesToHex(block.parsedBlock.header?.hash ?? new Uint8Array()) !== hash)
+        throw new Error("Returned block does not match the requested hash");
+      return block.nativeBytes;
+    },
+  });
 }

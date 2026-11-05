@@ -38,7 +38,7 @@ export function isMutableChainQuery(key: QueryKey, rollback = false): boolean {
     case "account":
       return rollback || key[3] !== "journey";
     case "epoch":
-      return rollback && key.length === 3;
+      return rollback && (key.length === 3 || key[3] === "parameters");
     case "pool":
       return key.length === 3;
     case "drep":
