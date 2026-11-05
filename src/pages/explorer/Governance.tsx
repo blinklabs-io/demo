@@ -13,7 +13,7 @@ import {
 } from "../../components/explorer/Visuals";
 import { Link, useParams, useLocation } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
 import { PaginatedList } from "../../components/explorer/PaginatedList";
@@ -217,7 +217,10 @@ export function ProposalDetail() {
     enabled: Boolean(id),
     refetchInterval: 60000,
   });
-  const loadedId = proposal.data?.id;
+  const record = proposal.error instanceof BlockfrostError && proposal.error.status === 404
+    ? undefined
+    : proposal.data;
+  const loadedId = record?.id;
   useEffect(() => {
     if (loadedId && hash === "#holder-answer")
       document
@@ -241,59 +244,59 @@ export function ProposalDetail() {
       <Panel
         title="Governance proposal"
         action={
-          proposal.data && (
+          record && (
             <a href="#drep-vote" className="text-xs text-teal-300">
               DRep voting ↓
             </a>
           )
         }
       >
-        <QueryState hasData={proposal.data !== undefined}
+        <QueryState hasData={record !== undefined}
           isLoading={proposal.isLoading}
           error={proposal.error}
           notFoundLabel="Proposal not found."
         >
-          {proposal.data && (
+          {record && (
             <div>
               <div className="metric-grid mb-5">
                 <Metric
                   label="Deposit"
-                  value={formatAda(BigInt(proposal.data.deposit))}
+                  value={formatAda(BigInt(record.deposit))}
                 />
                 <Metric
                   label="Expires"
-                  value={`Epoch ${proposal.data.expiration}`}
+                  value={`Epoch ${record.expiration}`}
                 />
                 <Metric
                   label="Status"
                   value={
-                    proposal.data.enacted_epoch !== null
+                    record.enacted_epoch !== null
                       ? "Enacted"
-                      : proposal.data.dropped_epoch !== null
+                      : record.dropped_epoch !== null
                         ? "Dropped"
-                        : proposal.data.expired_epoch !== null
+                        : record.expired_epoch !== null
                           ? "Expired"
-                          : proposal.data.ratified_epoch !== null
+                          : record.ratified_epoch !== null
                             ? "Ratified"
                             : "Submitted"
                   }
                 />
               </div>
-              <Field label="ID" value={proposal.data.id} />
-              <Field label="Type" value={proposal.data.governance_type} />
+              <Field label="ID" value={record.id} />
+              <Field label="Type" value={record.governance_type} />
               <Field
                 label="Transaction"
-                value={<HashLink kind="tx" id={proposal.data.tx_hash} />}
+                value={<HashLink kind="tx" id={record.tx_hash} />}
               />
               <Field
                 label="Certificate index"
-                value={proposal.data.cert_index}
+                value={record.cert_index}
               />
 
               <Field
                 label="Return account"
                 value={
-                  <HashLink kind="account" id={proposal.data.return_address} />
+                  <HashLink kind="account" id={record.return_address} />
                 }
               />
 
@@ -303,33 +306,33 @@ export function ProposalDetail() {
                     {
                       label: "Submitted",
                       complete: true,
-                      detail: <HashLink kind="tx" id={proposal.data.tx_hash} />,
+                      detail: <HashLink kind="tx" id={record.tx_hash} />,
                     },
                     {
                       label: "Ratified",
-                      complete: proposal.data.ratified_epoch !== null,
+                      complete: record.ratified_epoch !== null,
                       detail:
-                        proposal.data.ratified_epoch === null
+                        record.ratified_epoch === null
                           ? "Not ratified"
-                          : `Epoch ${proposal.data.ratified_epoch}`,
+                          : `Epoch ${record.ratified_epoch}`,
                     },
                     {
                       label: "Enacted",
-                      complete: proposal.data.enacted_epoch !== null,
+                      complete: record.enacted_epoch !== null,
                       detail:
-                        proposal.data.enacted_epoch === null
+                        record.enacted_epoch === null
                           ? "Not enacted"
-                          : `Epoch ${proposal.data.enacted_epoch}`,
+                          : `Epoch ${record.enacted_epoch}`,
                     },
                     {
                       label:
-                        proposal.data.dropped_epoch !== null
+                        record.dropped_epoch !== null
                           ? "Dropped"
                           : "Expiration",
                       complete:
-                        proposal.data.expired_epoch !== null ||
-                        proposal.data.dropped_epoch !== null,
-                      detail: `Epoch ${proposal.data.dropped_epoch ?? proposal.data.expired_epoch ?? proposal.data.expiration}`,
+                        record.expired_epoch !== null ||
+                        record.dropped_epoch !== null,
+                      detail: `Epoch ${record.dropped_epoch ?? record.expired_epoch ?? record.expiration}`,
                     },
                   ]}
                 />
@@ -338,7 +341,7 @@ export function ProposalDetail() {
                 <summary>Governance action data</summary>
                 <pre className="mt-3 max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-300">
                   {JSON.stringify(
-                    proposal.data.governance_description,
+                    record.governance_description,
                     null,
                     2,
                   )}
@@ -348,10 +351,10 @@ export function ProposalDetail() {
           )}
         </QueryState>
       </Panel>
-      {proposal.data && <HolderAnswer proposal={proposal.data} />}
-      {proposal.data && <ProposalVoting proposal={proposal.data} />}
-      {proposal.data && <HolderResults proposal={proposal.data} />}
-      {proposal.data && <GovernanceChamber proposalId={id!} />}
+      {record && <HolderAnswer proposal={record} />}
+      {record && <ProposalVoting proposal={record} />}
+      {record && <HolderResults proposal={record} />}
+      {record && <GovernanceChamber proposalId={id!} />}
     </div>
   );
 }

@@ -18,9 +18,6 @@ export async function resolveLookup(
         queryKey: ["dingo", kind, hash],
         queryFn: () => blockfrostFetch(path, { signal }),
         retry: false,
-        // Probes are never reset on rollback, so a cached hit must not be
-        // treated as fresh.
-        staleTime: 0,
       });
       return { kind };
     } catch (error) {

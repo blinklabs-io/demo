@@ -26,8 +26,7 @@ export function NodeHealthStrip() {
   });
 
   if (
-    !isError &&
-    (lastAction === "undo" || lastAction === "reset") &&
+    lastAction !== null && lastAction !== "apply" &&
     lastEventAt !== null && dataUpdatedAt <= lastEventAt
   ) return <span role="status" className="text-amber-300">Reconciling chain…</span>;
 

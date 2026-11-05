@@ -24,6 +24,9 @@ it("withdraws the observed tip on undo and reset without inventing a parent", as
   deliver({done: false,value: {action: "apply", block} as CardanoTipEvent});
   await Promise.resolve();
   expect(useTipStore.getState().tip?.height).toBe(9);
+  deliver({done: false,value: {action: "apply", block} as CardanoTipEvent});
+  await Promise.resolve();
+  expect(useTipStore.getState().revision).toBe(initial + 1);
   deliver({done: false,value: {action: "undo", block} as CardanoTipEvent});
   await Promise.resolve();
   expect(useTipStore.getState().tip).toBeNull();

@@ -12,12 +12,22 @@ export function isMutableChainQuery(key: QueryKey, rollback = false): boolean {
     case "epoch-clock-tip":
     case "lookup":
       return true;
+    case "holder-results":
+    case "delegation-confirmation":
+    case "handle":
     case "vote-confirmation":
     case "holder-answer":
     case "reward-withdrawal":
       return rollback;
     case "surveys":
-      return rollback && key[2] === "confirmation";
+      return rollback && ["confirmation", "detail", "directory", "results"].includes(String(key[2]));
+    case "asset":
+      return rollback && (key.length === 3 || key[3] === "holder-map" || key[3] === "mint-map");
+    case "policy-assets":
+    case "metadata-label":
+    case "proposals":
+    case "committee":
+      return rollback;
     case "network":
       return rollback && key.length === 2;
     case "block":
@@ -30,6 +40,7 @@ export function isMutableChainQuery(key: QueryKey, rollback = false): boolean {
     case "epoch":
       return rollback && key.length === 3;
     case "pool":
+      return key.length === 3;
     case "drep":
       return key.length === 3 || (rollback && key[3] === "delegators");
     case "proposal":
@@ -45,14 +56,11 @@ export function useChainReconciliation() {
   const client = useQueryClient();
   useEffect(() => useTipStore.subscribe((state, previous) => {
     if (state.revision === previous.revision) return;
-    // A reconnect only means events may have been missed; clearing cached
-    // records is reserved for confirmed rollbacks and resets.
-    const rollback = state.lastAction === "undo" || state.lastAction === "reset";
+    const rollback = state.lastAction !== "apply";
     const filter = {
-      type: "active" as const,
       predicate: (query: { queryKey: QueryKey }) => isMutableChainQuery(query.queryKey, rollback),
     };
     if (rollback) void client.resetQueries(filter);
-    else void client.invalidateQueries(filter);
+    else void client.invalidateQueries({ ...filter, type: "active" });
   }), [client]);
 }

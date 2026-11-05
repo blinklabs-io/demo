@@ -4,14 +4,17 @@ import { expect, it } from "vitest";
 import { transactionActivity } from "./transactionActivity";
 import { inspectChainTransaction, transactionKind } from "../explorer/transaction";
 
-const mintBody = `a400800180020009a1581c${"11".repeat(28)}a1414101`;
-// Plutus V2 script witness and a Mint-tagged redeemer for policy index 0.
-const scriptWitness = "a2058184010000820000" + "0681" + "4101";
+const mintScript = new Core.PlutusV2Script(Core.HexBlob("0100002221200101"));
+const mintBody = `a400800180020009a1581c${mintScript.hash()}a1414101`;
+const scriptWitness = `a20581840100008200000681${mintScript.toCbor()}`;
 function mintTransaction() {
   return Core.Transaction.fromCbor(Core.TxCBOR(`84${mintBody}${scriptWitness}f5f6`));
 }
-it("uses the same asset activity for a scripted mint in mosaic and details", () => {
+it("classifies an encoded scripted mint consistently with transaction details", () => {
   const tx = mintTransaction();
+  expect(tx.witnessSet().redeemers()!.values()[0].tag()).toBe(Core.RedeemerTag.Mint);
+  expect(tx.witnessSet().plutusV2Scripts()!.values()[0].hash()).toBe(mintScript.hash());
+  expect([...tx.body().mint()!.keys()][0].slice(0, 56)).toBe(mintScript.hash());
   expect(transactionActivity(tx)).toBe("mint");
   expect(transactionKind(inspectChainTransaction(tx.toCbor(), String(tx.getId())))).toBe("Asset creation & burn");
 });

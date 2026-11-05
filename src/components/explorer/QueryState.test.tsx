@@ -34,3 +34,25 @@ describe("read query result states", () => {
     expect(html).not.toContain("unavailable");
   });
 });
+
+it("keeps an open stateful disclosure mounted across background error and recovery", async () => {
+  const { act } = await import("react");
+  const { createRoot } = await import("react-dom/client");
+  const { LazyDisclosure } = await import("./LazyDisclosure");
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  const view = (error: Error | null) => <QueryState isLoading={false} error={error} hasData><LazyDisclosure title="Records"><span>Loaded records</span></LazyDisclosure></QueryState>;
+  try {
+    await act(async () => root.render(view(null)));
+    const disclosure = container.querySelector("details")!;
+    await act(async () => { disclosure.open = true; disclosure.dispatchEvent(new Event("toggle")); });
+    expect(container.textContent).toContain("Loaded records");
+    await act(async () => root.render(view(new Error("Refresh failed"))));
+    expect(container.querySelector("details")).toBe(disclosure);
+    expect(container.textContent).toContain("Loaded records");
+    await act(async () => root.render(view(null)));
+    expect(container.querySelector("details")).toBe(disclosure);
+    expect(disclosure.open).toBe(true);
+    expect(container.textContent).toContain("Loaded records");
+  } finally { await act(async () => root.unmount()); }
+});

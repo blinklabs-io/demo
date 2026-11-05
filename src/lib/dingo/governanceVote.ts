@@ -182,6 +182,7 @@ export async function submitGovernanceVote(
   await assertWalletSession(api, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
   await assertWalletSession(api, assertConnection);
+  // Partial signing can return payment witnesses without the governance key.
   assertSignedWithKey(
     signed,
     prepared.drepHash,

@@ -16,6 +16,7 @@ import { useWalletStore } from "../../stores/walletStore";
 import { SurveyTransaction } from "./SurveyTransaction";
 
 const boundary = vi.hoisted(() => ({
+  confirmation: "valid" as "valid" | "failed" | "error",
   actions: 0,
   posts: 0,
   finish: null as (() => void) | null,
@@ -53,6 +54,20 @@ vi.mock("../../lib/surveys/transactions", () => ({
     });
   },
 }));
+vi.mock("../../lib/dingo/transactionConfirmation", async (original) => {
+  const actual =
+    await original<typeof import("../../lib/dingo/transactionConfirmation")>();
+  return {
+    ...actual,
+    readTransactionConfirmation: async (hash: string) => {
+      if (boundary.confirmation === "failed")
+        throw new actual.ConfirmationFailure(hash, "22".repeat(32));
+      if (boundary.confirmation === "error")
+        throw new Error("503: confirmation unavailable");
+      return { hash, block: "22".repeat(32), valid_contract: true };
+    },
+  };
+});
 function Form() {
   const [title, setTitle] = useState("A");
   return (
@@ -99,6 +114,7 @@ beforeEach(async () => {
   (
     globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
   ).IS_REACT_ACT_ENVIRONMENT = true;
+  boundary.confirmation = "valid";
   boundary.actions = 0;
   boundary.posts = 0;
   boundary.finish = null;
@@ -187,4 +203,55 @@ it("rejects a pending approval after leaving the survey form", async () => {
   await act(async () => boundary.finish!());
   boundary.finish = null;
   expect(boundary.posts).toBe(0);
+});
+
+it("shows terminal failed inclusion and returns to a new unsigned draft only on explicit request", async () => {
+  boundary.confirmation = "failed";
+  await click("Prepare survey fixture");
+  await click("Sign & submit");
+  await act(async () => boundary.finish!());
+  boundary.finish = null;
+  expect(container.textContent).toContain("Transaction failed on chain");
+  expect(container.textContent).toContain("intended actions were not applied");
+  expect(container.textContent).not.toContain("waiting for confirmation");
+  expect(container.textContent).not.toContain("Retry confirmation");
+  await click("Start new draft");
+  expect(container.textContent).toContain("Prepare survey fixture");
+  expect(boundary.posts).toBe(1);
+  expect(boundary.actions).toBe(1);
+});
+it("allows retrying an unavailable confirmation without signing or submitting again", async () => {
+  boundary.confirmation = "error";
+  await click("Prepare survey fixture");
+  await click("Sign & submit");
+  await act(async () => boundary.finish!());
+  boundary.finish = null;
+  expect(container.textContent).toContain(
+    "Submitted · confirmation unavailable",
+  );
+  boundary.confirmation = "valid";
+  await click("Retry confirmation");
+  expect(container.textContent).toContain("Confirmed on chain");
+  expect(boundary.posts).toBe(1);
+  expect(boundary.actions).toBe(1);
+});
+
+it("preserves a submitted survey hash and confirmation across later authored field edits", async () => {
+  boundary.confirmation = "error";
+  await click("Prepare survey fixture");
+  await click("Sign & submit");
+  await act(async () => boundary.finish!());
+  boundary.finish = null;
+  await title("B");
+  expect(
+    container.querySelector('a[href="/explorer/tx/' + "11".repeat(32) + '"]'),
+  ).not.toBeNull();
+  expect(container.textContent).toContain("confirmation unavailable");
+  boundary.confirmation = "valid";
+  await click("Retry confirmation");
+  expect(container.textContent).toContain("Confirmed on chain");
+  expect(boundary.actions).toBe(1);
+  expect(boundary.posts).toBe(1);
+  await click("Start new draft");
+  expect(container.textContent).toContain("Prepare survey fixture");
 });

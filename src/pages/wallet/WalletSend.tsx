@@ -112,7 +112,7 @@ function SendForm({
             </section>
           )}
           <ToolTransaction
-            key={revision}
+            draftKey={JSON.stringify([revision, recipient, ada, [...selected]])}
             assertDraft={() => {
               if (generation.current !== revision)
                 throw new Error(

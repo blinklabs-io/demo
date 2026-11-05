@@ -41,9 +41,10 @@ function Sidebar({ pathname }: { pathname: string }) {
       </div>
       <p className="nav-caption">DINGO WORKSPACE</p>
       <nav id="main-navigation" aria-label="Main navigation" data-open={open}>
-        {mainNavigation.map(({ to, label, icon, matches, group }) => (
+        {mainNavigation.map(({ to, label, icon, matches, group, area }) => (
           <Link
             key={to}
+            data-area={area}
             to={to}
             className={`side-link ${matches(pathname) ? "selected" : ""}`}
             aria-current={!group && matches(pathname) ? "page" : undefined}

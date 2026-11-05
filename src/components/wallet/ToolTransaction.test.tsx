@@ -101,6 +101,7 @@ beforeEach(async () => {
       <QueryClientProvider client={client}>
         <MemoryRouter>
           <ToolTransaction
+            draftKey="donation"
             action={() => ({ kind: "donate", amount: "10" })}
             assertDraft={() => {
               if (!authoredValid) throw new Error("Caller draft changed");

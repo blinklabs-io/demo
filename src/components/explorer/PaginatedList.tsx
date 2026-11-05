@@ -7,6 +7,7 @@ import { Pagination } from "./Pagination";
 interface PaginatedListProps<T> {
   queryKey: unknown[];
   pageSize?: number;
+  totalItems?: number;
   visualize?: (items: T[]) => ReactNode;
   staleTime?: number;
   buildUrl: (page: number, pageSize: number) => string;
@@ -27,6 +28,7 @@ export function PaginatedList<T>(props: PaginatedListProps<T>) {
 function PaginatedListPage<T>({
   queryKey,
   pageSize = 20,
+  totalItems,
   buildUrl,
   renderItem,
   emptyLabel = "Nothing here yet.",
@@ -39,7 +41,7 @@ function PaginatedListPage<T>({
     queryKey: [...queryKey, pageSize, page],
     queryFn: ({ signal }) =>
       blockfrostFetch<T[]>(buildUrl(page, pageSize), { signal }),
-    staleTime,
+    ...(staleTime === undefined ? {} : { staleTime }),
   });
 
   return (
@@ -52,7 +54,7 @@ function PaginatedListPage<T>({
         {query.data?.length === 0 && (
           <div className="list-empty">
             <span aria-hidden="true">◇</span>
-            <p>{page > 1 ? "No more results." : emptyLabel}</p>
+            <p>{page === 1 ? emptyLabel : "No more records."}</p>
           </div>
         )}
         {query.data && query.data.length > 0 && visualize?.(query.data)}
@@ -65,7 +67,13 @@ function PaginatedListPage<T>({
       <Pagination
         page={page}
         onPageChange={setPage}
-        hasNextPage={(query.data?.length ?? 0) === pageSize}
+        hasNextPage={
+          query.data !== undefined && (
+            totalItems === undefined
+              ? query.data.length === pageSize
+              : page * pageSize < totalItems
+          )
+        }
       />
     </>
   );

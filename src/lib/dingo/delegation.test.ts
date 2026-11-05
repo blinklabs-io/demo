@@ -22,7 +22,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function fixture() {
+function fixture(registered = true) {
   const key = Core.Ed25519PrivateKey.fromNormalHex(
     Core.Ed25519PrivateNormalKeyHex("11".repeat(32)),
   );
@@ -90,23 +90,72 @@ function fixture() {
   vi.mocked(getBlaze).mockResolvedValue({ blaze } as unknown as Awaited<
     ReturnType<typeof getBlaze>
   >);
-  vi.spyOn(globalThis, "fetch").mockImplementation(
-    async (url) =>
-      new Response(
-        JSON.stringify(
-          String(url).includes("/blocks/latest")
-            ? { slot: 100 }
-            : { registered: true, pool_id: null, drep_id: null },
-        ),
-        { headers: { "Content-Type": "application/json" } },
-      ),
-  );
+  const targetState = {
+    exists: true,
+    retired: false,
+    retirementEpoch: null as number | null,
+  };
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+    const path = String(url);
+    if (path.includes("/pools/") && !targetState.exists)
+      return new Response(JSON.stringify({ message: "Not found" }), {
+        status: 404,
+      });
+    const data = path.includes("/blocks/latest")
+      ? { slot: 100, epoch: 10 }
+      : path.includes("/txs/")
+        ? { cbor: retirementTx().toCbor() }
+        : path.includes("/updates?")
+          ? [
+              {
+                tx_hash:
+                  targetState.retirementEpoch === null
+                    ? "33".repeat(32)
+                    : String(retirementTx().getId()),
+                cert_index: 0,
+                action:
+                  targetState.retirementEpoch === null
+                    ? "registered"
+                    : "deregistered",
+              },
+            ]
+          : path.includes("/pools/")
+            ? { pool_id: target.id, registration: ["33".repeat(32)] }
+            : path.includes("/governance/dreps/")
+              ? {
+                  drep_id: path.split("/").at(-1),
+                  retired: targetState.retired,
+                }
+              : { registered, pool_id: null, drep_id: null };
+    return new Response(JSON.stringify(data), {
+      headers: { "Content-Type": "application/json" },
+    });
+  });
   const target = {
     kind: "pool" as const,
     id: Core.PoolId.fromKeyHash(Core.Ed25519KeyHashHex("22".repeat(28))),
   };
+  function retirementTx() {
+    const body = new Core.TransactionBody(
+      Core.CborSet.fromCore([], Core.TransactionInput.fromCore),
+      [],
+      0n,
+    );
+    const cert = Core.Certificate.newPoolRetirement(
+      new Core.PoolRetirement(
+        Core.PoolId.toKeyHash(target.id),
+        Core.EpochNo(targetState.retirementEpoch!),
+      ),
+    );
+    body.setCerts(
+      Core.CborSet.fromCore([cert.toCore()], Core.Certificate.fromCore),
+    );
+    return new Core.Transaction(body, new Core.TransactionWitnessSet());
+  }
   return {
     api,
+    targetState,
+    credential,
     reward: reward.toBech32(),
     target,
     assertCurrent,
@@ -123,20 +172,32 @@ function fixture() {
     },
   };
 }
-it("builds a review without signing, and submits only after a separate explicit call", async () => {
-  const f = fixture();
-  const draft = await prepareDelegation(
-    f.api,
-    f.reward,
-    f.target,
-    f.assertCurrent,
-  );
-  expect(f.sign).not.toHaveBeenCalled();
-  expect(f.post).not.toHaveBeenCalled();
-  await submitDelegation(f.api, draft, f.assertCurrent);
-  expect(f.sign).toHaveBeenCalledTimes(1);
-  expect(f.post).toHaveBeenCalledTimes(1);
-});
+it.each([true, false])(
+  "builds the correct delegation certificates before a separate explicit signature (registered=%s)",
+  async (registered) => {
+    const f = fixture(registered);
+    const draft = await prepareDelegation(
+      f.api,
+      f.reward,
+      f.target,
+      f.assertCurrent,
+    );
+    expect(f.builder.addDelegation).toHaveBeenCalledTimes(1);
+    expect(f.builder.addDelegation.mock.calls[0][0].toCore()).toEqual(
+      f.credential,
+    );
+    expect(f.builder.addDelegation.mock.calls[0][1]).toBe(f.target.id);
+    expect(f.builder.addRegisterStake).toHaveBeenCalledTimes(
+      registered ? 0 : 1,
+    );
+    expect(f.builder.addVoteDelegation).not.toHaveBeenCalled();
+    expect(f.sign).not.toHaveBeenCalled();
+    expect(f.post).not.toHaveBeenCalled();
+    await submitDelegation(f.api, draft, f.assertCurrent);
+    expect(f.sign).toHaveBeenCalledTimes(1);
+    expect(f.post).toHaveBeenCalledTimes(1);
+  },
+);
 it("does not publish a prepared delegation when its session leaves while build is pending", async () => {
   const f = fixture();
   let finish!: (tx: Core.Transaction) => void;
@@ -192,3 +253,59 @@ it("does not submit when wallet switches network while signing, despite unchange
   );
   expect(f.post).not.toHaveBeenCalled();
 });
+
+it("rejects an unknown pool before building or prompting the wallet", async () => {
+  const f = fixture();
+  f.targetState.exists = false;
+  await expect(
+    prepareDelegation(f.api, f.reward, f.target, f.assertCurrent),
+  ).rejects.toThrow("not registered");
+  expect(f.builder.complete).not.toHaveBeenCalled();
+  expect(f.sign).not.toHaveBeenCalled();
+});
+it("rechecks the pool target before signing a previously reviewed draft", async () => {
+  const f = fixture();
+  const draft = await prepareDelegation(
+    f.api,
+    f.reward,
+    f.target,
+    f.assertCurrent,
+  );
+  f.targetState.exists = false;
+  await expect(submitDelegation(f.api, draft, f.assertCurrent)).rejects.toThrow(
+    "not registered",
+  );
+  expect(f.sign).not.toHaveBeenCalled();
+  expect(f.post).not.toHaveBeenCalled();
+});
+it("rejects a retired DRep before creating a reviewed transaction", async () => {
+  const f = fixture();
+  f.targetState.retired = true;
+  const id = Core.Cardano.DRepID.cip129FromCredential(f.credential);
+  await expect(
+    prepareDelegation(f.api, f.reward, { kind: "drep", id }, f.assertCurrent),
+  ).rejects.toThrow("retired");
+  expect(f.builder.complete).not.toHaveBeenCalled();
+  expect(f.sign).not.toHaveBeenCalled();
+});
+
+it.each([8, 12])(
+  "checks a retirement certificate's effective epoch rather than rejecting all announced retirements (epoch=%s)",
+  async (epoch) => {
+    const f = fixture();
+    f.targetState.retirementEpoch = epoch;
+    const result = prepareDelegation(
+      f.api,
+      f.reward,
+      f.target,
+      f.assertCurrent,
+    );
+    if (epoch <= 10) {
+      await expect(result).rejects.toThrow("has retired");
+      expect(f.builder.complete).not.toHaveBeenCalled();
+    } else {
+      await expect(result).resolves.toMatchObject({ target: f.target });
+      expect(f.builder.complete).toHaveBeenCalledTimes(1);
+    }
+  },
+);

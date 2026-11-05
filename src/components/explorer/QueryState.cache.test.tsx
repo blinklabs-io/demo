@@ -1,28 +1,20 @@
-import { act } from "react";
-import { createRoot } from "react-dom/client";
-import { expect, it } from "vitest";
+import { afterEach, expect, it } from "vitest";
+import { queryClient } from "../../lib/queryClient";
 import { BlockfrostError } from "../../lib/dingo/blockfrost";
-import { QueryState } from "./QueryState";
 
-it("keeps a record hidden when a refresh error follows a not-found response", async () => {
-  const container = document.createElement("div");
-  const root = createRoot(container);
-  const show = (error: unknown) =>
-    act(async () =>
-      root.render(
-        <QueryState isLoading={false} error={error} hasData>
-          <strong>Last loaded record</strong>
-        </QueryState>,
-      ),
-    );
-  await show(null);
-  expect(container.textContent).toContain("Last loaded record");
-  await show(new BlockfrostError("Gone", 404, "/record"));
-  expect(container.textContent).not.toContain("Last loaded record");
-  await show(new Error("Node unavailable"));
-  expect(container.textContent).not.toContain("Last loaded record");
-  expect(container.textContent).toContain("Node unavailable");
-  await show(null);
-  expect(container.textContent).toContain("Last loaded record");
-  await act(async () => root.unmount());
+afterEach(() => queryClient.clear());
+it("does not resurrect a successful entity after 404 followed by a transient failure", async () => {
+  const key = ["dingo", "tx", "orphan"];
+  await queryClient.fetchQuery({ queryKey: key, queryFn: async () => ({ confirmed: true }) });
+  const missing = new BlockfrostError("Gone", 404, "/tx/orphan");
+  await expect(queryClient.fetchQuery({ queryKey: key, staleTime: 0, retry: false, queryFn: async () => { throw missing; } })).rejects.toBe(missing);
+  expect(queryClient.getQueryData(key)).toBeUndefined();
+  expect(queryClient.getQueryState(key)?.error).toBe(missing);
+  expect(queryClient.getQueryState(key)?.status).toBe("error");
+  const unavailable = new BlockfrostError("Unavailable", 500, "/tx/orphan");
+  await expect(queryClient.fetchQuery({ queryKey: key, staleTime: 0, retry: false, queryFn: async () => { throw unavailable; } })).rejects.toBe(unavailable);
+  expect(queryClient.getQueryData(key)).toBeUndefined();
+  expect(queryClient.getQueryState(key)?.error).toBe(unavailable);
+  await queryClient.fetchQuery({ queryKey: key, queryFn: async () => ({ confirmed: true, block: "new" }) });
+  expect(queryClient.getQueryData(key)).toEqual({ confirmed: true, block: "new" });
 });

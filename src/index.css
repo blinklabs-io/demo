@@ -9,6 +9,36 @@
   --line: #223047;
   --muted: #93a4ba;
   --accent: #2dd4bf;
+  --area-color: #63e6d3;
+  --area-rgb: 45 212 191;
+}
+[data-area="discover"] {
+  --area-color: #63e6d3;
+  --area-rgb: 45 212 191;
+}
+[data-area="explore"] {
+  --area-color: #91bdff;
+  --area-rgb: 96 165 250;
+}
+[data-area="participate"] {
+  --area-color: #c6a5ff;
+  --area-rgb: 167 139 250;
+}
+[data-area="swap"] {
+  --area-color: #ffd18b;
+  --area-rgb: 251 191 96;
+}
+[data-area="build"] {
+  --area-color: #ffabd2;
+  --area-rgb: 244 114 182;
+}
+[data-area="wallet"] {
+  --area-color: #76e7b7;
+  --area-rgb: 52 211 153;
+}
+[data-area="api"] {
+  --area-color: #83e5f8;
+  --area-rgb: 34 211 238;
 }
 body {
   margin: 0;
@@ -43,7 +73,8 @@ summary {
 }
 .app-shell {
   background:
-    radial-gradient(ellipse at top right, #10202b 0, transparent 45%), #080d17;
+    radial-gradient(ellipse at top right, rgb(var(--area-rgb) / 0.14), transparent 48%),
+    radial-gradient(ellipse at 15% 60%, #7551c40a, transparent 50%), #080d17;
 }
 .sidebar {
   position: fixed;
@@ -127,11 +158,12 @@ summary {
   color: white;
 }
 .side-link.selected {
-  background: #122d30;
-  color: #5eead4;
-  border-color: #20504e;
+  background: rgb(var(--area-rgb) / 0.16);
+  color: var(--area-color);
+  border-color: rgb(var(--area-rgb) / 0.42);
 }
 .nav-icon {
+  color: var(--area-color);
   width: 20px;
   text-align: center;
   font-size: 21px;
@@ -764,6 +796,7 @@ summary {
     padding: 8px 11px;
   }
   .nav-icon {
+  color: var(--area-color);
     font-size: 16px;
     width: 16px;
   }
@@ -964,8 +997,8 @@ summary {
   border-bottom: 2px solid transparent;
 }
 .section-nav nav a.selected {
-  color: #5eead4;
-  border-color: #2dd4bf;
+  color: var(--area-color);
+  border-color: var(--area-color);
 }
 .wallet-welcome {
   display: grid;
@@ -1668,7 +1701,7 @@ summary {
   inset: -30px -10px;
   pointer-events: none;
   z-index: -1;
-  background: radial-gradient(ellipse at 80% 50%, #2dd4bf0b, transparent 65%);
+  background: radial-gradient(ellipse at 80% 50%, rgb(var(--area-rgb) / 0.15), transparent 65%);
 }
 .workspace-main .showcase-intro h1 {
   font-size: clamp(28px, 3vw, 40px);
@@ -1688,18 +1721,18 @@ summary {
 .showcase-symbol {
   font-size: 100px;
   line-height: 1;
-  color: #5cddc4;
-  text-shadow: 0 0 55px #2dd4bf45;
+  color: var(--area-color);
+  text-shadow: 0 0 55px rgb(var(--area-rgb) / 0.4);
   display: grid;
   place-items: center;
   width: 145px;
   height: 145px;
   flex: none;
-  background: radial-gradient(circle, #2dd4bf13, transparent 65%);
+  background: radial-gradient(circle, rgb(var(--area-rgb) / 0.15), transparent 65%);
   transform: rotate(-12deg);
 }
 .showcase-intro .eyebrow {
-  color: #6cc2b5;
+  color: var(--area-color);
   letter-spacing: 2px;
   font-size: 10px;
 }
@@ -1807,8 +1840,8 @@ summary {
   border-color: #304351;
   border-radius: 15px;
   background:
-    radial-gradient(ellipse at 100% 0, #2dd4bf12, transparent 70%),
-    linear-gradient(120deg, #112330, #101b29);
+    radial-gradient(ellipse at 100% 0, #2dd4bf3b, transparent 85%),
+    linear-gradient(120deg, #123733, #101d29);
   padding: 22px;
 }
 .metric:after {
@@ -1816,30 +1849,42 @@ summary {
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 38%;
-  height: 2px;
+  width: 100%;
+  height: 3px;
   background: linear-gradient(90deg, #43d4bb, transparent);
 }
 .metric:nth-child(2) {
   background:
-    radial-gradient(ellipse at 100% 0, #818cf820, transparent 70%), #121d2e;
+    radial-gradient(ellipse at 100% 0, #a78bfa40, transparent 85%), #24203b;
 }
 .metric:nth-child(2):after {
   background: linear-gradient(90deg, #9295ff, transparent);
 }
 .metric:nth-child(3) {
   background:
-    radial-gradient(ellipse at 100% 0, #d4a35116, transparent 70%), #131e2a;
+    radial-gradient(ellipse at 100% 0, #fbbf2433, transparent 85%), #30271e;
 }
 .metric:nth-child(3):after {
   background: linear-gradient(90deg, #d4b577, transparent);
 }
 .metric > strong {
   letter-spacing: -1px;
+  color: #a0f4df;
 }
+.metric > .eyebrow,
+.metric > .metric-detail {
+  color: #bed0df;
+}
+.metric:nth-child(2) > strong { color: #d4c3ff; }
+.metric:nth-child(3) > strong { color: #ffdf9b; }
+.metric:nth-child(4n) {
+  background: radial-gradient(ellipse at 100% 0, #f472b633, transparent 85%), #302034;
+}
+.metric:nth-child(4n) > strong { color: #ffc3e2; }
+.metric:nth-child(4n):after { background: linear-gradient(90deg, #f472b6, transparent); }
 .data-panel {
   background:
-    radial-gradient(ellipse at 100% 0, #366c7210, transparent 60%),
+    radial-gradient(ellipse at 100% 0, rgb(var(--area-rgb) / 0.13), transparent 65%),
     linear-gradient(135deg, #111e2e, #0d1724);
 }
 .panel-heading h2 {
@@ -1851,7 +1896,7 @@ summary {
   content: "";
   width: 5px;
   height: 15px;
-  background: linear-gradient(#4fd2ba, #2e756a);
+  background: linear-gradient(var(--area-color), rgb(var(--area-rgb) / 0.45));
   border-radius: 2px;
   flex: none;
 }
@@ -4116,7 +4161,7 @@ summary {
     overflow-wrap: anywhere;
     font-size: clamp(16px, 5vw, 20px);
   }
-  .metric-grid:has(> .metric:nth-child(3):last-child) > .metric:first-child {
+  .metric-grid:has(> .metric:nth-child(3):last-child):not(:has(> .metric-wide)) > .metric:first-child {
     grid-column: 1 / -1;
   }
   .detail-showcase > .showcase-intro {
@@ -4153,6 +4198,9 @@ summary {
 }
 @media (max-width: 600px) {
   .metric-grid > .metric-wide {
+    grid-column: 1 / -1;
+  }
+  .metric-grid:has(> .metric:nth-child(2):last-child):has(> .metric-wide) > .metric {
     grid-column: 1 / -1;
   }
 }
@@ -5166,6 +5214,42 @@ summary {
 .tool-success strong { color:#72e5ac; }
 .tool-success code { overflow-wrap:anywhere; font-size:11px; }
 .tool-success a { color:#59e9c9; font-size:13px; }
+.confirmation-failed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #a14c58;
+  border-radius: 12px;
+  background: #301d28;
+  color: #f4c5cb;
+}
+.confirmation-failed strong,
+.confirmation-failed h3,
+.confirmation-failed a {
+  color: #ffb2bc;
+}
+.confirmation-failed p {
+  color: #e8bbc5;
+}
+.confirmation-failed > button {
+  max-width: 100%;
+  border: 1px solid #ae6875;
+  border-radius: 8px;
+  padding: 9px 14px;
+  background: #482431;
+  color: #ffd2d7;
+  font-weight: 600;
+  cursor: pointer;
+}
+.confirmation-failed > button:hover {
+  background: #603445;
+}
+.confirmation-failed > button:focus-visible {
+  outline: 2px solid #ffb2bc;
+  outline-offset: 2px;
+}
 .tool-form .tool-drop { border:1px dashed #3d746b; background:radial-gradient(ellipse at 50% 10%,#1e66514a,transparent),#0d2224; border-radius:16px; padding:28px 20px; text-align:center; align-items:center; justify-items:center; cursor:pointer; gap:14px; }
 .tool-drop strong { color:#daf7ed; overflow-wrap:anywhere; }
 .tool-file-symbol { color:#55e8c8; font-size:50px; line-height:1; }

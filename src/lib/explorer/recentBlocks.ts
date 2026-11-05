@@ -16,19 +16,14 @@ export async function fetchRecentBlocks(signal?: AbortSignal) {
   const latest = await blockfrostFetch<BlockSummary>("/api/v0/blocks/latest", { signal });
   const blocks = [latest];
   if (!latest.previous_block) return { blocks, incomplete: false };
-  try {
-    const previous = await blockfrostFetch<BlockSummary[]>(
-      `/api/v0/blocks/${latest.hash}/previous?count=11&order=desc`, { signal },
-    );
-    for (const block of previous) {
-      const parent = blocks.at(-1)!;
-      if (block.hash !== parent.previous_block || block.height !== parent.height - 1)
-        return { blocks, incomplete: true };
-      blocks.push(block);
-    }
-    return { blocks, incomplete: blocks.length < 12 && Boolean(blocks.at(-1)!.previous_block) };
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    return { blocks, incomplete: true };
+  const previous = await blockfrostFetch<BlockSummary[]>(
+    `/api/v0/blocks/${latest.hash}/previous?count=11&order=desc`, { signal },
+  );
+  for (const block of previous) {
+    const parent = blocks.at(-1)!;
+    if (block.hash !== parent.previous_block || block.height !== parent.height - 1)
+      return { blocks, incomplete: true };
+    blocks.push(block);
   }
+  return { blocks, incomplete: blocks.length < 12 && Boolean(blocks.at(-1)!.previous_block) };
 }

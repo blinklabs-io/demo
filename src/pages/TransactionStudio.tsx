@@ -51,6 +51,14 @@ export default function TransactionStudio() {
     setError("");
     setNotice("");
   }
+  function isCurrent(request?: number) {
+    try {
+      assertActive();
+      return request === undefined || request === revision.current;
+    } catch {
+      return false;
+    }
+  }
   async function run(action: () => Promise<StudioTransaction>) {
     const request = revision.current;
     setBusy(true);
@@ -60,18 +68,19 @@ export default function TransactionStudio() {
       assertActive();
       const result = await action();
       assertActive();
-      if (request === revision.current) {
+      if (isCurrent(request)) {
         setTransaction(result);
         setNotice(
           "Transaction ready to review and export. Nothing has been submitted.",
         );
       }
     } catch (e) {
-      if (request === revision.current)
+      if (isCurrent(request))
         setError(
           e instanceof Error ? e.message : "Transaction operation failed.",
         );
     } finally {
+      // Query navigation can retain this component; settled work must release its lock.
       setBusy(false);
     }
   }
@@ -304,11 +313,11 @@ export default function TransactionStudio() {
                   }
                   try {
                     const text = await file.text();
-                    if (request !== revision.current) return;
+                    if (!isCurrent(request)) return;
                     setInput(text);
                     setTransaction(inspect(text));
                   } catch (error) {
-                    if (request === revision.current)
+                    if (isCurrent(request))
                       setError(
                         error instanceof Error
                           ? error.message

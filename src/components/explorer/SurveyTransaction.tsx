@@ -12,7 +12,7 @@ import {
 } from "../../lib/surveys/transactions";
 import { governanceError } from "../../lib/dingo/governanceVote";
 import {
-  isRetryableConfirmation,
+  ConfirmationFailure,
   readTransactionConfirmation,
 } from "../../lib/dingo/transactionConfirmation";
 import { formatAda } from "../../lib/format";
@@ -35,7 +35,7 @@ export function SurveyTransaction({
   return (
     <TransactionForm
       key={connectionId}
-      draftKey={key}
+      draftKey={draftKey}
       assertDraft={assertDraft}
       action={action}
       label={label}
@@ -45,12 +45,12 @@ export function SurveyTransaction({
   );
 }
 function TransactionForm({
-  draftKey,
   action,
   label,
   connectionId,
   ready,
   assertDraft,
+  draftKey,
 }: {
   draftKey: string;
   assertDraft: () => void;
@@ -61,13 +61,12 @@ function TransactionForm({
 }) {
   const api = useWalletStore((s) => s.walletApi);
   const client = useQueryClient();
-  const [draft, setDraft] = useState<{
-    key: string;
-    value: PreparedSurvey;
-  } | null>(null);
-  const prepared = draft?.key === draftKey ? draft.value : null;
-  const setPrepared = (value: PreparedSurvey | null) =>
-    setDraft(value && { key: draftKey, value });
+  const [prepared, setPrepared] = useState<PreparedSurvey | null>(null);
+  const [reviewKey, setReviewKey] = useState(draftKey);
+  if (reviewKey !== draftKey) {
+    setReviewKey(draftKey);
+    setPrepared(null);
+  }
   const [submittedAction, setSubmittedAction] = useState<SurveyAction | null>(
     null,
   );
@@ -82,10 +81,18 @@ function TransactionForm({
       throw new Error("Wallet connection changed. Review a new transaction.");
   }
   const prepare = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (requestKey: string) => {
+      if (requestKey !== draftKey)
+        throw new Error("Draft details changed. Review a new transaction.");
       if (!api) throw new Error("Connect a wallet first.");
       try {
-        return await prepareSurveyTransaction(api, action(), assertConnection);
+        const result = await prepareSurveyTransaction(
+          api,
+          action(),
+          assertConnection,
+        );
+        assertConnection();
+        return result;
       } catch (e) {
         throw governanceError(e, "Unable to build survey transaction.");
       }
@@ -136,8 +143,12 @@ function TransactionForm({
         <WalletConnectSummary />
       </div>
     );
+  const failed = confirmation.error instanceof ConfirmationFailure;
   const busy = prepare.isPending || submit.isPending;
-  const error = prepare.error ?? submit.error ?? confirmation.error;
+  const error =
+    (prepare.variables === draftKey ? prepare.error : null) ??
+    submit.error ??
+    confirmation.error;
   return (
     <div className="survey-transaction">
       {!prepared && !submit.data && (
@@ -145,7 +156,7 @@ function TransactionForm({
           className="survey-primary"
           type="button"
           disabled={busy || !ready}
-          onClick={() => prepare.mutate()}
+          onClick={() => prepare.mutate(draftKey)}
         >
           {prepare.isPending ? "Building transaction…" : label}
         </button>
@@ -248,32 +259,36 @@ function TransactionForm({
         </p>
       )}
       {submit.data && (
-        <div role="status" className="survey-submitted">
+        <div
+          role="status"
+          className={`survey-submitted${failed ? " confirmation-failed" : ""}`}
+        >
           <strong>
-            {confirmation.data
-              ? "Confirmed on chain"
-              : confirmation.error && !isRetryableConfirmation(confirmation.error)
-                ? "Failed · script validation rejected the transaction"
-                : "Submitted · waiting for confirmation"}
+            {failed
+              ? "Transaction failed on chain"
+              : confirmation.data
+                ? "Confirmed on chain"
+                : confirmation.error
+                  ? "Submitted · confirmation unavailable"
+                  : "Submitted · waiting for confirmation"}
           </strong>
           <HashLink kind="tx" id={submit.data} />
-          {isRetryableConfirmation(confirmation.error) && (
+          {confirmation.error && !failed && (
             <button type="button" onClick={() => void confirmation.refetch()}>
               Retry confirmation
             </button>
           )}
-          {(confirmation.data ||
-            (confirmation.error &&
-              !isRetryableConfirmation(confirmation.error))) && (
+          {(failed || confirmation.data) && (
             <button
               type="button"
               onClick={() => {
-                submit.reset();
-                prepare.reset();
+                setPrepared(null);
                 setSubmittedAction(null);
+                prepare.reset();
+                submit.reset();
               }}
             >
-              Review another transaction
+              Start new draft
             </button>
           )}
           {confirmation.data && (

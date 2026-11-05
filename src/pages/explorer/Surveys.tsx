@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Link, useParams } from "react-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Core } from "@blaze-cardano/sdk";
@@ -716,7 +717,9 @@ function SurveyDetailContent() {
       loadSurvey(hash.toLowerCase(), Number(index), signal),
     retry: false,
   });
-  const survey = query.data?.survey;
+  const survey = query.error instanceof BlockfrostError && query.error.status === 404
+    ? undefined
+    : query.data?.survey;
   const results = useQuery({
     queryKey: ["dingo", "surveys", "results", hash, index],
     enabled: Boolean(survey),
@@ -768,14 +771,14 @@ function SurveyDetailContent() {
   const closed = health.data ? health.data.tipEpoch > survey.endEpoch : false;
   const cancelled = results.data?.cancelled ?? false;
   const eligible =
-    !closed && !cancelled && Boolean(health.data) && results.isSuccess;
+    !query.error && !closed && !cancelled && Boolean(health.data) && results.isSuccess;
   return (
     <div className="survey-page">
       <Link to="/explorer/surveys" className="text-teal-300">
         ← Surveys
       </Link>
       <PageIntro
-        eyebrow="Verified creator · CIP-179 v5"
+        eyebrow={query.error ? "Survey verification unavailable" : "Verified creator · CIP-179 v5"}
         title={survey.title}
         symbol="◉"
       />
@@ -824,6 +827,19 @@ function SurveyDetailContent() {
           }
         />
       </div>
+      {query.error && (
+        <div>
+          <InlineError error={query.error} />
+          <button
+            type="button"
+            className="survey-secondary"
+            disabled={query.isFetching}
+            onClick={() => void query.refetch()}
+          >
+            Retry survey
+          </button>
+        </div>
+      )}
       <InlineError error={results.error} />
       {results.isFetching && (
         <p role="status" className="directory-progress">

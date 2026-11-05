@@ -1,9 +1,9 @@
 import {
-  isRetryableConfirmation,
+  ConfirmationFailure,
   readTransactionConfirmation,
 } from "../../lib/dingo/transactionConfirmation";
 import { useDraftGuard } from "../../lib/useDraftGuard";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { useWalletStore } from "../../stores/walletStore";
@@ -131,6 +131,7 @@ function VotingForm({
     queryFn: async ({ signal }) => {
       const tx = await readTransactionConfirmation(submit.data!, signal);
       if (tx) {
+        void useWalletStore.getState().refreshBalance();
         void queryClient.invalidateQueries({
           queryKey: ["dingo", "proposal", proposal.id, "chamber-votes"],
         });
@@ -143,11 +144,7 @@ function VotingForm({
     refetchInterval: (query) =>
       query.state.data || query.state.error ? false : 10000,
   });
-  const isFailedConfirmation =
-    Boolean(confirmation.error) && !isRetryableConfirmation(confirmation.error);
-  useEffect(() => {
-    if (confirmation.data) void useWalletStore.getState().refreshBalance();
-  }, [confirmation.data]);
+  const failed = confirmation.error instanceof ConfirmationFailure;
   const busy = prepare.isPending || submit.isPending;
   const eligible = Boolean(
     api?.cip95 && role.data && !role.data.retired && !closed && health.data,
@@ -209,7 +206,7 @@ function VotingForm({
             </div>
             <fieldset
               className="vote-choices"
-              disabled={busy || Boolean(prepared)}
+              disabled={busy || Boolean(prepared) || Boolean(submit.data)}
             >
               <legend className="sr-only">Choose your vote</legend>
               {choices.map((option) => (
@@ -296,11 +293,11 @@ function VotingForm({
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : !submit.data ? (
               <button
                 type="button"
                 className="vote-submit"
-                disabled={!choice || !eligible || busy}
+                disabled={!choice || !eligible || busy || failed}
                 onClick={() => {
                   submit.reset();
                   prepare.mutate();
@@ -308,7 +305,7 @@ function VotingForm({
               >
                 {prepare.isPending ? "Preparing vote…" : "Review vote"}
               </button>
-            )}
+            ) : null}
             {health.isError && (
               <p role="alert" className="mt-3 text-sm text-red-300">
                 Unable to verify the current epoch.{" "}
@@ -325,28 +322,41 @@ function VotingForm({
           </p>
         )}
         {submit.data && (
-          <div className="vote-success" role="status">
+          <div
+            className={`vote-success${failed ? " confirmation-failed" : ""}`}
+            role="status"
+          >
             <strong>
-              {confirmation.data
-                ? "Vote confirmed"
-                : isFailedConfirmation
-                  ? "Vote failed"
+              {failed
+                ? "Vote failed on chain"
+                : confirmation.data
+                  ? "Vote confirmed"
                   : "Vote submitted"}
             </strong>
             <p>
-              {confirmation.data
-                ? "Included on chain."
-                : isFailedConfirmation
-                  ? "The transaction was included but failed script validation. Review the vote and submit a new one."
+              {failed
+                ? "The vote was not applied."
+                : confirmation.data
+                  ? "Included on chain."
                   : confirmation.error
                     ? "Confirmation unavailable."
-                  : "Waiting for on-chain confirmation."}
+                    : "Waiting for on-chain confirmation."}
             </p>
-            {isRetryableConfirmation(confirmation.error) && (
+            {confirmation.error && !failed && (
               <button type="button" onClick={() => void confirmation.refetch()}>
                 Retry confirmation
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => {
+                setPrepared(null);
+                prepare.reset();
+                submit.reset();
+              }}
+            >
+              Start new draft
+            </button>
             <Link
               to={`/explorer/tx/${submit.data}`}
               className="font-mono break-all"

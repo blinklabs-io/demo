@@ -1191,7 +1191,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
     revision.current++;
     setReview(null);
     prepare.reset();
-    submit.reset();
+    if (!submit.data) submit.reset();
     update();
   }
   const error =

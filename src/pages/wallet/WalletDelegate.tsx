@@ -1,3 +1,7 @@
+import {
+  ConfirmationFailure,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { governanceError } from "../../lib/dingo/governanceVote";
 import { PageIntro } from "../../components/explorer/Visuals";
@@ -15,10 +19,6 @@ import {
   type DelegationTarget,
   type PreparedDelegation,
 } from "../../lib/dingo/delegation";
-import {
-  isRetryableConfirmation,
-  readTransactionConfirmation,
-} from "../../lib/dingo/transactionConfirmation";
 
 export default function WalletDelegate() {
   const [search] = useSearchParams();
@@ -33,7 +33,10 @@ export default function WalletDelegate() {
   );
 }
 
-function DelegationWorkspace({ initialPool, initialDrep }: {
+function DelegationWorkspace({
+  initialPool,
+  initialDrep,
+}: {
   initialPool: string;
   initialDrep: string;
 }) {
@@ -51,7 +54,13 @@ function DelegationWorkspace({ initialPool, initialDrep }: {
     />
   );
 }
-function DelegationForm({ connection, poolId, drepId, setPoolId, setDrepId }: {
+function DelegationForm({
+  connection,
+  poolId,
+  drepId,
+  setPoolId,
+  setDrepId,
+}: {
   connection: number;
   poolId: string;
   drepId: string;
@@ -130,32 +139,33 @@ function DelegationForm({ connection, poolId, drepId, setPoolId, setDrepId }: {
   });
   const confirmation = useQuery({
     queryKey: ["dingo", "delegation-confirmation", submit.data],
-    queryFn: ({ signal }) => readTransactionConfirmation(submit.data!, signal),
     enabled: Boolean(submit.data),
     retry: false,
+    queryFn: ({ signal }) => readTransactionConfirmation(submit.data!, signal),
     refetchInterval: (query) =>
-      query.state.data || query.state.error ? false : 10_000,
+      query.state.data || query.state.error ? false : 10000,
   });
+  const failed = confirmation.error instanceof ConfirmationFailure;
   useEffect(() => {
-    if (!confirmation.data) return;
-    void useWalletStore.getState().refreshBalance();
-    void accountQuery.refetch();
-    void client.invalidateQueries({ queryKey: ["dingo", "wallet"] });
-    void client.invalidateQueries({ queryKey: ["dingo", "pool"] });
-    void client.invalidateQueries({ queryKey: ["dingo", "drep"] });
-    // accountQuery is a fresh object each render; only a new confirmation matters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmation.data, client]);
+    if (confirmation.data || failed) {
+      void useWalletStore.getState().refreshBalance();
+      void client.invalidateQueries({
+        queryKey: ["dingo", "account", rewardAddress],
+      });
+      void client.invalidateQueries({ queryKey: ["dingo", "wallet"] });
+    }
+  }, [confirmation.data, failed, client, rewardAddress]);
+  const error = prepare.error || submit.error || confirmation.error;
   const busy = prepare.isPending || submit.isPending;
   function edit(update: () => void) {
     revision.current++;
     setDraft(null);
     prepare.reset();
-    submit.reset();
+    if (!submit.data) submit.reset();
     update();
   }
   function review(target: DelegationTarget) {
-    if (busy) return;
+    if (busy || submit.data) return;
     setDraft(null);
     submit.reset();
     prepare.mutate(target);
@@ -163,11 +173,12 @@ function DelegationForm({ connection, poolId, drepId, setPoolId, setDrepId }: {
   const connected = status === "connected";
   const registered = accountQuery.data?.registered ?? false;
   const accountUnavailable = !accountQuery.isSuccess;
-  const registerNote = !connected || !rewardAddress || !accountQuery.isSuccess
-    ? ""
-    : registered
+  const registerNote =
+    !connected || !rewardAddress || !accountQuery.isSuccess
       ? ""
-      : " Your stake credential is not registered yet; the transaction will register and delegate it.";
+      : registered
+        ? ""
+        : " Your stake credential is not registered yet; the transaction will register and delegate it.";
 
   return (
     <div className="wallet-workbench delegate-workbench flex flex-col gap-6">
@@ -180,7 +191,8 @@ function DelegationForm({ connection, poolId, drepId, setPoolId, setDrepId }: {
       />
       {connected && !rewardAddress && (
         <p role="alert" className="tool-error">
-          This wallet did not provide a reward address. Delegation cannot be built.
+          This wallet did not provide a reward address. Delegation cannot be
+          built.
         </p>
       )}
       <div>
@@ -250,7 +262,13 @@ function DelegationForm({ connection, poolId, drepId, setPoolId, setDrepId }: {
           </label>
           <button
             type="submit"
-            disabled={busy || !connected || !rewardAddress || accountUnavailable}
+            disabled={
+              busy ||
+              !!submit.data ||
+              !connected ||
+              !rewardAddress ||
+              accountUnavailable
+            }
             className="self-start rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500 disabled:opacity-50"
           >
             {prepare.isPending ? "Building with Dingo…" : "Review delegation"}
@@ -286,7 +304,13 @@ function DelegationForm({ connection, poolId, drepId, setPoolId, setDrepId }: {
           </label>
           <button
             type="submit"
-            disabled={busy || !connected || !rewardAddress || accountUnavailable}
+            disabled={
+              busy ||
+              !!submit.data ||
+              !connected ||
+              !rewardAddress ||
+              accountUnavailable
+            }
             className="self-start rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-100 hover:border-slate-500 disabled:opacity-50"
           >
             {prepare.isPending ? "Building with Dingo…" : "Review delegation"}
@@ -352,25 +376,45 @@ function DelegationForm({ connection, poolId, drepId, setPoolId, setDrepId }: {
           </div>
         </section>
       )}
-      {(prepare.error || submit.error || confirmation.error) && (
+      {error && (
         <p className="tool-error" role="alert">
-          {(prepare.error || submit.error || confirmation.error)!.message}
+          {error.message}
         </p>
-      )}
-      {isRetryableConfirmation(confirmation.error) && (
-        <button onClick={() => void confirmation.refetch()}>
-          Retry confirmation
-        </button>
       )}
       {submit.data && (
-        <p role="status">
-          {confirmation.data
-            ? "Delegation confirmed on chain."
-            : confirmation.error && !isRetryableConfirmation(confirmation.error)
-              ? "Delegation failed."
-              : "Submitted to Dingo. Waiting for confirmation."}{" "}
+        <section
+          role="status"
+          className={`tool-success${failed ? " confirmation-failed" : ""}`}
+        >
+          <strong>
+            {failed
+              ? "Delegation failed on chain"
+              : confirmation.data
+                ? "Delegation confirmed"
+                : confirmation.error
+                  ? "Submitted · confirmation unavailable"
+                  : "Submitted to Dingo · waiting for confirmation"}
+          </strong>
           <Link to={`/explorer/tx/${submit.data}`}>View transaction →</Link>
-        </p>
+          {confirmation.error && !failed && (
+            <button type="button" onClick={() => void confirmation.refetch()}>
+              Retry confirmation
+            </button>
+          )}
+          {(failed || confirmation.data) && (
+            <button
+              type="button"
+              onClick={() => {
+                revision.current++;
+                setDraft(null);
+                prepare.reset();
+                submit.reset();
+              }}
+            >
+              Start new draft
+            </button>
+          )}
+        </section>
       )}
     </div>
   );

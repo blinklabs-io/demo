@@ -1,4 +1,3 @@
-import { useDraftGuard } from "../../lib/useDraftGuard";
 import { creationTools, type CreationToolId } from "../../lib/creationTools";
 import TransactionStudio from "../TransactionStudio";
 import { Cip25Editor } from "../../components/wallet/Cip25Editor";
@@ -33,20 +32,17 @@ import { fileDigest, verifyDocumentProof } from "../../lib/tools/proofs";
 import { formatAda } from "../../lib/format";
 import { readWalletDRep } from "../../lib/dingo/governanceVote";
 
-function ToolTransaction(props: ComponentProps<typeof WalletToolTransaction>) {
+function ToolTransaction(
+  props: Omit<ComponentProps<typeof WalletToolTransaction>, "draftKey">,
+) {
   const connection = useWalletStore((state) => state.connectionId);
   const action = props.action();
-  const key = JSON.stringify([connection, action]);
-  const assertCurrentDraft = useDraftGuard(key);
   return (
     <WalletToolTransaction
-      key={key}
+      key={connection}
       {...props}
+      draftKey={JSON.stringify(action)}
       action={() => action}
-      assertDraft={() => {
-        assertCurrentDraft();
-        props.assertDraft?.();
-      }}
     />
   );
 }

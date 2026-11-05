@@ -4,6 +4,7 @@ import { Core } from "@blaze-cardano/sdk";
 import {
   ADA_METADATA,
   EContractVersion,
+  ESwapType,
   TxBuilderV3,
   type IPoolData,
 } from "@sundaeswap/core";
@@ -32,11 +33,12 @@ function fixture() {
     new Core.TransactionWitnessSet(),
   );
   let active = true,
-    network = 0;
+    network = 0,
+    currentAddress = address;
   const sign = vi.fn(async () => ({ cbor: tx.toCbor() }));
   const post = vi.fn(async () => tx.getId());
   const build = vi.fn(async () => ({ cbor: tx.toCbor(), builtTx: tx, sign }));
-  vi.spyOn(TxBuilderV3.prototype, "swap").mockResolvedValue({
+  const swap = vi.spyOn(TxBuilderV3.prototype, "swap").mockResolvedValue({
     build,
     fees: { deposit: { amount: 2000000n }, scooperFee: { amount: 1000000n } },
   } as unknown as Awaited<ReturnType<TxBuilderV3["swap"]>>);
@@ -53,7 +55,7 @@ function fixture() {
     blaze: {
       wallet: {
         getNetworkId: async () => network,
-        getChangeAddress: async () => address,
+        getChangeAddress: async () => currentAddress,
       },
       provider: {
         networkName: "cardano-preview",
@@ -71,12 +73,18 @@ function fixture() {
   } as unknown as BuildSwapArgs;
   return {
     args,
+    swap,
     build,
     sign,
     post,
     tx,
     disconnect: () => {
       active = false;
+    },
+    switchAccount: () => {
+      currentAddress = Core.Address.fromBytes(
+        Core.HexBlob("60" + "77".repeat(28)),
+      );
     },
     mainnet: () => {
       network = 1;
@@ -86,6 +94,10 @@ function fixture() {
 it("builds unsigned V3 orders separately from wallet signing and submission", async () => {
   const f = fixture();
   const draft = await buildSwapOrder(f.args);
+  expect(f.swap.mock.calls[0][0].swapType).toMatchObject({
+    type: ESwapType.LIMIT,
+    minReceivable: { amount: draft.minimumReceived },
+  });
   expect(f.sign).not.toHaveBeenCalled();
   expect(f.post).not.toHaveBeenCalled();
   await draft.signAndSubmit();
@@ -129,5 +141,26 @@ it("shows the wallet's CIP-30 rejection message instead of an empty error", asyn
   await expect(draft.signAndSubmit()).rejects.toThrow(
     "User declined the signature",
   );
+  expect(f.post).not.toHaveBeenCalled();
+});
+
+it("does not prompt a same-session wallet whose live account changed after review", async () => {
+  const f = fixture();
+  const draft = await buildSwapOrder(f.args);
+  f.switchAccount();
+  await expect(draft.signAndSubmit()).rejects.toThrow("Wallet account changed");
+  expect(f.sign).not.toHaveBeenCalled();
+  expect(f.post).not.toHaveBeenCalled();
+});
+
+it("does not submit when the live account changes during V3 wallet approval", async () => {
+  const f = fixture();
+  const draft = await buildSwapOrder(f.args);
+  f.sign.mockImplementation(async () => {
+    f.switchAccount();
+    return { cbor: f.tx.toCbor() };
+  });
+  await expect(draft.signAndSubmit()).rejects.toThrow("Wallet account changed");
+  expect(f.sign).toHaveBeenCalledTimes(1);
   expect(f.post).not.toHaveBeenCalled();
 });

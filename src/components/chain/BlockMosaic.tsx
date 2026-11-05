@@ -299,8 +299,8 @@ function Mosaic({ hash, total, onExplore }: MosaicProps) {
       <p className="chain-footnote">
         Tile area represents serialized transaction bytes. Mixed activity uses
         this priority: failed scripts, governance, mint/burn, script execution,
-        stake/certificates, reward withdrawals, transfer. Transaction bytes exclude the block
-        header.
+        stake/certificates, reward withdrawals, transfer. Transaction bytes
+        exclude the block header.
       </p>
     </section>
   );

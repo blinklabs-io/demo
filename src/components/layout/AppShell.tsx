@@ -1,6 +1,6 @@
 import { useChainReconciliation } from "../../lib/chain/useChainReconciliation";
 import { useEffect } from "react";
-import { normalizePath, sectionNavigation } from "../../lib/navigation";
+import { mainNavigation, normalizePath, sectionNavigation } from "../../lib/navigation";
 import { Link, Outlet, useLocation, useNavigationType } from "react-router";
 import { Header } from "./Header";
 import { useMempoolStore } from "../../stores/mempoolStore";
@@ -11,6 +11,7 @@ export function AppShell() {
   const pathname = normalizePath(rawPathname);
   const navigationType = useNavigationType();
   const section = sectionNavigation(pathname);
+  const area = mainNavigation.find((item) => item.matches(pathname))?.area ?? "discover";
   useChainReconciliation();
   useEffect(() => {
     if (navigationType === "POP" && !hash) return;
@@ -27,7 +28,7 @@ export function AppShell() {
   }, [startMempoolFeed, startTipFeed]);
 
   return (
-    <div className="app-shell min-h-screen bg-slate-950 text-slate-100">
+    <div className="app-shell min-h-screen bg-slate-950 text-slate-100" data-area={area}>
       <Header />
       <main className="workspace-main">
         {section && (

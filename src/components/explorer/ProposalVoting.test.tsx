@@ -27,15 +27,18 @@ vi.mock("../../lib/dingo/governanceVote", () => ({
 }));
 afterEach(() => { vi.useRealTimers(); notifyManager.setScheduler((callback) => setTimeout(callback, 0)); });
 
-it.each([true, false])("tracks a submitted vote through not-indexed and valid=%s confirmation", async (valid) => {
+it.each(["valid", "failed", "unavailable"] as const)("tracks a submitted vote through pending and %s confirmation", async (outcome) => {
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
   notifyManager.setScheduler(queueMicrotask);
   const hash = "11".repeat(32);
   const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
   vi.mocked(fetch).mockResolvedValueOnce(response({ message: "Not found" }, 404))
-    .mockResolvedValueOnce(response({ hash, block: "22".repeat(32), valid_contract: valid }))
+    .mockResolvedValueOnce(outcome === "unavailable"
+      ? response({ message: "Unavailable" }, 503)
+      : response({ hash, block: "22".repeat(32), valid_contract: outcome === "valid" }))
     .mockResolvedValueOnce(response({ hash, block: "22".repeat(32), valid_contract: true }));
-  useWalletStore.setState({ status: "connected", walletApi: { cip95: {} } as Cip30WalletApi, connectionId: 1, refreshBalance: async () => {} });
+  const refreshBalance = vi.fn(async () => {});
+  useWalletStore.setState({ status: "connected", walletApi: { cip95: {} } as Cip30WalletApi, connectionId: 1, refreshBalance });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } } });
   const container = document.createElement("div");
   document.body.append(container);
@@ -52,20 +55,36 @@ it.each([true, false])("tracks a submitted vote through not-indexed and valid=%s
     await click("Sign & submit vote");
     expect(container.textContent).toContain("Waiting for on-chain confirmation.");
     expect(container.textContent).not.toContain("Vote confirmed");
+    expect(container.querySelector<HTMLFieldSetElement>("fieldset")!.disabled).toBe(true);
+    expect([...container.querySelectorAll("button")].some((button) => button.textContent === "Review vote")).toBe(false);
+    await act(async () => container.querySelector<HTMLInputElement>('input[value="no"]')!.click());
+    expect(container.querySelector(`a[href="/explorer/tx/${hash}"]`)).not.toBeNull();
     expect(fetch).toHaveBeenCalledTimes(1);
     await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
     expect(fetch).toHaveBeenCalledTimes(2);
-    if (!valid) {
+    if (outcome === "failed") {
       expect(container.textContent).toContain("failed script validation");
-      expect(container.textContent).toContain("Vote failed");
+      expect(container.textContent).toContain("Vote failed on chain");
       expect(container.textContent).not.toContain("Vote confirmed");
       expect(container.textContent).not.toContain("Retry confirmation");
+      expect(container.querySelector(".confirmation-failed")).not.toBeNull();
+      await click("Start new draft");
+      expect(container.textContent).not.toContain("Vote failed on chain");
       expect(fetch).toHaveBeenCalledTimes(2);
       return;
     }
+    if (outcome === "unavailable") {
+      expect(container.textContent).toContain("Confirmation unavailable.");
+      expect(container.textContent).not.toContain("Vote confirmed");
+      await click("Retry confirmation");
+    }
     expect(container.textContent).toContain("Vote confirmed");
     expect(container.textContent).toContain("Included on chain.");
+    expect(refreshBalance).toHaveBeenCalledTimes(2);
     expect(container.querySelector(`a[href="/explorer/tx/${hash}"]`)).not.toBeNull();
+    await click("Start new draft");
+    expect(container.querySelector(`a[href="/explorer/tx/${hash}"]`)).toBeNull();
+    expect(container.querySelector<HTMLFieldSetElement>("fieldset")!.disabled).toBe(false);
   } finally {
     await act(async () => root.unmount());
     client.clear();

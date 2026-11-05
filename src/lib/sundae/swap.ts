@@ -111,17 +111,18 @@ export async function buildSwapOrder({
       minimumReceived: minimum.amount,
       async signAndSubmit() {
         try {
-          await assertWalletSession(blaze.wallet, assertConnection);
-          const currentAddress = (
-            await blaze.wallet.getChangeAddress()
-          ).toBech32();
-          assertConnection();
-          if (currentAddress !== changeAddress)
-            throw new Error(
-              "Wallet account changed. Review a new swap order.",
-            );
+          const assertAccount = async () => {
+            await assertWalletSession(blaze.wallet, assertConnection);
+            const currentAddress = await blaze.wallet.getChangeAddress();
+            assertConnection();
+            if (currentAddress.toBech32() !== changeAddress)
+              throw new Error(
+                "Wallet account changed. Build and review a new order.",
+              );
+          };
+          await assertAccount();
           const signed = await built.sign();
-          await assertWalletSession(blaze.wallet, assertConnection);
+          await assertAccount();
           const tx = Core.Transaction.fromCbor(Core.TxCBOR(signed.cbor));
           const txId = await blaze.provider.postTransactionToChain(tx);
           return txId.toString();

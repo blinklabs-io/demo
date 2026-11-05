@@ -212,6 +212,7 @@ export default function BlockDetail() {
         <LazyDisclosure key={block.hash} title="Transaction hash list">
           <Panel title="Transactions">
             <PaginatedList<string>
+              totalItems={block.tx_count}
               queryKey={["dingo", "block", block.hash, "txs"]}
               buildUrl={(page, count) =>
                 `/api/v0/blocks/${block!.hash}/txs?page=${page}&count=${count}&order=asc`

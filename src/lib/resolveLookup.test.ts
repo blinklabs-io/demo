@@ -1,5 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { queryClient } from "./queryClient";
+import { isMutableChainQuery } from "./chain/useChainReconciliation";
 import { resolveLookup } from "./resolveLookup";
 
 beforeEach(() => queryClient.clear());
@@ -33,4 +34,13 @@ it("does not probe other entity kinds after cancellation", async () => {
   abort.abort();
   await expect(resolveLookup(hash, abort.signal)).rejects.toThrow(/abort/i);
   expect(fetch).not.toHaveBeenCalled();
+});
+it("revalidates an inactive probe after uncertain cached records are reset", async () => {
+  vi.mocked(fetch).mockResolvedValueOnce(response({ hash }));
+  expect(await resolveLookup(hash)).toEqual({ kind: "tx" });
+  await queryClient.resetQueries({ predicate: (query) => isMutableChainQuery(query.queryKey, true) });
+  expect(queryClient.getQueryData(["dingo", "tx", hash])).toBeUndefined();
+  vi.mocked(fetch).mockResolvedValue(response({}, 404));
+  expect(await resolveLookup(hash)).toEqual({ kind: "none" });
+  expect(fetch).toHaveBeenCalledTimes(4);
 });

@@ -25,11 +25,14 @@ it("ignores a completed response after the request context changes", async () =>
       );
     });
     expect(request.run).toHaveBeenCalledOnce();
+    const signal = request.run.mock.calls[0][1].signal as AbortSignal;
+    expect(signal.aborted).toBe(false);
     await act(async () => {
       const target = container.querySelector<HTMLSelectElement>("#api-target")!;
       target.value = "mesh";
       target.dispatchEvent(new Event("change", { bubbles: true }));
     });
+    expect(signal.aborted).toBe(true);
     await act(async () => {
       finish(new Response('{"stale-response":true}'));
     });

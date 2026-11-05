@@ -102,6 +102,7 @@ export function sectionNavigation(path: string) {
 export const mainNavigation = [
   {
     to: "/",
+    area: "discover",
     label: "Discover",
     icon: "✦",
     matches: (path: string) => path === "/",
@@ -109,6 +110,7 @@ export const mainNavigation = [
   },
   {
     to: "/explorer",
+    area: "explore",
     label: "Explore",
     icon: "◫",
     matches: isExplorePath,
@@ -116,6 +118,7 @@ export const mainNavigation = [
   },
   {
     to: "/participate",
+    area: "participate",
     label: "Participate",
     icon: "◉",
     matches: isParticipationPath,
@@ -123,6 +126,7 @@ export const mainNavigation = [
   },
   {
     to: "/wallet/swap",
+    area: "swap",
     label: "Swap",
     icon: "⇄",
     matches: (path: string) => path === "/wallet/swap",
@@ -130,6 +134,7 @@ export const mainNavigation = [
   },
   {
     to: "/wallet/tools",
+    area: "build",
     label: "Create & build",
     icon: "⌁",
     matches: (path: string) => /^\/wallet\/tools(?:\/|$)/.test(path),
@@ -137,6 +142,7 @@ export const mainNavigation = [
   },
   {
     to: "/wallet",
+    area: "wallet",
     label: "Wallet",
     icon: "▣",
     matches: isWalletPath,
@@ -144,6 +150,7 @@ export const mainNavigation = [
   },
   {
     to: "/api",
+    area: "api",
     label: "API playground",
     icon: "⌘",
     matches: (path: string) => path === "/api",

@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import { useNodeHealth } from "../../lib/dingo/nodeHealth";
 import {
-  isRetryableConfirmation,
+  ConfirmationFailure,
   readTransactionConfirmation,
 } from "../../lib/dingo/transactionConfirmation";
 import {
@@ -104,6 +104,7 @@ function AnswerForm({
     refetchInterval: (q) => (q.state.data || q.state.error ? false : 10000),
     queryFn: ({ signal }) => readTransactionConfirmation(submit.data!, signal),
   });
+  const failed = confirmation.error instanceof ConfirmationFailure;
   const busy = prepare.isPending || submit.isPending;
   const error =
     deadlineError ?? prepare.error ?? submit.error ?? confirmation.error;
@@ -236,14 +237,21 @@ function AnswerForm({
           </p>
         )}
         {submit.data && (
-          <div role="status" className="survey-submitted">
+          <div
+            role="status"
+            className={`survey-submitted${failed ? " confirmation-failed" : ""}`}
+          >
             <strong>
-              {confirmation.data
-                ? "Answer confirmed on chain"
-                : "Submitted · waiting for confirmation"}
+              {failed
+                ? "Answer failed on chain"
+                : confirmation.data
+                  ? "Answer confirmed on chain"
+                  : confirmation.error
+                    ? "Submitted · confirmation unavailable"
+                    : "Submitted · waiting for confirmation"}
             </strong>
             <HashLink kind="tx" id={submit.data} />
-            {isRetryableConfirmation(confirmation.error) && (
+            {confirmation.error && !failed && (
               <button type="button" onClick={() => void confirmation.refetch()}>
                 Retry confirmation
               </button>
@@ -257,7 +265,7 @@ function AnswerForm({
                 setChoice(null);
               }}
             >
-              Prepare another answer
+              {failed ? "Start new draft" : "Prepare another answer"}
             </button>
           </div>
         )}

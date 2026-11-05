@@ -27,3 +27,21 @@ it("does not join blocks from a competing branch if the indexed page changes", a
   expect(result.blocks.map(b=>b.height)).toEqual([12,11]);
   expect(result.incomplete).toBe(true);
 });
+it("preserves the last full cached window when the ancestor page refresh fails", async () => {
+  const { QueryClient } = await import("@tanstack/react-query");
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const key = ["dingo", "recent-blocks"];
+  const previous = { blocks: Array.from({ length: 12 }, (_, i) => block(12-i)), incomplete: false };
+  client.setQueryData(key, previous);
+  vi.mocked(fetch).mockResolvedValueOnce(response(block(13))).mockRejectedValueOnce(new Error("Ancestor page unavailable"));
+  try {
+    await expect(client.fetchQuery({ queryKey: key, queryFn: () => fetchRecentBlocks(), staleTime: 0 })).rejects.toThrow("Could not reach Dingo");
+    expect(client.getQueryData(key)).toEqual(previous);
+  } finally { client.clear(); }
+});
+it("rejects a parent edge with matching hash but inconsistent height", async () => {
+  vi.mocked(fetch).mockResolvedValueOnce(response(block(12))).mockResolvedValueOnce(response([{ ...block(11), height: 10 }]));
+  const result = await fetchRecentBlocks();
+  expect(result.blocks.map((row) => row.height)).toEqual([12]);
+  expect(result.incomplete).toBe(true);
+});

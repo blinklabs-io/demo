@@ -8,7 +8,7 @@ import { WalletConnectSummary } from "../layout/WalletConnectSummary";
 import { CopyButton } from "../explorer/CopyButton";
 import { governanceError } from "../../lib/dingo/governanceVote";
 import {
-  isRetryableConfirmation,
+  ConfirmationFailure,
   readTransactionConfirmation,
 } from "../../lib/dingo/transactionConfirmation";
 import {
@@ -25,7 +25,9 @@ export function ToolTransaction({
   ready = true,
   formId,
   assertDraft,
+  draftKey,
 }: {
+  draftKey: string;
   action: () => ToolAction;
   ready?: boolean;
   formId?: string;
@@ -33,8 +35,13 @@ export function ToolTransaction({
 }) {
   const api = useWalletStore((s) => s.walletApi),
     connectionId = useWalletStore((s) => s.connectionId);
-  const assertActive = useDraftGuard("tool-transaction");
+  const assertActive = useDraftGuard(draftKey);
   const [draft, setDraft] = useState<PreparedTool | null>(null);
+  const [reviewKey, setReviewKey] = useState(draftKey);
+  if (reviewKey !== draftKey) {
+    setReviewKey(draftKey);
+    setDraft(null);
+  }
   const [savedPolicy, setSavedPolicy] = useState<PreparedTool | null>(null);
   const queryClient = useQueryClient();
   const assertConnection = () => {
@@ -49,10 +56,18 @@ export function ToolTransaction({
     assertDraft?.();
   };
   const prepare = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (requestKey: string) => {
+      if (requestKey !== draftKey)
+        throw new Error("Draft details changed. Review a new transaction.");
       if (!api) throw new Error("Connect a wallet first.");
       try {
-        return await prepareToolTransaction(api, action(), assertConnection);
+        const result = await prepareToolTransaction(
+          api,
+          action(),
+          assertConnection,
+        );
+        assertConnection();
+        return result;
       } catch (e) {
         throw governanceError(e, "Unable to prepare this transaction.");
       }
@@ -93,8 +108,12 @@ export function ToolTransaction({
       return tx;
     },
   });
+  const failed = confirmation.error instanceof ConfirmationFailure;
   const busy = prepare.isPending || submit.isPending;
-  const error = prepare.error ?? submit.error ?? confirmation.error;
+  const error =
+    (prepare.variables === draftKey ? prepare.error : null) ??
+    submit.error ??
+    confirmation.error;
   function downloadPolicy(policy: PreparedTool) {
     const data = JSON.stringify(
       {
@@ -131,7 +150,7 @@ export function ToolTransaction({
             event.preventDefault();
             if (busy || !ready) return;
             submit.reset();
-            prepare.mutate();
+            prepare.mutate(draftKey);
           }}
         >
           <button
@@ -256,9 +275,18 @@ export function ToolTransaction({
         </section>
       )}
       {submit.data && (
-        <section className="tool-success" role="status">
+        <section
+          className={`tool-success${failed ? " confirmation-failed" : ""}`}
+          role="status"
+        >
           <strong>
-            {confirmation.data ? "Confirmed on Preview" : "Submitted to Dingo"}
+            {failed
+              ? "Transaction failed on chain"
+              : confirmation.data
+                ? "Confirmed on Preview"
+                : confirmation.error
+                  ? "Submitted · confirmation unavailable"
+                  : "Submitted to Dingo"}
           </strong>
           <Link to={`/explorer/tx/${submit.data}`}>View transaction →</Link>
           <code>{submit.data}</code>
@@ -274,7 +302,7 @@ export function ToolTransaction({
               setSavedPolicy(null);
             }}
           >
-            Start another transaction
+            {failed ? "Start new draft" : "Start another transaction"}
           </button>
         </section>
       )}
@@ -283,7 +311,7 @@ export function ToolTransaction({
           {error.message}
         </p>
       )}
-      {isRetryableConfirmation(confirmation.error) && (
+      {confirmation.error && !failed && (
         <button onClick={() => void confirmation.refetch()}>
           Retry confirmation
         </button>

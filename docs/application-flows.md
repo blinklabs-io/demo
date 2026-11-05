@@ -86,7 +86,7 @@ stateDiagram-v2
   Unavailable --> Loading: retry
   Ready --> Reconcile: rollback, reset or lost chain continuity
   Stale --> Reconcile: rollback, reset or lost chain continuity
-  Reconcile --> Loading: clear uncertain active chain records
+  Reconcile --> Loading: clear uncertain cached chain records
 ```
 
 A transient refresh error retains a previously loaded record with a visible
@@ -96,10 +96,13 @@ their records only while open. Pagination and disclosures reset with their
 entity identity, and page size belongs to the query identity.
 
 Dingo's FollowTip stream supplies apply, undo and reset events. Unknown chain
-continuity clears the uncertain live tip and reconciles active mutable records;
+continuity clears the uncertain live tip and mutable cached records, then
+refetches only active records;
 no parent hash or block height is invented. Ordinary applies refresh active
 chain summaries. Immutable CBOR, static genesis records, catalogs and expensive
-on-demand history are not indiscriminately fetched again on every block.
+on-demand history are not indiscriminately fetched again on every block. Chain
+uncertainty also clears verified census snapshots; manually requested recounts
+remain manual, while an open survey rechecks its results.
 
 ## Transaction state machine
 
@@ -117,7 +120,11 @@ stateDiagram-v2
   Submitting --> ReviewError: submission failure
   Submitted --> Pending: not indexed yet
   Pending --> Confirmed: included and valid
-  Pending --> Failed: invalid transaction or confirmation error
+  Pending --> Failed: included with failed validation
+  Pending --> ConfirmationUnavailable: transient lookup failure
+  ConfirmationUnavailable --> Pending: retry confirmation
+  Confirmed --> Draft: explicit new draft
+  Failed --> Draft: explicit new draft
   Review --> Draft: edit, discard or session change
   Building --> Draft: context invalidated
   Signing --> Draft: context invalidated
@@ -131,6 +138,11 @@ any outstanding continuation. Leaving a transaction page also invalidates its
 outstanding build or signing work at the router transition, before the old view
 unmounts. Hash-only links within the page preserve the draft. Returning to an
 earlier input value does not resurrect an old approval.
+
+Once submitted, the transaction hash and confirmation state survive draft edits
+and wallet UTxO refreshes. An explicit new draft ends that tracking view.
+Confirmation lookup failures offer a retry; an included invalid transaction
+remains a terminal failure.
 
 Signing helpers check both the current connection and the wallet network before
 requesting a signature and again before submission. Dingo's genesis establishes
@@ -157,7 +169,7 @@ flowchart LR
   Browser --> RPC[Dingo UTxORPC]
   RPC --> Tip[FollowTip store]
   RPC --> Mempool[Mempool store]
-  Tip --> Reconcile[Active chain reconciliation]
+  Tip --> Reconcile[Chain reconciliation]
   Reconcile --> Cache
   Tip --> Views[Shared application views]
   Mempool --> Views
