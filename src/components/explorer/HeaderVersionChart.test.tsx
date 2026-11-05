@@ -96,7 +96,7 @@ it("uses hourly boundaries and full versions while excluding out-of-window cache
   const { host, close } = await render([
     record(1, "1", start - 1),
     record(2, "65", start + 10),
-    record(3, "67", start + 3610),
+    record(3, "67", start + 3600),
     record(4, "2", end),
     record(5, "69", end + 1),
   ]);
@@ -114,6 +114,16 @@ it("uses hourly boundaries and full versions while excluding out-of-window cache
     expect(host.querySelector(".header-history-blocks")?.textContent).toContain(
       "11.65",
     );
+    expect(hours[0].querySelectorAll(".header-hour-markers i")).toHaveLength(1);
+    await act(async () => hours[1].click());
+    expect(host.querySelectorAll(".header-history-blocks a")).toHaveLength(1);
+    expect(host.querySelector(".header-history-blocks")?.textContent).toContain(
+      "11.67",
+    );
+    expect(hours[1].querySelectorAll(".header-hour-markers i")).toHaveLength(1);
+    await act(async () => hours[2].click());
+    expect(host.querySelectorAll(".header-history-blocks a")).toHaveLength(0);
+    expect(hours[2].querySelectorAll(".header-hour-markers i")).toHaveLength(0);
     await act(async () => hours[23].click());
     expect(host.querySelector(".header-history-blocks")?.textContent).toContain(
       "11.2",
@@ -169,6 +179,22 @@ it("keeps the full-circle single-node pie selectable by keyboard", async () => {
     expect(host.querySelector(".header-history-records h3")?.textContent).toBe(
       "2 verified blocks",
     );
+  } finally {
+    await close();
+  }
+});
+it("gives different full Haskell versions distinct chart colors", async () => {
+  const { host, close } = await render([
+    { ...record(1, "0"), major: "10" },
+    record(2, "0"),
+    record(3, "1"),
+    record(4, "2"),
+  ]);
+  try {
+    const fills = [...host.querySelectorAll(".header-node-pie path")].map((p) =>
+      p.getAttribute("fill"),
+    );
+    expect(new Set(fills).size).toBe(4);
   } finally {
     await close();
   }

@@ -19,21 +19,20 @@ const time = (seconds: number) =>
     minute: "2-digit",
   });
 function color(record: Pick<VersionRecord, "minor" | "major">) {
-  switch (implementation(record).id) {
-    case "dingo":
-      return "#35ddba";
-    case "amaru":
-      return "#b49aff";
-    case "bean":
-      return "#ffc867";
-    default:
-      return record.minor === "1"
-        ? "#7299bf"
-        : record.minor === "2"
-          ? "#87b9cb"
-          : "#4f7898";
-  }
+  const family = implementation(record).id;
+  const hue =
+    family === "dingo"
+      ? 150
+      : family === "amaru"
+        ? 260
+        : family === "bean"
+          ? 35
+          : 195;
+  const version = BigInt(record.major) * 37n + BigInt(record.minor) * 17n;
+  const range = family === "cardano-node" ? 45n : 15n;
+  return `hsl(${hue + Number(version % range)} 65% ${55 + Number(version % 13n)}%)`;
 }
+
 type Scope =
   | { kind: "all" }
   | { kind: "alternatives" }

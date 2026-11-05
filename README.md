@@ -404,7 +404,7 @@ unrecognized versions remain assumed Haskell cardano-node.
 Loading is progressive and can be cancelled by switching to Latest blocks or
 leaving the page. Compact verified header records are cached per network and
 backend in browser storage, with canonical boundary and tail checks before
-reuse. Full blocks and transaction bodies are not persisted. Incomplete reads
+reuse. Native header CBOR is retained to authenticate cached hashes and version fields; full blocks and transaction bodies are not persisted. Incomplete reads
 remain explicitly incomplete and can resume their verified prefix.
 
 [Desktop comparison](docs/screenshots/header-history1500.jpg) · [Mobile comparison](docs/screenshots/header-history390.jpg)

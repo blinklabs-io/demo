@@ -403,7 +403,9 @@ it("rejects a cached time hint that does not bracket the authoritative cutoff", 
   expect(result.complete).toBe(true);
   expect(result.cachedRows).toBe(0);
   expect(result.rows.map((row) => row.height)).toEqual([4, 5, 6, 7, 8]);
-  expect(fetch.mock.calls.map(([path]) => path)).toContain("/api/v0/blocks/5");
+  expect(fetch.mock.calls.map(([path]) => path)).not.toContain(
+    "/api/v0/blocks/5",
+  );
   expect(fetch.mock.calls.map(([path]) => path)).toContain("/api/v0/blocks/2");
   expect(dump).toHaveBeenCalledTimes(3);
 });
@@ -420,7 +422,23 @@ it("re-searches a cutoff moved by a fork instead of trusting the former branch's
   expect(result.rows[0].height).toBe(4);
   expect(result.rows[0].time).toBe(result.cutoff);
   expect(result.rows.map((row) => row.hash)).not.toContain(former);
-  expect(fetch.mock.calls.map(([path]) => path)).toContain("/api/v0/blocks/5");
+  expect(fetch.mock.calls.map(([path]) => path)).toContain(
+    "/api/v0/blocks/5",
+  );
   expect(fetch.mock.calls.map(([path]) => path)).toContain("/api/v0/blocks/2");
   expect(dump).toHaveBeenCalledTimes(3);
+});
+it("rebuilds cached versions that disagree with their native header", async () => {
+  const original = await loadHeaderHistory();
+  const key = localStorage.key(0)!;
+  const cache = JSON.parse(localStorage.getItem(key)!);
+  cache.rows[1].minor = "69";
+  localStorage.setItem(key, JSON.stringify(cache));
+  dump.mockClear();
+  const result = await loadHeaderHistory();
+  expect(result.cachedRows).toBe(0);
+  expect(result.rows.map((r) => r.minor)).toEqual(
+    original.rows.map((r) => r.minor),
+  );
+  expect(dump).toHaveBeenCalled();
 });

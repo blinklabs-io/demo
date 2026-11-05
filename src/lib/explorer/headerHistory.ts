@@ -38,14 +38,17 @@ interface Era {
 type NativeBlock = Awaited<
   ReturnType<ReturnType<typeof getSyncClient>["inner"]["dumpHistory"]>
 >["block"][number];
+interface CachedHeader extends HeaderHistoryRow {
+  nativeHeader: string;
+}
 interface Cache {
-  version: 1;
-  rows: HeaderHistoryRow[];
+  version: 2;
+  rows: CachedHeader[];
 }
 const HASH = /^[a-f\d]{64}$/;
 const DAY = 86_400;
 const PAGE_SIZE = 100;
-const key = `dingo.header-history.v1:${JSON.stringify([DINGO_NETWORK.id, DINGO_CONFIG.blockfrostUrl, DINGO_CONFIG.utxorpcUrl])}`;
+const key = `dingo.header-history.v2:${JSON.stringify([DINGO_NETWORK.id, DINGO_CONFIG.blockfrostUrl, DINGO_CONFIG.utxorpcUrl])}`;
 const integer = (value: number) => Number.isSafeInteger(value) && value >= 0;
 function summary(value: Summary): Summary {
   if (
@@ -72,13 +75,25 @@ function safeUInt(value: bigint) {
     throw new Error("Block header integer is outside the supported range.");
   return Number(value);
 }
-function readCache(): HeaderHistoryRow[] {
+function readCache(timeAtSlot: (slot: number) => number): CachedHeader[] {
   try {
     const cache: Cache = JSON.parse(localStorage.getItem(key) ?? "null");
-    if (cache?.version !== 1 || !Array.isArray(cache.rows)) return [];
+    if (cache?.version !== 2 || !Array.isArray(cache.rows)) return [];
     for (let i = 0; i < cache.rows.length; i++) {
       const row = cache.rows[i],
         prev = cache.rows[i - 1];
+      if (!row || typeof row.nativeHeader !== "string") return [];
+      const decoded = decodeHeader(
+        Uint8Array.from(atob(row.nativeHeader), (c) => c.charCodeAt(0)),
+        timeAtSlot,
+      );
+      if (
+        !same(row, decoded) ||
+        row.parent !== decoded.parent ||
+        row.major !== decoded.major ||
+        row.minor !== decoded.minor
+      )
+        return [];
       if (
         !row ||
         typeof row.hash !== "string" ||
@@ -105,11 +120,12 @@ function readCache(): HeaderHistoryRow[] {
     return [];
   }
 }
-function writeCache(rows: HeaderHistoryRow[]) {
+function writeCache(rows: CachedHeader[]) {
   try {
+    localStorage.removeItem(key.replace(".v2:", ".v1:"));
     localStorage.setItem(
       key,
-      JSON.stringify({ version: 1, rows } satisfies Cache),
+      JSON.stringify({ version: 2, rows } satisfies Cache),
     );
   } catch {
     /* Storage is optional; chain validation remains required on every read. */
@@ -118,7 +134,7 @@ function writeCache(rows: HeaderHistoryRow[]) {
 function nativeHeader(
   block: NativeBlock,
   timeAtSlot: (slot: number) => number,
-): HeaderHistoryRow {
+): CachedHeader {
   if (!block.nativeBytes.length || block.chain.case !== "cardano")
     throw new Error(
       "Dingo returned a block without native Cardano header data.",
@@ -130,6 +146,22 @@ function nativeHeader(
   if (blockLength !== 4 && blockLength !== 5)
     throw new Error("Unsupported block format in header history.");
   const encoded = reader.readEncodedValue();
+  const row = decodeHeader(encoded, timeAtSlot);
+  const { hash, height, slot } = row;
+  const parsed = block.chain.value.header;
+  if (
+    !parsed ||
+    bytesToHex(parsed.hash) !== hash ||
+    safeUInt(parsed.height) !== height ||
+    safeUInt(parsed.slot) !== slot
+  )
+    throw new Error("Native and parsed block headers do not match.");
+  return row;
+}
+function decodeHeader(
+  encoded: Uint8Array,
+  timeAtSlot: (slot: number) => number,
+): CachedHeader {
   const header = new Core.CborReader(Core.HexBlob.fromBytes(encoded));
   if (header.readStartArray() !== 2)
     throw new Error("Invalid native block header.");
@@ -150,15 +182,18 @@ function nativeHeader(
   const major = header.readUInt().toString(),
     minor = header.readUInt().toString();
   const hash = String(Core.blake2b_256(Core.HexBlob.fromBytes(encoded)));
-  const parsed = block.chain.value.header;
-  if (
-    !parsed ||
-    bytesToHex(parsed.hash) !== hash ||
-    safeUInt(parsed.height) !== height ||
-    safeUInt(parsed.slot) !== slot
-  )
-    throw new Error("Native and parsed block headers do not match.");
-  return { hash, parent, height, slot, time: timeAtSlot(slot), major, minor };
+  return {
+    hash,
+    parent,
+    height,
+    slot,
+    time: timeAtSlot(slot),
+    major,
+    minor,
+    nativeHeader: btoa(
+      Array.from(encoded, (byte) => String.fromCharCode(byte)).join(""),
+    ),
+  };
 }
 
 export async function loadHeaderHistory({
@@ -222,7 +257,7 @@ export async function loadHeaderHistory({
     boundaries.set(height, block);
     return block;
   };
-  const cached = readCache();
+  const cached = readCache(timeAtSlot);
   const hint = cached.find(
     (row) => row.time >= cutoff && row.height <= snapshot.height,
   );

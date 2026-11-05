@@ -41,7 +41,7 @@ export function HeaderVersionHistory({ recent }: { recent: RecentBlock[] }) {
         if (active)
           setJob((previous) => ({
             id: run,
-            data: previous.data,
+            data: previous.id === run ? previous.data : null,
             settled: true,
             error:
               error instanceof Error
@@ -66,7 +66,7 @@ export function HeaderVersionHistory({ recent }: { recent: RecentBlock[] }) {
     const timer = setTimeout(() => setRun((previous) => previous + 1), 60000);
     return () => clearTimeout(timer);
   }, [view, run, job.id, job.settled, job.data?.complete, job.error]);
-  const data = job.data;
+  const data = job.id === run ? job.data : null;
   const expected = data?.total ?? 0;
   const date = (seconds: number) => new Date(seconds * 1000).toLocaleString();
   return (
@@ -123,7 +123,7 @@ export function HeaderVersionHistory({ recent }: { recent: RecentBlock[] }) {
           >
             <div>
               <strong>
-                {data?.complete
+                {data?.complete && !loading && !job.error
                   ? `${data.rows.length.toLocaleString()} blocks · complete 24 hours`
                   : data?.rows.length
                     ? `${data.rows.length.toLocaleString()}${expected ? ` / ${expected.toLocaleString()}` : ""} headers verified`
@@ -171,7 +171,7 @@ export function HeaderVersionHistory({ recent }: { recent: RecentBlock[] }) {
               records={data.rows}
               startTime={data.cutoff}
               endTime={data.snapshot.time}
-              complete={data.complete}
+              complete={data.complete && !loading && !job.error}
             />
           )}
         </>
