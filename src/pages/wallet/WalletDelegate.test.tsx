@@ -1,3 +1,4 @@
+import { Core } from "@blaze-cardano/sdk";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router";
@@ -42,7 +43,14 @@ vi.mock("../../lib/dingo/delegation", () => ({
       target,
       registered: true,
       deposit: 0n,
-      tx: { body: () => ({ fee: () => 170000n }) },
+      tx: new Core.Transaction(
+        new Core.TransactionBody(
+          Core.CborSet.fromCore([], Core.TransactionInput.fromCore),
+          [],
+          170000n,
+        ),
+        new Core.TransactionWitnessSet(),
+      ),
     } as unknown as PreparedDelegation;
   },
   submitDelegation: async (

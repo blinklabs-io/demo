@@ -1,0 +1,249 @@
+.capacity-cockpit {
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 1px solid #314654;
+  border-radius: 1.4rem;
+  background:
+    radial-gradient(ellipse at 15% 0, #163b4266, transparent 55%),
+    radial-gradient(ellipse at 100% 80%, #4c347a33, transparent 65%), #101b27;
+  min-width: 0;
+}
+.capacity-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.capacity-heading h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin: 0.25rem 0 0.6rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+.capacity-heading p {
+  max-width: 42rem;
+  color: #a6bac9;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.capacity-heading button {
+  white-space: nowrap;
+}
+.capacity-selection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  margin: 1.5rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid #34505e;
+  border-radius: 0.85rem;
+  background: #0c1623aa;
+}
+.capacity-selection > div {
+  display: flex;
+  gap: 0.7rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.capacity-selection strong {
+  font-size: 1.2rem;
+  color: #e0f5f4;
+}
+.capacity-selection > span {
+  color: #95aabb;
+  font-size: 0.78rem;
+}
+.capacity-selection a {
+  margin-left: auto;
+  color: #6ee7d3;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.capacity-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.7rem;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #b9d0dd;
+}
+.capacity-status > span:last-child {
+  margin-left: auto;
+  color: #8ea6b7;
+}
+.capacity-status-light {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border-radius: 50%;
+  background: #62ddc7;
+  box-shadow: 0 0 0.7rem #62ddc766;
+}
+.capacity-full .capacity-status-light {
+  background: #fb7185;
+  box-shadow: 0 0 0.7rem #fb718577;
+}
+.capacity-full strong {
+  color: #fda4af;
+}
+.capacity-gauges {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+.capacity-gauges .instrument-gauge {
+  min-width: 0;
+  padding: 0.8rem 0.4rem;
+  background: #09132099;
+  border: 1px solid #293d51;
+  border-radius: 1rem;
+}
+.capacity-gauges .instrument-gauge svg {
+  width: 100%;
+  max-width: 250px;
+  margin: auto;
+  display: block;
+}
+.capacity-gauges .instrument-gauge figcaption {
+  padding: 0 0.4rem;
+}
+.capacity-gauges .instrument-gauge figcaption span {
+  overflow-wrap: anywhere;
+}
+.capacity-not-applicable {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 0.6rem;
+  min-height: 12rem;
+  border: 1px dashed #394759;
+  border-radius: 1rem;
+  color: #9aabbc;
+}
+.capacity-not-applicable span {
+  font-size: 0.75rem;
+}
+.capacity-footnote {
+  margin-top: 0.9rem;
+  color: #8fa6b9;
+  font-size: 0.73rem;
+  line-height: 1.6;
+}
+.capacity-history-heading {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.6rem;
+  font-size: 0.85rem;
+}
+.capacity-history-heading > span {
+  color: #91a7b7;
+  font-size: 0.73rem;
+}
+.capacity-history {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+.capacity-history button {
+  position: relative;
+  height: 6.5rem;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #2f4357;
+  background: #081421;
+  border-radius: 0.5rem;
+}
+.capacity-history button[aria-pressed="true"] {
+  border-color: #6ee7d3;
+  outline: 1px solid #6ee7d3;
+  outline-offset: 2px;
+}
+.capacity-history button:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 3px;
+}
+.capacity-history-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, #4268a2, #62ddc7);
+  border-radius: 0.25rem 0.25rem 0 0;
+  transition: height 0.3s;
+}
+.capacity-history-height {
+  position: absolute;
+  bottom: 0.25rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.62rem;
+  color: #e7f4f5;
+  text-shadow: 0 1px 4px #000;
+  font-variant-numeric: tabular-nums;
+}
+.capacity-history-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: #7f9aaa;
+  font-size: 0.68rem;
+}
+@media (max-width: 640px) {
+  .capacity-heading {
+    flex-wrap: wrap;
+  }
+  .capacity-gauges {
+    gap: 0.6rem;
+  }
+  .capacity-gauges .instrument-gauge {
+    padding: 0.5rem 0.15rem;
+  }
+  .capacity-gauges .instrument-gauge figcaption strong {
+    font-size: 0.7rem;
+  }
+  .capacity-gauges .instrument-gauge figcaption span {
+    font-size: 0.62rem;
+  }
+  .capacity-history {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .capacity-history button {
+    height: 4rem;
+  }
+  .capacity-selection a {
+    margin-left: 0;
+  }
+}
+@media (max-width: 480px) {
+  .capacity-gauges {
+    grid-template-columns: 1fr;
+  }
+  .capacity-gauges .instrument-gauge {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+  .capacity-gauges .instrument-gauge figcaption strong {
+    font-size: 0.9rem;
+  }
+  .capacity-gauges .instrument-gauge figcaption span {
+    font-size: 0.75rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .capacity-history-bar {
+    transition: none;
+  }
+}
+
+.capacity-retry {
+  margin-top: 0.75rem;
+}

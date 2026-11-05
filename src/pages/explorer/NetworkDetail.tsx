@@ -1,3 +1,4 @@
+import { CapacityCockpit } from "../../components/explorer/CapacityCockpit";
 import { EraName } from "../../components/explorer/EraName";
 import { networkName } from "../../lib/dingo/networkNames";
 import { compactAda, ratio } from "../../lib/visualFormat";
@@ -123,7 +124,13 @@ export default function NetworkDetail() {
         )}
       </header>
 
-      <QueryState hasData={networkQuery.data !== undefined} isLoading={networkQuery.isLoading} error={networkQuery.error}>
+      <CapacityCockpit />
+
+      <QueryState
+        hasData={networkQuery.data !== undefined}
+        isLoading={networkQuery.isLoading}
+        error={networkQuery.error}
+      >
         {network && (
           <div className="network-economics">
             <section className="network-supply">
@@ -220,7 +227,11 @@ export default function NetworkDetail() {
             ◷
           </span>
         </div>
-        <QueryState hasData={erasQuery.data !== undefined} isLoading={erasQuery.isLoading} error={erasQuery.error}>
+        <QueryState
+          hasData={erasQuery.data !== undefined}
+          isLoading={erasQuery.isLoading}
+          error={erasQuery.error}
+        >
           {currentTiming && (
             <div className="rhythm-grid">
               <div>
@@ -267,7 +278,11 @@ export default function NetworkDetail() {
           </div>
           <span className="network-unit">↗</span>
         </div>
-        <QueryState hasData={erasQuery.data !== undefined} isLoading={erasQuery.isLoading} error={erasQuery.error}>
+        <QueryState
+          hasData={erasQuery.data !== undefined}
+          isLoading={erasQuery.isLoading}
+          error={erasQuery.error}
+        >
           <ol className="era-track">
             {(eras ?? []).map((era, index) => (
               <li key={era.start.slot}>
@@ -331,7 +346,8 @@ export default function NetworkDetail() {
         </details>
         <details className="detail-disclosure">
           <summary>Genesis configuration</summary>
-          <QueryState hasData={genesisQuery.data !== undefined}
+          <QueryState
+            hasData={genesisQuery.data !== undefined}
             isLoading={genesisQuery.isLoading}
             error={genesisQuery.error}
           >

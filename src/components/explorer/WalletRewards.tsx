@@ -1,3 +1,4 @@
+import { TransactionRehearsal } from "../wallet/TransactionRehearsal";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useEffect, useState } from "react";
@@ -192,6 +193,7 @@ function RewardsForm({
             registration and delegations stay in place. Submitted through Dingo
             on {DINGO_NETWORK.label}.
           </p>
+          <TransactionRehearsal tx={prepared.tx} />
           <div className="flex flex-wrap gap-3">
             <button
               type="button"

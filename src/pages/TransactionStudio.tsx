@@ -1,3 +1,4 @@
+import { TransactionRehearsal } from "../components/wallet/TransactionRehearsal";
 import { DINGO_NETWORK } from "../lib/dingo/config";
 import { useDraftGuard } from "../lib/useDraftGuard";
 import { WalletConnectSummary } from "../components/layout/WalletConnectSummary";
@@ -440,23 +441,7 @@ function StudioWorkspace({ imported }: { imported: string }) {
                     <span>Key witnesses</span>
                   </div>
                 </div>
-                <div className="studio-value-flow">
-                  <div>
-                    <strong>{body.inputs().size()}</strong>
-                    <span>spending inputs</span>
-                  </div>
-                  <b>→</b>
-                  <div className="studio-flow-core">
-                    DINGO
-                    <br />
-                    <small>transaction</small>
-                  </div>
-                  <b>→</b>
-                  <div>
-                    <strong>{body.outputs().length}</strong>
-                    <span>outputs</span>
-                  </div>
-                </div>
+                <TransactionRehearsal tx={transaction.tx} />
                 <p className="tool-help">
                   Decoded, not ledger-validated. Witness count does not prove
                   signing is complete.{" "}

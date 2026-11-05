@@ -1,3 +1,4 @@
+import { Core } from "@blaze-cardano/sdk";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router";
@@ -31,7 +32,14 @@ vi.mock("../../lib/surveys/transactions", () => ({
     assert();
     return {
       action,
-      tx: { body: () => ({ fee: () => 170000n }) },
+      tx: new Core.Transaction(
+        new Core.TransactionBody(
+          Core.CborSet.fromCore([], Core.TransactionInput.fromCore),
+          [],
+          170000n,
+        ),
+        new Core.TransactionWitnessSet(),
+      ),
     } as unknown as PreparedSurvey;
   },
   submitSurveyTransaction: async (
@@ -244,7 +252,9 @@ it("preserves a submitted survey hash and confirmation across later authored fie
   boundary.finish = null;
   await title("B");
   expect(
-    container.querySelector('a[href="/explorer/tx/' + "11".repeat(32) + '?network=preview"]'),
+    container.querySelector(
+      'a[href="/explorer/tx/' + "11".repeat(32) + '?network=preview"]',
+    ),
   ).not.toBeNull();
   expect(container.textContent).toContain("confirmation unavailable");
   boundary.confirmation = "valid";
