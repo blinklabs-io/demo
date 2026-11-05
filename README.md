@@ -386,3 +386,25 @@ The contract lifecycle tests execute pinned Kernel validators with the Blaze VM
 on an isolated in-memory ledger. The VM is a direct development dependency at
 the same version used by the application SDK; these tests require no wallet,
 external protocol API or transaction submission.
+
+## Exact 24-hour header comparison
+
+Explore’s Header versions view reads every block in the 24-hour window ending
+at Dingo’s latest block snapshot. It uses paginated UTxO RPC `DumpHistory`, not
+sampling or one request per block. Native header hashes, parsed metadata, parent
+links and height continuity are checked before the completed window is shown.
+The frozen snapshot is rechecked against Dingo’s canonical chain.
+
+Pie slices, version legends, hourly bars and alternative-node markers expose even rare header
+versions. Select a version or hour to inspect its blocks. The block list is
+paginated; counts always cover the verified records rather than just displayed
+links. Protocol minor markers identify the displayed node implementations;
+unrecognized versions remain assumed Haskell cardano-node.
+
+Loading is progressive and can be cancelled by switching to Latest blocks or
+leaving the page. Compact verified header records are cached per network and
+backend in browser storage, with canonical boundary and tail checks before
+reuse. Full blocks and transaction bodies are not persisted. Incomplete reads
+remain explicitly incomplete and can resume their verified prefix.
+
+[Desktop comparison](docs/screenshots/header-history1500.jpg) · [Mobile comparison](docs/screenshots/header-history390.jpg)

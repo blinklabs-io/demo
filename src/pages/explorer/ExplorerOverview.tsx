@@ -1,7 +1,7 @@
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { recentBlocksQuery } from "../../lib/explorer/recentBlocks";
 import { BlockConveyor } from "../../components/chain/BlockConveyor";
-import { RecentHeaderVersions } from "../../components/explorer/RecentHeaderVersions";
+import { HeaderVersionHistory } from "../../components/explorer/HeaderVersionHistory";
 import { BlockHeaderVersion } from "../../components/explorer/BlockHeaderVersion";
 import { epochProgress } from "../../lib/visualFormat";
 import { useState } from "react";
@@ -188,15 +188,14 @@ export default function ExplorerOverview() {
       </div>
       {blocks.length > 0 && (
         <Panel
-          title="Recent header versions"
+          title="Header versions"
           action={
             <span className="text-xs text-slate-400">
-              {DINGO_NETWORK.label} · Latest{" "}
-              {blocks.length} blocks
+              {DINGO_NETWORK.label} · Node diversity
             </span>
           }
         >
-          <RecentHeaderVersions blocks={blocks} />
+          <HeaderVersionHistory recent={blocks} />
         </Panel>
       )}
       <Panel title="Latest blocks">
