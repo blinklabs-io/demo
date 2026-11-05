@@ -244,7 +244,7 @@ it("preserves a submitted survey hash and confirmation across later authored fie
   boundary.finish = null;
   await title("B");
   expect(
-    container.querySelector('a[href="/explorer/tx/' + "11".repeat(32) + '"]'),
+    container.querySelector('a[href="/explorer/tx/' + "11".repeat(32) + '?network=preview"]'),
   ).not.toBeNull();
   expect(container.textContent).toContain("confirmation unavailable");
   boundary.confirmation = "valid";

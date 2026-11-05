@@ -39,7 +39,7 @@ it.each([["account", 404], ["drep", 404], ["drep", 503]] as const)("handles cach
     } else {
       expect(container.textContent).toContain("Showing previously loaded data");
       expect(container.textContent).toContain("Indexed child records");
-      expect(container.querySelector('a[href="/wallet/delegate?drep=identity"]')).not.toBeNull();
+      expect(container.querySelector('a[href="/wallet/delegate?drep=identity&network=preview"]')).not.toBeNull();
     }
   } finally {
     await act(async () => root.unmount());

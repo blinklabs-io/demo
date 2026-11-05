@@ -24,9 +24,13 @@ function fixture() {
       hash: Core.Hash28ByteBase16("11".repeat(28)),
     }),
   );
+  const funding = new Core.TransactionInput(
+    Core.TransactionId("44".repeat(32)),
+    0n,
+  );
   const tx = new Core.Transaction(
     new Core.TransactionBody(
-      Core.CborSet.fromCore([], Core.TransactionInput.fromCore),
+      Core.CborSet.fromCore([funding.toCore()], Core.TransactionInput.fromCore),
       [new Core.TransactionOutput(address, new Core.Value(5000000n))],
       170000n,
     ),
@@ -51,6 +55,12 @@ function fixture() {
     liquidity: { aReserve: 1000000000n, bReserve: 1000000n, lpTotal: 1n },
     version: EContractVersion.V3,
   };
+  const resolveFunding = vi.fn(async () => [
+    new Core.TransactionUnspentOutput(
+      funding,
+      new Core.TransactionOutput(address, new Core.Value(10000000n)),
+    ),
+  ]);
   const args = {
     blaze: {
       wallet: {
@@ -59,6 +69,7 @@ function fixture() {
       },
       provider: {
         networkName: "cardano-preview",
+        resolveUnspentOutputs: resolveFunding,
         postTransactionToChain: post,
       },
     },
@@ -73,6 +84,7 @@ function fixture() {
   } as unknown as BuildSwapArgs;
   return {
     args,
+    resolveFunding,
     swap,
     build,
     sign,
@@ -163,4 +175,36 @@ it("does not submit when the live account changes during V3 wallet approval", as
   await expect(draft.signAndSubmit()).rejects.toThrow("Wallet account changed");
   expect(f.sign).toHaveBeenCalledTimes(1);
   expect(f.post).not.toHaveBeenCalled();
+});
+
+it("rejects a cross-testnet funded order before review even when CIP30 reports testnet", async () => {
+  const f = fixture();
+  f.resolveFunding.mockResolvedValue([]);
+  await expect(buildSwapOrder(f.args)).rejects.toThrow(
+    /funding is not available/,
+  );
+  expect(f.sign).not.toHaveBeenCalled();
+  expect(f.post).not.toHaveBeenCalled();
+});
+it("rechecks selected-chain inputs before prompting", async () => {
+  const f = fixture();
+  const draft = await buildSwapOrder(f.args);
+  f.resolveFunding.mockResolvedValue([]);
+  await expect(draft.signAndSubmit()).rejects.toThrow(
+    /funding is not available/,
+  );
+  expect(f.sign).not.toHaveBeenCalled();
+});
+it("rechecks selected-chain inputs after wallet approval before posting", async () => {
+  const g = fixture();
+  const accepted = await buildSwapOrder(g.args);
+  g.sign.mockImplementation(async () => {
+    g.resolveFunding.mockResolvedValue([]);
+    return { cbor: g.tx.toCbor() };
+  });
+  await expect(accepted.signAndSubmit()).rejects.toThrow(
+    /funding is not available/,
+  );
+  expect(g.sign).toHaveBeenCalledTimes(1);
+  expect(g.post).not.toHaveBeenCalled();
 });

@@ -1,7 +1,7 @@
 import { useCompactVisual } from "../../lib/chain/useCompactVisual";
 import { useId, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { treemap, fraction, visualColors } from "../../lib/chain/geometry";
 import { shortenHash } from "../../lib/format";
@@ -262,7 +262,7 @@ function Distribution({
         </div>
         {!history && (
           <button onClick={() => setHistory(true)}>
-            Explore mint &amp; burn history
+            Load mint &amp; burn history
           </button>
         )}
       </div>

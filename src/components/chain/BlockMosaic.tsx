@@ -3,7 +3,7 @@ import { useCompactVisual } from "../../lib/chain/useCompactVisual";
 import { useId, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { Core } from "@blaze-cardano/sdk";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { treemap } from "../../lib/chain/geometry";
 import { formatAda, shortenHash } from "../../lib/format";
@@ -46,22 +46,20 @@ function decode(row: Raw): Record {
 interface MosaicProps {
   hash: string;
   total: number;
-  onExplore?: () => void;
 }
-export function BlockMosaic({ hash, total, onExplore }: MosaicProps) {
-  return <Mosaic key={hash} hash={hash} total={total} onExplore={onExplore} />;
+export function BlockMosaic({ hash, total }: MosaicProps) {
+  return <Mosaic key={hash} hash={hash} total={total} />;
 }
-function Mosaic({ hash, total, onExplore }: MosaicProps) {
+function Mosaic({ hash, total }: MosaicProps) {
   const compact = useCompactVisual();
   const mapWidth = compact ? 700 : 1000,
     mapHeight = compact ? 700 : 540;
-  const [open, setOpen] = useState(false),
-    [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("all");
   const client = useQueryClient();
   const uid = useId();
   const query = useInfiniteQuery({
     queryKey: ["dingo", "block", hash, "mosaic"],
-    enabled: open,
+    enabled: total > 0,
     initialPageParam: 1,
     retry: false,
     staleTime: 300000,
@@ -115,31 +113,12 @@ function Mosaic({ hash, total, onExplore }: MosaicProps) {
           <span className="eyebrow">A block, under the microscope</span>
           <h2>Every transaction has a shape.</h2>
         </div>
-        {!open && total > 0 && (
-          <button
-            onClick={() => {
-              onExplore?.();
-              setOpen(true);
-            }}
-            disabled={total === 0}
-          >
-            Explore {total.toLocaleString()} transactions
-          </button>
-        )}
+
       </header>
       {total === 0 ? (
         <div className="chain-empty">
           <strong>This block was empty.</strong>
           <p>There are no transactions to map.</p>
-        </div>
-      ) : !open ? (
-        <div className="mosaic-teaser" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
         </div>
       ) : (
         <>

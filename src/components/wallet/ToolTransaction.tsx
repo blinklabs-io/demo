@@ -1,7 +1,8 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { metadataJson } from "../../lib/tools/cip25";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import { WalletConnectSummary } from "../layout/WalletConnectSummary";
@@ -117,8 +118,8 @@ export function ToolTransaction({
   function downloadPolicy(policy: PreparedTool) {
     const data = JSON.stringify(
       {
-        network: "preview",
-        networkMagic: 2,
+        network: DINGO_NETWORK.id,
+        networkMagic: DINGO_NETWORK.networkMagic,
         policyId: policy.policyId,
         nativeScriptCbor: policy.policyCbor,
       },
@@ -137,7 +138,7 @@ export function ToolTransaction({
   if (!api)
     return (
       <div className="tool-connect">
-        <p>Connect a Preview wallet to review and sign.</p>
+        <p>Connect a {DINGO_NETWORK.label} wallet to review and sign.</p>
         <WalletConnectSummary />
       </div>
     );
@@ -166,7 +167,7 @@ export function ToolTransaction({
         <section className="tool-review" aria-label="Transaction review">
           <div className="tool-review-heading">
             <div>
-              <span className="eyebrow">Unsigned draft · Preview</span>
+              <span className="eyebrow">Unsigned draft · {DINGO_NETWORK.label}</span>
               <h3>Check the actual transaction.</h3>
             </div>
             <strong>
@@ -283,7 +284,7 @@ export function ToolTransaction({
             {failed
               ? "Transaction failed on chain"
               : confirmation.data
-                ? "Confirmed on Preview"
+                ? `Confirmed on ${DINGO_NETWORK.label}`
                 : confirmation.error
                   ? "Submitted · confirmation unavailable"
                   : "Submitted to Dingo"}

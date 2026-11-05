@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../lib/dingo/config";
 import { create } from "zustand";
 import { Core } from "@blaze-cardano/sdk";
 import type { Cip30Wallet, Cip30WalletApi } from "../lib/dingo/cip30";
@@ -26,10 +27,8 @@ interface WalletDetails {
   tokens: WalletToken[];
 }
 
-// Dingo's example apps and this showcase both target Preview. A wallet
-// switched to Mainnet must never be allowed to build or submit here - see
-// the network guard in `connect` below.
-const EXPECTED_NETWORK_ID = 0; // CIP-30 network id 0 = testnet (Preview/Preprod), 1 = mainnet
+// CIP-30 distinguishes mainnet from testnets; Dingo genesis verifies the selected testnet.
+const EXPECTED_NETWORK_ID = 0; // CIP-30 distinguishes testnet from mainnet; actual funding inputs are verified against selected Dingo before review/signing.
 
 interface WalletState extends WalletDetails {
   connectionId: number;
@@ -153,8 +152,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         if (connectGeneration === requestGeneration) {
           set({
             status: "error",
-            error:
-              "Wrong network. Switch your wallet to Preview, then reconnect.",
+            error: `Wrong network. Switch your wallet to ${DINGO_NETWORK.label}, then reconnect.`,
           });
         }
         return;

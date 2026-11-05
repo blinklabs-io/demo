@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { creationTools, type CreationToolId } from "../../lib/creationTools";
 import TransactionStudio from "../TransactionStudio";
 import { Cip25Editor } from "../../components/wallet/Cip25Editor";
@@ -10,7 +11,8 @@ import {
   type ComponentType,
   type ComponentProps,
 } from "react";
-import { Link, NavLink, useParams } from "react-router";
+import { useParams } from "react-router";
+import { Link, NavLink } from "../../components/NetworkLink";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import {
@@ -595,8 +597,8 @@ function Mint() {
     try {
       if (file.size > 16384) throw new Error("Policy file is too large.");
       const data = JSON.parse(await file.text());
-      if (data.networkMagic !== 2 || typeof data.nativeScriptCbor !== "string")
-        throw new Error("Choose a Preview policy file exported by this tool.");
+      if (data.networkMagic !== DINGO_NETWORK.networkMagic || typeof data.nativeScriptCbor !== "string")
+        throw new Error(`Choose a ${DINGO_NETWORK.label} policy file exported by this tool.`);
       setPolicy(data.nativeScriptCbor);
       setImportError("");
     } catch (e) {
@@ -726,7 +728,7 @@ function Mint() {
               <span>−</span>
             </div>
           )}
-          <span className="eyebrow">Native Cardano asset · Preview</span>
+          <span className="eyebrow">Native Cardano asset · {DINGO_NETWORK.label}</span>
           <h3>
             {mode === "burn"
               ? assetName(asset) || "Select an asset"
@@ -775,7 +777,7 @@ function Drep() {
       <section className="data-panel tool-form">
         <h2>Participate in governance.</h2>
         <p>
-          Register your wallet’s CIP-95 DRep key on Preview. A registered DRep
+          Register your wallet’s CIP-95 DRep key on {DINGO_NETWORK.label}. A registered DRep
           can vote on governance actions in the explorer.
         </p>
         <label>
@@ -843,7 +845,7 @@ function Treasury() {
   return (
     <div className="tool-two-column">
       <section className="data-panel tool-form">
-        <h2>Fund Preview’s treasury.</h2>
+        <h2>Fund {DINGO_NETWORK.label}’s treasury.</h2>
         <label>
           Donation · ADA
           <input
@@ -854,7 +856,7 @@ function Treasury() {
         </label>
         <p>
           The donation is recorded in the transaction’s treasury field. It goes
-          directly to the Preview treasury, with no intermediary address or
+          directly to the {DINGO_NETWORK.label} treasury, with no intermediary address or
           contract.
         </p>
         <ToolTransaction action={() => ({ kind: "donate", amount })} />
@@ -865,7 +867,7 @@ function Treasury() {
           {amount || "—"}
           <small>test ADA</small>
         </strong>
-        <p>Preview treasury donation</p>
+        <p>{DINGO_NETWORK.label} treasury donation</p>
         <span className="tool-route-pill">Your wallet → Cardano treasury</span>
       </aside>
     </div>
@@ -908,7 +910,7 @@ export default function WalletTools() {
                 to={t.to}
               >
                 <span className="eyebrow">
-                  {String(i + 1).padStart(2, "0")} · Preview
+                  {String(i + 1).padStart(2, "0")} · {DINGO_NETWORK.label}
                 </span>
                 <span className="tool-catalog-icon" aria-hidden="true">
                   {t.icon}
@@ -944,7 +946,7 @@ export default function WalletTools() {
           {!connected && tool !== "transactions" && tool !== "utxos" && (
             <p className="tool-help">
               Explore the tools and edit your drafts without connecting. Wallet
-              funds and transaction signing require a connected Preview wallet.
+              funds and transaction signing require a connected {DINGO_NETWORK.label} wallet.
             </p>
           )}
           {ToolBody && <ToolBody key={tool} />}

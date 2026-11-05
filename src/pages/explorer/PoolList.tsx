@@ -1,7 +1,8 @@
 import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
 import { useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useSearchParams, Link } from "react-router";
+import { useSearchParams } from "react-router";
+import { Link } from "../../components/NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { compactAda } from "../../lib/visualFormat";
 import { Gauge, PageIntro } from "../../components/explorer/Visuals";

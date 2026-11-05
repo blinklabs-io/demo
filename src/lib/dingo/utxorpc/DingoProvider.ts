@@ -8,7 +8,7 @@ import {
   CardanoSubmitClient,
   type CardanoUtxo,
 } from "@utxorpc/sdk";
-import { DINGO_CONFIG } from "../config";
+import { DINGO_CONFIG, DINGO_NETWORK } from "../config";
 import { blockfrostFetch, BlockfrostError } from "../blockfrost";
 import { bytesToHex, hexToBytes } from "./bytes";
 
@@ -21,7 +21,10 @@ export class DingoProvider extends Provider {
   });
 
   constructor() {
-    super(Core.NetworkId.Testnet, "cardano-preview");
+    super(
+      Core.NetworkId.Testnet,
+      DINGO_NETWORK.id === "preprod" ? "cardano-preprod" : "cardano-preview",
+    );
   }
 
   async getParameters(): Promise<Core.ProtocolParameters> {
@@ -166,9 +169,15 @@ export class DingoProvider extends Provider {
   ) {
     return findScriptRefInAddressUtxos(this, script, address);
   }
-  async postTransactionToChain(tx: Core.Transaction) {
-    if ((await this.queryClient.readGenesis()).networkMagic !== 2)
-      throw new Error("Dingo submission requires Preview.");
+  async postTransactionToChain(
+    tx: Core.Transaction,
+    assertCurrent?: () => void,
+  ) {
+    assertCurrent?.();
+    const genesis = await this.queryClient.readGenesis();
+    assertCurrent?.();
+    if (genesis.networkMagic !== DINGO_NETWORK.networkMagic)
+      throw new Error(`Dingo submission requires ${DINGO_NETWORK.label}.`);
     const id = Core.TransactionId(
       bytesToHex(await this.submitClient.submitTx(hexToBytes(tx.toCbor()))),
     );

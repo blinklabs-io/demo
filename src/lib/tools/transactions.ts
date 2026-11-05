@@ -1,4 +1,8 @@
-import { assertWalletSession } from "../dingo/walletSession";
+import { DINGO_NETWORK } from "../dingo/config";
+import {
+  assertTransactionNetwork,
+  assertWalletSession,
+} from "../dingo/walletSession";
 import { buildCip25, type Cip25Draft } from "./cip25";
 import { Core } from "@blaze-cardano/sdk";
 import type { Cip30WalletApi } from "../dingo/cip30";
@@ -109,7 +113,9 @@ async function identity(api: Cip30WalletApi, assertConnection: () => void) {
     address.getNetworkId() !== 0 ||
     key?.type !== Core.Cardano.CredentialType.KeyHash
   )
-    throw new Error("Connect a Preview wallet with a payment signing key.");
+    throw new Error(
+      `Connect a ${DINGO_NETWORK.label} wallet with a payment signing key.`,
+    );
   return { address, key: Core.Ed25519KeyHashHex(key.hash) };
 }
 async function timing() {
@@ -118,11 +124,13 @@ async function timing() {
     blockfrostFetch<{ network_magic: number }>("/api/v0/genesis"),
   ]);
   if (
-    genesis.network_magic !== 2 ||
+    genesis.network_magic !== DINGO_NETWORK.networkMagic ||
     !Number.isSafeInteger(tip.slot) ||
     tip.slot < 0
   )
-    throw new Error("Dingo did not return valid Preview timing.");
+    throw new Error(
+      `Dingo did not return valid ${DINGO_NETWORK.label} timing.`,
+    );
   return tip.slot;
 }
 function policyExpiry(
@@ -448,10 +456,13 @@ export async function prepareToolTransaction(
     if (amount <= 0n) throw new Error("Enter a positive donation.");
     builder.setDonation(amount);
     facts.push(
-      { label: "Preview treasury donation", value: formatAda(amount) },
+      {
+        label: `${DINGO_NETWORK.label} treasury donation`,
+        value: formatAda(amount),
+      },
       {
         label: "Destination",
-        value: "Cardano Preview treasury; no recipient or contract.",
+        value: `Cardano ${DINGO_NETWORK.label} treasury; no recipient or contract.`,
       },
     );
   } else {
@@ -542,6 +553,7 @@ export async function prepareToolTransaction(
       );
     inputSigningKeys.add(payment.hash);
   }
+  await assertTransactionNetwork(tx, assertConnection);
   return {
     tx,
     blaze,
@@ -588,8 +600,10 @@ export async function submitToolTransaction(
       throw new Error("DRep registration changed. Build a new draft.");
   }
   await assertWalletSession(api, assertConnection);
+  await assertTransactionNetwork(draft.tx, assertConnection);
   const signed = await draft.blaze.signTransaction(draft.tx);
   await assertWalletSession(api, assertConnection);
+  await assertTransactionNetwork(signed, assertConnection);
   if (signed.getId() !== draft.tx.getId())
     throw new Error("Wallet changed the transaction body.");
   const keys = [
@@ -615,5 +629,7 @@ export async function submitToolTransaction(
         "Wallet did not provide a valid required signature. Nothing was submitted.",
       );
   }
-  return (await draft.blaze.submitTransaction(signed, true)).toString();
+  return (
+    await draft.blaze.provider.postTransactionToChain(signed, assertConnection)
+  ).toString();
 }

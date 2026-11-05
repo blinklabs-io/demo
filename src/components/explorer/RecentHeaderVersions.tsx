@@ -1,6 +1,6 @@
 import { nodeImplementation } from "../../lib/dingo/nodeImplementation";
 import { useQueries } from "@tanstack/react-query";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { blockBytesQuery, decodeHeaderVersion } from "../../lib/dingo/blockHeader";
 import { Distribution } from "./Visuals";
 

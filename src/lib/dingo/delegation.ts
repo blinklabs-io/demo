@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "./config";
 import { assertSignedWithKey } from "./signatureWitness";
 import { Core } from "@blaze-cardano/sdk";
 import {
@@ -7,8 +8,11 @@ import {
 } from "./blaze";
 import { blockfrostFetch, BlockfrostError } from "./blockfrost";
 import type { Cip30WalletApi } from "./cip30";
-import { assertWalletSession } from "./walletSession";
-import { assertDingoNetwork, getDingoProvider } from "./utxorpc/provider";
+import {
+  assertTransactionNetwork,
+  assertDingoTransactionBackends,
+  assertWalletSession,
+} from "./walletSession";
 
 export type DelegationTarget = { kind: "pool" | "drep"; id: string };
 export interface DelegationAccount {
@@ -38,7 +42,7 @@ async function identity(
   const [rewards, change] = await Promise.all([
     api.getRewardAddresses(),
     api.getChangeAddress(),
-    assertDingoNetwork(getDingoProvider()),
+    assertDingoTransactionBackends(),
   ]);
   assertCurrent();
   const reward = Core.Address.fromBech32(address);
@@ -143,8 +147,8 @@ async function validateTarget(
     if (error instanceof BlockfrostError && error.status === 404)
       throw new Error(
         target.kind === "pool"
-          ? "That stake pool is not registered on Preview."
-          : "That DRep is not registered on Preview.",
+          ? `That stake pool is not registered on ${DINGO_NETWORK.label}.`
+          : `That DRep is not registered on ${DINGO_NETWORK.label}.`,
         { cause: error },
       );
     throw error;
@@ -189,6 +193,7 @@ export async function prepareDelegation(
   const validUntil = tip.slot + 600;
   const tx = await builder.setValidUntil(Core.Slot(validUntil)).complete();
   assertCurrent();
+  await assertTransactionNetwork(tx, assertCurrent);
   return {
     tx,
     blaze,
@@ -227,8 +232,10 @@ export async function submitDelegation(
   await validateTarget(draft.target, tip.epoch, assertCurrent);
   await assertWalletSession(api, assertCurrent);
   const expectedId = draft.tx.getId();
+  await assertTransactionNetwork(draft.tx, assertCurrent);
   const signed = await draft.blaze.signTransaction(draft.tx);
   await assertWalletSession(api, assertCurrent);
+  await assertTransactionNetwork(signed, assertCurrent);
   if (signed.getId() !== expectedId)
     throw new Error(
       "Wallet changed the transaction body. Nothing was submitted.",
@@ -239,5 +246,7 @@ export async function submitDelegation(
     "Wallet did not sign with your stake key. Nothing was submitted.",
   );
   assertCurrent();
-  return String(await draft.blaze.submitTransaction(signed, true));
+  return String(
+    await draft.blaze.provider.postTransactionToChain(signed, assertCurrent),
+  );
 }

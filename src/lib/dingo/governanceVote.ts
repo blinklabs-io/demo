@@ -1,11 +1,15 @@
+import { DINGO_NETWORK } from "./config";
 import { assertSignedWithKey } from "./signatureWitness";
-import { assertWalletSession } from "./walletSession";
+import {
+  assertTransactionNetwork,
+  assertDingoTransactionBackends,
+  assertWalletSession,
+} from "./walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import { blockfrostFetch, BlockfrostError } from "./blockfrost";
 import { getBlaze } from "./blaze";
 import type { Cip30WalletApi } from "./cip30";
 import { drepIdForPublicKey } from "./wallet";
-import { assertDingoNetwork, getDingoProvider } from "./utxorpc/provider";
 
 export interface WalletDRep {
   drep_id: string;
@@ -70,14 +74,16 @@ async function validateVote(
 ) {
   assertConnection();
   if ((await api.getNetworkId()) !== Core.NetworkId.Testnet)
-    throw new Error("Switch your wallet to Preview and reconnect.");
+    throw new Error(
+      `Switch your wallet to ${DINGO_NETWORK.label} and reconnect.`,
+    );
   const [current, role, tip] = await Promise.all([
     blockfrostFetch<VotingProposal>(
       `/api/v0/governance/proposals/${encodeURIComponent(proposal.id)}`,
     ),
     readWalletDRep(api),
     blockfrostFetch<{ epoch: number; slot: number }>("/api/v0/blocks/latest"),
-    assertDingoNetwork(getDingoProvider()),
+    assertDingoTransactionBackends(),
   ]);
   assertConnection();
   if (
@@ -86,7 +92,9 @@ async function validateVote(
   )
     throw new Error("The governance action changed. Reload this page.");
   if (!role || role.retired)
-    throw new Error("This wallet is not a registered DRep on Preview.");
+    throw new Error(
+      `This wallet is not a registered DRep on ${DINGO_NETWORK.label}.`,
+    );
   const credential = Core.Cardano.DRepID.toCredential(
     Core.Cardano.DRepID(role.drep_id),
   );
@@ -151,6 +159,7 @@ export async function prepareGovernanceVote(
     .setValidUntil(Core.Slot(validUntil))
     .complete();
   assertConnection();
+  await assertTransactionNetwork(tx, assertConnection);
   return {
     tx,
     blaze,
@@ -180,8 +189,10 @@ export async function submitGovernanceVote(
       "This vote draft expired. Review a new draft before signing.",
     );
   await assertWalletSession(api, assertConnection);
+  await assertTransactionNetwork(prepared.tx, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
   await assertWalletSession(api, assertConnection);
+  await assertTransactionNetwork(signed, assertConnection);
   // Partial signing can return payment witnesses without the governance key.
   assertSignedWithKey(
     signed,
@@ -189,7 +200,10 @@ export async function submitGovernanceVote(
     "The wallet did not sign with your DRep key. No vote was submitted.",
   );
   assertConnection();
-  const hash = await prepared.blaze.submitTransaction(signed, true);
+  const hash = await prepared.blaze.provider.postTransactionToChain(
+    signed,
+    assertConnection,
+  );
   return hash.toString();
 }
 

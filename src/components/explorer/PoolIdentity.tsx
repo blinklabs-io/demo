@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { readPoolLogos } from "../../lib/dingo/poolLogo";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { shortenHash } from "../../lib/format";
 

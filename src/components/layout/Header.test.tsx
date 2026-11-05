@@ -25,7 +25,7 @@ describe("Header grouped navigation", () => {
 it("highlights creation tools as a section without claiming its parent is the current page", () => {
   const container = document.createElement("div");
   container.innerHTML = render("/wallet/tools/mint");
-  const link = container.querySelector('a[href="/wallet/tools"]');
+  const link = container.querySelector('a[href="/wallet/tools?network=preview"]');
   expect(link?.classList.contains("selected")).toBe(true);
   expect(link?.hasAttribute("aria-current")).toBe(false);
 });

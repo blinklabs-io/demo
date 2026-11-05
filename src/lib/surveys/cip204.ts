@@ -1,4 +1,8 @@
-import { assertWalletSession } from "../dingo/walletSession";
+import { DINGO_NETWORK } from "../dingo/config";
+import {
+  assertTransactionNetwork,
+  assertWalletSession,
+} from "../dingo/walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import { blockfrostFetch, BlockfrostError } from "../dingo/blockfrost";
 import { getBlaze } from "../dingo/blaze";
@@ -173,7 +177,9 @@ async function walletIdentities(
   ]);
   assertConnection();
   if (network !== 0 || !addresses.length)
-    throw new Error("Connect a Preview wallet with a stake key.");
+    throw new Error(
+      `Connect a ${DINGO_NETWORK.label} wallet with a stake key.`,
+    );
   const identities = addresses.flatMap((hex) => {
     const address = Core.Address.fromBytes(Core.HexBlob(hex));
     const credential = address.asReward()?.getPaymentCredential();
@@ -183,7 +189,9 @@ async function walletIdentities(
       : [];
   });
   if (!identities.length)
-    throw new Error("CIP-204 requires a Preview stake signing key.");
+    throw new Error(
+      `CIP-204 requires a ${DINGO_NETWORK.label} stake signing key.`,
+    );
   return identities;
 }
 
@@ -205,7 +213,7 @@ async function validate(proposal: VotingProposal) {
   )
     throw new Error("Governance action changed. Reload this page.");
   if (
-    genesis.network_magic !== 2 ||
+    genesis.network_magic !== DINGO_NETWORK.networkMagic ||
     !Number.isSafeInteger(genesis.epoch_length) ||
     genesis.epoch_length <= 0 ||
     !Number.isSafeInteger(tip.epoch) ||
@@ -215,7 +223,9 @@ async function validate(proposal: VotingProposal) {
     tip.epoch_slot < 0 ||
     tip.epoch_slot >= genesis.epoch_length
   )
-    throw new Error("Dingo did not return valid Preview timing.");
+    throw new Error(
+      `Dingo did not return valid ${DINGO_NETWORK.label} timing.`,
+    );
   if (tip.epoch >= holderClosingEpoch(current))
     throw new Error("Holder answers have closed for this action.");
   return {
@@ -256,6 +266,7 @@ export async function prepareHolderAnswer(
     .setValidUntil(Core.Slot(validUntil))
     .complete();
   assertConnection();
+  await assertTransactionNetwork(tx, assertConnection);
   return { tx, blaze, identity, proposal: current, choice, validUntil };
 }
 export type PreparedHolderAnswer = Awaited<
@@ -282,8 +293,10 @@ export async function submitHolderAnswer(
   if (tip.slot >= prepared.validUntil)
     throw new Error("This answer draft expired.");
   await assertWalletSession(api, assertConnection);
+  await assertTransactionNetwork(prepared.tx, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
   await assertWalletSession(api, assertConnection);
+  await assertTransactionNetwork(signed, assertConnection);
   if (signed.getId() !== prepared.tx.getId())
     throw new Error(
       "Wallet changed the transaction body. Nothing was submitted.",
@@ -306,7 +319,12 @@ export async function submitHolderAnswer(
     throw new Error(
       "Wallet did not sign with your stake key. Nothing was submitted.",
     );
-  return (await prepared.blaze.submitTransaction(signed, true)).toString();
+  return (
+    await prepared.blaze.provider.postTransactionToChain(
+      signed,
+      assertConnection,
+    )
+  ).toString();
 }
 
 function bytesHex(value: Meta | undefined, size: number): string {

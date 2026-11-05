@@ -1,6 +1,8 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useState } from "react";
 import { BlockfrostError } from "../../lib/dingo/blockfrost";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
+import { Link } from "../../components/NetworkLink";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Core } from "@blaze-cardano/sdk";
 import {
@@ -100,7 +102,7 @@ export default function Surveys() {
       />
       <section className="survey-banner">
         <div>
-          <span className="eyebrow">CIP-179 · Preview</span>
+          <span className="eyebrow">CIP-179 · {DINGO_NETWORK.label}</span>
           <h2>Turn a question into a public record.</h2>
           <p>
             Create a survey, respond with your wallet, and explore the results.

@@ -1,11 +1,15 @@
+import { DINGO_NETWORK } from "./config";
 import { assertSignedWithKey } from "./signatureWitness";
-import { assertWalletSession } from "./walletSession";
+import {
+  assertTransactionNetwork,
+  assertDingoTransactionBackends,
+  assertWalletSession,
+} from "./walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import { getBlaze } from "./blaze";
 import { blockfrostFetch } from "./blockfrost";
 import type { Cip30WalletApi } from "./cip30";
 import { walletStakeAccount } from "./wallet";
-import { assertDingoNetwork, getDingoProvider } from "./utxorpc/provider";
 
 async function readRewards(
   api: Cip30WalletApi,
@@ -16,7 +20,9 @@ async function readRewards(
   const parsed = Core.Address.fromBech32(address);
   const reward = parsed.asReward();
   if (!reward || parsed.getNetworkId() !== Core.NetworkId.Testnet)
-    throw new Error("Connect a Preview wallet with a reward address.");
+    throw new Error(
+      `Connect a ${DINGO_NETWORK.label} wallet with a reward address.`,
+    );
   const credential = reward.getPaymentCredential();
   if (credential.type !== Core.Cardano.CredentialType.KeyHash)
     throw new Error("Reward withdrawals require a wallet stake signing key.");
@@ -25,7 +31,7 @@ async function readRewards(
     api.getRewardAddresses(),
     walletStakeAccount(address),
     blockfrostFetch<{ slot: number }>("/api/v0/blocks/latest"),
-    assertDingoNetwork(getDingoProvider()),
+    assertDingoTransactionBackends(),
   ]);
   assertConnection();
   if (
@@ -68,6 +74,7 @@ export async function prepareRewardWithdrawal(
     .setValidUntil(Core.Slot(validUntil))
     .complete();
   assertConnection();
+  await assertTransactionNetwork(tx, assertConnection);
   return { blaze, tx, amount, address, stakeHash, validUntil };
 }
 export type PreparedWithdrawal = Awaited<
@@ -91,12 +98,19 @@ export async function submitRewardWithdrawal(
   if (tip.slot >= prepared.validUntil)
     throw new Error("This withdrawal draft expired. Create a new transaction.");
   await assertWalletSession(api, assertConnection);
+  await assertTransactionNetwork(prepared.tx, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
   await assertWalletSession(api, assertConnection);
+  await assertTransactionNetwork(signed, assertConnection);
   assertSignedWithKey(
     signed,
     prepared.stakeHash,
     "The wallet did not sign with your stake key. No withdrawal was submitted.",
   );
-  return (await prepared.blaze.submitTransaction(signed, true)).toString();
+  return (
+    await prepared.blaze.provider.postTransactionToChain(
+      signed,
+      assertConnection,
+    )
+  ).toString();
 }

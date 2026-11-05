@@ -61,3 +61,45 @@ it("keeps the existing draft valid across hash-only anchors on the same page", a
   });
   expect(() => old()).not.toThrow();
 });
+
+it("preserves an approval across canonical selected-network metadata addition and removal", async () => {
+  const old = latest;
+  await act(async () => {
+    await router.navigate("/a?network=preview", { replace: true });
+  });
+  expect(() => old()).not.toThrow();
+  await act(async () => { await router.navigate("/a", { replace: true }); });
+  expect(() => old()).not.toThrow();
+});
+it.each(["preprod", "invalid"])("immediately invalidates an approval on explicit other network %s and never revives it", async (network) => {
+  const old = latest;
+  await act(async () => {
+    const away = router.navigate(`/a?network=${network}`);
+    expect(() => old()).toThrow("Draft details changed");
+    const back = router.navigate("/a?network=preview");
+    expect(() => old()).toThrow("Draft details changed");
+    await Promise.all([away, back]);
+  });
+  expect(() => old()).toThrow("Draft details changed");
+  expect(() => latest()).not.toThrow();
+});
+it.each([false, true])("invalidates same-page changed-state navigation when replace=%s", async (replace) => {
+  await act(async () => { await router.navigate("/a?network=preview", { replace: true, state: { transactionCbor: "first" } }); });
+  const old = latest;
+  await act(async () => {
+    const pending = router.navigate("/a", { replace, state: { transactionCbor: "second" } });
+    expect(() => old()).toThrow("Draft details changed");
+    await pending;
+  });
+  expect(() => old()).toThrow("Draft details changed");
+  expect(() => latest()).not.toThrow();
+});
+it("does not exempt a PUSH merely because it only drops canonical network metadata", async () => {
+  await act(async () => { await router.navigate("/a?network=preview", { replace: true }); });
+  const old = latest;
+  await act(async () => {
+    const pending = router.navigate("/a");
+    expect(() => old()).toThrow("Draft details changed");
+    await pending;
+  });
+});

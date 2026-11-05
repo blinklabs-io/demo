@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link } from "../components/NetworkLink";
 import { EmptyState, PageIntro } from "../components/explorer/Visuals";
 export default function NotFound() {
   return (

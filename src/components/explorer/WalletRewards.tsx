@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -189,7 +190,7 @@ function RewardsForm({
           <p>
             Withdraw all available rewards to your connected wallet. Your stake
             registration and delegations stay in place. Submitted through Dingo
-            on Preview.
+            on {DINGO_NETWORK.label}.
           </p>
           <div className="flex flex-wrap gap-3">
             <button

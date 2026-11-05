@@ -1,7 +1,9 @@
+import { DINGO_NETWORK } from "../lib/dingo/config";
 import { useDraftGuard } from "../lib/useDraftGuard";
 import { WalletConnectSummary } from "../components/layout/WalletConnectSummary";
 import { useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
+import { Link } from "../components/NetworkLink";
 import { Panel } from "../components/explorer/Panel";
 import { CopyButton } from "../components/explorer/CopyButton";
 import { formatAda as ada } from "../lib/format";
@@ -12,19 +14,26 @@ import {
   jsonValue,
   readTransaction,
   transactionEnvelope,
-  type Era,
   type StudioTransaction,
 } from "../lib/transactions/studio";
 import "./transaction-studio.css";
 
 export default function TransactionStudio() {
-  const assertActive = useDraftGuard("transaction-studio");
   const location = useLocation();
   const imported =
     typeof location.state?.transactionCbor === "string" &&
     location.state.transactionCbor.length <= 131072
       ? (location.state.transactionCbor as string)
       : "";
+  return <StudioWorkspace key={imported} imported={imported} />;
+}
+function StudioWorkspace({ imported }: { imported: string }) {
+  const assertActive = useDraftGuard("transaction-studio");
+  const [initial] = useState(() => {
+    if (!imported) return { transaction: null, error: "" };
+    try { return { transaction: readTransaction(imported), error: "" }; }
+    catch (error) { return { transaction: null, error: error instanceof Error ? error.message : "Invalid transaction." }; }
+  });
   const wallet = useWalletStore();
   const [mode, setMode] = useState<"build" | "inspect">(
     imported ? "inspect" : "build",
@@ -32,18 +41,15 @@ export default function TransactionStudio() {
   const [source, setSource] = useState("");
   const [payments, setPayments] = useState([{ address: "", ada: "" }]);
   const [input, setInput] = useState(imported);
-  const [era, setEra] = useState<Era | "">("");
   const [transaction, setTransaction] = useState<StudioTransaction | null>(
-    null,
+    initial.transaction,
   );
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initial.error);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const revision = useRef(0);
   function inspect(value: string) {
-    if (!value.trim().startsWith("{") && !era)
-      throw new Error("Choose the transaction era before inspecting raw CBOR.");
-    return readTransaction(value, era || undefined);
+    return readTransaction(value);
   }
   function invalidate() {
     revision.current++;
@@ -294,12 +300,12 @@ export default function TransactionStudio() {
           ) : (
             <div>
               <label htmlFor="transaction-file">
-                Open a cardano-cli JSON file
+                Open a transaction file
               </label>
               <input
                 id="transaction-file"
                 type="file"
-                accept=".json,.tx,.raw,.signed,application/json,text/plain"
+                accept=".json,.tx,.raw,.signed,.cbor,.txt,application/json,text/plain"
                 disabled={busy}
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
@@ -330,19 +336,6 @@ export default function TransactionStudio() {
                 <label htmlFor="transaction-cbor">
                   Or paste CBOR hex / JSON
                 </label>
-                <select
-                  aria-label="Era for raw CBOR"
-                  value={era}
-                  disabled={busy}
-                  onChange={(e) => {
-                    invalidate();
-                    setEra(e.target.value as Era | "");
-                  }}
-                >
-                  <option value="">Choose era for raw hex</option>
-                  <option value="ConwayEra">Conway</option>
-                  <option value="BabbageEra">Babbage</option>
-                </select>
               </div>
               <textarea
                 id="transaction-cbor"
@@ -351,15 +344,26 @@ export default function TransactionStudio() {
                 placeholder='84a… or { "type": "Tx ConwayEra", … }'
                 value={input}
                 disabled={busy}
+                onPaste={(event) => {
+                  event.preventDefault();
+                  const field = event.currentTarget;
+                  field.setRangeText(event.clipboardData.getData("text"), field.selectionStart, field.selectionEnd, "end");
+                  const text = field.value;
+                  invalidate();
+                  setInput(text);
+                  try { setTransaction(inspect(text)); }
+                  catch (error) { setError(error instanceof Error ? error.message : "Invalid transaction."); }
+                }}
                 onChange={(e) => {
                   invalidate();
                   setInput(e.target.value);
                 }}
               />
               <p className="tool-help">
-                Decoding stays in your browser and works without Dingo. Choose
-                the era for raw hex; JSON imports carry their own era. Import a
-                complete transaction, including its witness set.
+                Decoding stays in your browser and works without Dingo. Era
+                compatibility is checked automatically; JSON imports retain
+                their declared era. Import a complete transaction, including its
+                witness set.
               </p>
               <button
                 className="experience-primary"
@@ -397,7 +401,7 @@ export default function TransactionStudio() {
                 title="Transaction passport"
                 action={
                   <span className="tx-status">
-                    {transaction.era.replace("Era", "")} ·{" "}
+                    {transaction.era.replace("Era", "")} export ·{" "}
                     {plutus
                       ? "Plutus"
                       : witnesses.nativeScripts()?.size()
@@ -406,6 +410,15 @@ export default function TransactionStudio() {
                   </span>
                 }
               >
+                <p className="tool-help">
+                  {transaction.eraSource === "compatible"
+                    ? "Compatible with Babbage and Conway. Raw CBOR does not identify its original era; export uses Conway for the selected testnet."
+                    : transaction.eraSource === "envelope"
+                      ? "Export retains the era declared by the imported JSON envelope."
+                      : transaction.eraSource === "features"
+                        ? `Transaction features match ${transaction.era.replace("Era", "")} among supported eras.`
+                        : "Export uses the transaction builder’s era."}
+                </p>
                 <div className="tx-id">
                   <span>Transaction ID</span>
                   <div>
@@ -503,7 +516,7 @@ export default function TransactionStudio() {
                       : "Connect wallet to add a witness"}
                 </button>
                 <p className="tool-help">
-                  Dingo verifies the Preview network and resolves every input
+                  Dingo verifies the {DINGO_NETWORK.label} network and resolves every input
                   before the wallet prompt. This studio exports transactions; it
                   does not submit them.
                 </p>

@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import {
   ConfirmationFailure,
   readTransactionConfirmation,
@@ -7,7 +8,8 @@ import { governanceError } from "../../lib/dingo/governanceVote";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { WalletConnectSummary } from "../../components/layout/WalletConnectSummary";
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
+import { Link } from "../../components/NetworkLink";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import { HashLink } from "../../components/explorer/HashLink";
@@ -322,7 +324,7 @@ function DelegationForm({
           className="tool-review tool-transaction"
           aria-label="Delegation review"
         >
-          <span className="eyebrow">Unsigned delegation · Preview</span>
+          <span className="eyebrow">Unsigned delegation · {DINGO_NETWORK.label}</span>
           <h3>
             {draft.target.kind === "pool"
               ? "Stake pool delegation"

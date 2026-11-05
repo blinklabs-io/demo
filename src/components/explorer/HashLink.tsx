@@ -1,6 +1,6 @@
 import { CopyButton } from "./CopyButton";
 import { PoolIdentity } from "./PoolIdentity";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { shortenHash } from "../../lib/format";
 
 type Kind = "tx" | "block" | "address" | "account" | "pool" | "drep" | "asset";

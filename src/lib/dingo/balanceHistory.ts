@@ -1,5 +1,5 @@
 import { blockfrostFetch, BlockfrostError } from "./blockfrost";
-import { DINGO_CONFIG } from "./config";
+import { DINGO_CONFIG, DINGO_NETWORK } from "./config";
 import { formatAda } from "../format";
 
 interface BalanceResponse {
@@ -72,7 +72,7 @@ export async function readEpochBalanceHistory(
       signal,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        network_identifier: { blockchain: "cardano", network: "preview" },
+        network_identifier: { blockchain: "cardano", network: DINGO_NETWORK.id },
         account_identifier: { address: address },
         block_identifier: { index: sample.height, hash: sample.hash },
       }),
