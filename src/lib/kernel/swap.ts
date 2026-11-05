@@ -25,7 +25,9 @@ export function quoteKernelSwap(
   const first = asset(record.lane === "one-way" ? "offer" : "asset1"),
     second = asset(record.lane === "one-way" ? "ask" : "asset2");
   if (
-    assetUnit(first) === assetUnit(second) ||
+    (record.lane === "two-way"
+      ? assetUnit(first) >= assetUnit(second)
+      : assetUnit(first) === assetUnit(second)) ||
     (record.lane === "one-way" && side !== 1)
   )
     throw new Error("Invalid swap direction.");
@@ -67,6 +69,13 @@ export function quoteKernelSwap(
     [...tokens].filter(([unit]) => unit.startsWith(policy)).length !== 3
   )
     throw new Error("Swap beacon inventory is invalid.");
+  const allowed = new Set([
+    assetUnit(first),
+    assetUnit(second),
+    ...beaconNames.map((name) => policy + name),
+  ]);
+  if ([...tokens.keys()].some((unit) => !allowed.has(String(unit))))
+    throw new Error("Swap output contains unsupported assets.");
   if (extraAda < 0n) throw new Error("Additional ADA cannot be negative.");
   if (!assetUnit(offer) && extraAda !== 0n)
     throw new Error(

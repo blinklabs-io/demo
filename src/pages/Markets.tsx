@@ -1,3 +1,4 @@
+import { MarketConfirmation } from "../components/markets/MarketTransaction";
 import { useState } from "react";
 import { GravityMarket } from "../components/markets/GravityMarket";
 import { useParams } from "react-router";
@@ -50,9 +51,12 @@ export default function Markets() {
 }
 
 function LiquidityVenues() {
+  const [hash, setHash] = useState("");
+  const tracking = { hash, submitted: setHash };
   const [venue, setVenue] = useState<"minswap" | "gravity">("minswap");
   return (
     <div className="markets-page">
+      <MarketConfirmation tracking={tracking} />
       <nav className="market-mode" aria-label="Liquidity venue">
         <button
           aria-pressed={venue === "minswap"}
@@ -67,7 +71,11 @@ function LiquidityVenues() {
           Gravity · pool monitor
         </button>
       </nav>
-      {venue === "minswap" ? <MinswapMarket /> : <GravityMarket />}
+      {venue === "minswap" ? (
+        <MinswapMarket tracking={tracking} />
+      ) : (
+        <GravityMarket />
+      )}
     </div>
   );
 }

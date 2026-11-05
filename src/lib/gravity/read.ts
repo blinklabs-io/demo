@@ -1,5 +1,5 @@
 import { Core } from "@blaze-cardano/sdk";
-import { blockfrostFetch } from "../dingo/blockfrost";
+import { blockfrostFetch, BlockfrostError } from "../dingo/blockfrost";
 import { DINGO_NETWORK } from "../dingo/config";
 import {
   decodeGravityOracle,
@@ -53,12 +53,26 @@ export async function readGravityPools(
   indexerUnit(indexerAsset);
   pageNumber(page);
   await assertNetwork(signal);
-  const addresses = await blockfrostFetch<
-    { address: string; quantity: string }[]
-  >(
-    `/api/v0/assets/${indexerAsset}/addresses?count=${GRAVITY_PAGE_SIZE}&page=${page}`,
-    { signal },
-  );
+  const path = `/api/v0/assets/${indexerAsset}/addresses?count=${GRAVITY_PAGE_SIZE}&page=${page}`;
+  let addresses: { address: string; quantity: string }[];
+  try {
+    addresses = await blockfrostFetch<{ address: string; quantity: string }[]>(
+      path,
+      { signal },
+    );
+  } catch (error) {
+    if (
+      error instanceof BlockfrostError &&
+      error.status === 404 &&
+      error.path === path &&
+      typeof error.body === "object" &&
+      error.body !== null &&
+      "message" in error.body &&
+      error.body.message === "The requested asset could not be found."
+    )
+      return { pools: [], errors: [], partial: false };
+    throw error;
+  }
   if (addresses.length > GRAVITY_PAGE_SIZE)
     throw new Error("Dingo exceeded the Gravity address page limit.");
   const pools: GravityPool[] = [],

@@ -1,3 +1,6 @@
+import { readDingoChainTime } from "../../lib/dingo/chainTime";
+import { loanCollateralChoices } from "../../lib/kernel/lifecycle";
+import { assetUnit, type KernelAsset } from "../../lib/kernel/actions";
 import {
   kernelMinimumDeposits,
   needsKernelDeposits,
@@ -257,11 +260,18 @@ function SelectedAction({
 }) {
   const { record, records } = useKernelSelection(selection);
   const [swapTopUp, setSwapTopUp] = useState("0");
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const chainClock = useQuery({
+    queryKey: ["dingo", "markets", "kernel", "chain-clock"],
+    queryFn: ({ signal }) => readDingoChainTime(signal),
+    staleTime: 30000,
+    refetchInterval: 30000,
+    retry: false,
+  });
+  const now = chainClock.data;
+  const [collateralSelection, setCollateralSelection] = useState({
+    ask: "",
+    unit: "",
+  });
   const [requestInput, setRequestInput] = useState(""),
     [requestRef, setRequestRef] = useState("");
   const importedRequest = useQuery({
@@ -310,10 +320,17 @@ function SelectedAction({
   const terms = kernelTerms(record),
     selectedTerms = terms[term],
     expiry = kernelExpiry(selectedTerms?.expiration ?? f.expiration);
-  const expired = expiry !== null && expiry <= now;
+  const expired = expiry !== null && now !== undefined && expiry <= now;
+  let collateralChoices: KernelAsset[] = [],
+    collateralChoice = "";
   let quote: ReturnType<typeof quoteKernelSwap> | undefined;
   let depositPreview: ReturnType<typeof kernelMinimumDeposits> | undefined;
   try {
+    if (!swap) {
+      if (chainClock.error) throw chainClock.error;
+      if (now === undefined)
+        throw new Error("Reading current chain time from Dingo…");
+    }
     const deposit = 0n;
     if (swap) {
       const units = kernelSwapAssets(record, side);
@@ -381,8 +398,26 @@ function SelectedAction({
         throw new Error(
           "Choose your matching loan request to accept this offer.",
         );
+      collateralChoices = loanCollateralChoices(ask, record);
+      if (!collateralChoices.length)
+        throw new Error(
+          "This request and offer have no compatible collateral.",
+        );
+      const collateral =
+        collateralChoices.length === 1
+          ? collateralChoices[0]
+          : collateralSelection.ask === ask.outpoint
+            ? collateralChoices.find(
+                (asset) =>
+                  (assetUnit(asset) || "lovelace") === collateralSelection.unit,
+              )
+            : undefined;
+      if (!collateral)
+        throw new Error("Choose the collateral asset to lock for this loan.");
+      collateralChoice = assetUnit(collateral) || "lovelace";
       action = {
         kind: "loan-accept",
+        collateral,
         ask,
         offer: record,
         collateralDeposit: deposit,
@@ -395,6 +430,7 @@ function SelectedAction({
       if (outputParameters.error) throw outputParameters.error;
       if (!outputParameters.data)
         throw new Error("Reading current minimum ADA parameters from Dingo…");
+      if (now === undefined) throw new Error("Current chain time is required.");
       depositPreview = kernelMinimumDeposits(
         action,
         outputParameters.data,
@@ -417,6 +453,8 @@ function SelectedAction({
     outputParameters.data,
     swapTopUp,
     askId,
+    collateralSelection.ask,
+    collateralSelection.unit,
     loanMode,
     periods,
     claimant,
@@ -527,6 +565,30 @@ function SelectedAction({
               ))}
             </select>
           </label>
+          {!!collateralChoices.length && (
+            <label>
+              Collateral asset to lock
+              <select
+                aria-label="Loan collateral"
+                value={collateralChoice}
+                disabled={collateralChoices.length === 1}
+                onChange={(e) =>
+                  setCollateralSelection({ ask: askId, unit: e.target.value })
+                }
+              >
+                <option value="">Choose collateral…</option>
+                {collateralChoices.map((asset) => {
+                  const unit = assetUnit(asset) || "lovelace";
+                  return (
+                    <option key={unit} value={unit}>
+                      {marketAssetName(unit)}
+                      {unit !== "lovelace" ? ` · ${unit}` : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          )}
           <label>
             Import a request from another page
             <input
@@ -538,7 +600,7 @@ function SelectedAction({
           <button
             disabled={!requestInput.trim() || importedRequest.isFetching}
             onClick={() => {
-              const ref = requestInput.trim();
+              const ref = requestInput.trim().toLowerCase();
               setRequestRef(ref);
               setAskId(ref);
               if (ref === requestRef) void importedRequest.refetch();

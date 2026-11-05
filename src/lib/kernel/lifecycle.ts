@@ -1,6 +1,6 @@
 import { positionBeacons } from "./beacons";
 import { Core } from "@blaze-cardano/sdk";
-import { pd } from "./actions";
+import { pd, assetUnit, type KernelAsset } from "./actions";
 import { kernelRecord, type KernelRecord } from "./markets";
 import { KERNEL_LANES, KERNEL_OBSERVERS, type KernelLane } from "./protocol";
 export type KernelLifecycle =
@@ -30,6 +30,7 @@ export type KernelLifecycle =
       ask: KernelRecord;
       offer: KernelRecord;
       collateralDeposit: bigint;
+      collateral?: KernelAsset;
       lenderTopUp: bigint;
     }
   | { kind: "loan-repay"; record: KernelRecord; paymentDeposit: bigint };
@@ -176,6 +177,38 @@ export type KernelTransitionPlan = {
   start?: number;
   description: string;
 };
+function collateralChoices(ask: Core.PlutusData[], offer: Core.PlutusData[]) {
+  const collateral = offer[13].asMap(),
+    accepted = ask[7].asMap();
+  if (!collateral || !accepted || !collateral.getLength())
+    throw new Error("No supported loan collateral.");
+  const acceptedKeys = accepted.getKeys();
+  const permitted = (policy: string, name: string) =>
+    Array.from({ length: acceptedKeys.getLength() }, (_, i) =>
+      acceptedKeys.get(i),
+    ).some(
+      (key) => bytes(key) === policy && bytes(accepted.get(key)!) === name,
+    );
+  const candidates = Array.from({ length: collateral.getLength() }, (_, i) =>
+    collateral.getKeys().get(i),
+  ).filter((key) => {
+    const [policy, name] = list(key).map(bytes);
+    return permitted(policy, name) && ratio(collateral.get(key)!)[0] > 0n;
+  });
+  return candidates.map((key) => {
+    const [policyId, name] = list(key).map(bytes);
+    return { asset: { policyId, name }, ratio: ratio(collateral.get(key)!) };
+  });
+}
+export function loanCollateralChoices(
+  ask: KernelRecord,
+  offer: KernelRecord,
+): KernelAsset[] {
+  return collateralChoices(
+    raw(ask, "loan-negotiation", "AskDatum"),
+    raw(offer, "loan-negotiation", "OfferDatum"),
+  ).map((choice) => choice.asset);
+}
 export function kernelLifecyclePlan(
   action: KernelLifecycle,
   stakeHash: string | undefined,
@@ -342,8 +375,16 @@ export function kernelLifecyclePlan(
       pd.bytes(contract),
     ]);
     const assets = new Map(action.record.utxo.output().amount().multiasset());
-    for (const key of assets.keys())
-      if (key.startsWith(proposals)) assets.delete(key);
+    for (const [name, quantity] of positionBeacons(action.record, -1n)) {
+      const unit = Core.AssetId(proposals + name);
+      const remainder = assets.get(unit)! + quantity;
+      if (remainder) assets.set(unit, remainder);
+      else assets.delete(unit);
+    }
+    if ([...assets.keys()].some((unit) => unit.startsWith(proposals)))
+      throw new Error(
+        "Proposal contains unsupported extra proposal-policy tokens.",
+      );
     const mint = new Map<Core.AssetName, bigint>();
     for (const name of [bytes(d[5]), bytes(d[6]), bytes(d[7]), contract]) {
       mint.set(
@@ -473,15 +514,21 @@ export function kernelLifecyclePlan(
       throw new Error(
         "The lender output must return the exact on-chain offer deposit.",
       );
-    const collateral = offer[13].asMap(),
-      accepted = ask[7].asMap();
-    if (!collateral || !accepted || !collateral.getLength())
-      throw new Error("No supported loan collateral.");
-    const key = collateral.getKeys().get(0),
-      [policy, name] = list(key).map(bytes);
-    if (bytes(accepted.get(pd.bytes(policy)) ?? pd.bytes("")) !== name)
-      throw new Error("Borrower request does not allow the offer collateral.");
-    const [n, den] = ratio(collateral.get(key)!),
+    const candidates = collateralChoices(ask, offer);
+    const chosen = action.collateral && assetUnit(action.collateral);
+    const selected = action.collateral
+      ? candidates.find((choice) => assetUnit(choice.asset) === chosen)
+      : candidates.length === 1
+        ? candidates[0]
+        : undefined;
+    if (!selected)
+      throw new Error(
+        action.collateral
+          ? "Choose collateral allowed by both request and offer with a positive ratio."
+          : "Choose a compatible collateral asset explicitly.",
+      );
+    const { policyId: policy, name } = selected.asset;
+    const [n, den] = selected.ratio,
       amount = (integer(offer[6]) * n + den - 1n) / den,
       loanId = id(action.offer),
       [interestN, interestD] = ratio(offer[9]);

@@ -25,7 +25,11 @@ import {
   prepareMinswapCancel,
   submitMinswapTransaction,
 } from "../../lib/minswap/transactions";
-import { MarketTransaction, MarketConfirmation } from "./MarketTransaction";
+import {
+  MarketTransaction,
+  MarketConfirmation,
+  type MarketTracking,
+} from "./MarketTransaction";
 import { MarketAsset, MarketLoading } from "./assets";
 import { marketAmount, marketAssetName, rawAmount } from "./amounts";
 import "./markets.css";
@@ -74,11 +78,13 @@ function ReserveCurve({ pool }: { pool: MinswapPool }) {
 }
 export function MinswapMarket({
   initialAction = "deposit",
+  tracking: parentTracking,
 }: {
   initialAction?: "deposit" | "swap";
+  tracking?: MarketTracking;
 }) {
   const [hash, setHash] = useState("");
-  const tracking = { hash, submitted: setHash };
+  const tracking = parentTracking ?? { hash, submitted: setHash };
   const [page, setPage] = useState(1),
     [search, setSearch] = useState("");
   const [chosen, setChosen] = useState<MinswapPool | null>(null);
@@ -120,6 +126,7 @@ export function MinswapMarket({
     queryKey: ["dingo", "markets", "minswap", "pools", page],
     queryFn: ({ signal }) => readMinswapPools(page, signal),
     staleTime: 30000,
+    refetchInterval: 30000,
   });
   const ranked = (pools.data?.pools ?? []).toSorted((a, b) =>
     a.assetA === "lovelace" && b.assetA !== "lovelace"
@@ -140,6 +147,7 @@ export function MinswapMarket({
     enabled: !!chosen && !listed,
     queryFn: ({ signal }) => readMinswapPool(chosen!, signal),
     staleTime: 30000,
+    refetchInterval: 30000,
     retry: false,
   });
   const pool = chosen ? (listed ?? selectedPool.data) : ranked[0];
@@ -171,7 +179,15 @@ export function MinswapMarket({
     queryFn: ({ signal }) => readLiquidityPositions(wallet.tokens, signal),
     staleTime: 30000,
   });
-  const walletIdentity = `${wallet.connectionId}:${wallet.changeAddress}`;
+  const orderSenders = [
+    ...new Set(
+      [wallet.changeAddress, ...wallet.usedAddresses].filter(
+        (address): address is string => !!address,
+      ),
+    ),
+  ].sort();
+  const orderSenderKey = orderSenders.join("|");
+  const walletIdentity = `${wallet.connectionId}:${orderSenderKey}`;
   const [orderWallet, setOrderWallet] = useState(walletIdentity);
   if (orderWallet !== walletIdentity) {
     setOrderWallet(walletIdentity);
@@ -183,12 +199,11 @@ export function MinswapMarket({
       "markets",
       "minswap",
       "orders",
-      wallet.changeAddress,
+      orderSenderKey,
       orderPage,
     ],
-    enabled: wallet.status === "connected" && !!wallet.changeAddress,
-    queryFn: ({ signal }) =>
-      readMinswapOrders(wallet.changeAddress!, orderPage, signal),
+    enabled: wallet.status === "connected" && orderSenders.length > 0,
+    queryFn: ({ signal }) => readMinswapOrders(orderSenders, orderPage, signal),
     staleTime: 30000,
   });
   const rows = ranked.filter((p) =>
@@ -196,7 +211,11 @@ export function MinswapMarket({
       .toLowerCase()
       .includes(search.toLowerCase().trim()),
   );
-  const bps = Number(slippage) * 100;
+  const slippageMatch = /^(\d{1,2})(?:\.(\d{1,2}))?$/.exec(slippage.trim());
+  const bps = slippageMatch
+    ? Number(slippageMatch[1]) * 100 +
+      Number((slippageMatch[2] ?? "").padEnd(2, "0"))
+    : NaN;
   let action: MinswapAction | null = null,
     quoteError = "",
     impact = 0;
@@ -206,7 +225,9 @@ export function MinswapMarket({
   if (pool)
     try {
       if (!Number.isSafeInteger(bps) || bps < 0 || bps >= 10000)
-        throw new Error("Slippage must be from 0 to less than 100%.");
+        throw new Error(
+          "Enter slippage from 0 to less than 100%, with at most two decimal places.",
+        );
       if (mode === "swap") {
         const assetIn = direction === "a-to-b" ? pool.assetA : pool.assetB;
         const amount = rawAmount(amountA, assetIn),
@@ -293,7 +314,7 @@ export function MinswapMarket({
   ]);
   return (
     <div className="markets-page">
-      <MarketConfirmation tracking={tracking} />
+      {!parentTracking && <MarketConfirmation tracking={tracking} />}
       <section className="market-hero">
         <div>
           <span className="eyebrow">
@@ -337,10 +358,21 @@ export function MinswapMarket({
           <div className="market-skeleton" />
         )}
       </section>
-      {pools.isPending || pools.isError ? (
+      {!pools.data ? (
         <MarketLoading error={pools.error} retry={() => void pools.refetch()} />
       ) : (
         <>
+          {pools.error && (
+            <div className="market-help">
+              <p role="alert">
+                Could not refresh this pool page: {pools.error.message}. Showing
+                the last loaded pools.
+              </p>
+              <button onClick={() => void pools.refetch()}>
+                Retry pool refresh
+              </button>
+            </div>
+          )}
           <div className="market-stats">
             <div>
               <span className="eyebrow">This page</span>
@@ -440,6 +472,7 @@ export function MinswapMarket({
                 <button
                   onClick={() => {
                     void pools.refetch();
+                    if (wallet.status === "connected") void positions.refetch();
                     if (chosen && !listed) void selectedPool.refetch();
                   }}
                 >

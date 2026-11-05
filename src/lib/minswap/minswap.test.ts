@@ -3,10 +3,15 @@ import { Core } from "@blaze-cardano/sdk";
 import { describe, expect, it } from "vitest";
 import { authenticatePool, decodePoolDatum, type PoolDatum } from "./data";
 import { poolFixtures } from "./fixtures";
-import { MAX_LIQUIDITY, PREPROD_MINSWAP_V2 } from "./constants";
+import {
+  MAX_LIQUIDITY,
+  BURNED_LIQUIDITY,
+  PREPROD_MINSWAP_V2,
+} from "./constants";
 import { quoteDeposit, quoteSwap, quoteWithdraw } from "./quotes";
 import {
   decodeOrder,
+  constr,
   orderAddress,
   orderDatum,
   type MinswapAction,
@@ -107,17 +112,61 @@ describe("canonical asynchronous order datums", () => {
     },
   ).toAddress();
   const pool = authenticatePool(poolFixtures[1]);
-  it.each<MinswapAction>([
-    { kind: "swap", direction: "a-to-b", amount: 1000n, slippageBps: 50 },
-    { kind: "deposit", amountA: 1000n, amountB: 1000n, slippageBps: 50 },
-    { kind: "withdraw", lpAmount: 1000n, slippageBps: 50 },
+  it.each<{
+    action: MinswapAction;
+    step: bigint;
+    direction?: bigint;
+    amounts: bigint[];
+    minima: bigint[];
+  }>([
+    {
+      action: {
+        kind: "swap",
+        direction: "a-to-b",
+        amount: 1000n,
+        slippageBps: 50,
+      },
+      step: 0n,
+      direction: 1n,
+      amounts: [1000n],
+      minima: [37n],
+    },
+    {
+      action: {
+        kind: "swap",
+        direction: "b-to-a",
+        amount: 2000n,
+        slippageBps: 50,
+      },
+      step: 0n,
+      direction: 0n,
+      amounts: [2000n],
+      minima: [37n],
+    },
+    {
+      action: {
+        kind: "deposit",
+        amountA: 1000n,
+        amountB: 2000n,
+        slippageBps: 50,
+      },
+      step: 4n,
+      amounts: [1000n, 2000n],
+      minima: [37n],
+    },
+    {
+      action: { kind: "withdraw", lpAmount: 3000n, slippageBps: 50 },
+      step: 5n,
+      amounts: [3000n],
+      minima: [43n, 59n],
+    },
   ])(
-    "encodes $kind with owner cancellation, exact LP target and batcher limit",
-    (action) => {
+    "encodes exact $action.kind quantities, direction and minima",
+    ({ action, step, direction, amounts, minima }) => {
       const cbor = orderDatum(sender, pool.lpAsset, action, {
-        minimum: 1n,
-        minimumA: 1n,
-        minimumB: 1n,
+        minimum: 37n,
+        minimumA: 43n,
+        minimumB: 59n,
       }).toCbor();
       const decoded = decodeOrder({
         ...poolFixtures[0],
@@ -133,6 +182,31 @@ describe("canonical asynchronous order datums", () => {
         .getData();
       expect(fields.getLength()).toBe(9);
       expect(fields.get(8).asConstrPlutusData()!.getAlternative()).toBe(1n);
+      const operation = fields.get(6).asConstrPlutusData()!;
+      expect(operation.getAlternative()).toBe(step);
+      const values = operation.getData();
+      if (direction !== undefined)
+        expect(values.get(0).asConstrPlutusData()!.getAlternative()).toBe(
+          direction,
+        );
+      const specific = values
+        .get(direction === undefined ? 0 : 1)
+        .asConstrPlutusData()!;
+      expect(specific.getAlternative()).toBe(0n);
+      expect(
+        Array.from({ length: specific.getData().getLength() }, (_, i) =>
+          specific.getData().get(i).asInteger(),
+        ),
+      ).toEqual(amounts);
+      const firstMinimum = direction === undefined ? 1 : 2;
+      expect(
+        minima.map((_, i) => values.get(firstMinimum + i).asInteger()),
+      ).toEqual(minima);
+      const kill = values
+        .get(firstMinimum + minima.length)
+        .asConstrPlutusData()!;
+      expect(kill.getAlternative()).toBe(0n);
+      expect(kill.getData().getLength()).toBe(0);
     },
   );
   it("retains sender staking credentials at the order address", () => {
@@ -156,4 +230,54 @@ describe("canonical asynchronous order datums", () => {
       "Unsupported Minswap datum",
     );
   });
+});
+
+it("authenticates remaining LP inventory including the fully circulating boundary", () => {
+  const original = poolFixtures[0],
+    pool = authenticatePool(original);
+  expect(() =>
+    authenticatePool({
+      ...original,
+      amount: original.amount.filter((a) => a.unit !== pool.lpAsset),
+    }),
+  ).toThrow("LP supply");
+  const wrong = structuredClone(original);
+  wrong.amount.find((a) => a.unit === pool.lpAsset)!.quantity = String(
+    BigInt(wrong.amount.find((a) => a.unit === pool.lpAsset)!.quantity) - 1n,
+  );
+  expect(() => authenticatePool(wrong)).toThrow("LP supply");
+  const maximum = structuredClone(original),
+    data = Core.PlutusData.fromCbor(Core.HexBlob(maximum.inline_datum!))
+      .asConstrPlutusData()!
+      .getData();
+  const fields = Array.from({ length: data.getLength() }, (_, i) =>
+    data.get(i),
+  );
+  fields[3] = Core.PlutusData.newInteger(MAX_LIQUIDITY + BURNED_LIQUIDITY);
+  fields[4] = Core.PlutusData.newInteger(18446744073709551615n);
+  fields[5] = Core.PlutusData.newInteger(18446744073709551615n);
+  maximum.inline_datum = constr(0, fields).toCbor();
+  maximum.amount = maximum.amount
+    .filter((a) => a.unit !== pool.lpAsset)
+    .map((a) =>
+      a.unit === pool.assetA || a.unit === pool.assetB
+        ? { ...a, quantity: "18446744073709551615" }
+        : a,
+    );
+  expect(authenticatePool(maximum).totalLiquidity).toBe(
+    MAX_LIQUIDITY + BURNED_LIQUIDITY,
+  );
+  expect(() =>
+    quoteDeposit(
+      { ...pool, totalLiquidity: MAX_LIQUIDITY + BURNED_LIQUIDITY },
+      1000n,
+      1000n,
+    ),
+  ).toThrow("remaining LP");
+  expect(() =>
+    quoteWithdraw(example, example.totalLiquidity - BURNED_LIQUIDITY + 1n),
+  ).toThrow("exceeds");
+  expect(
+    quoteWithdraw(example, example.totalLiquidity - BURNED_LIQUIDITY).amountA,
+  ).toBe(999000n);
 });

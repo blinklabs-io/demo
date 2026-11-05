@@ -19,6 +19,7 @@ import {
   constr,
   decodeOrder,
   orderAddress,
+  minswapOrderAccount,
   orderDatum,
   type MinswapAction,
   type MinswapOrder,
@@ -304,7 +305,15 @@ export async function prepareMinswapCancel(
   )
     throw new Error("This Minswap order has already been spent or cancelled.");
   const current = decodeOrder(asRow(resolved[0]));
-  if (current.canceller !== who.key)
+  const used = await api.getUsedAddresses();
+  assertCurrent();
+  const account = minswapOrderAccount([
+    who.address.toBech32(),
+    ...used.map((value) =>
+      Core.Address.fromBytes(Core.HexBlob(value)).toBech32(),
+    ),
+  ]);
+  if (!account.keys.has(current.canceller))
     throw new Error(
       "The connected wallet is not this order's cancellation key.",
     );
@@ -329,7 +338,7 @@ export async function prepareMinswapCancel(
     .newTransaction()
     .addInput(resolved[0], constr(1))
     .addReferenceInput(references[0])
-    .addRequiredSigner(Core.Ed25519KeyHashHex(who.key))
+    .addRequiredSigner(Core.Ed25519KeyHashHex(current.canceller))
     .setValidUntil(Core.Slot(validUntil))
     .complete();
   assertCurrent();
@@ -368,7 +377,7 @@ export async function prepareMinswapCancel(
       api,
       blaze,
       tx,
-      who,
+      { ...who, key: current.canceller },
       validUntil,
       assertCurrent,
       inputId(resolved[0]),

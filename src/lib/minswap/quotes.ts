@@ -1,3 +1,4 @@
+import { MAX_LIQUIDITY, BURNED_LIQUIDITY } from "./constants";
 // Integer quote formulas follow @minswap/sdk; its MIT license is included here.
 import type { PoolDatum } from "./data";
 export function minimumReceived(value: bigint, slippageBps: number): bigint {
@@ -109,6 +110,8 @@ export function quoteDeposit(
             pool.totalLiquidity,
           )
         : ratioA;
+  if (expected > MAX_LIQUIDITY + BURNED_LIQUIDITY - pool.totalLiquidity)
+    throw new Error("Deposit exceeds the pool’s remaining LP token supply.");
   return {
     expected,
     minimum: minimumReceived(expected, slippageBps),
@@ -122,7 +125,7 @@ export function quoteWithdraw(
 ) {
   liquid(pool);
   positive(lpAmount);
-  if (lpAmount > pool.totalLiquidity)
+  if (lpAmount > pool.totalLiquidity - BURNED_LIQUIDITY)
     throw new Error("LP amount exceeds the pool liquidity supply.");
   const amountA = (lpAmount * pool.reserveA) / pool.totalLiquidity,
     amountB = (lpAmount * pool.reserveB) / pool.totalLiquidity;

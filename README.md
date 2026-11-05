@@ -358,8 +358,8 @@ Markets brings existing Preprod contracts into the same Dingo-backed application
   interest application and expired claims; covered option writing, purchasing,
   exercise and expired writer reclaim; direct one-way and two-way order fills;
   and financial NFT spot listings and purchases. Bids remain inspectable.
-- Gravity pool discovery and contract-output visualization. Its authenticated
-  oracles identify the actual token-holding contracts. Loaded holdings are
+- Gravity pool discovery and contract-output visualization. Its on-chain asset index
+  locates oracle records describing token-holding contracts. Loaded holdings are
   distinct from available liquidity and swap quotes.
 
 Discovery and previews work without a wallet. Creation, signing and submission

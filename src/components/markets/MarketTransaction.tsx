@@ -251,7 +251,14 @@ export function MarketConfirmation({ tracking }: { tracking: MarketTracking }) {
     retry: false,
     refetchInterval: (q) => (q.state.data || q.state.error ? false : 10000),
     queryFn: async ({ signal }) => {
-      const result = await readTransactionConfirmation(tracking.hash, signal);
+      let result;
+      try {
+        result = await readTransactionConfirmation(tracking.hash, signal);
+      } catch (error) {
+        if (error instanceof ConfirmationFailure)
+          void useWalletStore.getState().refreshBalance();
+        throw error;
+      }
       if (result) {
         void useWalletStore.getState().refreshBalance();
         void client.invalidateQueries({
@@ -288,6 +295,17 @@ export function MarketConfirmation({ tracking }: { tracking: MarketTracking }) {
         <button onClick={() => void confirmation.refetch()}>
           Retry confirmation
         </button>
+      )}
+      {!confirmation.data && !failed && (
+        <>
+          <p>
+            Stopping tracking does not cancel this transaction. It may still
+            confirm.
+          </p>
+          <button onClick={() => tracking.submitted("")}>
+            Stop tracking this transaction
+          </button>
+        </>
       )}
       {(confirmation.data || failed) && (
         <button onClick={() => tracking.submitted("")}>

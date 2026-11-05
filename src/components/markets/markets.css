@@ -165,7 +165,7 @@
     inset 0 0 0 1px #5de5c54a,
     0 4px 20px #2dc8b410;
 }
-.market-card:hover {
+.market-card:hover:not(.selected) {
   border-color: #7895b1;
 }
 .market-card > strong {
@@ -424,7 +424,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
-.market-terms > div {
+.market-terms > * {
   border-radius: 10px;
   background: #203144;
   padding: 12px;

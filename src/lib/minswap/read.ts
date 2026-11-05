@@ -50,17 +50,49 @@ async function poolByLp(lpAsset: string, signal?: AbortSignal) {
     !new RegExp(`^${PREPROD_MINSWAP_V2.lpPolicyId}[0-9a-f]{64}$`).test(lpAsset)
   )
     throw new Error("Invalid Minswap V2 liquidity token.");
-  const rows = await blockfrostFetch<MinswapUtxo[]>(
-    `/api/v0/addresses/${PREPROD_MINSWAP_V2.poolCreationAddress}/utxos/${lpAsset}?count=2&page=1`,
-    { signal },
-  );
-  if (rows.length !== 1)
+  const candidates: MinswapUtxo[] = [];
+  let complete = false;
+  const seen = new Set<string>();
+  for (let page = 1; page <= 5; page++) {
+    signal?.throwIfAborted();
+    const rows = await blockfrostFetch<MinswapUtxo[]>(
+      `/api/v0/addresses/${PREPROD_MINSWAP_V2.poolCreationAddress}/utxos/${lpAsset}?count=20&page=${page}`,
+      { signal },
+    );
+    if (rows.length > 20)
+      throw new Error(
+        "Dingo exceeded the requested Minswap pool lookup page size.",
+      );
+    for (const row of rows) {
+      if (row.address !== PREPROD_MINSWAP_V2.poolCreationAddress)
+        throw new Error("Dingo returned a pool from another address.");
+      const key = row.tx_hash + "#" + row.output_index;
+      if (seen.has(key))
+        throw new Error("Dingo repeated a Minswap pool lookup output.");
+      seen.add(key);
+      if (
+        row.amount.some(
+          (asset) =>
+            asset.unit === PREPROD_MINSWAP_V2.poolAuthenAsset &&
+            asset.quantity === "1",
+        )
+      )
+        candidates.push(row);
+    }
+    if (rows.length < 20) {
+      complete = true;
+      break;
+    }
+  }
+  if (!complete)
+    throw new Error(
+      "Minswap pool lookup exceeded its bounded 100-output scan. Narrow or refresh the lookup.",
+    );
+  if (candidates.length !== 1)
     throw new Error(
       "Minswap pool state changed or is unavailable. Refresh the pool list.",
     );
-  if (rows[0].address !== PREPROD_MINSWAP_V2.poolCreationAddress)
-    throw new Error("Dingo returned a pool from another address.");
-  const pool = authenticatePool(rows[0]);
+  const pool = authenticatePool(candidates[0]);
   if (pool.lpAsset !== lpAsset)
     throw new Error("Dingo returned another Minswap pool.");
   return pool;
@@ -112,17 +144,4 @@ export async function readLiquidityPositions(
     ),
     partial: held.length > 20,
   };
-}
-export function liquidityPositions(
-  pools: MinswapPool[],
-  balances: { assetId: string; quantity: bigint }[],
-) {
-  return pools.flatMap((pool) => {
-    const amount = balances
-      .filter((row) => row.assetId === pool.lpAsset)
-      .reduce((sum, row) => sum + row.quantity, 0n);
-    return amount > 0n
-      ? [{ pool, lpAmount: amount, ...quoteWithdraw(pool, amount, 0) }]
-      : [];
-  });
 }

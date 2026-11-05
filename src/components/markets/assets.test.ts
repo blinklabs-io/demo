@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import { decimalFraction, rawAmount, marketAssetName } from "./amounts";
 describe("human market amounts and on-chain units", () => {
   it("preserves exact ADA precision and rejects fractional token base units", () => {
-    expect(rawAmount("9007199254740993.000001", "lovelace")).toBe(
-      9007199254740993000001n,
+    expect(rawAmount("9007199254.740993", "lovelace")).toBe(9007199254740993n);
+    expect(() => rawAmount("9007199254740993.000001", "lovelace")).toThrow(
+      "64-bit",
     );
     expect(rawAmount("9007199254740993", "native")).toBe(9007199254740993n);
     expect(() => rawAmount("1.01", "native")).toThrow("whole number");

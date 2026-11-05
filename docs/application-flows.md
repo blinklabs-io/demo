@@ -23,9 +23,9 @@ flowchart TD
   Markets --> Liquidity[Liquidity and order management]
   Markets --> Kernel[Loans, options, orders and financial NFTs]
   Liquidity --> Gravity[Gravity contract-output monitor]
-  Kernel --> Review[Build and review unsigned transaction]
-  Liquidity --> Review
-  Review --> Sign[Wallet signs; Dingo evaluates and submits]
+  Kernel --> MarketReview[Build, evaluate and review unsigned transaction]
+  Liquidity --> MarketReview
+  MarketReview --> Sign[Wallet signs; Dingo submits]
   Sign --> Confirm[Persistent confirmation status]
   Discover --> API[API playground]
   Explore --> Blocks[Blocks and transactions]
@@ -193,14 +193,14 @@ flowchart LR
   Browser --> Export[cardano-cli JSON export]
 ```
 
-| Surface | Application responsibilities |
-| --- | --- |
+| Surface                    | Application responsibilities                                                                                                                                    |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Blockfrost-compatible REST | Entity lookup, blocks and transactions, stake accounts, pools, DReps, governance, metadata, surveys, native assets, protocol parameters and network information |
-| UTxORPC | Genesis verification, bounded UTxO snapshots, protocol parameters, transaction building/evaluation/submission, block CBOR, FollowTip and mempool streams |
-| Mesh / Rosetta | Historical account-balance snapshots and explicit read-only API playground calls |
-| Local wallet | Explicit connection, public account information, spendable balances and signatures; keys stay in the extension |
-| Browser | Drafts, CBOR inspection, metadata editing, file hashing, visualizations and JSON exports |
-| Publisher media | Optional pool/token artwork and metadata links; these do not replace Dingo as the chain-data source |
+| UTxORPC                    | Genesis verification, bounded UTxO snapshots, protocol parameters, transaction building/evaluation/submission, block CBOR, FollowTip and mempool streams        |
+| Mesh / Rosetta             | Historical account-balance snapshots and explicit read-only API playground calls                                                                                |
+| Local wallet               | Explicit connection, public account information, spendable balances and signatures; keys stay in the extension                                                  |
+| Browser                    | Drafts, CBOR inspection, metadata editing, file hashing, visualizations and JSON exports                                                                        |
+| Publisher media            | Optional pool/token artwork and metadata links; these do not replace Dingo as the chain-data source                                                             |
 
 Switching networks disconnects the wallet and stops the old streams before
 optionally persisting the new selection and reloading with explicit URL context. Query caches, pending operations and
@@ -215,16 +215,16 @@ A response remains associated with the request that produced it.
 
 ## Route families
 
-| Area | Routes and contextual actions |
-| --- | --- |
-| Discover | `/`; capability filters, current chain snapshot and a block mosaic |
-| Explore | `/explorer`, `/explorer/mempool`, `/explorer/epoch[/:epoch]`, `/explorer/network`, `/explorer/pools`; drill into blocks, transactions, pools and linked entities |
-| Entity lookup | `/explorer/lookup/:hash`, `/explorer/address/:address`, `/explorer/account/:stakeAddress`, `/explorer/asset/:assetId`, `/explorer/policy/:policyId`, `/explorer/handle/:handle`, `/explorer/metadata/:label` |
-| Participation | `/participate`, `/explorer/governance`, `/explorer/proposal/:id`, `/explorer/dreps`, `/explorer/drep/:id`, `/explorer/surveys`, `/explorer/surveys/new`, `/explorer/surveys/:hash/:index` |
-| Wallet | `/wallet`, `/wallet/send`, `/wallet/delegate`; portfolio, rewards, transfers and delegation |
-| Swaps | `/wallet/swap`; shared V3/V4 market previews and explicit order review |
-| Creation | `/wallet/tools` and `/wallet/tools/:tool`; transaction, token, proof, batch, UTxO, DRep and treasury capabilities |
-| Developer access | `/api`; inspect existing Dingo REST and Mesh responses |
+| Area             | Routes and contextual actions                                                                                                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Discover         | `/`; capability filters, current chain snapshot and a block mosaic                                                                                                                                                                    |
+| Explore          | `/explorer`, `/explorer/mempool`, `/explorer/epoch[/:epoch]`, `/explorer/network`, `/explorer/pools`; drill into blocks, transactions, pools and linked entities                                                                      |
+| Entity lookup    | `/explorer/lookup/:hash`, `/explorer/address/:address`, `/explorer/account/:stakeAddress`, `/explorer/asset/:assetId`, `/explorer/policy/:policyId`, `/explorer/handle/:handle`, `/explorer/metadata/:label`                          |
+| Participation    | `/participate`, `/explorer/governance`, `/explorer/proposal/:id`, `/explorer/dreps`, `/explorer/drep/:id`, `/explorer/surveys`, `/explorer/surveys/new`, `/explorer/surveys/:hash/:index`                                             |
+| Wallet           | `/wallet`, `/wallet/send`, `/wallet/delegate`; portfolio, rewards, transfers and delegation                                                                                                                                           |
+| Markets          | `/wallet/swap`; Preview SundaeSwap V3/V4 and Preprod Minswap previews and order review. `/wallet/markets` defaults to lending; `/wallet/markets/:tab` covers `liquidity`, `lending`, `options`, `orders` and `marketplace` on Preprod |
+| Creation         | `/wallet/tools` and `/wallet/tools/:tool`; transaction, token, proof, batch, UTxO, DRep and treasury capabilities                                                                                                                     |
+| Developer access | `/api`; inspect existing Dingo REST and Mesh responses                                                                                                                                                                                |
 
 ## Preprod contract data
 

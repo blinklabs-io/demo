@@ -88,16 +88,18 @@ export function AppShell() {
             <nav aria-label={section.label}>
               {section.items.map((item) => {
                 const { to, label, matches } = item;
-                const target =
-                  "network" in item && item.network === "preprod"
-                    ? `${to}${networkSearch("", "preprod")}`
-                    : to;
                 return (
                   <Link
                     key={to}
-                    to={target}
+                    to={to}
                     className={matches(pathname) ? "selected" : ""}
-                    aria-current={pathname === to ? "page" : undefined}
+                    aria-current={
+                      pathname === to ||
+                      (to === "/wallet/markets/lending" &&
+                        pathname === "/wallet/markets")
+                        ? "page"
+                        : undefined
+                    }
                   >
                     {label}
                   </Link>

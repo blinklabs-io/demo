@@ -135,16 +135,48 @@ export type KernelPlan = {
   expiration?: number;
   description: string;
 };
+export function validateKernelCreation(action: KernelCreation): void {
+  if (action.deposit < 2000000n)
+    throw new Error(
+      "Reserve at least 2 ADA for the contract output; final minimum ADA is checked during build.",
+    );
+  if (action.kind === "loan-ask" || action.kind === "loan-offer") {
+    if (!assetUnit(action.collateral))
+      throw new Error("Select a native asset for collateral.");
+    positive(action.principal);
+    days(action.termDays);
+    if (action.kind === "loan-offer") {
+      credential(action.borrowerStakeHash);
+      fraction(action.interest, true);
+      fraction(action.collateralRatio);
+      days(action.claimDays);
+    }
+  } else if (action.kind === "option-proposal") {
+    if (assetUnit(action.offer) === assetUnit(action.ask))
+      throw new Error("Offer and exercise assets must differ.");
+    assetUnit(action.premium);
+    positive(action.offerQuantity);
+    positive(action.premiumQuantity);
+    fraction(action.strike);
+    if (!Number.isSafeInteger(action.expiresAt) || action.expiresAt <= 0)
+      throw new Error("Enter an expiration time.");
+  } else if (action.kind === "limit-order") {
+    if (assetUnit(action.offer) === assetUnit(action.ask))
+      throw new Error("Offer and ask assets must differ.");
+    positive(action.offerQuantity);
+    fraction(action.price);
+  } else {
+    if (!assetUnit(action.nft)) throw new Error("Choose a native NFT.");
+    positive(action.price);
+  }
+}
 export function createKernelPlan(
   action: KernelCreation,
   payment: Core.Address,
   stakeHash: string,
 ): KernelPlan {
+  validateKernelCreation(action);
   credential(stakeHash);
-  if (action.deposit < 2000000n)
-    throw new Error(
-      "Reserve at least 2 ADA for the contract output; final minimum ADA is checked during build.",
-    );
   let lane: KernelLane,
     datum: Core.PlutusData,
     mintNames: string[],
@@ -166,8 +198,6 @@ export function createKernelPlan(
     activeLoan = KERNEL_LANES["loan-active"].beaconPolicy;
   if (action.kind === "loan-ask" || action.kind === "loan-offer") {
     lane = "loan-negotiation";
-    if (!assetUnit(action.collateral))
-      throw new Error("Select a native asset for collateral.");
     const assetBeacon = sha(utf8("Asset")),
       principal = positive(action.principal),
       term = days(action.termDays);
@@ -224,8 +254,6 @@ export function createKernelPlan(
     }
   } else if (action.kind === "option-proposal") {
     lane = "option-proposals";
-    if (assetUnit(action.offer) === assetUnit(action.ask))
-      throw new Error("Offer and exercise assets must differ.");
     const offerBeacon = sha("01" + assetUnit(action.offer)),
       askBeacon = sha("02" + assetUnit(action.ask)),
       premiumBeacon = sha("03" + assetUnit(action.premium));
@@ -233,8 +261,6 @@ export function createKernelPlan(
       (action.offer.policyId ? assetUnit(action.offer) : "00") +
         (action.ask.policyId ? assetUnit(action.ask) : "00"),
     );
-    if (!Number.isSafeInteger(action.expiresAt) || action.expiresAt <= 0)
-      throw new Error("Enter an expiration time.");
     datum = pd.con(0, [
       pd.bytes(KERNEL_LANES[lane].beaconPolicy),
       pd.bytes(KERNEL_LANES["option-active"].beaconPolicy),
@@ -261,16 +287,12 @@ export function createKernelPlan(
     description = "Write an options proposal";
   } else if (action.kind === "limit-order") {
     lane = "one-way";
-    if (assetUnit(action.offer) === assetUnit(action.ask))
-      throw new Error("Offer and ask assets must differ.");
     const offerBeacon = sha("01" + assetUnit(action.offer)),
       askBeacon = sha("02" + assetUnit(action.ask)),
       pair = sha(
         (action.offer.policyId ? assetUnit(action.offer) : "00") +
           (action.ask.policyId ? assetUnit(action.ask) : "00"),
       );
-    if (action.price.numerator <= 0n || action.price.denominator <= 0n)
-      throw new Error("Price must be positive.");
     datum = pd.con(0, [
       pd.bytes(KERNEL_LANES[lane].beaconPolicy),
       pd.bytes(pair),
@@ -292,7 +314,6 @@ export function createKernelPlan(
     description = "Create a one-way limit order";
   } else {
     lane = "aftermarket";
-    if (!assetUnit(action.nft)) throw new Error("Choose a native NFT.");
     const observer = KERNEL_OBSERVERS.aftermarket.hash;
     datum = pd.con(0, [
       pd.bytes(KERNEL_LANES[lane].beaconPolicy),

@@ -89,7 +89,6 @@ export const marketSections = [
   ].map(([id, label]) => ({
     to: `/wallet/markets/${id}`,
     label,
-    network: "preprod" as const,
     matches: (path: string) =>
       path === `/wallet/markets/${id}` ||
       (id === "lending" && path === "/wallet/markets"),

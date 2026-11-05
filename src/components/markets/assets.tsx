@@ -19,19 +19,21 @@ export function MarketLoading({
   retry: () => void;
 }) {
   return (
-    <div className="market-loading" role={error ? "alert" : "status"}>
+    <div className="market-loading">
       {error ? (
         <>
-          <h2>Market data unavailable</h2>
-          <p>{error.message}</p>
+          <div role="alert">
+            <h2>Market data unavailable</h2>
+            <p>{error.message}</p>
+          </div>
           <button onClick={retry}>Retry Dingo query</button>
         </>
       ) : (
-        <>
+        <div role="status">
           <div className="market-skeleton" />
           <h2>Reading the market from Dingo…</h2>
           <p>Verifying contracts and loading a bounded page of live outputs.</p>
-        </>
+        </div>
       )}
     </div>
   );

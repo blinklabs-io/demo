@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { SPOT_UTXO_CBOR } from "./fixtures";
-import { kernelLifecyclePlan } from "./lifecycle";
+import { kernelLifecyclePlan, loanCollateralChoices } from "./lifecycle";
 import { Core } from "@blaze-cardano/sdk";
 import { beforeAll, expect, it } from "vitest";
 import { ADA, pd, createKernelPlan, type KernelCreation } from "./actions";
@@ -477,4 +477,163 @@ it("adds ADA separately from native payment and forbids overstating an ADA recei
     "Reduce the ADA received",
   );
   expect(quoteKernelSwap(receivingAda, 1000000n).take).toBe(1000000n);
+});
+
+function changedPosition(
+  position: ReturnType<typeof record>,
+  change: (
+    fields: Core.PlutusData[],
+    assets: Map<Core.AssetId, bigint>,
+  ) => void,
+  lane = position.lane,
+) {
+  const original = Core.PlutusData.fromCbor(
+    Core.HexBlob(position.datumCbor),
+  ).asConstrPlutusData()!;
+  const fields = Array.from(
+    { length: original.getData().getLength() },
+    (_, i) => original.getData().get(i),
+  );
+  const assets = new Map(position.utxo.output().amount().multiasset());
+  change(fields, assets);
+  const output = new Core.TransactionOutput(
+    Core.addressFromCredentials(
+      0,
+      Core.Credential.fromCore({
+        type: Core.CredentialType.ScriptHash,
+        hash: Core.Hash28ByteBase16(KERNEL_LANES[lane].validatorHash),
+      }),
+      Core.Credential.fromCore({
+        type: Core.CredentialType.KeyHash,
+        hash: Core.Hash28ByteBase16(stake),
+      }),
+    ),
+    new Core.Value(position.lovelace, assets),
+  );
+  output.setDatum(
+    Core.Datum.newInlineData(pd.con(Number(original.getAlternative()), fields)),
+  );
+  return kernelRecord(
+    lane,
+    new Core.TransactionUnspentOutput(position.utxo.input(), output),
+  );
+}
+it.each(["list", "map"])(
+  "decodes bounded bulk %s beyond 100 entries",
+  (kind) => {
+    const bulk = changedPosition(record(actions[3]), (fields) => {
+      if (kind === "list")
+        fields[3] = pd.list(
+          Array.from({ length: 101 }, (_, i) =>
+            pd.bytes(i.toString(16).padStart(4, "0")),
+          ),
+        );
+      else
+        fields[6] = pd.map(
+          Array.from({ length: 101 }, (_, i) => [
+            pd.list([
+              pd.bytes(native.policyId),
+              pd.bytes(i.toString(16).padStart(4, "0")),
+            ]),
+            pd.int(1n),
+          ]),
+        );
+    });
+    expect(
+      kind === "list" ? bulk.fields.nft_names : bulk.fields.sale_price,
+    ).toHaveLength(101);
+  },
+);
+it("decodes signed schema integers but rejects a negative swap price before quoting", () => {
+  const signed = changedPosition(record(actions[4]), (fields) => {
+    fields[8] = pd.con(0, [pd.int(-1n), pd.int(1n)]);
+  });
+  expect(() => quoteKernelSwap(signed, 1n)).toThrow(/positive/);
+});
+it("rejects unsupported swap tokens before quoting", () => {
+  const original = record(actions[4]);
+  const polluted = changedPosition(original, (_fields, assets) => {
+    assets.set(Core.AssetId("55".repeat(28) + "01"), 1n);
+  });
+  expect(() => quoteKernelSwap(polluted, 1n)).toThrow(/unsupported assets/);
+});
+it("rejects reversed two-way asset ordering before quoting", () => {
+  const reversed = changedPosition(
+    record(actions[4]),
+    (fields, assets) => {
+      fields[0] = pd.bytes(KERNEL_LANES["two-way"].beaconPolicy);
+      fields.splice(9, 0, pd.con(0, [pd.int(1n), pd.int(1n)]));
+      for (const [unit, q] of [...assets])
+        if (unit.startsWith(KERNEL_LANES["one-way"].beaconPolicy)) {
+          assets.delete(unit);
+          assets.set(
+            Core.AssetId(KERNEL_LANES["two-way"].beaconPolicy + unit.slice(56)),
+            q,
+          );
+        }
+    },
+    "two-way",
+  );
+  expect(() => quoteKernelSwap(reversed, 1n)).toThrow(/direction/);
+});
+it("rejects unrelated proposal-policy assets rather than moving them to buyer change", () => {
+  const position = changedPosition(record(actions[2]), (_fields, assets) =>
+    assets.set(
+      Core.AssetId(KERNEL_LANES["option-proposals"].beaconPolicy + "ffff"),
+      1n,
+    ),
+  );
+  expect(() =>
+    kernelLifecyclePlan(
+      {
+        kind: "option-purchase",
+        record: position,
+        termsIndex: 0,
+        paymentDeposit: 5000000n,
+        contractTopUp: 0n,
+      },
+      stake,
+      1700000000000,
+    ),
+  ).toThrow(/extra proposal-policy/);
+});
+it("selects compatible collateral rather than blindly using the first offer entry", () => {
+  const ask = record(actions[0]);
+  const offer = changedPosition(
+    record({ ...actions[1], borrowerStakeHash: stake } as KernelCreation),
+    (fields) => {
+      fields[13] = pd.map([
+        [
+          pd.list([pd.bytes("22".repeat(28)), pd.bytes("01")]),
+          pd.list([pd.int(1n), pd.int(1n)]),
+        ],
+        [
+          pd.list([pd.bytes(native.policyId), pd.bytes(native.name)]),
+          pd.list([pd.int(1n), pd.int(1000000n)]),
+        ],
+      ]);
+    },
+  );
+  expect(loanCollateralChoices(ask, offer)).toEqual([native]);
+  const action = {
+    kind: "loan-accept" as const,
+    ask,
+    offer,
+    collateralDeposit: 5000000n,
+    lenderTopUp: 0n,
+    collateral: native,
+  };
+  expect(
+    kernelLifecyclePlan(action, stake, 1700000000000)
+      .outputs[0].amount()
+      .multiasset()
+      ?.get(Core.AssetId(native.policyId + native.name)),
+  ).toBe(10n);
+  expect(() =>
+    kernelLifecyclePlan(
+      { ...action, collateral: { policyId: "22".repeat(28), name: "01" } },
+      stake,
+      1700000000000,
+    ),
+  ).toThrow(/allowed by both/);
 });

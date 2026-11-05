@@ -358,11 +358,46 @@ it.each([false, true])(
       deposit: 5000000n,
     });
     f.ledger.apply(offer);
+    const baseOffer = f.asRecord(offer, 0, "loan-negotiation");
+    const offerFields = Core.PlutusData.fromCbor(
+      Core.HexBlob(baseOffer.datumCbor),
+    )
+      .asConstrPlutusData()!
+      .getData();
+    const multiFields = Array.from(
+      { length: offerFields.getLength() },
+      (_, i) => offerFields.get(i),
+    );
+    multiFields[13] = pd.map([
+      [
+        pd.list([pd.bytes("22".repeat(28)), pd.bytes("01")]),
+        pd.list([pd.int(1n), pd.int(1n)]),
+      ],
+      [
+        pd.list([
+          pd.bytes(collateralAsset.policyId),
+          pd.bytes(collateralAsset.name),
+        ]),
+        pd.list([pd.int(1n), pd.int(1000000n)]),
+      ],
+    ]);
+    const multiOutput = new Core.TransactionOutput(
+      baseOffer.utxo.output().address(),
+      Core.Value.fromCbor(baseOffer.utxo.output().amount().toCbor()),
+    );
+    multiOutput.setDatum(Core.Datum.newInlineData(pd.con(1, multiFields)));
+    const multiUtxo = new Core.TransactionUnspentOutput(
+      baseOffer.utxo.input(),
+      multiOutput,
+    );
+    f.ledger.ledger.set(point(multiUtxo.input()), multiUtxo);
+    const multiOffer = kernelRecord("loan-negotiation", multiUtxo);
     await expect(
       f.build(f.borrower.api, {
         kind: "loan-accept",
         ask: f.asRecord(ask, 0, "loan-negotiation"),
-        offer: f.asRecord(offer, 0, "loan-negotiation"),
+        offer: multiOffer,
+        collateral: collateralAsset,
         collateralDeposit: 5000000n,
         lenderTopUp: 1n,
       }),
@@ -370,7 +405,8 @@ it.each([false, true])(
     const accepted = await f.build(f.borrower.api, {
       kind: "loan-accept",
       ask: f.asRecord(ask, 0, "loan-negotiation"),
-      offer: f.asRecord(offer, 0, "loan-negotiation"),
+      offer: multiOffer,
+      collateral: collateralAsset,
       collateralDeposit: 5000000n,
       lenderTopUp: 0n,
     });
@@ -379,6 +415,35 @@ it.each([false, true])(
     const original = new Map(f.ledger.ledger);
     f.ledger.slot = baseSlot + 31 * 86400;
     await f.build(f.writer.api, {
+      kind: "loan-claim",
+      record: active,
+      claimant: "lender",
+    });
+    f.ledger.ledger = new Map(original);
+    // Loan-key ownership is transferable; it does not require the original lender stake key.
+    const lenderKey = f.asRecord(accepted, 0, "loan-active").fields.loan_id;
+    const keyUnit = Core.AssetId(
+      String(active.fields.active_beacon_id) + String(lenderKey),
+    );
+    const keyUtxo = [...f.ledger.ledger.values()].find(
+      (utxo) =>
+        utxo.output().address().toBytes() === f.writer.address.toBytes() &&
+        utxo.output().amount().multiasset()?.get(keyUnit) === 1n,
+    )!;
+    expect(keyUtxo).toBeDefined();
+    const transferred = new Core.TransactionOutput(
+      f.borrower.address,
+      Core.Value.fromCbor(keyUtxo.output().amount().toCbor()),
+    );
+    if (keyUtxo.output().datum())
+      transferred.setDatum(
+        Core.Datum.fromCbor(keyUtxo.output().datum()!.toCbor()),
+      );
+    f.ledger.ledger.set(
+      point(keyUtxo.input()),
+      new Core.TransactionUnspentOutput(keyUtxo.input(), transferred),
+    );
+    await f.build(f.borrower.api, {
       kind: "loan-claim",
       record: active,
       claimant: "lender",

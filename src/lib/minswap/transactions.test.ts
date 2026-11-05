@@ -76,10 +76,13 @@ function fixture() {
     active = true,
     slot = 100,
     magic = 1,
-    corrupt = false;
+    corrupt = false,
+    used: string[] = [],
+    ttl: Core.Slot | undefined;
   const api = {
     getNetworkId: async () => 0,
     getChangeAddress: async () => change.toBytes(),
+    getUsedAddresses: async () => used,
     getUtxos: async () => [funding.toCbor()],
     getCollateral: async () => [],
   } as unknown as Cip30WalletApi;
@@ -103,7 +106,10 @@ function fixture() {
       required = key;
       return builder;
     }),
-    setValidUntil: vi.fn(() => builder),
+    setValidUntil: vi.fn((value: Core.Slot) => {
+      ttl = value;
+      return builder;
+    }),
     addInput: vi.fn(
       (...input: [Core.TransactionUnspentOutput, Core.PlutusData]) => {
         spent = input[0];
@@ -135,6 +141,7 @@ function fixture() {
         outputs,
         170000n,
       );
+      if (ttl !== undefined) body.setTtl(ttl);
       if (required)
         body.setRequiredSigners(
           Core.CborSet.fromCore([required], Core.Hash.fromCore),
@@ -190,6 +197,9 @@ function fixture() {
     sign,
     post,
     unspent,
+    setUsed: (values: string[]) => {
+      used = values;
+    },
     setSlot: (n: number) => {
       slot = n;
     },
@@ -215,6 +225,7 @@ function fixture() {
 }
 it.each<MinswapAction>([
   { kind: "swap", direction: "a-to-b", amount: 1000000n, slippageBps: 50 },
+  { kind: "swap", direction: "b-to-a", amount: 1000000n, slippageBps: 50 },
   { kind: "deposit", amountA: 1000000n, amountB: 1000000n, slippageBps: 50 },
   { kind: "withdraw", lpAmount: 100000n, slippageBps: 50 },
 ])(
@@ -235,9 +246,39 @@ it.each<MinswapAction>([
     ).toBe(action.kind);
     expect(draft.batcherFee).toBe(2000000n);
     expect(draft.deposit).toBe(2000000n);
+    const offered =
+      action.kind === "swap"
+        ? [
+            [
+              action.direction === "a-to-b" ? f.pool.assetA : f.pool.assetB,
+              action.amount,
+            ] as const,
+          ]
+        : action.kind === "deposit"
+          ? [
+              [f.pool.assetA, action.amountA] as const,
+              [f.pool.assetB, action.amountB] as const,
+            ]
+          : [[f.pool.lpAsset, action.lpAmount] as const];
     expect(output.amount().coin()).toBe(
-      action.kind === "withdraw" ? 4000000n : 5000000n,
+      4000000n +
+        offered.reduce(
+          (sum, [unit, amount]) => sum + (unit === "lovelace" ? amount : 0n),
+          0n,
+        ),
     );
+    expect(output.amount().multiasset() ?? new Map()).toEqual(
+      new Map(
+        offered
+          .filter(([unit]) => unit !== "lovelace")
+          .map(([unit, amount]) => [Core.AssetId(unit), amount]),
+      ),
+    );
+    expect(draft.validUntil).toBe(700);
+    expect(f.builder.setValidUntil).toHaveBeenCalledWith(
+      Core.Slot(draft.validUntil),
+    );
+    expect(draft.tx.body().ttl()).toBe(draft.validUntil);
     expect(f.sign).not.toHaveBeenCalled();
     expect(f.post).not.toHaveBeenCalled();
     await expect(
@@ -361,6 +402,13 @@ it("cancels only the owner's current order with the canonical reference script a
     draft.txHash,
   );
   f.changeAccount();
+  f.setUsed([f.original.toBytes()]);
+  const rotated = await prepareMinswapCancel(f.api, order, f.assert);
+  expect(rotated.tx.body().requiredSigners()!.toCore()).toContain(
+    f.original.getProps().paymentPart!.hash,
+  );
+  expect(rotated.keys).toContain(f.original.getProps().paymentPart!.hash);
+  f.setUsed([]);
   await expect(prepareMinswapCancel(f.api, order, f.assert)).rejects.toThrow(
     "cancellation key",
   );
@@ -490,4 +538,25 @@ it("keeps the reviewed draft unsigned when signing mutates its argument and subm
   await expect(submitMinswapTransaction(f.api, draft, f.assert)).resolves.toBe(
     draft.txHash,
   );
+});
+
+it("does not post after session loss during actual wallet signing", async () => {
+  const f = fixture(),
+    draft = await prepareMinswapAction(
+      f.api,
+      f.pool,
+      { kind: "swap", direction: "a-to-b", amount: 1000000n, slippageBps: 50 },
+      f.assert,
+    );
+  const sign = f.sign.getMockImplementation()!;
+  f.sign.mockImplementation(async (tx) => {
+    const result = await sign(tx);
+    f.disconnect();
+    return result;
+  });
+  await expect(
+    submitMinswapTransaction(f.api, draft, f.assert),
+  ).rejects.toThrow("Session changed");
+  expect(f.sign).toHaveBeenCalledOnce();
+  expect(f.post).not.toHaveBeenCalled();
 });

@@ -25,7 +25,7 @@ const poolTypes = [
 ];
 export function GravityMarket() {
   const [page, setPage] = useState(1),
-    [outputPage, setOutputPage] = useState(1),
+    [outputSelection, setOutputSelection] = useState({ pool: "", page: 1 }),
     [selected, setSelected] = useState("");
   const [filter, setFilter] = useState(""),
     [assetInput, setAssetInput] = useState("lovelace"),
@@ -39,6 +39,14 @@ export function GravityMarket() {
   });
   const pool =
     pools.data?.pools.find((p) => p.id === selected) ?? pools.data?.pools[0];
+  const poolScope = pool ? `${pool.id}:${pool.poolHash}` : "";
+  const outputPage =
+    outputSelection.pool === poolScope ? outputSelection.page : 1;
+  const setOutputPage = (next: number | ((page: number) => number)) =>
+    setOutputSelection({
+      pool: poolScope,
+      page: typeof next === "function" ? next(outputPage) : next,
+    });
   const composition = useQuery({
     queryKey: [
       "dingo",
@@ -63,7 +71,7 @@ export function GravityMarket() {
           next.lastAction !== "apply"
         ) {
           setPage(1);
-          setOutputPage(1);
+          setOutputSelection({ pool: "", page: 1 });
           setSelected("");
         }
       }),
@@ -132,13 +140,13 @@ export function GravityMarket() {
             <em>a living system.</em>
           </h1>
           <p>
-            Follow authenticated pool oracles to the contracts that hold the
+            Follow on-chain asset-index records to the contracts that hold the
             tokens. Inspect the individual outputs and their assets, directly
             from Dingo.
           </p>
           <div className="market-source">
             <span>Dingo-only discovery</span>
-            <span>Verified on-chain oracles</span>
+            <span>On-chain asset index</span>
             <a
               href="https://preprod.gravitydex.app"
               target="_blank"
@@ -184,7 +192,7 @@ export function GravityMarket() {
             ))}
           </svg>
           <figcaption>
-            Contract identities come from each authenticated oracle.
+            Contract identities are decoded from each indexed oracle.
           </figcaption>
         </figure>
       </section>
@@ -225,7 +233,7 @@ export function GravityMarket() {
             <div>
               <span className="eyebrow">Directory page</span>
               <strong>{pools.data?.pools.length} pools</strong>
-              <small>Verified for this asset index</small>
+              <small>Matched to this asset index</small>
             </div>
             <div>
               <span className="eyebrow">Selected type</span>
@@ -283,23 +291,23 @@ export function GravityMarket() {
                     any locked or in-flight amounts. They are not a swap quote
                     or a claim of immediately available liquidity.
                   </p>
-                  <div className="market-pagination">
-                    <button
-                      disabled={outputPage === 1}
-                      onClick={() => setOutputPage((p) => p - 1)}
-                    >
-                      ← Previous outputs
-                    </button>
-                    <span>Output page {outputPage}</span>
-                    <button
-                      disabled={!composition.data?.partial}
-                      onClick={() => setOutputPage((p) => p + 1)}
-                    >
-                      Next outputs →
-                    </button>
-                  </div>
                 </>
               )}
+              <div className="market-pagination">
+                <button
+                  disabled={outputPage === 1}
+                  onClick={() => setOutputPage((p) => p - 1)}
+                >
+                  ← Previous outputs
+                </button>
+                <span>Output page {outputPage}</span>
+                <button
+                  disabled={!composition.data?.partial || !!composition.error}
+                  onClick={() => setOutputPage((p) => p + 1)}
+                >
+                  Next outputs →
+                </button>
+              </div>{" "}
               <details className="market-contracts">
                 <summary>Contract identities and oracle</summary>
                 {[
@@ -359,7 +367,7 @@ export function GravityMarket() {
             </div>
             {!shown.length && (
               <div className="market-empty">
-                <strong>No matching verified pools</strong>
+                <strong>No matching indexed pools</strong>
                 <p>Choose another asset or change the loaded-page filter.</p>
               </div>
             )}
@@ -369,32 +377,32 @@ export function GravityMarket() {
                 records were excluded.
               </p>
             )}
-            <div className="market-pagination">
-              <button
-                disabled={page === 1}
-                onClick={() => {
-                  setPage((p) => p - 1);
-                  setSelected("");
-                  setOutputPage(1);
-                }}
-              >
-                ← Previous pairs
-              </button>
-              <span>Page {page}</span>
-              <button
-                disabled={!pools.data?.partial}
-                onClick={() => {
-                  setPage((p) => p + 1);
-                  setSelected("");
-                  setOutputPage(1);
-                }}
-              >
-                Next pairs →
-              </button>
-            </div>
           </section>
         </>
       )}
+      <div className="market-pagination">
+        <button
+          disabled={page === 1}
+          onClick={() => {
+            setPage((p) => p - 1);
+            setSelected("");
+            setOutputPage(1);
+          }}
+        >
+          ← Previous pairs
+        </button>
+        <span>Page {page}</span>
+        <button
+          disabled={!pools.data?.partial || !!pools.error}
+          onClick={() => {
+            setPage((p) => p + 1);
+            setSelected("");
+            setOutputPage(1);
+          }}
+        >
+          Next pairs →
+        </button>
+      </div>{" "}
     </div>
   );
 }

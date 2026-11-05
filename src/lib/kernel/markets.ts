@@ -82,6 +82,23 @@ export function kernelRecord(
   const datum = output.datum()?.asInlineData();
   if (!datum) throw new Error("Kernel output has no inline datum.");
   const decoded = decodeKernelDatum(protocol.family, datum.toCbor());
+  const kinds: Record<KernelLane, readonly string[]> = {
+    "one-way": ["SwapDatum"],
+    "two-way": ["SwapDatum"],
+    "loan-negotiation": ["AskDatum", "OfferDatum"],
+    "loan-active": ["ActiveDatum"],
+    "option-proposals": ["ProposalDatum"],
+    "option-active": ["ActiveDatum"],
+    aftermarket: [
+      "SpotDatum",
+      "AuctionDatum",
+      "SpotBidDatum",
+      "ClaimBidDatum",
+      "AcceptedBidDatum",
+    ],
+  };
+  if (!kinds[lane].includes(decoded.kind))
+    throw new Error("Kernel datum kind does not belong to the requested lane.");
   const assets = output.amount().multiasset();
   if (
     !assets ||
@@ -152,7 +169,13 @@ export async function loadKernelPage(
   for (const item of response.items) {
     signal?.throwIfAborted();
     const ref = item.txoRef;
-    if (!ref || ref.hash.length !== 32)
+    if (
+      !ref ||
+      ref.hash.length !== 32 ||
+      !Number.isInteger(ref.index) ||
+      ref.index < 0 ||
+      ref.index > 0xffffffff
+    )
       throw new Error("Dingo returned an invalid Kernel output reference.");
     const outpoint = `${Core.toHex(ref.hash)}#${ref.index}`;
     if (seen.has(outpoint)) throw new Error("Dingo repeated a Kernel output.");
@@ -202,7 +225,9 @@ export async function loadKernelRequest(
   signal?: AbortSignal,
   provider: DingoProvider = getDingoProvider(),
 ) {
-  const match = /^([a-f0-9]{64})#(0|[1-9]\d{0,9})$/.exec(outpoint);
+  const match = /^([a-f0-9]{64})#(0|[1-9]\d{0,9})$/.exec(
+    outpoint.toLowerCase(),
+  );
   if (!match || Number(match[2]) > 4294967295)
     throw new Error(
       "Enter a request transaction hash followed by #output index.",

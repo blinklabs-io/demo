@@ -163,40 +163,76 @@ export function decodeOrder(row: MinswapUtxo): MinswapOrder {
     maxBatcherFee: integer(f[7]),
   };
 }
+export function minswapOrderAccount(senders: readonly string[]) {
+  const keys = new Set<string>(),
+    addresses = new Set<string>();
+  for (const value of senders) {
+    const sender = Core.Address.fromBech32(value),
+      key = sender.getProps().paymentPart;
+    if (
+      sender.getNetworkId() !== 0 ||
+      (!sender.asBase() && !sender.asEnterprise()) ||
+      key?.type !== Core.CredentialType.KeyHash
+    )
+      throw new Error(
+        "A Preprod payment address is required to find cancellable orders.",
+      );
+    keys.add(String(key.hash));
+    addresses.add(orderAddress(sender).toBech32());
+  }
+  return { keys, addresses: [...addresses] };
+}
 export async function readMinswapOrders(
-  senderAddress: string,
+  senders: readonly string[],
   page = 1,
   signal?: AbortSignal,
 ) {
   if (!Number.isSafeInteger(page) || page < 1)
     throw new Error("Choose a valid Minswap order page.");
-  await assertMinswapGenesis(signal);
-  const sender = Core.Address.fromBech32(senderAddress),
-    key = sender.getProps().paymentPart;
-  if (
-    sender.getNetworkId() !== 0 ||
-    (!sender.asBase() && !sender.asEnterprise()) ||
-    key?.type !== Core.CredentialType.KeyHash
-  )
+  const { keys, addresses } = minswapOrderAccount(senders);
+  if (addresses.length > 20)
     throw new Error(
-      "A Preprod payment address is required to find cancellable orders.",
+      "Order discovery supports at most 20 distinct staking addresses per page.",
     );
-  const address = orderAddress(sender).toBech32();
-  const rows = await blockfrostFetch<MinswapUtxo[]>(
-    `/api/v0/addresses/${address}/utxos?count=20&page=${page}`,
-    { signal },
-  );
+  if (!addresses.length) return { orders: [], partial: false, errors: [] };
+  await assertMinswapGenesis(signal);
   const orders: MinswapOrder[] = [],
-    errors: string[] = [];
-  for (const row of rows) {
-    try {
-      if (row.address !== address)
-        throw new Error("Dingo returned an order from another address.");
-      const order = decodeOrder(row);
-      if (order.canceller === key.hash) orders.push(order);
-    } catch (error) {
-      errors.push(error instanceof Error ? error.message : "Unsupported order");
+    errors: string[] = [],
+    seen = new Set<string>();
+  let partial = false;
+  for (let offset = 0; offset < addresses.length; offset += 4) {
+    const pages = await Promise.all(
+      addresses.slice(offset, offset + 4).map(async (address) => ({
+        address,
+        rows: await blockfrostFetch<MinswapUtxo[]>(
+          `/api/v0/addresses/${address}/utxos?count=20&page=${page}`,
+          { signal },
+        ),
+      })),
+    );
+    for (const { address, rows } of pages) {
+      signal?.throwIfAborted();
+      if (rows.length > 20)
+        throw new Error(
+          "Dingo exceeded the requested Minswap order page size.",
+        );
+      partial ||= rows.length === 20;
+      for (const row of rows)
+        try {
+          if (row.address !== address)
+            throw new Error("Dingo returned an order from another address.");
+          const order = decodeOrder(row),
+            outpoint = order.txHash + "#" + order.outputIndex;
+          if (seen.has(outpoint))
+            throw new Error("Dingo repeated a Minswap order output.");
+          seen.add(outpoint);
+          if (keys.has(order.canceller)) orders.push(order);
+        } catch (error) {
+          errors.push(
+            error instanceof Error ? error.message : "Unsupported order",
+          );
+        }
     }
   }
-  return { orders, partial: rows.length === 20, errors };
+  return { orders, partial, errors };
 }

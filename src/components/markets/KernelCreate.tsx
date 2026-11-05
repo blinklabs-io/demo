@@ -3,6 +3,7 @@ import { Core } from "@blaze-cardano/sdk";
 import { useWalletStore } from "../../stores/walletStore";
 import {
   ADA,
+  validateKernelCreation,
   type KernelAsset,
   type KernelCreation,
 } from "../../lib/kernel/actions";
@@ -260,7 +261,9 @@ export function KernelCreate({
         ),
         deposit: adaDeposit,
       };
+    validateKernelCreation(action);
   } catch (cause) {
+    action = null;
     error =
       cause instanceof Error
         ? cause.message

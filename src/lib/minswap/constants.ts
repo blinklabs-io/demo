@@ -16,3 +16,4 @@ export const POOL_ADA_BUFFER = 4_500_000n;
 export const ORDER_DEPOSIT_ADA = 2_000_000n;
 export const BATCHER_FEE = 2_000_000n;
 export const MAX_LIQUIDITY = 9_223_372_036_854_775_807n;
+export const BURNED_LIQUIDITY = 10n;

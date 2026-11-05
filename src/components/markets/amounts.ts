@@ -11,17 +11,27 @@ export function marketAmount(quantity: bigint, unit: string): string {
     : `${quantity.toLocaleString()} ${marketAssetName(unit)}`;
 }
 
+function outputQuantity(value: bigint): bigint {
+  if (value > 18446744073709551615n)
+    throw new Error(
+      "Amount exceeds the unsigned 64-bit transaction output limit.",
+    );
+  return value;
+}
+
 export function rawAmount(input: string, unit: string): bigint {
   const text = input.trim();
   if (unit !== "lovelace" && unit !== "") {
     if (!/^\d{1,24}$/.test(text))
       throw new Error("Enter a whole number of token base units.");
-    return BigInt(text);
+    return outputQuantity(BigInt(text));
   }
   if (!/^\d{1,18}(?:\.\d{1,6})?$/.test(text))
     throw new Error("Enter ADA with at most six decimal places.");
   const [whole, fraction = ""] = text.split(".");
-  return BigInt(whole) * 1000000n + BigInt(fraction.padEnd(6, "0"));
+  return outputQuantity(
+    BigInt(whole) * 1000000n + BigInt(fraction.padEnd(6, "0")),
+  );
 }
 
 export function decimalFraction(

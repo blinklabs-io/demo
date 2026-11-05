@@ -3,6 +3,7 @@ import {
   PREPROD_MINSWAP_V2,
   POOL_ADA_BUFFER,
   MAX_LIQUIDITY,
+  BURNED_LIQUIDITY,
 } from "./constants";
 export type PoolDatum = {
   assetA: string;
@@ -110,7 +111,10 @@ export function decodePoolDatum(cbor: string): PoolDatum {
   if (feeSharing !== undefined && feeSharing > 10000n)
     throw new Error("Invalid Minswap fee share.");
   const totalLiquidity = integer(f[3]);
-  if (totalLiquidity > MAX_LIQUIDITY)
+  if (
+    totalLiquidity < BURNED_LIQUIDITY ||
+    totalLiquidity > MAX_LIQUIDITY + BURNED_LIQUIDITY
+  )
     throw new Error("Invalid Minswap liquidity supply.");
   return {
     assetA,
@@ -165,6 +169,11 @@ export function authenticatePool(row: MinswapUtxo): MinswapPool {
     )
       throw new Error("Minswap pool value does not back its datum reserves.");
   const lpAsset = computeLpAsset(datum.assetA, datum.assetB);
+  if (
+    (amounts.get(lpAsset) ?? 0n) !==
+    MAX_LIQUIDITY - datum.totalLiquidity + BURNED_LIQUIDITY
+  )
+    throw new Error("Minswap pool LP supply does not match its datum.");
   return {
     ...datum,
     id: lpAsset,

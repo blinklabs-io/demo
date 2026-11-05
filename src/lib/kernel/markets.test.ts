@@ -4,7 +4,7 @@ import { beforeAll, expect, it, vi } from "vitest";
 import type { DingoProvider } from "../dingo/utxorpc/provider";
 import { SPOT_UTXO_CBOR } from "./fixtures";
 import { KERNEL_LANES } from "./protocol";
-import { loadKernelPage, loadKernelRequest } from "./markets";
+import { loadKernelPage, loadKernelRequest, kernelRecord } from "./markets";
 vi.mock("../dingo/config", async (original) => ({
   ...(await original<typeof import("../dingo/config")>()),
   DINGO_NETWORK: { id: "preprod", label: "Preprod", networkMagic: 1 },
@@ -120,7 +120,7 @@ it("resolves an exact live request without scanning and rejects a substituted ou
   const output = new Core.TransactionOutput(plan.address, plan.value);
   output.setDatum(Core.Datum.newInlineData(plan.datum));
   const input = new Core.TransactionInput(
-    Core.TransactionId("44".repeat(32)),
+    Core.TransactionId("ab".repeat(32)),
     2n,
   );
   const resolve = vi.fn(async () => [
@@ -135,12 +135,18 @@ it("resolves an exact live request without scanning and rejects a substituted ou
     resolveUnspentOutputs: resolve,
   } as unknown as DingoProvider;
   const request = await loadKernelRequest(
-    "44".repeat(32) + "#2",
+    "ab".repeat(32) + "#2",
     undefined,
     provider,
   );
   expect(request.kind).toBe("AskDatum");
-  expect(resolve).toHaveBeenCalledTimes(1);
+  const canonical = await loadKernelRequest(
+    "ab".repeat(32).toUpperCase() + "#2",
+    undefined,
+    provider,
+  );
+  expect(canonical.outpoint).toBe("ab".repeat(32) + "#2");
+  expect(resolve).toHaveBeenCalledTimes(2);
   expect(search).not.toHaveBeenCalled();
   await expect(
     loadKernelRequest("55".repeat(32) + "#2", undefined, provider),
@@ -157,4 +163,54 @@ it("does not query invalid or cancelled exact request imports", async () => {
     loadKernelRequest("44".repeat(32) + "#0", controller.signal, provider),
   ).rejects.toBeDefined();
   expect(resolve).not.toHaveBeenCalled();
+});
+it.each([-1, 0.5, 4294967296, Number.NaN, Number.POSITIVE_INFINITY])(
+  "rejects invalid RPC output index %s before exposing a selectable record",
+  async (index) => {
+    const { provider, search } = fixture();
+    const response = await search();
+    response.items[0].txoRef.index = index;
+    search.mockResolvedValue(response);
+    await expect(
+      loadKernelPage("aftermarket", "", undefined, provider),
+    ).rejects.toThrow(/invalid Kernel output reference/);
+  },
+);
+
+it("rejects a negotiation datum masquerading as an active-loan lane", async () => {
+  const { createKernelPlan } = await import("./actions");
+  const owner = Core.Credential.fromCore({
+    type: Core.CredentialType.KeyHash,
+    hash: Core.Hash28ByteBase16("11".repeat(28)),
+  });
+  const plan = createKernelPlan(
+    {
+      kind: "loan-ask",
+      principal: 10000000n,
+      termDays: 30,
+      collateral: { policyId: "33".repeat(28), name: "01" },
+      deposit: 5000000n,
+    },
+    Core.addressFromCredential(0, owner),
+    "11".repeat(28),
+  );
+  const tokens = new Map(plan.value.multiasset());
+  tokens.set(
+    Core.AssetId(KERNEL_LANES["loan-active"].beaconPolicy + "ffff"),
+    1n,
+  );
+  const output = new Core.TransactionOutput(
+    plan.address,
+    new Core.Value(plan.value.coin(), tokens),
+  );
+  output.setDatum(Core.Datum.newInlineData(plan.datum));
+  expect(() =>
+    kernelRecord(
+      "loan-active",
+      new Core.TransactionUnspentOutput(
+        new Core.TransactionInput(Core.TransactionId("ab".repeat(32)), 0n),
+        output,
+      ),
+    ),
+  ).toThrow(/kind.*lane/);
 });

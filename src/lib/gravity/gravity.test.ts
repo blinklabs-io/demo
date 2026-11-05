@@ -1,11 +1,15 @@
 // @vitest-environment node
+import { BlockfrostError } from "../dingo/blockfrost";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { decodeGravityOracle, GRAVITY_INDEXER_POLICY } from "./data";
 import { gravityOracleFixture } from "./fixture";
 import { readGravityPools, readGravityPoolComposition } from "./read";
 vi.mock("../dingo/config", () => ({ DINGO_NETWORK: { id: "preprod" } }));
 const fetch = vi.hoisted(() => vi.fn());
-vi.mock("../dingo/blockfrost", () => ({ blockfrostFetch: fetch }));
+vi.mock("../dingo/blockfrost", async (original) => ({
+  ...(await original<typeof import("../dingo/blockfrost")>()),
+  blockfrostFetch: fetch,
+}));
 const unit =
   GRAVITY_INDEXER_POLICY +
   "0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8";
@@ -24,15 +28,22 @@ describe("Gravity on-chain discovery", () => {
       "899e46d62232b0440d828659368d75587d7629b90080a8b4fea0128b56454741",
     );
     expect(pool.poolType).toBe(0);
-    expect(pool.poolAddress).not.toBe(pool.address);
+    expect(pool.poolAddress).toBe(
+      "addr_test1xquf5q9dqwemjwh43g39dxlpgk6232ykewl5et63j8763ansg224ylygtstgjxzf33crd7ey9zhsxtg2yj7altgapmfqy60p9x",
+    );
   });
-  it("rejects an oracle-shaped datum without its exact authentication NFT", () => {
+  it("rejects an oracle-shaped datum with the right NFT name under the wrong policy", () => {
     expect(() =>
       decodeGravityOracle({
         ...gravityOracleFixture,
-        amount: gravityOracleFixture.amount.filter(
-          (a) => !a.unit.endsWith("0001"),
-        ),
+        amount: [
+          ...gravityOracleFixture.amount.filter(
+            (a) =>
+              a.unit !==
+              "698098510cc00cb761dfd218c58dc0bc4cee2e00540a1e871a0e9dfa0001",
+          ),
+          { unit: "ff".repeat(28) + "0001", quantity: "1" },
+        ],
       }),
     ).toThrow("NFT");
   });
@@ -59,7 +70,15 @@ describe("Gravity on-chain discovery", () => {
       .mockResolvedValueOnce([
         { address: gravityOracleFixture.address, quantity: "1" },
       ])
-      .mockResolvedValueOnce([gravityOracleFixture]);
+      .mockResolvedValueOnce([
+        {
+          ...gravityOracleFixture,
+          amount: [
+            ...gravityOracleFixture.amount,
+            { unit: GRAVITY_INDEXER_POLICY + "ab".repeat(32), quantity: "1" },
+          ],
+        },
+      ]);
     const result = await readGravityPools(
       GRAVITY_INDEXER_POLICY + "ab".repeat(32),
     );
@@ -95,4 +114,34 @@ describe("Gravity on-chain discovery", () => {
       readGravityPools(unit, 1, controller.signal),
     ).rejects.toBeDefined();
   });
+});
+
+it("treats only Dingo asset-holder not-found as an empty directory", async () => {
+  const path = `/api/v0/assets/${unit}/addresses?count=20&page=1`;
+  fetch.mockResolvedValueOnce({ network_magic: 1 }).mockRejectedValueOnce(
+    new BlockfrostError("Not found", 404, path, {
+      message: "The requested asset could not be found.",
+    }),
+  );
+  await expect(readGravityPools(unit)).resolves.toEqual({
+    pools: [],
+    errors: [],
+    partial: false,
+  });
+  for (const error of [
+    new BlockfrostError("Unavailable", 500, path, {
+      message: "The requested asset could not be found.",
+    }),
+    new BlockfrostError("Unknown route", 404, path, {
+      message: "Unknown route",
+    }),
+    new BlockfrostError("Wrong path", 404, "/api/v0/genesis", {
+      message: "The requested asset could not be found.",
+    }),
+  ]) {
+    fetch
+      .mockResolvedValueOnce({ network_magic: 1 })
+      .mockRejectedValueOnce(error);
+    await expect(readGravityPools(unit)).rejects.toBe(error);
+  }
 });

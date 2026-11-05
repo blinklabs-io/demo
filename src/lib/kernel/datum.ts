@@ -85,7 +85,7 @@ function decode(
   }
   if (schema.dataType === "map") {
     const map = data.asMap();
-    if (!map || map.getLength() > 100 || !schema.keys || !schema.values)
+    if (!map || !schema.keys || !schema.values)
       throw new Error("Invalid Kernel map.");
     const keys = items(map.getKeys()),
       seen = new Set<string>();
@@ -106,8 +106,7 @@ function decode(
   }
   if (schema.dataType === "list") {
     const list = data.asList();
-    if (!list || list.getLength() > 100)
-      throw new Error("Invalid Kernel list.");
+    if (!list) throw new Error("Invalid Kernel list.");
     const values = items(list);
     if (Array.isArray(schema.items)) {
       if (values.length !== schema.items.length)
