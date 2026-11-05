@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../config";
 import { Core } from "@blaze-cardano/sdk";
 import { DingoProvider } from "./DingoProvider";
 import { bytesToHex, hexToBytes } from "./bytes";
@@ -12,11 +13,11 @@ export async function assertDingoNetwork(
   provider: DingoProvider,
 ): Promise<string> {
   const genesis = await provider.queryClient.readGenesis();
-  if (genesis.networkMagic !== 2)
+  if (genesis.networkMagic !== DINGO_NETWORK.networkMagic)
     throw new Error(
-      `Dingo reports network magic ${genesis.networkMagic}; this app requires Preview (2).`,
+      `Dingo reports network magic ${genesis.networkMagic}; this app requires ${DINGO_NETWORK.label} (${DINGO_NETWORK.networkMagic}).`,
     );
-  return `Preview genesis confirmed (network magic ${genesis.networkMagic}, ${genesis.networkId})`;
+  return `${DINGO_NETWORK.label} genesis confirmed (network magic ${genesis.networkMagic}, ${genesis.networkId})`;
 }
 
 export type DingoUtxoSummary = {

@@ -262,7 +262,7 @@ function Distribution({
         </div>
         {!history && (
           <button onClick={() => setHistory(true)}>
-            Explore mint &amp; burn history
+            Load mint &amp; burn history
           </button>
         )}
       </div>

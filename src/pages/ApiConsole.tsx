@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../lib/dingo/config";
 import { PageIntro } from "../components/explorer/Visuals";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
@@ -57,17 +58,17 @@ const BLOCKFROST_PRESETS: EndpointPreset[] = [
   },
 ];
 
-const PREVIEW_NETWORK = JSON.stringify(
-  { network_identifier: { blockchain: "cardano", network: "preview" } },
+const SELECTED_NETWORK = JSON.stringify(
+  { network_identifier: { blockchain: "cardano", network: DINGO_NETWORK.id } },
   null,
   2,
 );
 
 const MESH_PRESETS: EndpointPreset[] = [
   { label: "Network list", path: "/network/list", body: "{}" },
-  { label: "Network options", path: "/network/options", body: PREVIEW_NETWORK },
-  { label: "Network status", path: "/network/status", body: PREVIEW_NETWORK },
-  { label: "Mempool", path: "/mempool", body: PREVIEW_NETWORK },
+  { label: "Network options", path: "/network/options", body: SELECTED_NETWORK },
+  { label: "Network status", path: "/network/status", body: SELECTED_NETWORK },
+  { label: "Mempool", path: "/mempool", body: SELECTED_NETWORK },
 ];
 
 const MESH_READ_PATHS = new Set([

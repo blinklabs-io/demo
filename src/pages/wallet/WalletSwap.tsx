@@ -1,3 +1,5 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
+import { changeDingoNetwork } from "../../lib/dingo/networkSelection";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import "./wallet-swap.css";
 import {
@@ -86,6 +88,21 @@ function createQueryProvider(): DingoSundaeQueryProvider {
 export default function WalletSwap() {
   const [version, setVersion] = useState<"V3" | "V4">("V4");
   const [busy, setBusy] = useState(false);
+  const [switchError, setSwitchError] = useState("");
+  if (DINGO_NETWORK.id !== "preview") return <div className="wallet-workbench swap-workbench">
+    <PageIntro eyebrow={`Build with Dingo · ${DINGO_NETWORK.label}`} title="Asset swaps" symbol="⇄"
+      detail="These SundaeSwap markets use the verified Preview deployment." />
+    <section className="swap-venue-card">
+      <div><span className="eyebrow">SundaeSwap V3 & V4</span><h2>Explore Preview markets.</h2>
+        <p>Browse pools, charts and quotes before connecting a wallet.</p></div>
+      <button className="experience-primary" onClick={() => {
+        try { changeDingoNetwork("preview"); }
+        catch (error) { setSwitchError(error instanceof Error ? error.message : "Could not switch networks."); }
+      }}>Open Preview swaps →</button>
+    </section>
+    {switchError && <p role="alert" className="tool-error">{switchError}</p>}
+  </div>;
+
   return (
     <>
       <nav className="swap-version-nav" aria-label="SundaeSwap market version">
@@ -907,7 +924,6 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
   const [amount, setAmount] = useState("1000");
   const [slippage, setSlippage] = useState("1");
   const [feeCap, setFeeCap] = useState("3");
-  const [showHistory, setShowHistory] = useState(false);
   const network = useQuery({
     queryKey: ["dingo", "assert-network"],
     queryFn: () => assertDingoNetwork(getDingoProvider()),
@@ -1012,7 +1028,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
   const history = useQuery({
     queryKey: ["sundae", "v4", "weekly", snapshot?.ident],
     queryFn: ({ signal }) => readWeeklyV4Prices(snapshot!, signal),
-    enabled: showHistory && !!snapshot && !!pool,
+    enabled: !!snapshot && !!pool,
     retry: false,
     staleTime: 6 * 3600000,
   });
@@ -1293,22 +1309,17 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           <MarketChart points={points} label="V4 reference curve price" />
           <p className="swap-chart-caption">
             Curve-aware prices from Dingo. Token amounts use raw on-chain units;
-            ADA uses six decimals. Historical six-hour snapshots load on demand.
+            ADA uses six decimals. Weekly six-hour snapshots load automatically.
           </p>
           <button
             type="button"
             className="v4-market-button"
             disabled={!pool || history.isFetching}
-            onClick={() => {
-              setShowHistory(true);
-              if (showHistory) void history.refetch();
-            }}
+            onClick={() => void history.refetch()}
           >
             {history.isFetching
               ? "Loading weekly history…"
-              : showHistory && history.data
-                ? "Refresh weekly price chart"
-                : "Load weekly price chart"}
+              : "Refresh weekly price chart"}
           </button>
           {history.error && (
             <p role="alert" className="text-red-300">
@@ -1349,7 +1360,6 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
                   setSelected(e.target.value);
                   setOfferIndex(0);
                   setAmount("1000");
-                  setShowHistory(false);
                 });
               }}
             >

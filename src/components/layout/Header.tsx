@@ -3,6 +3,7 @@ import { mainNavigation, normalizePath } from "../../lib/navigation";
 import { Link, useLocation } from "react-router";
 import { NodeHealthStrip } from "./NodeHealthStrip";
 import { GlobalLookup } from "./GlobalLookup";
+import { NetworkSwitcher } from "./NetworkSwitcher";
 
 function Sidebar({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
@@ -72,6 +73,7 @@ export function Header() {
       <header className="workspace-header">
         <GlobalLookup />
         <div className="health-row">
+          <NetworkSwitcher />
           <NodeHealthStrip />
         </div>
       </header>

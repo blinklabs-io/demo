@@ -40,11 +40,25 @@ different origins. The explorer’s index-dependent pages need Dingo `api`
 storage mode. Wallet send and swap pages submit transactions to the selected
 node, so use a test network and connect a test wallet.
 
+## Network selection
+
+Choose Preview or Preprod in the header. Shared links include the network
+(`?network=preview` or `?network=preprod`), which takes precedence over a saved
+choice. Switching disconnects the wallet,
+clears drafts and transient chain data, and reloads the current tool or a safe
+list view for the new network. Wallet connections are always explicit.
+
+The existing `VITE_DINGO_*_URL` settings configure Preview. Preprod has separate
+`VITE_DINGO_PREPROD_BLOCKFROST_URL`, `VITE_DINGO_PREPROD_MESH_URL` and
+`VITE_DINGO_PREPROD_UTXORPC_URL` overrides. Each API must serve the selected
+network. SundaeSwap markets remain tied to the verified Preview deployments;
+other creation and participation tools use the selected network.
+
 ## Explore without a wallet
 
 Browse the explorer, governance and survey results; preview SundaeSwap markets,
 weekly charts, amounts and slippage quotes; edit Send recipients, token metadata
-and survey drafts. Connect a Preview wallet when you want to sign or submit.
+and survey drafts. Connect a wallet on the selected testnet when you want to sign or submit.
 Wallet balances and wallet-owned assets are available only after connecting.
 Send keeps asset choices when reconnecting the same payment address and filters
 them against that wallet’s current assets; another address starts a separate bundle.
@@ -54,14 +68,16 @@ workflow needs keys, and manage or disconnect the connection from Wallet.
 ### Transaction studio
 
 Open **Create & build → Transaction studio** (`/wallet/tools/transactions`) to build an
-unsigned ADA payment from a Preview payment-key address, without a wallet extension. Dingo supplies that
+unsigned ADA payment from a payment-key address on the selected testnet, without a wallet extension. Dingo supplies that
 address’s UTxOs, current protocol parameters and the current slot. Change returns
 to the funding address; outputs carrying datums or reference scripts are excluded
 from automatic funding. You can add up to 20 recipients.
 
 Import a complete Babbage or Conway transaction using CBOR hex or a cardano-cli
-JSON envelope. Raw hex requires an explicit era selection; envelopes carry the
-era. Inspection decodes locally and does not need a wallet or a working backend.
+JSON envelope. Raw hex is inspected immediately on paste, with supported-era compatibility
+checked automatically. When compatible with both Babbage and Conway, raw imports
+export as Conway; this does not identify their original era. Envelopes retain
+their declared era. Inspection decodes locally and does not need a wallet or a working backend.
 The view exposes outputs, assets, collateral, references, validity bounds,
 metadata, scripts, redeemers and governance fields. It does not infer input
 balances from input references or claim ledger validation.
@@ -75,7 +91,7 @@ shows the number of key witnesses separately.
 
 A connected wallet can add a CIP-30 partial witness to payment, native-script or
 Plutus transactions when it supports the required signing keys. Dingo must first
-resolve all spending, collateral and reference inputs on Preview. The merge
+resolve all spending, collateral and reference inputs on the selected network. The merge
 verifies returned signatures and preserves the original body, script witnesses,
 datums, redeemers, validity flag and auxiliary data. Witness count alone does not
 prove a transaction is fully signed or valid. The studio never submits a
@@ -126,7 +142,7 @@ Interactive views use the configured Dingo APIs and connected wallet data:
 
 - A live block conveyor keeps pending observations separate from confirmed blocks.
 - Transaction value flows account for fees, deposits, withdrawals, minting, and collateral through a shared value pool.
-- Block mosaics size transactions by serialized bytes, with activity filters and on-demand bulk CBOR pages.
+- Block mosaics size transactions by serialized bytes, with activity filters, an automatic first page and explicit pagination.
 - Wallet UTxO constellations share selection with the consolidation form, with a complete checkbox list for larger wallets.
 - Governance chambers show ballot counts separately for each voter role, rather than weighted voting power.
 - Asset landscapes distinguish loaded holders from unmapped supply and show mint/burn events in event order.
@@ -209,7 +225,7 @@ disclosure is opened.
 ## On-chain surveys
 
 The Surveys section creates, discovers, answers, and cancels public CIP-179
-version 5 surveys on Preview. It supports the six built-in question types and
+version 5 surveys on the selected testnet. It supports the six built-in question types and
 keyholder credentials, with required-signer proof verified from transaction
 CBOR. Results validate question constraints and the inclusive epoch cutoff,
 keep the latest valid response per credential in chain order, and exclude all
@@ -274,7 +290,7 @@ the recipient output's exact ADA and asset bundle before review and signing.
 Editing transfer details discards the draft and prevents an outstanding signature
 from being submitted for the earlier details.
 
-## Preview wallet tools
+## Testnet wallet tools
 
 The wallet Tools section uses the connected CIP-30 wallet and existing Dingo
 APIs. It includes:
@@ -296,7 +312,7 @@ APIs. It includes:
   supply or guarantee uniqueness. Minting and burning stop at policy expiry.
 - CIP-95 DRep registration with the current deposit read from Dingo, and an
   explicit activity update that clears the metadata anchor.
-- Direct Preview treasury donations using the ledger transaction field.
+- Direct testnet treasury donations using the ledger transaction field.
 
 Every transaction requires separate build/review and sign/submit actions. Drafts
 expire after at most ten minutes, wallet changes invalidate signing, and required

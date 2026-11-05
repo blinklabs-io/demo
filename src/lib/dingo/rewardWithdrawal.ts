@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "./config";
 import { assertSignedWithKey } from "./signatureWitness";
 import { assertWalletSession } from "./walletSession";
 import { Core } from "@blaze-cardano/sdk";
@@ -16,7 +17,7 @@ async function readRewards(
   const parsed = Core.Address.fromBech32(address);
   const reward = parsed.asReward();
   if (!reward || parsed.getNetworkId() !== Core.NetworkId.Testnet)
-    throw new Error("Connect a Preview wallet with a reward address.");
+    throw new Error(`Connect a ${DINGO_NETWORK.label} wallet with a reward address.`);
   const credential = reward.getPaymentCredential();
   if (credential.type !== Core.Cardano.CredentialType.KeyHash)
     throw new Error("Reward withdrawals require a wallet stake signing key.");

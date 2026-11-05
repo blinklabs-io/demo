@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import {
   ConfirmationFailure,
   readTransactionConfirmation,
@@ -154,7 +155,7 @@ function VotingForm({
     <div id="drep-vote">
       <Panel
         title="Your DRep vote"
-        action={<span className="status-badge">Preview</span>}
+        action={<span className="status-badge">{DINGO_NETWORK.label}</span>}
       >
         {closed ? (
           <p className="vote-closed">
@@ -191,7 +192,7 @@ function VotingForm({
         ) : !role.data || role.data.retired ? (
           <p className="text-sm text-slate-400">
             This wallet’s DRep credential is{" "}
-            {role.data?.retired ? "retired" : "not registered"} on Preview.
+            {role.data?.retired ? "retired" : "not registered"} on {DINGO_NETWORK.label}.
           </p>
         ) : (
           <>
@@ -262,7 +263,7 @@ function VotingForm({
                   </div>
                   <div>
                     <dt>Network</dt>
-                    <dd>Cardano Preview</dd>
+                    <dd>Cardano {DINGO_NETWORK.label}</dd>
                   </div>
                 </dl>
                 <p>

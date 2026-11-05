@@ -1,5 +1,6 @@
 import { expect, it, vi } from "vitest";
-import { fetchRecentBlocks, type BlockSummary } from "./recentBlocks";
+import { fetchRecentBlocks, recentBlocksQuery, type BlockSummary } from "./recentBlocks";
+import { queryClient } from "../queryClient";
 
 const hash = (n: number) => n.toString(16).padStart(64, "0");
 function block(height: number): BlockSummary {
@@ -44,4 +45,24 @@ it("rejects a parent edge with matching hash but inconsistent height", async () 
   const result = await fetchRecentBlocks();
   expect(result.blocks.map((row) => row.height)).toEqual([12]);
   expect(result.incomplete).toBe(true);
+});
+
+it.each([404, 503])("keeps an existing recent window when its ancestor endpoint returns %s", async (status) => {
+  const previous = { blocks: [block(12)], incomplete: false };
+  queryClient.setQueryData(recentBlocksQuery.queryKey, previous);
+  vi.mocked(fetch).mockResolvedValueOnce(response(block(13)))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ message: "Ancestor unavailable" }), { status }));
+  try {
+    await expect(queryClient.fetchQuery({ ...recentBlocksQuery, retry: false, staleTime: 0 })).rejects.toThrow("Ancestor unavailable");
+    expect(queryClient.getQueryData(recentBlocksQuery.queryKey)).toEqual(previous);
+  } finally { queryClient.clear(); }
+});
+
+it("clears the window when the latest-block endpoint itself returns not found", async () => {
+  queryClient.setQueryData(recentBlocksQuery.queryKey, { blocks: [block(12)], incomplete: false });
+  vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ message: "Not found" }), { status: 404 }));
+  try {
+    await expect(queryClient.fetchQuery({ ...recentBlocksQuery, retry: false, staleTime: 0 })).rejects.toThrow("Not found");
+    expect(queryClient.getQueryData(recentBlocksQuery.queryKey)).toBeUndefined();
+  } finally { queryClient.clear(); }
 });

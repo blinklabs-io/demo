@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../dingo/config";
 import { assertWalletSession } from "../dingo/walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import type { Cip30WalletApi } from "../dingo/cip30";
@@ -49,7 +50,7 @@ async function walletIdentity(
     address.getNetworkId() !== 0 ||
     key?.type !== Core.Cardano.CredentialType.KeyHash
   )
-    throw new Error("Connect a Preview wallet with a payment signing key.");
+    throw new Error(`Connect a ${DINGO_NETWORK.label} wallet with a payment signing key.`);
   return { address: address.toBech32(), key: key.hash.toString() };
 }
 async function validateAction(action: SurveyAction, key: string) {
@@ -61,8 +62,8 @@ async function validateAction(action: SurveyAction, key: string) {
       "/api/v0/genesis",
     ),
   ]);
-  if (genesis.network_magic !== 2)
-    throw new Error("Dingo’s explorer API is not on Preview.");
+  if (genesis.network_magic !== DINGO_NETWORK.networkMagic)
+    throw new Error(`Dingo’s explorer API is not on ${DINGO_NETWORK.label}.`);
   if (
     !Number.isSafeInteger(tip.epoch) ||
     !Number.isSafeInteger(tip.slot) ||

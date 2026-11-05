@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "./config";
 import { assertSignedWithKey } from "./signatureWitness";
 import { Core } from "@blaze-cardano/sdk";
 import {
@@ -143,8 +144,8 @@ async function validateTarget(
     if (error instanceof BlockfrostError && error.status === 404)
       throw new Error(
         target.kind === "pool"
-          ? "That stake pool is not registered on Preview."
-          : "That DRep is not registered on Preview.",
+          ? `That stake pool is not registered on ${DINGO_NETWORK.label}.`
+          : `That DRep is not registered on ${DINGO_NETWORK.label}.`,
         { cause: error },
       );
     throw error;

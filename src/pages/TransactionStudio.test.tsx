@@ -133,3 +133,30 @@ it("releases the busy lock when a query navigation cancels a pending build", asy
   ).toBe(false);
   expect(container.textContent).not.toContain("Old build failed");
 });
+
+it("imports raw CBOR directly without an era selection step", async () => {
+  expect(container.querySelector('[aria-label="Era for raw CBOR"]')).toBeNull();
+  const file = await pendingFile();
+  await act(async () => file.resolve("84a3008001800200a0f5f6"));
+  expect(readTransaction).toHaveBeenCalledWith("84a3008001800200a0f5f6");
+  expect(container.textContent).toContain("Rejected fixture CBOR");
+});
+
+it("inspects pasted CBOR immediately without another button click", async () => {
+  const field = container.querySelector<HTMLTextAreaElement>("#transaction-cbor")!;
+  const event = new Event("paste", { bubbles: true, cancelable: true });
+  const cbor = "84a3008001800200a0f5f6";
+  Object.defineProperty(event, "clipboardData", { value: { getData: () => cbor } });
+  await act(async () => field.dispatchEvent(event));
+  expect(readTransaction).toHaveBeenCalledWith(cbor);
+  expect(field.value).toBe(cbor);
+  expect(container.textContent).toContain("Rejected fixture CBOR");
+});
+
+it("opens a transaction passed from the explorer without another inspection step", async () => {
+  const cbor = "84a3008001800200a0f5f6";
+  await act(async () => router.navigate("/studio", { state: { transactionCbor: cbor } }));
+  expect(readTransaction).toHaveBeenCalledWith(cbor);
+  expect(container.querySelector<HTMLTextAreaElement>("#transaction-cbor")!.value).toBe(cbor);
+  expect(container.textContent).toContain("Rejected fixture CBOR");
+});

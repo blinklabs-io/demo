@@ -20,3 +20,10 @@ Transaction review screenshots use synthetic Preview wallet data.
 - [Explore navigation](explore-section1500.jpg) and [mobile](explore-section390.jpg)
 
 - [Compact desktop header](compact-header1500.jpg), [mobile](compact-header390.jpg), and [dismissible wallet error](wallet-error390.jpg) with a synthetic wallet
+
+## Direct previews and testnets
+
+- [Paste-to-inspect transaction studio](studio-frictionless1500.jpg) and [mobile](studio-frictionless390.jpg)
+- [Preprod explorer and network selection](network-preprod1500.jpg) and [mobile](network-preprod390.jpg)
+- [Automatic transaction mosaic](automatic-mosaic1500.jpg) and [mobile](automatic-mosaic390.jpg)
+- [Automatic weekly market chart](sundae-autochart1500.jpg) and [mobile](sundae-autochart390.jpg)

@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import {
   ConfirmationFailure,
   readTransactionConfirmation,
@@ -322,7 +323,7 @@ function DelegationForm({
           className="tool-review tool-transaction"
           aria-label="Delegation review"
         >
-          <span className="eyebrow">Unsigned delegation · Preview</span>
+          <span className="eyebrow">Unsigned delegation · {DINGO_NETWORK.label}</span>
           <h3>
             {draft.target.kind === "pool"
               ? "Stake pool delegation"

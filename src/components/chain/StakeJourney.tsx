@@ -123,7 +123,7 @@ function Journey({ stake }: { stake: string }) {
           </label>
         )}
         {!open && (
-          <button onClick={() => setOpen(true)}>Explore stake journey</button>
+          <button onClick={() => setOpen(true)}>Load rewards & delegation history</button>
         )}
       </header>
       {!open ? (

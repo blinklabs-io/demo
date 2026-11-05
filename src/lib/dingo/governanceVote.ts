@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "./config";
 import { assertSignedWithKey } from "./signatureWitness";
 import { assertWalletSession } from "./walletSession";
 import { Core } from "@blaze-cardano/sdk";
@@ -70,7 +71,7 @@ async function validateVote(
 ) {
   assertConnection();
   if ((await api.getNetworkId()) !== Core.NetworkId.Testnet)
-    throw new Error("Switch your wallet to Preview and reconnect.");
+    throw new Error(`Switch your wallet to ${DINGO_NETWORK.label} and reconnect.`);
   const [current, role, tip] = await Promise.all([
     blockfrostFetch<VotingProposal>(
       `/api/v0/governance/proposals/${encodeURIComponent(proposal.id)}`,
@@ -86,7 +87,7 @@ async function validateVote(
   )
     throw new Error("The governance action changed. Reload this page.");
   if (!role || role.retired)
-    throw new Error("This wallet is not a registered DRep on Preview.");
+    throw new Error(`This wallet is not a registered DRep on ${DINGO_NETWORK.label}.`);
   const credential = Core.Cardano.DRepID.toCredential(
     Core.Cardano.DRepID(role.drep_id),
   );

@@ -1,3 +1,4 @@
+import { assertPreviewSundae } from "./protocol";
 import { governanceError } from "../dingo/governanceVote";
 import { assertWalletSession } from "../dingo/walletSession";
 import { Blaze, Core, type Wallet } from "@blaze-cardano/sdk";
@@ -47,6 +48,7 @@ export async function buildSwapOrder({
   slippagePercent,
   assertConnection,
 }: BuildSwapArgs): Promise<BuiltSwap> {
+  assertPreviewSundae();
   try {
     await assertWalletSession(blaze.wallet, assertConnection);
     const changeAddress = (await blaze.wallet.getChangeAddress()).toBech32();

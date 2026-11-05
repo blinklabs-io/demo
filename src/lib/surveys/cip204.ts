@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../dingo/config";
 import { assertWalletSession } from "../dingo/walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import { blockfrostFetch, BlockfrostError } from "../dingo/blockfrost";
@@ -173,7 +174,7 @@ async function walletIdentities(
   ]);
   assertConnection();
   if (network !== 0 || !addresses.length)
-    throw new Error("Connect a Preview wallet with a stake key.");
+    throw new Error(`Connect a ${DINGO_NETWORK.label} wallet with a stake key.`);
   const identities = addresses.flatMap((hex) => {
     const address = Core.Address.fromBytes(Core.HexBlob(hex));
     const credential = address.asReward()?.getPaymentCredential();
@@ -183,7 +184,7 @@ async function walletIdentities(
       : [];
   });
   if (!identities.length)
-    throw new Error("CIP-204 requires a Preview stake signing key.");
+    throw new Error(`CIP-204 requires a ${DINGO_NETWORK.label} stake signing key.`);
   return identities;
 }
 
@@ -205,7 +206,7 @@ async function validate(proposal: VotingProposal) {
   )
     throw new Error("Governance action changed. Reload this page.");
   if (
-    genesis.network_magic !== 2 ||
+    genesis.network_magic !== DINGO_NETWORK.networkMagic ||
     !Number.isSafeInteger(genesis.epoch_length) ||
     genesis.epoch_length <= 0 ||
     !Number.isSafeInteger(tip.epoch) ||
@@ -215,7 +216,7 @@ async function validate(proposal: VotingProposal) {
     tip.epoch_slot < 0 ||
     tip.epoch_slot >= genesis.epoch_length
   )
-    throw new Error("Dingo did not return valid Preview timing.");
+    throw new Error(`Dingo did not return valid ${DINGO_NETWORK.label} timing.`);
   if (tip.epoch >= holderClosingEpoch(current))
     throw new Error("Holder answers have closed for this action.");
   return {

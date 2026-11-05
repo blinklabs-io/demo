@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../dingo/config";
 // Ported verbatim from dingo-sundae-preview/src/sundae/protocol.ts.
 import { EContractVersion, type ISundaeProtocolParamsFull } from "@sundaeswap/core";
 
@@ -136,3 +137,8 @@ export const POOL_PRESETS: PoolPreset[] = [
 ];
 
 export const DEFAULT_POOL = POOL_PRESETS[0];
+
+export function assertPreviewSundae() {
+  if (DINGO_NETWORK.id !== "preview")
+    throw new Error("This SundaeSwap deployment is configured for Preview. Switch networks before building an order.");
+}

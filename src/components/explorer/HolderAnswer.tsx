@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -199,7 +200,7 @@ function AnswerForm({
             </div>
             <p>
               Network fee <strong>{formatAda(draft.tx.body().fee())}</strong> ·
-              Preview
+              {DINGO_NETWORK.label}
             </p>
             <p>
               Your stake credential and answer will be public and permanent.

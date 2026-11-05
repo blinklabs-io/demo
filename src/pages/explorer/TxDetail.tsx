@@ -352,7 +352,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
                     to="/wallet/tools/transactions"
                     state={{ transactionCbor: transactionCborQuery.data.cbor }}
                   >
-                    Inspect &amp; export transaction →
+                    Open in transaction studio →
                   </Link>
                 )}
               </div>

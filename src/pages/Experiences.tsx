@@ -1,8 +1,12 @@
+import { useTipStore } from "../stores/tipStore";
+import { DINGO_NETWORK } from "../lib/dingo/config";
+import { useQuery } from "@tanstack/react-query";
+import { recentBlocksQuery, type BlockSummary } from "../lib/explorer/recentBlocks";
 import { creationTools, type CreationToolId } from "../lib/creationTools";
 import { ChainSnapshot } from "../components/explorer/ChainSnapshot";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { type NodeHealth, useNodeHealth } from "../lib/dingo/nodeHealth";
+import { useNodeHealth } from "../lib/dingo/nodeHealth";
 import { useMempoolStore } from "../stores/mempoolStore";
 import { BlockMosaic } from "../components/chain/BlockMosaic";
 
@@ -125,8 +129,15 @@ function ExperienceArt({ kind }: { kind: string }) {
 export default function Experiences() {
   const [filter, setFilter] = useState("All");
   const health = useNodeHealth();
-  const [inspectedBlock, setInspectedBlock] = useState<NodeHealth | null>(null);
-  const shownBlock = inspectedBlock ?? health.data;
+  const [inspectedBlock, setInspectedBlock] = useState<BlockSummary | null>(null);
+  const recent = useQuery({ ...recentBlocksQuery, enabled: inspectedBlock === null });
+  const candidate = recent.data?.blocks.find((block) => block.tx_count > 0) ?? recent.data?.blocks[0];
+  if (!inspectedBlock && candidate) setInspectedBlock(candidate);
+  const shownBlock = inspectedBlock ?? candidate;
+  useEffect(() => useTipStore.subscribe((next, previous) => {
+    if (next.revision !== previous.revision && next.lastAction !== "apply")
+      setInspectedBlock(null);
+  }), []);
   const pending = useMempoolStore((s) => s.pendingTxs.size);
   const stream = useMempoolStore((s) => s.status);
 
@@ -134,7 +145,7 @@ export default function Experiences() {
     <div className="experience-page">
       <section className="experience-hero">
         <div>
-          <span className="eyebrow">Build with Dingo · Cardano Preview</span>
+          <span className="eyebrow">Build with Dingo · Cardano {DINGO_NETWORK.label}</span>
           <h1>
             Build apps.
             <br />
@@ -168,7 +179,7 @@ export default function Experiences() {
                 ? `Epoch ${health.data.tipEpoch}`
                 : health.isError
                   ? "Connection unavailable"
-                  : "Connecting to Preview"}
+                  : `Connecting to ${DINGO_NETWORK.label}`}
             </small>
           </div>
           <Link className="orbit-node node-one" to="/wallet/tools/mint">
@@ -210,6 +221,63 @@ export default function Experiences() {
         </div>
       </section>
       <ChainSnapshot />
+      <section id="live-block" className="experience-live">
+        <header className="experience-section-heading">
+          <div>
+            <span className="eyebrow">
+              {inspectedBlock
+                ? "A recent block under your microscope"
+                : "Look inside the latest block"}
+            </span>
+            <h2>Every tile tells a story.</h2>
+          </div>
+          {shownBlock && (
+            <div className="experience-actions">
+              {inspectedBlock &&
+                health.data &&
+                inspectedBlock.hash !== health.data.tipHash && (
+                  <button type="button" disabled={recent.isFetching} onClick={() => {
+                    void recent.refetch().then(({ data }) => {
+                      const next = data?.blocks.find((block) => block.tx_count > 0) ?? data?.blocks[0];
+                      if (next) setInspectedBlock(next);
+                    });
+                  }}>
+                    {recent.isFetching ? "Refreshing…" : "Refresh recent activity →"}
+                  </button>
+                )}
+              <Link to={`/explorer/block/${shownBlock.hash}`}>
+                Open block #{shownBlock.height.toLocaleString()} ↗
+              </Link>
+            </div>
+          )}
+        </header>
+        <p>
+          See what transactions do and how much space they occupy. Select a tile
+          to inspect the transaction behind it.
+        </p>
+        {shownBlock ? (
+          <BlockMosaic
+            hash={shownBlock.hash}
+            total={shownBlock.tx_count}
+          />
+        ) : (
+          <div className="experience-unavailable">
+            <p>
+              {health.error
+                ? "Could not load the latest block from Dingo."
+                : "Waiting for chain data…"}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void health.refetch();
+              }}
+            >
+              Refresh chain data
+            </button>
+          </div>
+        )}
+      </section>
       <section id="experiences">
         <header className="experience-section-heading">
           <div>
@@ -261,63 +329,10 @@ export default function Experiences() {
             ))}
         </div>
       </section>
-      <section id="live-block" className="experience-live">
-        <header className="experience-section-heading">
-          <div>
-            <span className="eyebrow">
-              {inspectedBlock
-                ? "A block under your microscope"
-                : "Look inside the latest block"}
-            </span>
-            <h2>Every tile tells a story.</h2>
-          </div>
-          {shownBlock && (
-            <div className="experience-actions">
-              {inspectedBlock &&
-                health.data &&
-                inspectedBlock.tipHash !== health.data.tipHash && (
-                  <button type="button" onClick={() => setInspectedBlock(null)}>
-                    Inspect latest block →
-                  </button>
-                )}
-              <Link to={`/explorer/block/${shownBlock.tipHash}`}>
-                Open block #{shownBlock.tipHeight.toLocaleString()} ↗
-              </Link>
-            </div>
-          )}
-        </header>
-        <p>
-          See what transactions do and how much space they occupy. Select a tile
-          to inspect the transaction behind it.
-        </p>
-        {shownBlock ? (
-          <BlockMosaic
-            hash={shownBlock.tipHash}
-            total={shownBlock.tipTxCount}
-            onExplore={() => setInspectedBlock(shownBlock)}
-          />
-        ) : (
-          <div className="experience-unavailable">
-            <p>
-              {health.error
-                ? "Could not load the latest block from Dingo."
-                : "Waiting for chain data…"}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                void health.refetch();
-              }}
-            >
-              Refresh chain data
-            </button>
-          </div>
-        )}
-      </section>
       <footer className="experience-footnote">
         <strong>Built with Dingo. From development to operation.</strong>
         <p>
-          Preview is a public test network. Transactions use test ADA. Your
+          {DINGO_NETWORK.label} is a public test network. Transactions use test ADA. Your
           wallet signs; Dingo provides chain data and submits transactions.
         </p>
         <Link to="/api">See the APIs powering these experiences →</Link>

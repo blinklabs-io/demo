@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
@@ -38,7 +39,7 @@ export function ChainSnapshot() {
       <header className="experience-section-heading">
         <div>
           <span className="eyebrow">Live from Dingo</span>
-          <h2>Preview, right now.</h2>
+          <h2>{DINGO_NETWORK.label}, right now.</h2>
         </div>
         <Link to="/explorer">Explore the chain →</Link>
       </header>

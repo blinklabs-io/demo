@@ -145,8 +145,7 @@ Confirmation lookup failures offer a retry; an included invalid transaction
 remains a terminal failure.
 
 Signing helpers check both the current connection and the wallet network before
-requesting a signature and again before submission. Dingo's genesis establishes
-Preview; CIP-30's network ID distinguishes mainnet from testnets, not Preview
+requesting a signature and again before submission. Dingo's genesis verifies the selected network; CIP-30's network ID distinguishes mainnet from testnets, not Preview
 from Preprod. Feature-specific checks additionally cover stake credentials,
 eligibility, validity intervals, fees and preservation of the reviewed body.
 Mutations are never automatically retried.
@@ -191,6 +190,11 @@ flowchart LR
 | Local wallet | Explicit connection, public account information, spendable balances and signatures; keys stay in the extension |
 | Browser | Drafts, CBOR inspection, metadata editing, file hashing, visualizations and JSON exports |
 | Publisher media | Optional pool/token artwork and metadata links; these do not replace Dingo as the chain-data source |
+
+Switching networks disconnects the wallet and stops the old streams before
+persisting the new selection and reloading. Query caches, pending operations and
+singleton API clients do not survive that boundary. The current capability is
+preserved; entity-specific routes return to a contextual list.
 
 The API playground accepts relative REST GET paths and a fixed allowlist of
 read-only Mesh POST endpoints. Editing the target, path or body cancels an

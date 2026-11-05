@@ -1,3 +1,4 @@
+import { assertPreviewSundae } from "./protocol";
 import { Blaze, Core, type Wallet } from "@blaze-cardano/sdk";
 import { AssetAmount } from "@sundaeswap/asset";
 import {
@@ -569,6 +570,7 @@ export async function buildV4Swap(
   budget: bigint,
   assertConnection: () => void,
 ) {
+  assertPreviewSundae();
   assertConnection();
   if ((offeredIndex !== 0 && offeredIndex !== 1) || amount <= 0n || budget < 0n)
     throw new Error("Invalid V4 offered amount or fee cap.");

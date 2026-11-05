@@ -1,6 +1,7 @@
 import { Blaze, ColdWallet, Core } from "@blaze-cardano/sdk";
 import { parseAdaToLovelace } from "../dingo/amount";
 import { blockfrostFetch } from "../dingo/blockfrost";
+import { DINGO_NETWORK } from "../dingo/config";
 import {
   assertDingoNetwork,
   getDingoProvider,
@@ -64,7 +65,7 @@ function entries(cbor: string): Map<number, string> {
     throw new Error("Unexpected data after CBOR map.");
   return result;
 }
-export function readTransaction(input: string, selectedEra?: Era) {
+function readTransactionForEra(input: string, selectedEra?: Era) {
   if (input.length > MAX_HEX + 4096)
     throw new Error("Transaction file is too large (maximum 64 KiB of CBOR).");
   let value = input.trim(),
@@ -92,15 +93,25 @@ export function readTransaction(input: string, selectedEra?: Era) {
     encoded = parts(cbor);
   // The SDK retains original body bytes; reject duplicate body/witness keys before decoding.
   const fields = entries(encoded[0]);
+  if (
+    [...fields.keys()].some(
+      (key) =>
+        ![
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+          22,
+        ].includes(key),
+    )
+  )
+    throw new Error("Transaction contains unsupported body fields.");
   if (era === "BabbageEra" && [...fields.keys()].some((key) => key >= 19))
     throw new Error(
-      "Transaction contains fields introduced after Babbage. Choose Conway.",
+      "Transaction contains fields introduced after Babbage.",
     );
   if (era === "ConwayEra" && [...fields.keys()].some((key) => key >= 23))
     throw new Error("Transaction contains fields introduced after Conway.");
   if (era === "ConwayEra" && fields.has(6))
     throw new Error(
-      "Legacy protocol updates are not supported in Conway. Choose Babbage.",
+      "Legacy protocol updates are not supported in Conway.",
     );
   const witnessFields = entries(encoded[1]);
   const maxWitnessKey = era === "BabbageEra" ? 6 : 7;
@@ -108,16 +119,46 @@ export function readTransaction(input: string, selectedEra?: Era) {
     throw new Error(
       `Transaction contains witness fields unsupported in ${era}.`,
     );
+  if (era === "BabbageEra") {
+    const sets = [
+      ...[0, 4, 13, 14, 18].map((key) => fields.get(key)),
+      ...[0, 1, 2, 3, 4, 6].map((key) => witnessFields.get(key)),
+    ];
+    if (
+      sets.some(
+        (value) =>
+          value &&
+          new Core.CborReader(Core.HexBlob(value)).peekState() ===
+            Core.CborReaderState.Tag,
+      )
+    )
+      throw new Error("Tagged transaction sets require Conway.");
+    const redeemers = witnessFields.get(5);
+    if (
+      redeemers &&
+      new Core.CborReader(Core.HexBlob(redeemers)).peekState() ===
+        Core.CborReaderState.StartMap
+    )
+      throw new Error("Map-encoded redeemers require Conway.");
+  }
   const tx = Core.Transaction.fromCbor(Core.TxCBOR(cbor));
+  if (
+    (tx.witnessSet().redeemers()?.values() ?? []).some(
+      (redeemer) => redeemer.tag() > (era === "ConwayEra" ? 5 : 3),
+    )
+  )
+    throw new Error(
+      `Transaction contains redeemer purposes unsupported in ${era}.`,
+    );
   for (const certificate of tx.body().certs()?.values() ?? []) {
     const kind = certificate.kind();
     if (era === "BabbageEra" && kind >= 7)
       throw new Error(
-        "Transaction contains Conway certificates. Choose Conway.",
+        "Transaction contains Conway certificates.",
       );
     if (era === "ConwayEra" && (kind === 5 || kind === 6))
       throw new Error(
-        "Genesis delegation and MIR certificates are not supported in Conway. Choose Babbage.",
+        "Genesis delegation and MIR certificates are not supported in Conway.",
       );
   }
   const auxiliary = tx.auxiliaryData();
@@ -146,6 +187,36 @@ export function readTransaction(input: string, selectedEra?: Era) {
   if (tx.body().toCbor() !== encoded[0])
     throw new Error("Decoder did not preserve the transaction body.");
   return { cbor, tx, era, encoded, id: String(tx.getId()) };
+}
+export function readTransaction(input: string, selectedEra?: Era) {
+  const envelope = input.trim().startsWith("{");
+  if (envelope || selectedEra) {
+    const transaction = readTransactionForEra(input, selectedEra);
+    return {
+      ...transaction,
+      eraSource: envelope ? ("envelope" as const) : ("provided" as const),
+      compatibleEras: [transaction.era],
+    };
+  }
+  const compatible: ReturnType<typeof readTransactionForEra>[] = [];
+  const errors: string[] = [];
+  for (const era of ["ConwayEra", "BabbageEra"] as const) {
+    try {
+      compatible.push(readTransactionForEra(input, era));
+    } catch (error) {
+      errors.push(
+        `${era.replace("Era", "")}: ${error instanceof Error ? error.message : "Invalid transaction"}`,
+      );
+    }
+  }
+  if (!compatible.length) throw new Error(errors.join(" "));
+  // Shared-era bytes cannot prove their original era. Prefer the current testnet export format.
+  return {
+    ...compatible[0],
+    eraSource:
+      compatible.length > 1 ? ("compatible" as const) : ("features" as const),
+    compatibleEras: compatible.map((transaction) => transaction.era),
+  };
 }
 export type StudioTransaction = ReturnType<typeof readTransaction>;
 export function transactionEnvelope(transaction: StudioTransaction) {
@@ -193,8 +264,10 @@ export async function buildPayment(
     blockfrostFetch<{ slot: number }>("/api/v0/blocks/latest"),
     blockfrostFetch<{ network_magic: number }>("/api/v0/genesis"),
   ]);
-  if (genesis.network_magic !== 2)
-    throw new Error("Blockfrost API must serve Preview (network magic 2).");
+  if (genesis.network_magic !== DINGO_NETWORK.networkMagic)
+    throw new Error(
+      `Blockfrost API must serve ${DINGO_NETWORK.label} (network magic ${DINGO_NETWORK.networkMagic}).`,
+    );
   if (!Number.isSafeInteger(tip.slot) || tip.slot < 0)
     throw new Error("Dingo returned an invalid tip slot.");
   const funds = outputs.filter(
@@ -276,7 +349,7 @@ export async function addWalletWitness(
   const provider = getDingoProvider();
   assertConnection();
   if ((await api.getNetworkId()) !== 0)
-    throw new Error("Connect a Preview wallet.");
+    throw new Error("Connect a testnet wallet.");
   await assertDingoNetwork(provider);
   const body = transaction.tx.body();
   if (body.networkId() !== undefined && body.networkId() !== 0)
@@ -312,7 +385,7 @@ export async function addWalletWitness(
     resolved.some((u) => u.output().address().getNetworkId() !== 0)
   )
     throw new Error(
-      "Dingo must resolve every input, collateral and reference input on Preview before signing.",
+      `Dingo must resolve every input, collateral and reference input on ${DINGO_NETWORK.label} before signing.`,
     );
   assertConnection();
   const response = hex(await api.signTx(transaction.cbor, true));
@@ -373,5 +446,8 @@ export async function addWalletWitness(
     result.encoded[3] !== transaction.encoded[3]
   )
     throw new Error("Witness merge changed the original transaction.");
-  return result;
+  return transaction.eraSource === "features" ||
+    transaction.eraSource === "compatible"
+    ? readTransaction(result.cbor)
+    : { ...result, eraSource: transaction.eraSource };
 }

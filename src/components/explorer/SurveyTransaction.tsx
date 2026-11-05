@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -139,7 +140,7 @@ function TransactionForm({
   if (!api)
     return (
       <div className="survey-connect">
-        <p>Connect a Preview wallet to publish on chain.</p>
+        <p>Connect a {DINGO_NETWORK.label} wallet to publish on chain.</p>
         <WalletConnectSummary />
       </div>
     );
@@ -163,7 +164,7 @@ function TransactionForm({
       )}
       {prepared && (
         <section className="survey-review">
-          <span className="eyebrow">Review before signing · Preview</span>
+          <span className="eyebrow">Review before signing · {DINGO_NETWORK.label}</span>
           <h3>
             {prepared.action.kind === "create"
               ? prepared.action.title
