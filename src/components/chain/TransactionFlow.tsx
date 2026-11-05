@@ -2,7 +2,9 @@ import { useId, useMemo, useState } from "react";
 import { Core } from "@blaze-cardano/sdk";
 import { Link } from "../NetworkLink";
 import { fraction } from "../../lib/chain/geometry";
-import { formatAda, shortenHash } from "../../lib/format";
+import { formatAda, shortenHash, formatAddress } from "../../lib/format";
+import { CopyButton } from "../explorer/CopyButton";
+import "./transaction-flow.css";
 import { assetName } from "../../lib/tools/transactions";
 interface Utxo {
   address: string;
@@ -24,6 +26,27 @@ interface FlowNode {
   label: string;
   value: bigint;
   href?: string;
+  entries?: number;
+}
+function byAddress(rows: FlowNode[]) {
+  const groups = new Map<string, FlowNode>();
+  for (const row of rows) {
+    const key = row.href ?? row.id;
+    const previous = groups.get(key);
+    groups.set(
+      key,
+      previous
+        ? {
+            ...previous,
+            value: previous.value + row.value,
+            entries: (previous.entries ?? 1) + 1,
+          }
+        : { ...row, entries: 1 },
+    );
+  }
+  return [...groups.values()].sort((a, b) =>
+    a.value === b.value ? 0 : a.value > b.value ? -1 : 1,
+  );
 }
 function grouped(rows: FlowNode[]) {
   if (rows.length <= 5) return rows;
@@ -50,6 +73,9 @@ export function TransactionFlow({
   error?: unknown;
 }) {
   const [unit, setUnit] = useState("lovelace");
+  const [aggregate, setAggregate] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+  const [focus, setFocus] = useState<string | null>(null);
   const uid = useId();
   const parsed = useMemo(() => {
     if (!cbor) return null;
@@ -104,7 +130,7 @@ export function TransactionFlow({
     : parsed.body.collateralReturn()
       ? [
           {
-            address: parsed.body.collateralReturn()!.address().toBech32(),
+            address: formatAddress(parsed.body.collateralReturn()!.address()),
             tx_hash: summary.hash,
             output_index: parsed.body.outputs().length,
             collateral: true,
@@ -189,8 +215,14 @@ export function TransactionFlow({
         value: collected,
       });
   }
-  const from = grouped(sources),
-    to = grouped(sinks);
+  const sourceRows = aggregate ? byAddress(sources) : sources;
+  const sinkRows = aggregate ? byAddress(sinks) : sinks;
+  const from = expanded ? sourceRows : grouped(sourceRows),
+    to = expanded ? sinkRows : grouped(sinkRows);
+  const selected = [
+    ...from.map((n) => ({ ...n, side: "Source" })),
+    ...to.map((n) => ({ ...n, side: "Destination" })),
+  ].find((n) => `${n.side}:${n.id}` === focus);
   const totalIn = sources.reduce((n, r) => n + r.value, 0n),
     totalOut = sinks.reduce((n, r) => n + r.value, 0n);
   const max = totalIn > totalOut ? totalIn : totalOut;
@@ -220,6 +252,31 @@ export function TransactionFlow({
           </select>
         </label>
       </header>
+      <div className="flow-controls">
+        <label>
+          <input
+            type="checkbox"
+            checked={aggregate}
+            onChange={(e) => {
+              setAggregate(e.target.checked);
+              setFocus(null);
+            }}
+          />{" "}
+          Group repeated addresses
+        </label>
+        {(sourceRows.length > 5 || sinkRows.length > 5) && (
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded
+              ? "Show main branches"
+              : `Show all ${sourceRows.length + sinkRows.length} branches`}
+          </button>
+        )}
+        <span>Select a branch to inspect its value.</span>
+      </div>
       <div className="river-totals">
         <div>
           <span>Sources</span>
@@ -261,11 +318,28 @@ export function TransactionFlow({
                       width: `${Math.max(1, 100 * fraction(n.value, max))}%`,
                     }}
                   />
-                  {n.href ? (
-                    <Link to={n.href}>{shortenHash(n.label, 6)}</Link>
-                  ) : (
-                    <span>{n.label}</span>
-                  )}
+                  <button
+                    type="button"
+                    aria-pressed={
+                      n.id === "other"
+                        ? undefined
+                        : focus ===
+                          `${index === 0 ? "Source" : "Destination"}:${n.id}`
+                    }
+                    onClick={() => {
+                      if (n.id === "other") setExpanded(true);
+                      else
+                        setFocus(
+                          `${index === 0 ? "Source" : "Destination"}:${n.id}`,
+                        );
+                    }}
+                  >
+                    {n.id === "other"
+                      ? `Show all ${n.label}`
+                      : n.href
+                        ? shortenHash(n.label, 6)
+                        : n.label}
+                  </button>
                   <strong>{format(n.value)}</strong>
                 </div>
               ))}
@@ -276,7 +350,7 @@ export function TransactionFlow({
       <svg
         className="river-svg"
         viewBox={`0 0 1000 ${height}`}
-        role="img"
+        role="group"
         aria-labelledby={`${uid}-title`}
       >
         <title id={`${uid}-title`}>
@@ -359,23 +433,68 @@ export function TransactionFlow({
                   fill="none"
                   stroke={left ? "#35dcb9" : "#af9eff"}
                   strokeWidth={thickness}
-                  opacity=".32"
+                  opacity={
+                    !selected ||
+                    focus === `${left ? "Source" : "Destination"}:${n.id}`
+                      ? ".65"
+                      : ".12"
+                  }
                 />
-                {n.href ? (
-                  <Link
-                    to={n.href}
-                    aria-label={`${n.label}: ${format(n.value)}`}
-                  >
-                    {node}
-                  </Link>
-                ) : (
-                  node
-                )}
+                <g
+                  role="button"
+                  tabIndex={0}
+                  className="flow-branch"
+                  aria-label={
+                    n.id === "other"
+                      ? `Show all ${n.label}`
+                      : `Inspect ${left ? "source" : "destination"} ${n.label}: ${format(n.value)}`
+                  }
+                  aria-pressed={
+                    n.id === "other"
+                      ? undefined
+                      : focus === `${left ? "Source" : "Destination"}:${n.id}`
+                  }
+                  onClick={() => {
+                    if (n.id === "other") setExpanded(true);
+                    else setFocus(`${left ? "Source" : "Destination"}:${n.id}`);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      if (n.id === "other") setExpanded(true);
+                      else
+                        setFocus(`${left ? "Source" : "Destination"}:${n.id}`);
+                    }
+                  }}
+                >
+                  {node}
+                </g>
               </g>
             );
           }),
         )}
       </svg>
+      {selected && (
+        <aside className="flow-inspector" aria-label="Selected flow branch">
+          <div>
+            <span className="eyebrow">
+              {selected.side} · {selected.entries ?? 1} value{" "}
+              {(selected.entries ?? 1) === 1 ? "entry" : "entries"}
+            </span>
+            <strong>{format(selected.value)}</strong>
+          </div>
+          <div className="flow-inspector-address">
+            <code>{selected.label}</code>
+            {selected.href && (
+              <CopyButton value={selected.label} label="flow address" />
+            )}
+          </div>
+          {selected.href && <Link to={selected.href}>Explore address →</Link>}
+          <button type="button" onClick={() => setFocus(null)}>
+            Clear selection
+          </button>
+        </aside>
+      )}
       <details className="chain-records">
         <summary>All sources &amp; destinations · {active}</summary>
         {[

@@ -1,3 +1,4 @@
+import { Core } from "@blaze-cardano/sdk";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router";
@@ -18,7 +19,7 @@ vi.mock("../../lib/dingo/governanceVote", () => ({
   governanceError: (error: unknown) => error,
   prepareGovernanceVote: async (_api: unknown, _proposal: unknown, choice: string, assert: () => void) => {
     assert();
-    return { choice, tx: { body: () => ({ fee: () => 170000n }) } };
+    return { choice, tx: new Core.Transaction(new Core.TransactionBody(Core.CborSet.fromCore([], Core.TransactionInput.fromCore), [], 170000n), new Core.TransactionWitnessSet()) };
   },
   submitGovernanceVote: async (_api: unknown, _proposal: unknown, _prepared: unknown, assert: () => void) => {
     assert();

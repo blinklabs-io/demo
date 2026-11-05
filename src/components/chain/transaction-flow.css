@@ -1,0 +1,115 @@
+.flow-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin: 18px 0;
+  color: #a8c4cf;
+  font-size: 12px;
+}
+.flow-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.flow-controls input {
+  accent-color: #54e7c5;
+}
+.flow-controls button,
+.flow-inspector button {
+  padding: 7px 12px;
+  border: 1px solid #426875;
+  border-radius: 9px;
+  color: #c8f6ea;
+  background: #153d36;
+  cursor: pointer;
+}
+.flow-controls > span {
+  margin-left: auto;
+  color: #8fa7b9;
+}
+.flow-branch {
+  cursor: pointer;
+  outline: none;
+}
+.flow-branch:hover rect,
+.flow-branch:focus-visible rect,
+.flow-branch[aria-pressed="true"] rect {
+  stroke: #f5d17e;
+  stroke-width: 2;
+}
+.flow-inspector {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 20px;
+  margin: 16px 0;
+  border: 1px solid #678da0;
+  border-radius: 16px;
+  background: linear-gradient(120deg, #17463d, #302449);
+}
+.flow-inspector > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+.flow-inspector strong {
+  font-size: 24px;
+  color: #8df3d8;
+}
+.flow-inspector-address {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.flow-inspector-address code {
+  overflow-wrap: anywhere;
+  color: #cde3ee;
+  font-size: 12px;
+}
+.flow-inspector > a {
+  color: #8bd4fa;
+  font-size: 13px;
+}
+.flow-inspector > button {
+  justify-self: end;
+}
+.river-mobile-node > button {
+  position: relative;
+  text-align: left;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #c4e6e3;
+  font-size: 12px;
+  cursor: pointer;
+}
+.river-mobile-node > button[aria-pressed="true"] {
+  color: #ffe0a0;
+}
+.river-svg path {
+  transition: opacity 0.2s ease;
+}
+.river-svg .flow-branch[aria-pressed="true"] rect {
+  fill: #44374f;
+}
+@media (max-width: 600px) {
+  .flow-controls > span {
+    margin-left: 0;
+  }
+  .flow-inspector {
+    padding: 14px;
+  }
+  .flow-inspector strong {
+    font-size: 20px;
+  }
+  .flow-inspector-address {
+    align-items: flex-start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .river-svg path {
+    transition: none;
+  }
+}

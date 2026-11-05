@@ -1,3 +1,5 @@
+import type { Core } from "@blaze-cardano/sdk";
+
 // A grouping-only formatter applied to the whole-ADA part as a bigint
 // (Intl.NumberFormat accepts bigint directly, exactly - no float round-trip).
 // The fractional part is derived from string digits of the remainder, so
@@ -26,4 +28,8 @@ export function shortenHash(hash: string, visible = 8): string {
     return hash;
   }
   return `${hash.slice(0, visible)}...${hash.slice(-visible)}`;
+}
+
+export function formatAddress(address: Core.Address): string {
+  return address.asByron() ? address.toBase58() : address.toBech32();
 }

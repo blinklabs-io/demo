@@ -1,3 +1,4 @@
+import { TransactionRehearsal } from "../wallet/TransactionRehearsal";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useState } from "react";
@@ -164,7 +165,9 @@ function TransactionForm({
       )}
       {prepared && (
         <section className="survey-review">
-          <span className="eyebrow">Review before signing · {DINGO_NETWORK.label}</span>
+          <span className="eyebrow">
+            Review before signing · {DINGO_NETWORK.label}
+          </span>
           <h3>
             {prepared.action.kind === "create"
               ? prepared.action.title
@@ -224,6 +227,7 @@ function TransactionForm({
               ))}
             </dl>
           )}
+          <TransactionRehearsal tx={prepared.tx} />
           <p className="survey-fee">
             Network fee <strong>{formatAda(prepared.tx.body().fee())}</strong>
           </p>
