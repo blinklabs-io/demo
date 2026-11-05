@@ -1,10 +1,11 @@
+import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
 import { StakeJourney } from "../../components/chain/StakeJourney";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { compactAda } from "../../lib/visualFormat";
 import { Distribution } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { QueryState } from "../../components/explorer/QueryState";
@@ -53,6 +54,8 @@ export default function AccountDetail() {
     enabled: Boolean(stakeAddress),
   });
 
+  const notFound = summaryQuery.error instanceof BlockfrostError && summaryQuery.error.status === 404;
+
   return (
     <div className="flex flex-col gap-4 detail-showcase">
       <PageIntro
@@ -67,7 +70,7 @@ export default function AccountDetail() {
           </>
         }
       >
-        <QueryState
+        <QueryState hasData={summaryQuery.data !== undefined}
           isLoading={summaryQuery.isLoading}
           error={summaryQuery.error}
           notFoundLabel="Stake account not found."
@@ -188,63 +191,65 @@ export default function AccountDetail() {
         </QueryState>
       </Panel>
 
-      {summaryQuery.data && <StakeJourney stakeAddress={stakeAddress!} />}
+      {!notFound && (
+        <>
+          {summaryQuery.data && <StakeJourney stakeAddress={stakeAddress!} />}
 
-      <details className="detail-disclosure">
-        <summary>UTxOs</summary>
-        <Panel title="UTxOs">
-          <PaginatedList<AccountUtxoRow>
-            queryKey={["dingo", "account", stakeAddress, "utxos"]}
-            buildUrl={(page, count) =>
-              `/api/v0/accounts/${stakeAddress}/utxos?page=${page}&count=${count}`
-            }
-            keyFor={(row) => `${row.tx_hash}:${row.output_index}`}
-            emptyLabel="No UTxOs delegating to this account."
-            renderItem={(row) => (
-              <span>
-                <HashLink kind="address" id={row.address} visible={10} /> ·{" "}
-                <HashLink kind="tx" id={row.tx_hash} visible={8} />#
-                {row.output_index}
-              </span>
-            )}
-          />
-        </Panel>
-      </details>
+          <LazyDisclosure key={`${stakeAddress}:utxos`} title="UTxOs">
+            <Panel title="UTxOs">
+              <PaginatedList<AccountUtxoRow>
+                queryKey={["dingo", "account", stakeAddress, "utxos"]}
+                buildUrl={(page, count) =>
+                  `/api/v0/accounts/${stakeAddress}/utxos?page=${page}&count=${count}`
+                }
+                keyFor={(row) => `${row.tx_hash}:${row.output_index}`}
+                emptyLabel="No UTxOs delegating to this account."
+                renderItem={(row) => (
+                  <span>
+                    <HashLink kind="address" id={row.address} visible={10} /> ·{" "}
+                    <HashLink kind="tx" id={row.tx_hash} visible={8} />#
+                    {row.output_index}
+                  </span>
+                )}
+              />
+            </Panel>
+          </LazyDisclosure>
 
-      <details className="detail-disclosure">
-        <summary>Associated addresses</summary>
-        <Panel title="Associated addresses">
-          <PaginatedList<AssociatedAddressRow>
-            queryKey={["dingo", "account", stakeAddress, "addresses"]}
-            buildUrl={(page, count) =>
-              `/api/v0/accounts/${stakeAddress}/addresses?page=${page}&count=${count}`
-            }
-            keyFor={(row) => row.address}
-            emptyLabel="No associated addresses."
-            renderItem={(row) => (
-              <HashLink kind="address" id={row.address} visible={12} />
-            )}
-          />
-        </Panel>
-      </details>
+          <LazyDisclosure key={`${stakeAddress}:addresses`} title="Associated addresses">
+            <Panel title="Associated addresses">
+              <PaginatedList<AssociatedAddressRow>
+                queryKey={["dingo", "account", stakeAddress, "addresses"]}
+                buildUrl={(page, count) =>
+                  `/api/v0/accounts/${stakeAddress}/addresses?page=${page}&count=${count}`
+                }
+                keyFor={(row) => row.address}
+                emptyLabel="No associated addresses."
+                renderItem={(row) => (
+                  <HashLink kind="address" id={row.address} visible={12} />
+                )}
+              />
+            </Panel>
+          </LazyDisclosure>
 
-      <Panel title="Transactions">
-        <PaginatedList<AccountTransactionRow>
-          queryKey={["dingo", "account", stakeAddress, "transactions"]}
-          buildUrl={(page, count) =>
-            `/api/v0/accounts/${stakeAddress}/transactions?page=${page}&count=${count}&order=desc`
-          }
-          keyFor={(row) => row.tx_hash}
-          emptyLabel="No transactions for this stake account."
-          renderItem={(row) => (
-            <span>
-              <HashLink kind="tx" id={row.tx_hash} visible={12} /> · block{" "}
-              {row.block_height} ·{" "}
-              {new Date(row.block_time * 1000).toLocaleString()}
-            </span>
-          )}
-        />
-      </Panel>
+          <Panel title="Transactions">
+            <PaginatedList<AccountTransactionRow>
+              queryKey={["dingo", "account", stakeAddress, "transactions"]}
+              buildUrl={(page, count) =>
+                `/api/v0/accounts/${stakeAddress}/transactions?page=${page}&count=${count}&order=desc`
+              }
+              keyFor={(row) => row.tx_hash}
+              emptyLabel="No transactions for this stake account."
+              renderItem={(row) => (
+                <span>
+                  <HashLink kind="tx" id={row.tx_hash} visible={12} /> · block{" "}
+                  {row.block_height} ·{" "}
+                  {new Date(row.block_time * 1000).toLocaleString()}
+                </span>
+              )}
+            />
+          </Panel>
+        </>
+      )}
     </div>
   );
 }

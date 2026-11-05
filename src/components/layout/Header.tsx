@@ -1,82 +1,74 @@
-import {
-  isParticipationPath,
-  isExplorePath,
-  normalizePath,
-} from "../../lib/navigation";
-import { Link, NavLink, useLocation } from "react-router";
+import { useRef, useState } from "react";
+import { mainNavigation, normalizePath } from "../../lib/navigation";
+import { Link, useLocation } from "react-router";
 import { NodeHealthStrip } from "./NodeHealthStrip";
 import { GlobalLookup } from "./GlobalLookup";
 
-const links = [
-  ["/", "Discover", "✦"],
-  ["/explorer", "Explore", "◫"],
-  ["/participate", "Participate", "◉"],
-  ["/wallet/swap", "Swap", "⇄"],
-  ["/wallet/tools", "Create & build", "⌁"],
-  ["/wallet", "Wallet", "▣"],
-  ["/api", "API playground", "⌘"],
-];
-
-export function Header() {
-  const { pathname: rawPathname } = useLocation();
-  const pathname = normalizePath(rawPathname);
-  function groupedActive(to: string) {
-    return to === "/explorer"
-      ? isExplorePath(pathname)
-      : to === "/participate"
-        ? isParticipationPath(pathname)
-        : to === "/wallet"
-          ? pathname === "/wallet" ||
-            /^\/wallet\/(send|delegate)(\/|$)/.test(pathname)
-          : pathname === to;
-  }
+function Sidebar({ pathname }: { pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const toggle = useRef<HTMLButtonElement>(null);
   return (
-    <>
-      <aside className="sidebar">
-        <NavLink to="/" className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            d
-          </span>
+    <aside
+      className="sidebar"
+      onKeyDown={(event) => {
+        if (open && event.key === "Escape") {
+          setOpen(false);
+          toggle.current?.focus();
+        }
+      }}
+    >
+      <div className="sidebar-brand-row">
+        <Link to="/" className="brand">
+          <span className="brand-mark" aria-hidden="true">d</span>
           <span>
             dingo<span className="brand-sub">BUILD WITH DINGO</span>
           </span>
-        </NavLink>
-        <p className="nav-caption">APPS & EXPLORER</p>
-        <nav aria-label="Main navigation">
-          {links.map(([to, label, icon]) =>
-            to === "/explorer" || to === "/participate" || to === "/wallet" ? (
-              <Link
-                key={to}
-                to={to}
-                className={`side-link ${groupedActive(to) ? "selected" : ""}`}
-              >
-                <span className="nav-icon" aria-hidden="true">
-                  {icon}
-                </span>
-                {label}
-              </Link>
-            ) : (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === "/explorer" || to === "/" || to === "/wallet"}
-                className={({ isActive }) =>
-                  `side-link ${isActive ? "selected" : ""}`
-                }
-              >
-                <span className="nav-icon" aria-hidden="true">
-                  {icon}
-                </span>
-                {label}
-              </NavLink>
-            ),
-          )}
-        </nav>
-        <div className="sidebar-footer">
-          <span className="live-dot" /> Powered by Dingo
-          <p>Apps powered by a Cardano node.</p>
-        </div>
-      </aside>
+        </Link>
+        <button
+          type="button"
+          className="mobile-nav-toggle"
+          ref={toggle}
+          aria-label={open ? "Close navigation" : "Open navigation"}
+          aria-expanded={open}
+          aria-controls="main-navigation"
+          onClick={() => setOpen((value) => !value)}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d={open ? "m6 6 12 12M6 18 18 6" : "M4 6h16M4 12h16M4 18h16"} />
+          </svg>
+          Menu
+        </button>
+      </div>
+      <p className="nav-caption">DINGO WORKSPACE</p>
+      <nav id="main-navigation" aria-label="Main navigation" data-open={open}>
+        {mainNavigation.map(({ to, label, icon, matches, group, area }) => (
+          <Link
+            key={to}
+            data-area={area}
+            to={to}
+            className={`side-link ${matches(pathname) ? "selected" : ""}`}
+            aria-current={!group && matches(pathname) ? "page" : undefined}
+            onClick={() => setOpen(false)}
+          >
+            <span className="nav-icon" aria-hidden="true">{icon}</span>
+            {label}
+          </Link>
+        ))}
+      </nav>
+      <div className="sidebar-footer">
+        <span className="live-dot" /> Powered by Dingo
+        <p>Develop and operate on Cardano.</p>
+      </div>
+    </aside>
+  );
+}
+
+export function Header() {
+  const { pathname } = useLocation();
+  const path = normalizePath(pathname);
+  return (
+    <>
+      <Sidebar key={path} pathname={path} />
       <header className="workspace-header">
         <GlobalLookup />
         <div className="health-row">

@@ -1,16 +1,15 @@
 import { Link } from "react-router";
-import { EmptyState } from "../components/explorer/Visuals";
+import { EmptyState, PageIntro } from "../components/explorer/Visuals";
 export default function NotFound() {
   return (
-    <EmptyState
-      icon="⌁"
-      title="This path is off the chain"
-      detail="The page you are looking for does not exist."
-      action={
-        <Link to="/explorer" className="status-badge positive">
-          Back to overview →
-        </Link>
-      }
-    />
+    <div className="detail-showcase">
+      <PageIntro eyebrow="Dingo workspace" title="Page not found" symbol="⌕" />
+      <EmptyState
+        icon="⌁"
+        title="Choose a Dingo capability"
+        detail="This route is not available. Use the navigation or global lookup to continue."
+        action={<Link to="/" className="experience-primary">Discover capabilities →</Link>}
+      />
+    </div>
   );
 }

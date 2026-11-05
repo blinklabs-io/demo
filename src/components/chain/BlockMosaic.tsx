@@ -1,3 +1,4 @@
+import { transactionActivity } from "../../lib/chain/transactionActivity";
 import { useCompactVisual } from "../../lib/chain/useCompactVisual";
 import { useId, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +13,7 @@ const kinds = [
   { id: "governance", label: "Governance", color: "#b4a3ff" },
   { id: "mint", label: "Mint / burn", color: "#f6c86d" },
   { id: "scripts", label: "Script execution", color: "#ee91cb" },
+  { id: "withdrawal", label: "Reward withdrawals", color: "#8bdba0" },
   { id: "failed", label: "Failed scripts", color: "#fc968b" },
 ];
 interface Raw {
@@ -32,27 +34,7 @@ function decode(row: Raw): Record {
   if (tx.getId() !== row.tx_hash)
     throw new Error("Transaction hash does not match CBOR.");
   const body = tx.body();
-  const certs = body.certs()?.values() ?? [];
-  const governance = Boolean(
-    body.votingProcedures()?.getVoters().length ||
-    body.proposalProcedures()?.size() ||
-    certs.some((c) =>
-      /DRep|Committee|VoteDelegation|DelegateRepresentative/i.test(
-        c.toCore().__typename,
-      ),
-    ),
-  );
-  const kind = !tx.isValid()
-    ? "failed"
-    : (tx.witnessSet().redeemers()?.values().length ?? 0) > 0
-      ? "scripts"
-      : body.mint()?.size
-        ? "mint"
-        : governance
-          ? "governance"
-          : certs.length
-            ? "stake"
-            : "transfer";
+  const kind = transactionActivity(tx);
   return {
     id: row.tx_hash,
     weight: BigInt(row.cbor.length / 2),
@@ -316,9 +298,9 @@ function Mosaic({ hash, total, onExplore }: MosaicProps) {
       )}
       <p className="chain-footnote">
         Tile area represents serialized transaction bytes. Mixed activity uses
-        this priority: failed scripts, script execution, mint/burn, governance,
-        stake/certificates, transfer. Transaction bytes exclude the block
-        header.
+        this priority: failed scripts, governance, mint/burn, script execution,
+        stake/certificates, reward withdrawals, transfer. Transaction bytes
+        exclude the block header.
       </p>
     </section>
   );

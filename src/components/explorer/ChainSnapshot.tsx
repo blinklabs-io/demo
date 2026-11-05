@@ -53,7 +53,7 @@ export function ChainSnapshot() {
             </Link>
           }
         >
-          <QueryState
+          <QueryState hasData={Boolean(health.data && genesis.data)}
             isLoading={health.isLoading || genesis.isLoading}
             error={health.error || genesis.error}
           >
@@ -76,7 +76,7 @@ export function ChainSnapshot() {
             </Link>
           }
         >
-          <QueryState isLoading={network.isLoading} error={network.error}>
+          <QueryState hasData={network.data !== undefined} isLoading={network.isLoading} error={network.error}>
             {network.data && (
               <Distribution
                 title="ADA supply"

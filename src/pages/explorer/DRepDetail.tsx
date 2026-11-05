@@ -4,9 +4,9 @@ import { HashLink } from "../../components/explorer/HashLink";
 import { shortenHash } from "../../lib/format";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { Metric, Timeline, BarChart } from "../../components/explorer/Visuals";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
 import { formatAda } from "../../lib/format";
@@ -43,6 +43,7 @@ export default function DRepDetail() {
     staleTime: 300_000,
     retry: false,
   });
+  const notFound = drepQuery.error instanceof BlockfrostError && drepQuery.error.status === 404;
   return (
     <div className="detail-showcase flex flex-col gap-4">
       <PageIntro
@@ -52,9 +53,14 @@ export default function DRepDetail() {
           "Delegated representative"
         }
         symbol="◈"
+        action={drepId && !drepId.startsWith("drep_always_") && !notFound && drepQuery.data && !drepQuery.data.retired && (
+          <Link className="experience-primary" to={`/wallet/delegate?drep=${encodeURIComponent(drepId)}`}>
+            Delegate voting power
+          </Link>
+        )}
       />
       <Panel title="DRep">
-        <QueryState
+        <QueryState hasData={drepQuery.data !== undefined}
           isLoading={drepQuery.isLoading}
           error={drepQuery.error}
           notFoundLabel="DRep not found."
@@ -104,35 +110,37 @@ export default function DRepDetail() {
           )}
         </QueryState>
       </Panel>{" "}
-      <Panel title="Delegated voting power">
-        <PaginatedList<{ address: string; amount: string }>
-          queryKey={["dingo", "drep", drepId, "delegators"]}
-          buildUrl={(page, count) =>
-            `/api/v0/governance/dreps/${drepId}/delegators?page=${page}&count=${count}&order=desc`
-          }
-          keyFor={(row) => row.address}
-          emptyLabel="No delegators recorded."
-          visualize={(rows) => (
-            <div className="mb-6">
-              <span className="eyebrow">Delegators on this page · ADA</span>
-              <BarChart
-                title="ADA delegated"
-                items={rows.map((row) => ({
-                  label: shortenHash(row.address, 5),
-                  value: Number(BigInt(row.amount)) / 1_000_000,
-                  href: `/explorer/account/${row.address}`,
-                }))}
-              />
-            </div>
-          )}
-          renderItem={(row) => (
-            <>
-              <HashLink kind="account" id={row.address} />
-              <strong>{formatAda(BigInt(row.amount))}</strong>
-            </>
-          )}
-        />
-      </Panel>
+      {!notFound && (
+        <Panel title="Delegated voting power">
+          <PaginatedList<{ address: string; amount: string }>
+            queryKey={["dingo", "drep", drepId, "delegators"]}
+            buildUrl={(page, count) =>
+              `/api/v0/governance/dreps/${drepId}/delegators?page=${page}&count=${count}&order=desc`
+            }
+            keyFor={(row) => row.address}
+            emptyLabel="No delegators recorded."
+            visualize={(rows) => (
+              <div className="mb-6">
+                <span className="eyebrow">Delegators on this page · ADA</span>
+                <BarChart
+                  title="ADA delegated"
+                  items={rows.map((row) => ({
+                    label: shortenHash(row.address, 5),
+                    value: Number(BigInt(row.amount)) / 1_000_000,
+                    href: `/explorer/account/${row.address}`,
+                  }))}
+                />
+              </div>
+            )}
+            renderItem={(row) => (
+              <>
+                <HashLink kind="account" id={row.address} />
+                <strong>{formatAda(BigInt(row.amount))}</strong>
+              </>
+            )}
+          />
+        </Panel>
+      )}
     </div>
   );
 }

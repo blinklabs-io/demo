@@ -1,3 +1,5 @@
+import { assertSignedWithKey } from "./signatureWitness";
+import { assertWalletSession } from "./walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import { getBlaze } from "./blaze";
 import { blockfrostFetch } from "./blockfrost";
@@ -88,25 +90,13 @@ export async function submitRewardWithdrawal(
     );
   if (tip.slot >= prepared.validUntil)
     throw new Error("This withdrawal draft expired. Create a new transaction.");
+  await assertWalletSession(api, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
-  assertConnection();
-  const witness = signed
-    .witnessSet()
-    .vkeys()
-    ?.toCore()
-    .find(
-      ([key]) =>
-        Core.Ed25519PublicKey.fromHex(key).hash().hex() === prepared.stakeHash,
-    );
-  if (
-    !witness ||
-    !Core.Ed25519PublicKey.fromHex(witness[0]).verify(
-      Core.Ed25519Signature.fromHex(witness[1]),
-      Core.HexBlob(signed.getId()),
-    )
-  )
-    throw new Error(
-      "The wallet did not sign with your stake key. No withdrawal was submitted.",
-    );
+  await assertWalletSession(api, assertConnection);
+  assertSignedWithKey(
+    signed,
+    prepared.stakeHash,
+    "The wallet did not sign with your stake key. No withdrawal was submitted.",
+  );
   return (await prepared.blaze.submitTransaction(signed, true)).toString();
 }

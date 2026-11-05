@@ -1,3 +1,4 @@
+import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
 import { Panel } from "../../components/explorer/Panel";
@@ -59,6 +60,7 @@ export default function MetadataLabel() {
       />
       <Panel title="JSON metadata">
         <PaginatedList<MetadataJsonRow>
+          pageSize={6}
           queryKey={["dingo", "metadata-label", label, "json"]}
           buildUrl={(page, count) =>
             `/api/v0/metadata/txs/labels/${encodedLabel}?page=${page}&count=${count}&order=desc`
@@ -74,10 +76,10 @@ export default function MetadataLabel() {
         />
       </Panel>
 
-      <details className="detail-disclosure">
-        <summary>Serialized CBOR metadata</summary>
+      <LazyDisclosure key={label} title="Serialized CBOR metadata">
         <Panel title="CBOR metadata">
           <PaginatedList<MetadataCborRow>
+            pageSize={6}
             queryKey={["dingo", "metadata-label", label, "cbor"]}
             buildUrl={(page, count) =>
               `/api/v0/metadata/txs/labels/${encodedLabel}/cbor?page=${page}&count=${count}&order=desc`
@@ -94,7 +96,7 @@ export default function MetadataLabel() {
             )}
           />
         </Panel>
-      </details>
+      </LazyDisclosure>
     </div>
   );
 }

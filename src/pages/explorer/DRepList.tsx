@@ -199,7 +199,7 @@ export default function DRepList() {
     <div className="flex flex-col gap-4">
       <PageIntro
         eyebrow="Governance, delegated"
-        title="Who carries the vote?"
+        title="Representatives"
         detail="Find a representative by name or on-chain identity."
         symbol="◈"
       />

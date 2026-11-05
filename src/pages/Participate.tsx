@@ -93,11 +93,7 @@ export default function Participate() {
         </div>
         <div>
           <span className="eyebrow">Your stake key. Your voice.</span>
-          <h1>
-            Governance is
-            <br />
-            <em>everyone’s business.</em>
-          </h1>
+          <h1>Participate in governance.</h1>
           <p>
             Give your opinion on a governance action, ask a question of your
             own, or vote as a DRep. Pick how you want to participate.
@@ -155,6 +151,7 @@ export default function Participate() {
           </p>
           <PaginatedList<Action>
             queryKey={["dingo", "holder-actions"]}
+            pageSize={6}
             buildUrl={(page, count) =>
               `/api/v0/governance/proposals?page=${page}&count=${count}&order=desc`
             }

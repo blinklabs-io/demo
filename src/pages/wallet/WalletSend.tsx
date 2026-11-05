@@ -59,8 +59,8 @@ function SendForm({
   return (
     <div className="wallet-workbench send-page">
       <PageIntro
-        eyebrow="From your wallet to theirs"
-        title="Move value."
+        eyebrow="Transfers through Dingo"
+        title="Send ADA & assets"
         detail="ADA first. Your assets alongside it."
         symbol="↗"
       />
@@ -112,7 +112,7 @@ function SendForm({
             </section>
           )}
           <ToolTransaction
-            key={revision}
+            draftKey={JSON.stringify([revision, recipient, ada, [...selected]])}
             assertDraft={() => {
               if (generation.current !== revision)
                 throw new Error(

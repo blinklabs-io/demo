@@ -1,5 +1,12 @@
+// @vitest-environment node
+import { Core } from "@blaze-cardano/sdk";
 import { describe, expect, it } from "vitest";
 import { detectEntityKind } from "./lookup";
+
+const mainAddress = Core.Address.fromBytes(Core.HexBlob("61" + "11".repeat(28))).toBech32();
+const testAddress = Core.Address.fromBytes(Core.HexBlob("60" + "11".repeat(28))).toBech32();
+const stakeAddress = Core.Address.fromBytes(Core.HexBlob("e1" + "11".repeat(28))).toBech32();
+const byronAddress = "Ae2tdPwUPEYxWXqTgtb8eV8NAt1pW99Wq2FPAFfTQx3BWTiMqRh4erKMFJ3";
 
 describe("detectEntityKind", () => {
   it("returns null for an empty or whitespace-only query", () => {
@@ -8,20 +15,20 @@ describe("detectEntityKind", () => {
   });
 
   it("detects a mainnet and testnet address", () => {
-    expect(detectEntityKind("addr1qxyexampleaddress")).toEqual({
+    expect(detectEntityKind(mainAddress)).toEqual({
       kind: "address",
-      route: "/explorer/address/addr1qxyexampleaddress",
+      route: `/explorer/address/${mainAddress}`,
     });
-    expect(detectEntityKind("addr_test1qxyexampleaddress")).toEqual({
+    expect(detectEntityKind(testAddress)).toEqual({
       kind: "address",
-      route: "/explorer/address/addr_test1qxyexampleaddress",
+      route: `/explorer/address/${testAddress}`,
     });
   });
 
   it("detects a stake account", () => {
-    expect(detectEntityKind("stake1uxyexample")).toEqual({
+    expect(detectEntityKind(stakeAddress)).toEqual({
       kind: "account",
-      route: "/explorer/account/stake1uxyexample",
+      route: `/explorer/account/${stakeAddress}`,
     });
   });
 
@@ -153,4 +160,14 @@ describe("policy and native asset lookup", () => {
     ])
       expect(detectEntityKind(value)).toBeNull();
   });
+});
+
+it("recognizes a valid Byron address and normalizes uppercase bech32", () => {
+  expect(detectEntityKind(byronAddress)).toEqual({kind: "address", route: `/explorer/address/${byronAddress}`});
+  expect(detectEntityKind(testAddress.toUpperCase())).toEqual({kind: "address", route: `/explorer/address/${testAddress}`});
+});
+it("does not turn address-shaped asset hex into a payment address", () => {
+  const asset = "60" + "11".repeat(27) + "ab";
+  expect(detectEntityKind(asset)).toEqual({kind: "asset", route: `/explorer/asset/${asset}`});
+  expect(detectEntityKind(testAddress.slice(0,-1) + "z")).toBeNull();
 });

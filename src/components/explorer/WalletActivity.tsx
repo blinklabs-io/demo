@@ -77,7 +77,7 @@ export function WalletActivity({
       {poolId && (
         <Panel title="Your staked pool">
           <PoolIdentity poolId={poolId} />
-          <QueryState isLoading={pool.isLoading} error={pool.error}>
+          <QueryState hasData={pool.data !== undefined} isLoading={pool.isLoading} error={pool.error}>
             {pool.data && (
               <div className="wallet-staked-pool">
                 <Gauge
@@ -128,8 +128,8 @@ export function WalletActivity({
       <div className="wallet-performance-grid">
         {stakeAddress && (
           <Panel title="Rewards per epoch">
-            <QueryState isLoading={rewards.isLoading} error={rewards.error}>
-              {rewards.isSuccess &&
+            <QueryState hasData={rewards.data !== undefined} isLoading={rewards.isLoading} error={rewards.error}>
+              {(rewards.data !== undefined) &&
                 (rewardPoints.length ? (
                   <>
                     <BarChart
@@ -196,7 +196,7 @@ export function WalletActivity({
           {requestedAddress &&
             requestedAddress === (historyAddress || addresses[0]) && (
               <div className="mt-4">
-                <QueryState isLoading={history.isLoading} error={history.error}>
+                <QueryState hasData={history.data !== undefined} isLoading={history.isLoading} error={history.error}>
                   {history.data && (
                     <>
                       <PriceChart

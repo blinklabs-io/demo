@@ -23,13 +23,13 @@ export interface NodeHealth {
   tipEpochSlot: number;
   tipHash: string;
   tipTxCount: number;
-  secondsSinceTip: number;
+  tipTime: number;
 }
 
-async function fetchNodeHealth(): Promise<NodeHealth> {
+async function fetchNodeHealth({ signal }: { signal: AbortSignal }): Promise<NodeHealth> {
   const [health, latestBlock] = await Promise.all([
-    blockfrostFetch<HealthResponse>("/health"),
-    blockfrostFetch<BlockResponse>("/api/v0/blocks/latest"),
+    blockfrostFetch<HealthResponse>("/health", { signal }),
+    blockfrostFetch<BlockResponse>("/api/v0/blocks/latest", { signal }),
   ]);
 
   return {
@@ -40,10 +40,7 @@ async function fetchNodeHealth(): Promise<NodeHealth> {
     tipEpochSlot: latestBlock.epoch_slot,
     tipHash: latestBlock.hash,
     tipTxCount: latestBlock.tx_count,
-    secondsSinceTip: Math.max(
-      0,
-      Math.floor(Date.now() / 1000) - latestBlock.time,
-    ),
+    tipTime: latestBlock.time,
   };
 }
 

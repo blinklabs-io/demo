@@ -1,11 +1,6 @@
+import { useChainReconciliation } from "../../lib/chain/useChainReconciliation";
 import { useEffect } from "react";
-import {
-  isParticipationPath,
-  isExplorePath,
-  normalizePath,
-  exploreSections,
-  participationSections,
-} from "../../lib/navigation";
+import { mainNavigation, normalizePath, sectionNavigation } from "../../lib/navigation";
 import { Link, Outlet, useLocation, useNavigationType } from "react-router";
 import { Header } from "./Header";
 import { useMempoolStore } from "../../stores/mempoolStore";
@@ -15,6 +10,9 @@ export function AppShell() {
   const { pathname: rawPathname, hash } = useLocation();
   const pathname = normalizePath(rawPathname);
   const navigationType = useNavigationType();
+  const section = sectionNavigation(pathname);
+  const area = mainNavigation.find((item) => item.matches(pathname))?.area ?? "discover";
+  useChainReconciliation();
   useEffect(() => {
     if (navigationType === "POP" && !hash) return;
     const target = hash ? document.getElementById(hash.slice(1)) : null;
@@ -25,63 +23,22 @@ export function AppShell() {
   const startTipFeed = useTipStore((state) => state.start);
 
   useEffect(() => {
-    // Started once here, not per-page: these are standing subscriptions
-    // (ReadMempool + WatchMempool, FollowTip), and AppShell is mounted for
-    // the app's entire lifetime, so every page - not just a dedicated
-    // mempool view - can read live state for free.
     startMempoolFeed();
     startTipFeed();
   }, [startMempoolFeed, startTipFeed]);
 
   return (
-    <div className="app-shell min-h-screen bg-slate-950 text-slate-100">
+    <div className="app-shell min-h-screen bg-slate-950 text-slate-100" data-area={area}>
       <Header />
       <main className="workspace-main">
-        {isExplorePath(pathname) && (
-          <div className="wallet-nav">
-            <nav aria-label="Explorer navigation">
-              {exploreSections.map(({ to, label, matches }) => (
+        {section && (
+          <div className="section-nav">
+            <nav aria-label={section.label}>
+              {section.items.map(({ to, label, matches }) => (
                 <Link
                   key={to}
                   to={to}
                   className={matches(pathname) ? "selected" : ""}
-                  aria-current={matches(pathname) ? "page" : undefined}
-                >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        )}
-        {isParticipationPath(pathname) && (
-          <div className="wallet-nav">
-            <nav aria-label="Participation navigation">
-              {participationSections.map(({ to, label, matches }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  className={matches(pathname) ? "selected" : ""}
-                  aria-current={matches(pathname) ? "page" : undefined}
-                >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        )}
-        {/^\/wallet(?:\/(send|delegate))?$/.test(pathname) && (
-          <div className="wallet-nav">
-            <h1 className="sr-only">Wallet</h1>
-            <nav aria-label="Wallet navigation">
-              {[
-                ["/wallet", "Portfolio"],
-                ["/wallet/send", "Send"],
-                ["/wallet/delegate", "Delegate"],
-              ].map(([to, label]) => (
-                <Link
-                  key={to}
-                  to={to}
-                  className={pathname === to ? "selected" : ""}
                   aria-current={pathname === to ? "page" : undefined}
                 >
                   {label}

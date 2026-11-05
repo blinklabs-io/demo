@@ -1,6 +1,8 @@
-# Wallet tools
+# Application screenshots
 
-Screenshots show synthetic Preview wallet data.
+Transaction review screenshots use synthetic Preview wallet data.
+
+- [Block resource capacity](block-capacity1500.jpg) and [mobile](block-capacity390.jpg), using Dingo block data
 
 - [Desktop tool catalog](wallet-tools-1500.jpg)
 - [Mobile tool catalog](wallet-tools-390.jpg)

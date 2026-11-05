@@ -1,8 +1,15 @@
+import { creationTools, type CreationToolId } from "../../lib/creationTools";
 import TransactionStudio from "../TransactionStudio";
 import { Cip25Editor } from "../../components/wallet/Cip25Editor";
 import { emptyCip25, type Cip25Draft } from "../../lib/tools/cip25";
 import { UtxoConstellation } from "../../components/chain/UtxoConstellation";
-import { useMemo, useRef, useState, type ComponentProps } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type ComponentProps,
+} from "react";
 import { Link, NavLink, useParams } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
@@ -25,63 +32,23 @@ import { fileDigest, verifyDocumentProof } from "../../lib/tools/proofs";
 import { formatAda } from "../../lib/format";
 import { readWalletDRep } from "../../lib/dingo/governanceVote";
 
-function ToolTransaction(props: ComponentProps<typeof WalletToolTransaction>) {
+function ToolTransaction(
+  props: Omit<ComponentProps<typeof WalletToolTransaction>, "draftKey">,
+) {
   const connection = useWalletStore((state) => state.connectionId);
-  return <WalletToolTransaction key={connection} {...props} />;
+  const action = props.action();
+  return (
+    <WalletToolTransaction
+      key={connection}
+      {...props}
+      draftKey={JSON.stringify(action)}
+      action={() => action}
+    />
+  );
 }
 
-const tools = [
-  {
-    id: "transactions",
-    icon: "⌁",
-    name: "Transactions",
-    description:
-      "Build unsigned payments, inspect CBOR, add witnesses, and export to cardano-cli.",
-    color: "teal",
-  },
-  {
-    id: "batch",
-    icon: "↗",
-    name: "Batch payments",
-    description: "Many recipients. One transaction.",
-    color: "teal",
-  },
-  {
-    id: "utxos",
-    icon: "◫",
-    name: "UTxO workshop",
-    description: "Consolidate your wallet. Split spending outputs.",
-    color: "violet",
-  },
-  {
-    id: "proof",
-    icon: "⌁",
-    name: "Document proofs",
-    description: "Hash locally. Timestamp on chain. Verify later.",
-    color: "amber",
-  },
-  {
-    id: "mint",
-    icon: "✦",
-    name: "Token studio",
-    description: "Mint and burn native assets with your own policy.",
-    color: "teal",
-  },
-  {
-    id: "drep",
-    icon: "♧",
-    name: "DRep desk",
-    description: "Register or renew your governance identity.",
-    color: "violet",
-  },
-  {
-    id: "treasury",
-    icon: "◎",
-    name: "Treasury",
-    description: "Donate test ADA directly to the Preview treasury.",
-    color: "amber",
-  },
-];
+const tools = creationTools;
+
 function AssetOptions() {
   const tokens = useWalletStore((s) => s.tokens);
   return (
@@ -904,36 +871,26 @@ function Treasury() {
     </div>
   );
 }
-function ToolBody({ tool }: { tool: string }) {
-  switch (tool) {
-    case "transactions":
-      return <TransactionStudio />;
-    case "batch":
-      return <Batch />;
-    case "utxos":
-      return <Utxos />;
-    case "proof":
-      return <Proof />;
-    case "mint":
-      return <Mint />;
-    case "drep":
-      return <Drep />;
-    case "treasury":
-      return <Treasury />;
-    default:
-      return null;
-  }
-}
+const toolComponents: Record<CreationToolId, ComponentType> = {
+  transactions: TransactionStudio,
+  batch: Batch,
+  utxos: Utxos,
+  proof: Proof,
+  mint: Mint,
+  drep: Drep,
+  treasury: Treasury,
+};
 export default function WalletTools() {
   const { tool } = useParams();
   const connected = useWalletStore((s) => s.status === "connected");
   const current = tools.find((t) => t.id === tool);
+  const ToolBody = current ? toolComponents[current.id] : null;
   return (
     <div className="wallet-tools">
       {tool !== "transactions" && (
         <PageIntro
           eyebrow="Built on Cardano. Powered by Dingo."
-          title={current?.name ?? "More than a wallet."}
+          title={current?.name ?? (tool ? "Tool not found" : "Create & build")}
           detail={
             current?.description ??
             "Create, organize, prove, and participate. Every on-chain action goes through Dingo."
@@ -948,7 +905,7 @@ export default function WalletTools() {
               <Link
                 className={`tool-catalog-card tool-${t.color}`}
                 key={t.id}
-                to={`/wallet/tools/${t.id}`}
+                to={t.to}
               >
                 <span className="eyebrow">
                   {String(i + 1).padStart(2, "0")} · Preview
@@ -979,7 +936,7 @@ export default function WalletTools() {
               All tools
             </NavLink>
             {tools.map((t) => (
-              <NavLink key={t.id} to={`/wallet/tools/${t.id}`}>
+              <NavLink key={t.id} to={t.to}>
                 {t.name}
               </NavLink>
             ))}
@@ -990,12 +947,12 @@ export default function WalletTools() {
               funds and transaction signing require a connected Preview wallet.
             </p>
           )}
-          <ToolBody key={tool} tool={tool} />
+          {ToolBody && <ToolBody key={tool} />}
         </>
       ) : (
         <EmptyState
           icon="⌕"
-          title="Tool not found"
+          title="Choose a creation tool"
           detail="Choose one of the available wallet tools."
           action={<Link to="/wallet/tools">All tools</Link>}
         />

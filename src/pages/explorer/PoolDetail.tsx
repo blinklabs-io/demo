@@ -1,8 +1,8 @@
 import { PoolIdentity } from "../../components/explorer/PoolIdentity";
 import { Gauge, Metric, PageIntro } from "../../components/explorer/Visuals";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { QueryState } from "../../components/explorer/QueryState";
@@ -50,6 +50,8 @@ export default function PoolDetail() {
     enabled: Boolean(poolId),
   });
 
+  const notFound = poolQuery.error instanceof BlockfrostError && poolQuery.error.status === 404;
+
   return (
     <div className="flex flex-col gap-4 detail-showcase">
       <PageIntro
@@ -57,6 +59,11 @@ export default function PoolDetail() {
         title={metadataQuery.data?.name || "Stake pool"}
         detail={metadataQuery.data?.description}
         symbol="⬡"
+        action={poolId && !notFound && poolQuery.data && (
+          <Link className="experience-primary" to={`/wallet/delegate?pool=${encodeURIComponent(poolQuery.data.pool_id)}`}>
+            Delegate to this pool
+          </Link>
+        )}
       />
       <Panel
         title={
@@ -67,7 +74,7 @@ export default function PoolDetail() {
           )
         }
       >
-        <QueryState
+        <QueryState hasData={poolQuery.data !== undefined}
           isLoading={poolQuery.isLoading}
           error={poolQuery.error}
           notFoundLabel="Pool not found."

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Link, useParams } from "react-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Core } from "@blaze-cardano/sdk";
@@ -94,7 +95,7 @@ export default function Surveys() {
     <div className="survey-page">
       <PageIntro
         eyebrow="Ask. Answer. Verify."
-        title="A voice on the chain."
+        title="Surveys"
         symbol="◉"
       />
       <section className="survey-banner">
@@ -338,7 +339,7 @@ export function SurveyCreate() {
       </Link>
       <PageIntro
         eyebrow="CIP-179 survey studio"
-        title="Ask something worth answering."
+        title="Create survey"
         detail="Design and preview your questions without a wallet. Connect when you are ready to publish on chain."
         symbol="+"
       />
@@ -413,6 +414,7 @@ export function SurveyCreate() {
             </button>
             <SurveyTransaction
               label="Review survey transaction"
+              draftKey={JSON.stringify([title, description, health.data?.tipEpoch, duration, questions])}
               ready={Boolean(health.data)}
               action={() => {
                 if (!health.data)
@@ -715,7 +717,9 @@ function SurveyDetailContent() {
       loadSurvey(hash.toLowerCase(), Number(index), signal),
     retry: false,
   });
-  const survey = query.data?.survey;
+  const survey = query.error instanceof BlockfrostError && query.error.status === 404
+    ? undefined
+    : query.data?.survey;
   const results = useQuery({
     queryKey: ["dingo", "surveys", "results", hash, index],
     enabled: Boolean(survey),
@@ -735,12 +739,17 @@ function SurveyDetailContent() {
   }
   if (!valid)
     return (
-      <Panel title="Survey not found">
-        <p>Use a transaction ID and a valid survey index.</p>
-      </Panel>
+      <div className="flex flex-col gap-4">
+        <PageIntro title="Survey" eyebrow="CIP-179" />
+        <Panel title="Survey not found">
+          <p>Use a transaction ID and a valid survey index.</p>
+        </Panel>
+      </div>
     );
   if (!survey)
     return (
+      <div className="flex flex-col gap-4">
+      <PageIntro title="Survey" eyebrow="CIP-179" />
       <Panel title={query.error ? "Survey unavailable" : "Loading survey"}>
         <InlineError error={query.error} />
         {query.isError && (
@@ -756,19 +765,20 @@ function SurveyDetailContent() {
           <p role="status">Verifying the survey definition and creator…</p>
         )}
       </Panel>
+      </div>
     );
   const counted = results.data?.responses.filter((r) => r.counted) ?? [];
   const closed = health.data ? health.data.tipEpoch > survey.endEpoch : false;
   const cancelled = results.data?.cancelled ?? false;
   const eligible =
-    !closed && !cancelled && Boolean(health.data) && results.isSuccess;
+    !query.error && !closed && !cancelled && Boolean(health.data) && results.isSuccess;
   return (
     <div className="survey-page">
       <Link to="/explorer/surveys" className="text-teal-300">
         ← Surveys
       </Link>
       <PageIntro
-        eyebrow="Verified creator · CIP-179 v5"
+        eyebrow={query.error ? "Survey verification unavailable" : "Verified creator · CIP-179 v5"}
         title={survey.title}
         symbol="◉"
       />
@@ -817,6 +827,19 @@ function SurveyDetailContent() {
           }
         />
       </div>
+      {query.error && (
+        <div>
+          <InlineError error={query.error} />
+          <button
+            type="button"
+            className="survey-secondary"
+            disabled={query.isFetching}
+            onClick={() => void query.refetch()}
+          >
+            Retry survey
+          </button>
+        </div>
+      )}
       <InlineError error={results.error} />
       {results.isFetching && (
         <p role="status" className="directory-progress">
@@ -891,6 +914,7 @@ function SurveyDetailContent() {
             {eligible && (
               <SurveyTransaction
                 label="Review public response"
+                draftKey={JSON.stringify([survey.hash, survey.index, survey.endEpoch, answers])}
                 ready={eligible}
                 action={() => {
                   const missing = survey.questions.findIndex(
@@ -1067,6 +1091,7 @@ function SurveyDetailContent() {
           </p>
           <SurveyTransaction
             label="Review survey cancellation"
+            draftKey={JSON.stringify([survey.hash, survey.index, survey.endEpoch])}
             ready={eligible}
             action={() => ({ kind: "cancel", survey })}
           />

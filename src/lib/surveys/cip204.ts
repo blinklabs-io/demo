@@ -1,3 +1,4 @@
+import { assertWalletSession } from "../dingo/walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import { blockfrostFetch, BlockfrostError } from "../dingo/blockfrost";
 import { getBlaze } from "../dingo/blaze";
@@ -280,9 +281,9 @@ export async function submitHolderAnswer(
     );
   if (tip.slot >= prepared.validUntil)
     throw new Error("This answer draft expired.");
-  assertConnection();
+  await assertWalletSession(api, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
-  assertConnection();
+  await assertWalletSession(api, assertConnection);
   if (signed.getId() !== prepared.tx.getId())
     throw new Error(
       "Wallet changed the transaction body. Nothing was submitted.",

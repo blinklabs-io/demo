@@ -1,7 +1,11 @@
+import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
-import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
+import {
+  ConfirmationFailure,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
 import { walletStakeAccount } from "../../lib/dingo/wallet";
 import {
   prepareRewardWithdrawal,
@@ -30,6 +34,7 @@ function RewardsForm({
   address?: string;
   connectionId: number;
 }) {
+  const assertActive = useDraftGuard("reward-withdrawal");
   const api = useWalletStore((state) => state.walletApi);
   const queryClient = useQueryClient();
   const [prepared, setPrepared] = useState<PreparedWithdrawal | null>(null);
@@ -41,6 +46,7 @@ function RewardsForm({
     refetchInterval: 30_000,
   });
   function assertConnection() {
+    assertActive();
     const current = useWalletStore.getState();
     if (
       current.status !== "connected" ||
@@ -91,33 +97,19 @@ function RewardsForm({
   });
   const confirmation = useQuery({
     queryKey: ["dingo", "reward-withdrawal", submit.data],
-    queryFn: async () => {
-      try {
-        const tx = await blockfrostFetch<{ hash: string; block: string }>(
-          `/api/v0/txs/${submit.data}`,
-        );
-        if (tx.hash !== submit.data || !tx.block)
-          throw new Error(
-            "Dingo did not return the submitted transaction's confirmation.",
-          );
-        return tx;
-      } catch (error) {
-        if (error instanceof BlockfrostError && error.status === 404)
-          return null;
-        throw error;
-      }
-    },
+    queryFn: ({ signal }) => readTransactionConfirmation(submit.data!, signal),
     enabled: Boolean(submit.data),
     retry: false,
     refetchInterval: (query) =>
       query.state.data || query.state.error ? false : 15_000,
   });
+  const failed = confirmation.error instanceof ConfirmationFailure;
   useEffect(() => {
-    if (confirmation.data) {
+    if (confirmation.data || failed) {
       void queryClient.invalidateQueries({ queryKey: ["dingo", "wallet"] });
       void useWalletStore.getState().refreshBalance();
     }
-  }, [confirmation.data, queryClient]);
+  }, [confirmation.data, failed, queryClient]);
   const busy = prepare.isPending || submit.isPending;
   const amount = account.data?.withdrawable_amount;
   const available =
@@ -153,7 +145,7 @@ function RewardsForm({
                     : "Move staking rewards into your wallet’s spendable balance."}
           </p>
         </div>
-        {!prepared && (
+        {!prepared && !failed && (
           <button
             type="button"
             className="wallet-rewards-create"
@@ -190,7 +182,7 @@ function RewardsForm({
               <dd>{formatAda(prepared.tx.body().fee())}</dd>
             </div>
             <div>
-              <dt>Balance increase after fee</dt>
+              <dt>Spendable ADA added after fee</dt>
               <dd>{formatAda(prepared.amount - prepared.tx.body().fee())}</dd>
             </div>
           </dl>
@@ -229,7 +221,12 @@ function RewardsForm({
           {error.message}
         </p>
       )}
-      {confirmation.error && (
+      {failed && (
+        <p role="alert" className="mt-3 text-sm text-red-300">
+          {confirmation.error!.message}
+        </p>
+      )}
+      {confirmation.error && !failed && (
         <p role="alert" className="mt-3 text-sm text-red-300">
           Unable to check confirmation: {confirmation.error.message}{" "}
           <button type="button" onClick={() => void confirmation.refetch()}>
@@ -238,11 +235,31 @@ function RewardsForm({
         </p>
       )}
       {submit.data && (
-        <div role="status" className="mt-4 text-sm text-teal-200">
-          {confirmation.data
-            ? "Withdrawal confirmed."
-            : "Withdrawal submitted. Waiting for confirmation."}{" "}
+        <div
+          role="status"
+          className={`mt-4 text-sm text-teal-200${failed ? " confirmation-failed" : ""}`}
+        >
+          {failed
+            ? "Withdrawal failed."
+            : confirmation.data
+              ? "Withdrawal confirmed."
+              : confirmation.error
+                ? "Withdrawal submitted. Confirmation unavailable."
+                : "Withdrawal submitted. Waiting for confirmation."}{" "}
           <HashLink kind="tx" id={submit.data} />
+          {failed && (
+            <button
+              type="button"
+              onClick={() => {
+                setPrepared(null);
+                prepare.reset();
+                submit.reset();
+                void account.refetch();
+              }}
+            >
+              Start new draft
+            </button>
+          )}
         </div>
       )}
     </Panel>

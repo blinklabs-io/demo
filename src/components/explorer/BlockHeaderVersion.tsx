@@ -1,7 +1,7 @@
 import { nodeImplementation } from "../../lib/dingo/nodeImplementation";
 import { eraNameFromProtocol } from "../../lib/dingo/networkNames";
 import { useQuery } from "@tanstack/react-query";
-import { readHeaderVersion } from "../../lib/dingo/blockHeader";
+import { blockBytesQuery, decodeHeaderVersion } from "../../lib/dingo/blockHeader";
 
 export function BlockHeaderVersion({
   hash,
@@ -11,10 +11,8 @@ export function BlockHeaderVersion({
   slot: number;
 }) {
   const query = useQuery({
-    queryKey: ["dingo", "block-header-version", hash],
-    queryFn: () => readHeaderVersion(hash, slot),
-    staleTime: Infinity,
-    retry: false,
+    ...blockBytesQuery(hash, slot),
+    select: decodeHeaderVersion,
   });
   if (query.isLoading)
     return (

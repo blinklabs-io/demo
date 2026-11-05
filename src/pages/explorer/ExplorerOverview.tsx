@@ -1,3 +1,4 @@
+import { fetchRecentBlocks } from "../../lib/explorer/recentBlocks";
 import { BlockConveyor } from "../../components/chain/BlockConveyor";
 import { RecentHeaderVersions } from "../../components/explorer/RecentHeaderVersions";
 import { BlockHeaderVersion } from "../../components/explorer/BlockHeaderVersion";
@@ -5,26 +6,13 @@ import { epochProgress } from "../../lib/visualFormat";
 import { useState } from "react";
 import { BarChart, Metric, PageIntro } from "../../components/explorer/Visuals";
 import { Link } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Panel } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
 import { HashLink } from "../../components/explorer/HashLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { useNow } from "../../lib/useNow";
 import { useMempoolStore } from "../../stores/mempoolStore";
-
-interface BlockSummary {
-  time: number;
-  height: number;
-  hash: string;
-  slot: number;
-  epoch: number;
-  epoch_slot: number;
-  tx_count: number;
-  size: number;
-  previous_block: string;
-  slot_leader: string;
-}
 
 interface GenesisResponse {
   epoch_length: number;
@@ -33,29 +21,6 @@ interface GenesisResponse {
   network_magic: number;
   system_start: number;
   max_lovelace_supply: string;
-}
-
-interface RecentBlocksResult {
-  blocks: BlockSummary[];
-  incomplete: boolean;
-}
-
-async function fetchRecentBlocks(): Promise<RecentBlocksResult> {
-  const latest = await blockfrostFetch<BlockSummary>("/api/v0/blocks/latest");
-  const blocks = [latest];
-  let cursor = latest.previous_block;
-  while (blocks.length < 12 && cursor) {
-    try {
-      const block = await blockfrostFetch<BlockSummary>(
-        `/api/v0/blocks/${cursor}`,
-      );
-      blocks.push(block);
-      cursor = block.previous_block;
-    } catch {
-      return { blocks, incomplete: true };
-    }
-  }
-  return { blocks, incomplete: false };
 }
 
 function timeLabel(unixSeconds: number): string {
@@ -73,9 +38,20 @@ export default function ExplorerOverview() {
   const now = useNow(15_000);
   const pendingCount = useMempoolStore((state) => state.pendingTxs.size);
   const mempoolStatus = useMempoolStore((state) => state.status);
+  const queryClient = useQueryClient();
   const blocksQuery = useQuery({
     queryKey: ["dingo", "recent-blocks"],
-    queryFn: fetchRecentBlocks,
+    queryFn: async ({ signal }) => {
+      const result = await fetchRecentBlocks(signal);
+      const cached = queryClient.getQueryData<typeof result>([
+        "dingo",
+        "recent-blocks",
+      ]);
+      // A truncated refresh would replace a complete cached window.
+      if (result.incomplete && cached && !cached.incomplete)
+        throw new Error("Could not refresh recent blocks.");
+      return result;
+    },
     refetchInterval: 20_000,
   });
   const genesisQuery = useQuery({
@@ -108,7 +84,7 @@ export default function ExplorerOverview() {
     <div className="flex flex-col gap-4 overview-showcase">
       <PageIntro
         eyebrow="A living chain. Powered by Dingo."
-        title="The chain, in motion."
+        title="Explore the chain"
         detail="Every block. Every epoch. Happening now."
         symbol="◈"
         action={
@@ -119,7 +95,7 @@ export default function ExplorerOverview() {
           </Link>
         }
       />
-      <QueryState isLoading={blocksQuery.isLoading} error={blocksQuery.error}>
+      <QueryState hasData={blocksQuery.data !== undefined} isLoading={blocksQuery.isLoading} error={blocksQuery.error}>
         {latest && (
           <div className="metric-grid">
             <Metric
@@ -168,7 +144,7 @@ export default function ExplorerOverview() {
             </div>
           }
         >
-          <QueryState
+          <QueryState hasData={blocksQuery.data !== undefined}
             isLoading={blocksQuery.isLoading}
             error={blocksQuery.error}
           >
@@ -192,7 +168,7 @@ export default function ExplorerOverview() {
           </QueryState>
         </Panel>
         <Panel title="Transactions in the latest block">
-          <QueryState isLoading={txs.isLoading} error={txs.error}>
+          <QueryState hasData={txs.data !== undefined} isLoading={txs.isLoading} error={txs.error}>
             {txs.data?.length === 0 ? (
               <Link
                 className="sealed-block"

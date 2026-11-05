@@ -1,9 +1,10 @@
 # Build with Dingo
 
-Working Cardano apps built on Dingo: transaction creation, trading, governance,
-and live chain visualizations. This demo shows what a node can power, with
-source you can reuse and API consoles to explore the underlying data. Chain
-data and transaction services come from Dingo; no external indexer is required.
+A Cardano development and operations workspace powered by Dingo. Explore live
+chain state, create and inspect transactions, swap assets and participate in
+governance. Shared navigation connects these capabilities, with source you can
+reuse and an API playground to inspect their data. Chain data and transaction
+services come from Dingo; no external indexer is required.
 
 ## Run it
 
@@ -52,7 +53,7 @@ workflow needs keys, and manage or disconnect the connection from Wallet.
 
 ### Transaction studio
 
-Open **Create & build → Transactions** (`/wallet/tools/transactions`) to build an
+Open **Create & build → Transaction studio** (`/wallet/tools/transactions`) to build an
 unsigned ADA payment from a Preview payment-key address, without a wallet extension. Dingo supplies that
 address’s UTxOs, current protocol parameters and the current slot. Change returns
 to the funding address; outputs carrying datums or reference scripts are excluded
@@ -87,6 +88,9 @@ experiences with live epoch progress and ADA supply; **Explore** groups blocks,
 mempool, epochs, stake pools and network details. Transaction creation and
 inspection live in **Create & build**, alongside token tools and document proofs.
 
+The [application flow map](docs/application-flows.md) documents navigation, read
+states, transaction lifecycles and Dingo API responsibilities.
+
 ## Included views
 
 - Experience landing page with direct access to token minting, document proofs,
@@ -97,6 +101,8 @@ inspection live in **Create & build**, alongside token tools and document proofs
 - Discover snapshot with epoch progress and ADA supply; Explore with recent
   blocks, activity, header versions, mempool, epochs, pools and network details
 - Network supply, genesis settings, and era timing
+- Block capacity as the highest utilization of block-body bytes, declared execution memory,
+  or declared execution steps, against that block's epoch limits
 - Blocks, transactions, addresses, stake accounts, assets, epochs, stake pools,
   DReps, mempool, and numeric transaction metadata labels (`metadata:123`);
   historical protocol parameters are searchable as `epoch:123`

@@ -50,11 +50,11 @@ export function WalletRoles({
               {poolId ? (
                 <>
                   <HashLink kind="pool" id={poolId} />
-                  <QueryState
+                  <QueryState hasData={ownership.data !== undefined}
                     isLoading={ownership.isLoading}
                     error={ownership.error}
                   >
-                    {ownership.isSuccess && (
+                    {(ownership.data !== undefined) && (
                       <p>
                         {isOwner
                           ? "Your stake credential is a registered owner of this pool."
@@ -116,7 +116,7 @@ export function WalletRoles({
           {!walletApi?.cip95 ? (
             <p>The connected wallet does not expose its DRep credential.</p>
           ) : (
-            <QueryState isLoading={selfDrep.isLoading} error={selfDrep.error}>
+            <QueryState hasData={selfDrep.data !== undefined} isLoading={selfDrep.isLoading} error={selfDrep.error}>
               {selfDrep.data ? (
                 <>
                   <span className="status-badge">
@@ -139,7 +139,7 @@ export function WalletRoles({
                   )}
                 </>
               ) : (
-                selfDrep.isSuccess && (
+                selfDrep.data !== undefined && (
                   <p>
                     This wallet’s DRep credential is not registered on this
                     network.

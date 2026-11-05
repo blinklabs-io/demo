@@ -1,3 +1,4 @@
+import { useDraftGuard } from "../../lib/useDraftGuard";
 import { metadataJson } from "../../lib/tools/cip25";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -6,7 +7,10 @@ import { useWalletStore } from "../../stores/walletStore";
 import { WalletConnectSummary } from "../layout/WalletConnectSummary";
 import { CopyButton } from "../explorer/CopyButton";
 import { governanceError } from "../../lib/dingo/governanceVote";
-import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
+import {
+  ConfirmationFailure,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
 import {
   prepareToolTransaction,
   submitToolTransaction,
@@ -21,7 +25,9 @@ export function ToolTransaction({
   ready = true,
   formId,
   assertDraft,
+  draftKey,
 }: {
+  draftKey: string;
   action: () => ToolAction;
   ready?: boolean;
   formId?: string;
@@ -29,10 +35,17 @@ export function ToolTransaction({
 }) {
   const api = useWalletStore((s) => s.walletApi),
     connectionId = useWalletStore((s) => s.connectionId);
+  const assertActive = useDraftGuard(draftKey);
   const [draft, setDraft] = useState<PreparedTool | null>(null);
+  const [reviewKey, setReviewKey] = useState(draftKey);
+  if (reviewKey !== draftKey) {
+    setReviewKey(draftKey);
+    setDraft(null);
+  }
   const [savedPolicy, setSavedPolicy] = useState<PreparedTool | null>(null);
   const queryClient = useQueryClient();
   const assertConnection = () => {
+    assertActive();
     const s = useWalletStore.getState();
     if (
       s.status !== "connected" ||
@@ -43,10 +56,18 @@ export function ToolTransaction({
     assertDraft?.();
   };
   const prepare = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (requestKey: string) => {
+      if (requestKey !== draftKey)
+        throw new Error("Draft details changed. Review a new transaction.");
       if (!api) throw new Error("Connect a wallet first.");
       try {
-        return await prepareToolTransaction(api, action(), assertConnection);
+        const result = await prepareToolTransaction(
+          api,
+          action(),
+          assertConnection,
+        );
+        assertConnection();
+        return result;
       } catch (e) {
         throw governanceError(e, "Unable to prepare this transaction.");
       }
@@ -76,28 +97,23 @@ export function ToolTransaction({
     enabled: !!submit.data,
     retry: false,
     refetchInterval: (q) => (q.state.data || q.state.error ? false : 10000),
-    queryFn: async () => {
-      try {
-        const tx = await blockfrostFetch<{
-          hash: string;
-          block: string;
-          valid_contract: boolean;
-        }>(`/api/v0/txs/${submit.data}`);
-        if (tx.hash !== submit.data || !tx.block || tx.valid_contract !== true)
-          throw new Error("Transaction is not confirmed as valid.");
+    queryFn: async ({ signal }) => {
+      const tx = await readTransactionConfirmation(submit.data!, signal);
+      if (tx) {
         void useWalletStore.getState().refreshBalance();
         void queryClient.invalidateQueries({
           queryKey: ["wallet-tools", "utxos"],
         });
-        return tx;
-      } catch (e) {
-        if (e instanceof BlockfrostError && e.status === 404) return null;
-        throw e;
       }
+      return tx;
     },
   });
+  const failed = confirmation.error instanceof ConfirmationFailure;
   const busy = prepare.isPending || submit.isPending;
-  const error = prepare.error ?? submit.error ?? confirmation.error;
+  const error =
+    (prepare.variables === draftKey ? prepare.error : null) ??
+    submit.error ??
+    confirmation.error;
   function downloadPolicy(policy: PreparedTool) {
     const data = JSON.stringify(
       {
@@ -134,7 +150,7 @@ export function ToolTransaction({
             event.preventDefault();
             if (busy || !ready) return;
             submit.reset();
-            prepare.mutate();
+            prepare.mutate(draftKey);
           }}
         >
           <button
@@ -259,9 +275,18 @@ export function ToolTransaction({
         </section>
       )}
       {submit.data && (
-        <section className="tool-success" role="status">
+        <section
+          className={`tool-success${failed ? " confirmation-failed" : ""}`}
+          role="status"
+        >
           <strong>
-            {confirmation.data ? "Confirmed on Preview" : "Submitted to Dingo"}
+            {failed
+              ? "Transaction failed on chain"
+              : confirmation.data
+                ? "Confirmed on Preview"
+                : confirmation.error
+                  ? "Submitted · confirmation unavailable"
+                  : "Submitted to Dingo"}
           </strong>
           <Link to={`/explorer/tx/${submit.data}`}>View transaction →</Link>
           <code>{submit.data}</code>
@@ -277,7 +302,7 @@ export function ToolTransaction({
               setSavedPolicy(null);
             }}
           >
-            Start another transaction
+            {failed ? "Start new draft" : "Start another transaction"}
           </button>
         </section>
       )}
@@ -286,7 +311,7 @@ export function ToolTransaction({
           {error.message}
         </p>
       )}
-      {confirmation.error && (
+      {confirmation.error && !failed && (
         <button onClick={() => void confirmation.refetch()}>
           Retry confirmation
         </button>

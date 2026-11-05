@@ -13,6 +13,9 @@ interface TipState {
   status: TipStatus;
   error: string | null;
   tip: LiveTip | null;
+  revision: number;
+  lastAction: "apply" | "undo" | "reset" | "connect" | null;
+  lastEventAt: number | null;
   start: () => void;
   stop: () => void;
 }
@@ -28,13 +31,19 @@ export const useTipStore = create<TipState>((set, get) => ({
   status: "idle",
   error: null,
   tip: null,
+  revision: 0,
+  lastAction: null,
+  lastEventAt: null,
 
   start: () => {
     if (get().status !== "idle" && get().status !== "error") {
       return;
     }
     const startedGeneration = ++feedGeneration;
-    set({ status: "connecting", error: null });
+    set((state) => ({
+      status: "connecting", error: null, tip: null,
+      lastAction: "connect", lastEventAt: Date.now(), revision: state.revision + 1,
+    }));
 
     (async () => {
       while (feedGeneration === startedGeneration) {
@@ -55,14 +64,29 @@ export const useTipStore = create<TipState>((set, get) => ({
             if (feedGeneration !== startedGeneration) {
               return;
             }
-            const tip = decodeTipEvent(result.value);
-            if (tip) {
-              set({ tip, status: "live", error: null });
+            const event = result.value;
+            if (event.action === "apply") {
+              const tip = decodeTipEvent(event);
+              if (tip) {
+                set((state) => ({
+                  tip,
+                  status: "live",
+                  error: null,
+                  lastAction: "apply",
+                  lastEventAt: tip.receivedAt,
+                  revision: state.revision + (state.tip?.hash === tip.hash ? 0 : 1),
+                }));
+              }
+            } else {
+              set((state) => ({
+                tip: null,
+                status: "live",
+                error: null,
+                lastAction: event.action,
+                lastEventAt: Date.now(),
+                revision: state.revision + 1,
+              }));
             }
-            // "undo"/"reset" (rollback) events are intentionally not
-            // applied here - a demo tip indicator that's briefly a block
-            // behind after a rare Preview rollback is fine; the next
-            // "apply" self-corrects it.
           }
         } catch (err) {
           if (feedGeneration !== startedGeneration) {
@@ -81,7 +105,12 @@ export const useTipStore = create<TipState>((set, get) => ({
         if (feedGeneration !== startedGeneration) {
           return;
         }
-        set({ status: "connecting", error: null });
+        set((state) => ({
+          status: "connecting", error: null, tip: null,
+          lastAction: "connect",
+          lastEventAt: state.lastAction === "connect" ? state.lastEventAt : Date.now(),
+          revision: state.revision + (state.lastAction === "connect" ? 0 : 1),
+        }));
         await new Promise((resolve) =>
           setTimeout(resolve, WATCH_RETRY_DELAY_MS),
         );
@@ -93,6 +122,6 @@ export const useTipStore = create<TipState>((set, get) => ({
     feedGeneration++;
     void activeWatchIterator?.return?.();
     activeWatchIterator = null;
-    set({ status: "idle", error: null, tip: null });
+    set({ status: "idle", error: null, tip: null, lastAction: null, lastEventAt: null });
   },
 }));

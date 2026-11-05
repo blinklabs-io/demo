@@ -1,10 +1,13 @@
+import { BlockCapacity } from "../../components/explorer/BlockCapacity";
+import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
+import { PaginatedList } from "../../components/explorer/PaginatedList";
 import { BlockMosaic } from "../../components/chain/BlockMosaic";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { BlockHeaderVersion } from "../../components/explorer/BlockHeaderVersion";
-import { Metric, Timeline, Gauge } from "../../components/explorer/Visuals";
+import { Metric, Timeline } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { QueryState } from "../../components/explorer/QueryState";
@@ -39,22 +42,10 @@ export default function BlockDetail() {
     enabled: Boolean(id),
   });
 
-  const txsQuery = useQuery({
-    queryKey: ["dingo", "block", blockQuery.data?.hash, "txs"],
-    queryFn: () =>
-      blockfrostFetch<string[]>(`/api/v0/blocks/${blockQuery.data!.hash}/txs`),
-    enabled: Boolean(blockQuery.data),
-  });
+  const block = blockQuery.error instanceof BlockfrostError && blockQuery.error.status === 404
+    ? undefined
+    : blockQuery.data;
 
-  const limitsQuery = useQuery({
-    queryKey: ["dingo", "epoch", blockQuery.data?.epoch, "block-limits"],
-    queryFn: () =>
-      blockfrostFetch<{ max_block_size: number }>(
-        `/api/v0/epochs/${blockQuery.data!.epoch}/parameters`,
-      ),
-    enabled: Boolean(blockQuery.data),
-    staleTime: Infinity,
-  });
 
   return (
     <div className="flex flex-col gap-4 detail-showcase">
@@ -64,22 +55,22 @@ export default function BlockDetail() {
         symbol="⬡"
       />
       <Panel title="Block details">
-        <QueryState
+        <QueryState hasData={block !== undefined}
           isLoading={blockQuery.isLoading}
           error={blockQuery.error}
           notFoundLabel="Block not found."
         >
-          {blockQuery.data && (
+          {block && (
             <div>
               <div className="metric-grid">
                 <Metric
                   label="Block height"
-                  value={`#${blockQuery.data.height.toLocaleString()}`}
+                  value={`#${block.height.toLocaleString()}`}
                 />
-                <Metric label="Transactions" value={blockQuery.data.tx_count} />
+                <Metric label="Transactions" value={block.tx_count} />
                 <Metric
                   label="Block size"
-                  value={`${(blockQuery.data.size / 1024).toFixed(1)} KB`}
+                  value={`${(block.size / 1024).toFixed(1)} KB`}
                 />
               </div>
               <div className="block-cockpit">
@@ -88,61 +79,43 @@ export default function BlockDetail() {
                     ⬡
                   </span>
                   <span className="eyebrow">Forged by</span>
-                  <HashLink kind="pool" id={blockQuery.data.slot_leader} />
+                  <HashLink kind="pool" id={block.slot_leader} />
                   <BlockHeaderVersion
-                    hash={blockQuery.data.hash}
-                    slot={blockQuery.data.slot}
+                    hash={block.hash}
+                    slot={block.slot}
                   />
                 </div>
-                <QueryState
-                  isLoading={limitsQuery.isLoading}
-                  error={limitsQuery.error}
-                >
-                  {limitsQuery.data && (
-                    <Gauge
-                      label="Block capacity used"
-                      value={
-                        limitsQuery.data.max_block_size > 0
-                          ? (blockQuery.data.size /
-                              limitsQuery.data.max_block_size) *
-                            100
-                          : 0
-                      }
-                      detail={`${blockQuery.data.size.toLocaleString()} / ${limitsQuery.data.max_block_size.toLocaleString()} bytes · epoch ${blockQuery.data.epoch}`}
-                      tone="violet"
-                    />
-                  )}
-                </QueryState>
+                <BlockCapacity hash={block.hash} slot={block.slot} epoch={block.epoch} />
               </div>
               <div className="block-chain-timeline my-6">
                 <Timeline
                   items={[
                     {
                       label: "Previous block",
-                      complete: Boolean(blockQuery.data.previous_block),
-                      detail: blockQuery.data.previous_block ? (
+                      complete: Boolean(block.previous_block),
+                      detail: block.previous_block ? (
                         <HashLink
                           kind="block"
-                          id={blockQuery.data.previous_block}
+                          id={block.previous_block}
                         />
                       ) : (
                         "Genesis boundary"
                       ),
                     },
                     {
-                      label: `Block #${blockQuery.data.height.toLocaleString()}`,
+                      label: `Block #${block.height.toLocaleString()}`,
                       complete: true,
                       detail: new Date(
-                        blockQuery.data.time * 1000,
+                        block.time * 1000,
                       ).toLocaleString(),
                     },
                     {
                       label: "Next block",
-                      complete: Boolean(blockQuery.data.next_block),
-                      detail: blockQuery.data.next_block ? (
+                      complete: Boolean(block.next_block),
+                      detail: block.next_block ? (
                         <HashLink
                           kind="block"
-                          id={blockQuery.data.next_block}
+                          id={block.next_block}
                         />
                       ) : (
                         "At the chain tip"
@@ -151,84 +124,85 @@ export default function BlockDetail() {
                   ]}
                 />
               </div>
-              <Field label="Hash" value={blockQuery.data.hash} />
+              <Field label="Hash" value={block.hash} />
 
-              <Field label="Slot" value={blockQuery.data.slot} />
+              <Field label="Slot" value={block.slot} />
               <Field
                 label="Epoch"
-                value={`${blockQuery.data.epoch} (slot ${blockQuery.data.epoch_slot})`}
+                value={`${block.epoch} (slot ${block.epoch_slot})`}
               />
               <Field
                 label="Time"
-                value={new Date(blockQuery.data.time * 1000).toLocaleString()}
+                value={new Date(block.time * 1000).toLocaleString()}
               />
-              {blockQuery.data.output !== null && (
+              {block.output !== null && (
                 <Field
                   label="Output"
-                  value={`${formatAda(BigInt(blockQuery.data.output))}`}
+                  value={`${formatAda(BigInt(block.output))}`}
                 />
               )}
-              {blockQuery.data.fees !== null && (
+              {block.fees !== null && (
                 <Field
                   label="Fees"
-                  value={`${formatAda(BigInt(blockQuery.data.fees))}`}
+                  value={`${formatAda(BigInt(block.fees))}`}
                 />
               )}
               <details className="technical-details">
                 <summary>
                   Cryptographic proofs & operational certificate
                 </summary>{" "}
-                {blockQuery.data.block_vrf && (
-                  <Field label="Block VRF" value={blockQuery.data.block_vrf} />
+                {block.block_vrf && (
+                  <Field label="Block VRF" value={block.block_vrf} />
                 )}
-                {blockQuery.data.op_cert && (
+                {block.op_cert && (
                   <Field
                     label="Operational certificate"
-                    value={blockQuery.data.op_cert}
+                    value={block.op_cert}
                   />
                 )}
-                {blockQuery.data.op_cert_counter && (
+                {block.op_cert_counter && (
                   <Field
                     label="Operational certificate counter"
-                    value={blockQuery.data.op_cert_counter}
+                    value={block.op_cert_counter}
                   />
                 )}
               </details>
               <Field
                 label="Confirmations"
-                value={blockQuery.data.confirmations}
+                value={block.confirmations}
               />
             </div>
           )}
         </QueryState>
       </Panel>
 
-      {blockQuery.data && (
+      {block && (
         <BlockMosaic
-          hash={blockQuery.data.hash}
-          total={blockQuery.data.tx_count}
+          hash={block.hash}
+          total={block.tx_count}
         />
       )}
-      <details className="detail-disclosure">
-        <summary>Transaction hash list</summary>
-        <Panel title="Transactions">
-          <QueryState isLoading={txsQuery.isLoading} error={txsQuery.error}>
-            {txsQuery.data?.length === 0 && (
-              <p className="text-sm text-slate-400">
-                No transactions in this block.
-              </p>
-            )}
-            <ul className="activity-list">
-              {txsQuery.data?.map((hash) => (
-                <li key={hash}>
+      {block && (
+        <LazyDisclosure key={block.hash} title="Transaction hash list">
+          <Panel title="Transactions">
+            <PaginatedList<string>
+              totalItems={block.tx_count}
+              queryKey={["dingo", "block", block.hash, "txs"]}
+              buildUrl={(page, count) =>
+                `/api/v0/blocks/${block!.hash}/txs?page=${page}&count=${count}&order=asc`
+              }
+              emptyLabel="No transactions in this block."
+              keyFor={(hash) => hash}
+              renderItem={(hash) => (
+                <>
                   <span className="status-badge positive">TX</span>
                   <HashLink kind="tx" id={hash} visible={16} />
-                </li>
-              ))}
-            </ul>
-          </QueryState>
-        </Panel>
-      </details>
+                </>
+              )}
+            />
+          </Panel>
+        </LazyDisclosure>
+      )}
     </div>
   );
 }

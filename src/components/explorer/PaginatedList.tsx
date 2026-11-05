@@ -4,10 +4,10 @@ import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { QueryState } from "./QueryState";
 import { Pagination } from "./Pagination";
 
-const PAGE_SIZE = 20;
-
 interface PaginatedListProps<T> {
   queryKey: unknown[];
+  pageSize?: number;
+  totalItems?: number;
   visualize?: (items: T[]) => ReactNode;
   staleTime?: number;
   buildUrl: (page: number, pageSize: number) => string;
@@ -17,11 +17,18 @@ interface PaginatedListProps<T> {
 }
 
 export function PaginatedList<T>(props: PaginatedListProps<T>) {
-  return <PaginatedListPage key={JSON.stringify(props.queryKey)} {...props} />;
+  return (
+    <PaginatedListPage
+      key={JSON.stringify([props.queryKey, props.pageSize ?? 20])}
+      {...props}
+    />
+  );
 }
 
 function PaginatedListPage<T>({
   queryKey,
+  pageSize = 20,
+  totalItems,
   buildUrl,
   renderItem,
   emptyLabel = "Nothing here yet.",
@@ -31,31 +38,43 @@ function PaginatedListPage<T>({
 }: PaginatedListProps<T>) {
   const [page, setPage] = useState(1);
   const query = useQuery({
-    queryKey: [...queryKey, page],
+    queryKey: [...queryKey, pageSize, page],
     queryFn: ({ signal }) =>
-      blockfrostFetch<T[]>(buildUrl(page, PAGE_SIZE), { signal }),
-    staleTime,
+      blockfrostFetch<T[]>(buildUrl(page, pageSize), { signal }),
+    ...(staleTime === undefined ? {} : { staleTime }),
   });
 
   return (
-    <QueryState isLoading={query.isLoading} error={query.error}>
-      {query.data?.length === 0 && (
-        <div className="list-empty">
-          <span aria-hidden="true">◇</span>
-          <p>{emptyLabel}</p>
-        </div>
-      )}
-      {query.data && query.data.length > 0 && visualize?.(query.data)}
-      <ul className="activity-list">
-        {query.data?.map((item, index) => (
-          <li key={keyFor(item, index)}>{renderItem(item)}</li>
-        ))}
-      </ul>
+    <>
+      <QueryState
+        hasData={query.data !== undefined}
+        isLoading={query.isLoading}
+        error={query.error}
+      >
+        {query.data?.length === 0 && (
+          <div className="list-empty">
+            <span aria-hidden="true">◇</span>
+            <p>{page === 1 ? emptyLabel : "No more records."}</p>
+          </div>
+        )}
+        {query.data && query.data.length > 0 && visualize?.(query.data)}
+        <ul className="activity-list">
+          {query.data?.map((item, index) => (
+            <li key={keyFor(item, index)}>{renderItem(item)}</li>
+          ))}
+        </ul>
+      </QueryState>
       <Pagination
         page={page}
         onPageChange={setPage}
-        hasNextPage={(query.data?.length ?? 0) === PAGE_SIZE}
+        hasNextPage={
+          query.data !== undefined && (
+            totalItems === undefined
+              ? query.data.length === pageSize
+              : page * pageSize < totalItems
+          )
+        }
       />
-    </QueryState>
+    </>
   );
 }

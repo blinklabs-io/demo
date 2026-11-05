@@ -1,3 +1,4 @@
+import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
@@ -10,7 +11,10 @@ import {
   type PreparedSurvey,
 } from "../../lib/surveys/transactions";
 import { governanceError } from "../../lib/dingo/governanceVote";
-import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
+import {
+  ConfirmationFailure,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
 import { formatAda } from "../../lib/format";
 import { HashLink } from "./HashLink";
 import { answerLabel, questionNames } from "../../lib/surveys/cip179";
@@ -18,15 +22,21 @@ export function SurveyTransaction({
   action,
   label,
   ready,
+  draftKey,
 }: {
+  draftKey: string;
   action: () => SurveyAction;
   label: string;
   ready: boolean;
 }) {
   const connectionId = useWalletStore((s) => s.connectionId);
+  const key = JSON.stringify([connectionId, draftKey]);
+  const assertDraft = useDraftGuard(key);
   return (
     <TransactionForm
       key={connectionId}
+      draftKey={draftKey}
+      assertDraft={assertDraft}
       action={action}
       label={label}
       connectionId={connectionId}
@@ -39,7 +49,11 @@ function TransactionForm({
   label,
   connectionId,
   ready,
+  assertDraft,
+  draftKey,
 }: {
+  draftKey: string;
+  assertDraft: () => void;
   action: () => SurveyAction;
   label: string;
   connectionId: number;
@@ -48,10 +62,16 @@ function TransactionForm({
   const api = useWalletStore((s) => s.walletApi);
   const client = useQueryClient();
   const [prepared, setPrepared] = useState<PreparedSurvey | null>(null);
+  const [reviewKey, setReviewKey] = useState(draftKey);
+  if (reviewKey !== draftKey) {
+    setReviewKey(draftKey);
+    setPrepared(null);
+  }
   const [submittedAction, setSubmittedAction] = useState<SurveyAction | null>(
     null,
   );
   function assertConnection() {
+    assertDraft();
     const s = useWalletStore.getState();
     if (
       s.status !== "connected" ||
@@ -61,10 +81,18 @@ function TransactionForm({
       throw new Error("Wallet connection changed. Review a new transaction.");
   }
   const prepare = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (requestKey: string) => {
+      if (requestKey !== draftKey)
+        throw new Error("Draft details changed. Review a new transaction.");
       if (!api) throw new Error("Connect a wallet first.");
       try {
-        return await prepareSurveyTransaction(api, action(), assertConnection);
+        const result = await prepareSurveyTransaction(
+          api,
+          action(),
+          assertConnection,
+        );
+        assertConnection();
+        return result;
       } catch (e) {
         throw governanceError(e, "Unable to build survey transaction.");
       }
@@ -94,26 +122,19 @@ function TransactionForm({
     queryKey: ["dingo", "surveys", "confirmation", submit.data],
     enabled: Boolean(submit.data),
     retry: false,
-    refetchInterval: (q) => (q.state.data || q.state.error ? false : 10000),
-    queryFn: async () => {
-      try {
-        const tx = await blockfrostFetch<{ hash: string; block: string }>(
-          `/api/v0/txs/${submit.data}`,
-        );
-        if (tx.hash !== submit.data || !tx.block)
-          throw new Error("Transaction is not confirmed.");
+    queryFn: async ({ signal }) => {
+      const tx = await readTransactionConfirmation(submit.data!, signal);
+      if (tx) {
         await client.invalidateQueries({
           queryKey: ["dingo", "surveys", "results"],
         });
         await client.invalidateQueries({
           queryKey: ["dingo", "surveys", "directory"],
         });
-        return tx;
-      } catch (e) {
-        if (e instanceof BlockfrostError && e.status === 404) return null;
-        throw e;
       }
+      return tx;
     },
+    refetchInterval: (q) => (q.state.data || q.state.error ? false : 10000),
   });
   if (!api)
     return (
@@ -122,8 +143,12 @@ function TransactionForm({
         <WalletConnectSummary />
       </div>
     );
+  const failed = confirmation.error instanceof ConfirmationFailure;
   const busy = prepare.isPending || submit.isPending;
-  const error = prepare.error ?? submit.error ?? confirmation.error;
+  const error =
+    (prepare.variables === draftKey ? prepare.error : null) ??
+    submit.error ??
+    confirmation.error;
   return (
     <div className="survey-transaction">
       {!prepared && !submit.data && (
@@ -131,7 +156,7 @@ function TransactionForm({
           className="survey-primary"
           type="button"
           disabled={busy || !ready}
-          onClick={() => prepare.mutate()}
+          onClick={() => prepare.mutate(draftKey)}
         >
           {prepare.isPending ? "Building transaction…" : label}
         </button>
@@ -234,16 +259,36 @@ function TransactionForm({
         </p>
       )}
       {submit.data && (
-        <div role="status" className="survey-submitted">
+        <div
+          role="status"
+          className={`survey-submitted${failed ? " confirmation-failed" : ""}`}
+        >
           <strong>
-            {confirmation.data
-              ? "Confirmed on chain"
-              : "Submitted · waiting for confirmation"}
+            {failed
+              ? "Transaction failed on chain"
+              : confirmation.data
+                ? "Confirmed on chain"
+                : confirmation.error
+                  ? "Submitted · confirmation unavailable"
+                  : "Submitted · waiting for confirmation"}
           </strong>
           <HashLink kind="tx" id={submit.data} />
-          {confirmation.error && (
+          {confirmation.error && !failed && (
             <button type="button" onClick={() => void confirmation.refetch()}>
               Retry confirmation
+            </button>
+          )}
+          {(failed || confirmation.data) && (
+            <button
+              type="button"
+              onClick={() => {
+                setPrepared(null);
+                setSubmittedAction(null);
+                prepare.reset();
+                submit.reset();
+              }}
+            >
+              Start new draft
             </button>
           )}
           {confirmation.data && (

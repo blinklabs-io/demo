@@ -1,5 +1,10 @@
+import {
+  ConfirmationFailure,
+  readTransactionConfirmation,
+} from "../../lib/dingo/transactionConfirmation";
+import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { useWalletStore } from "../../stores/walletStore";
 import { useWalletDRep } from "../../lib/dingo/useWalletDRep";
@@ -56,6 +61,7 @@ function VotingForm({
   api: ReturnType<typeof useWalletStore.getState>["walletApi"];
   connectionId: number;
 }) {
+  const assertActive = useDraftGuard("proposal-voting");
   const role = useWalletDRep();
   const health = useNodeHealth();
   const queryClient = useQueryClient();
@@ -63,6 +69,7 @@ function VotingForm({
   const [prepared, setPrepared] = useState<PreparedVote | null>(null);
   const closed = health.data && votingClosed(proposal, health.data.tipEpoch);
   function assertConnection() {
+    assertActive();
     const current = useWalletStore.getState();
     if (
       current.status !== "connected" ||
@@ -109,7 +116,7 @@ function VotingForm({
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["dingo", "proposal", proposal.id, "votes"],
+        queryKey: ["dingo", "proposal", proposal.id, "chamber-votes"],
       });
       void queryClient.invalidateQueries({
         queryKey: ["dingo", "wallet", "drep-role", connectionId],
@@ -117,11 +124,32 @@ function VotingForm({
       void useWalletStore.getState().refreshBalance();
     },
   });
+  const confirmation = useQuery({
+    queryKey: ["dingo", "vote-confirmation", submit.data],
+    enabled: Boolean(submit.data),
+    retry: false,
+    queryFn: async ({ signal }) => {
+      const tx = await readTransactionConfirmation(submit.data!, signal);
+      if (tx) {
+        void useWalletStore.getState().refreshBalance();
+        void queryClient.invalidateQueries({
+          queryKey: ["dingo", "proposal", proposal.id, "chamber-votes"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["dingo", "wallet", "drep-role", connectionId],
+        });
+      }
+      return tx;
+    },
+    refetchInterval: (query) =>
+      query.state.data || query.state.error ? false : 10000,
+  });
+  const failed = confirmation.error instanceof ConfirmationFailure;
   const busy = prepare.isPending || submit.isPending;
   const eligible = Boolean(
     api?.cip95 && role.data && !role.data.retired && !closed && health.data,
   );
-  const error = prepare.error || submit.error;
+  const error = prepare.error || submit.error || confirmation.error;
   return (
     <div id="drep-vote">
       <Panel
@@ -178,7 +206,7 @@ function VotingForm({
             </div>
             <fieldset
               className="vote-choices"
-              disabled={busy || Boolean(prepared)}
+              disabled={busy || Boolean(prepared) || Boolean(submit.data)}
             >
               <legend className="sr-only">Choose your vote</legend>
               {choices.map((option) => (
@@ -265,11 +293,11 @@ function VotingForm({
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : !submit.data ? (
               <button
                 type="button"
                 className="vote-submit"
-                disabled={!choice || !eligible || busy}
+                disabled={!choice || !eligible || busy || failed}
                 onClick={() => {
                   submit.reset();
                   prepare.mutate();
@@ -277,7 +305,7 @@ function VotingForm({
               >
                 {prepare.isPending ? "Preparing vote…" : "Review vote"}
               </button>
-            )}
+            ) : null}
             {health.isError && (
               <p role="alert" className="mt-3 text-sm text-red-300">
                 Unable to verify the current epoch.{" "}
@@ -294,9 +322,41 @@ function VotingForm({
           </p>
         )}
         {submit.data && (
-          <div className="vote-success" role="status">
-            <strong>Vote submitted</strong>
-            <p>Waiting for on-chain confirmation.</p>
+          <div
+            className={`vote-success${failed ? " confirmation-failed" : ""}`}
+            role="status"
+          >
+            <strong>
+              {failed
+                ? "Vote failed on chain"
+                : confirmation.data
+                  ? "Vote confirmed"
+                  : "Vote submitted"}
+            </strong>
+            <p>
+              {failed
+                ? "The vote was not applied."
+                : confirmation.data
+                  ? "Included on chain."
+                  : confirmation.error
+                    ? "Confirmation unavailable."
+                    : "Waiting for on-chain confirmation."}
+            </p>
+            {confirmation.error && !failed && (
+              <button type="button" onClick={() => void confirmation.refetch()}>
+                Retry confirmation
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setPrepared(null);
+                prepare.reset();
+                submit.reset();
+              }}
+            >
+              Start new draft
+            </button>
             <Link
               to={`/explorer/tx/${submit.data}`}
               className="font-mono break-all"

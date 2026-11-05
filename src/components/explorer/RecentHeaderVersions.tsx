@@ -1,7 +1,7 @@
 import { nodeImplementation } from "../../lib/dingo/nodeImplementation";
 import { useQueries } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { readHeaderVersion } from "../../lib/dingo/blockHeader";
+import { blockBytesQuery, decodeHeaderVersion } from "../../lib/dingo/blockHeader";
 import { Distribution } from "./Visuals";
 
 const colors = ["#2dd4bf", "#818cf8", "#fbbf24", "#f472b6", "#60a5fa"];
@@ -14,11 +14,9 @@ export function RecentHeaderVersions({
   // The block list owns the reads; this observer only consumes its cache.
   const headers = useQueries({
     queries: blocks.map((block) => ({
-      queryKey: ["dingo", "block-header-version", block.hash],
-      queryFn: () => readHeaderVersion(block.hash, block.slot),
+      ...blockBytesQuery(block.hash, block.slot),
+      select: decodeHeaderVersion,
       enabled: false,
-      staleTime: Infinity,
-      retry: false,
     })),
   });
   const counts = new Map<string, number>();

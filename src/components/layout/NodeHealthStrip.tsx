@@ -12,9 +12,11 @@ function formatAge(seconds: number): string {
 }
 
 export function NodeHealthStrip() {
-  const { data, error, isError, isLoading } = useNodeHealth();
+  const { data, dataUpdatedAt, error, isError, isLoading } = useNodeHealth();
   const liveTip = useTipStore((state) => state.tip);
   const tipStatus = useTipStore((state) => state.status);
+  const lastAction = useTipStore((state) => state.lastAction);
+  const lastEventAt = useTipStore((state) => state.lastEventAt);
   const now = useNow();
   const genesis = useQuery({
     queryKey: ["dingo", "genesis"],
@@ -22,6 +24,11 @@ export function NodeHealthStrip() {
       blockfrostFetch<{ network_magic: number }>("/api/v0/genesis", { signal }),
     staleTime: Infinity,
   });
+
+  if (
+    lastAction !== null && lastAction !== "apply" &&
+    lastEventAt !== null && dataUpdatedAt <= lastEventAt
+  ) return <span role="status" className="text-amber-300">Reconciling chain…</span>;
 
   if (isLoading) {
     return <span className="text-slate-500">Connecting to Dingo…</span>;
@@ -42,14 +49,14 @@ export function NodeHealthStrip() {
 
   const usingLiveTip = tipStatus === "live" && liveTip !== null;
   const tipHeight = usingLiveTip ? liveTip.height : data.tipHeight;
-  const secondsSinceTip = usingLiveTip
-    ? Math.max(0, Math.floor((now - liveTip.receivedAt) / 1000))
-    : data.secondsSinceTip;
+  const age = usingLiveTip && liveTip.hash !== data.tipHash
+    ? `Observed ${formatAge(Math.max(0, Math.floor((now - liveTip.receivedAt) / 1000)))}`
+    : `Block minted ${formatAge(Math.max(0, Math.floor(now / 1000) - data.tipTime))}`;
 
   return (
     <span
       className="flex items-center gap-3 text-slate-400"
-      title={`Tip #${tipHeight} · Epoch ${data.tipEpoch} · ${formatAge(secondsSinceTip)}${usingLiveTip ? " · FollowTip connected" : ""}`}
+      title={`Tip #${tipHeight} · ${usingLiveTip && liveTip.hash !== data.tipHash ? "Epoch pending refresh" : `Epoch ${data.tipEpoch}`} · ${age}${usingLiveTip ? " · FollowTip connected" : ""}`}
     >
       <span
         title={
