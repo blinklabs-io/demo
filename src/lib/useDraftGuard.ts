@@ -7,7 +7,7 @@ function routeIdentity(location: { pathname: string; search: string }) {
   const networks = params.getAll("network");
   const currentNetwork = networks.length === 0 || (networks.length === 1 && networks[0] === DINGO_NETWORK.id);
   if (currentNetwork) params.delete("network");
-  return { route: location.pathname + `?${params.toString()}`, currentNetwork, networkPresent: networks.length > 0 };
+  return { route: location.pathname + (params.size > 0 ? `?${params.toString()}` : ""), currentNetwork, networkPresent: networks.length > 0 };
 }
 
 export function useDraftGuard(key: string): () => void {

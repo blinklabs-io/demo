@@ -40,9 +40,9 @@ it("requires actual selected-chain funding even though both wallets report netwo
   const { tx, output } = fundingFixture();
   const resolveUnspentOutputs = vi.fn(async () => [output]);
   await assertTransactionNetwork(tx, () => {}, { resolveUnspentOutputs });
-  expect(resolveUnspentOutputs).toHaveBeenCalledWith(
-    tx.body().inputs().values(),
-  );
+  expect(resolveUnspentOutputs).toHaveBeenCalledWith([
+    ...tx.body().inputs().values(),
+  ]);
   resolveUnspentOutputs.mockResolvedValue([]);
   await expect(
     assertTransactionNetwork(tx, () => {}, { resolveUnspentOutputs }),
