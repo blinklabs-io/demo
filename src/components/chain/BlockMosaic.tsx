@@ -3,7 +3,7 @@ import { useCompactVisual } from "../../lib/chain/useCompactVisual";
 import { useId, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { Core } from "@blaze-cardano/sdk";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { treemap } from "../../lib/chain/geometry";
 import { formatAda, shortenHash } from "../../lib/format";

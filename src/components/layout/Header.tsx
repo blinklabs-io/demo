@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { mainNavigation, normalizePath } from "../../lib/navigation";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
+import { Link } from "../NetworkLink";
 import { NodeHealthStrip } from "./NodeHealthStrip";
 import { GlobalLookup } from "./GlobalLookup";
 import { NetworkSwitcher } from "./NetworkSwitcher";

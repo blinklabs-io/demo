@@ -2,7 +2,8 @@ import { DINGO_NETWORK } from "../lib/dingo/config";
 import { useDraftGuard } from "../lib/useDraftGuard";
 import { WalletConnectSummary } from "../components/layout/WalletConnectSummary";
 import { useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
+import { Link } from "../components/NetworkLink";
 import { Panel } from "../components/explorer/Panel";
 import { CopyButton } from "../components/explorer/CopyButton";
 import { formatAda as ada } from "../lib/format";
@@ -346,8 +347,8 @@ function StudioWorkspace({ imported }: { imported: string }) {
                 onPaste={(event) => {
                   event.preventDefault();
                   const field = event.currentTarget;
-                  const text = input.slice(0, field.selectionStart) +
-                    event.clipboardData.getData("text") + input.slice(field.selectionEnd);
+                  field.setRangeText(event.clipboardData.getData("text"), field.selectionStart, field.selectionEnd, "end");
+                  const text = field.value;
                   invalidate();
                   setInput(text);
                   try { setTransaction(inspect(text)); }

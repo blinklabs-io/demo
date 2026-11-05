@@ -1,6 +1,9 @@
 import { assertPreviewSundae } from "./protocol";
 import { governanceError } from "../dingo/governanceVote";
-import { assertWalletSession } from "../dingo/walletSession";
+import {
+  assertTransactionNetwork,
+  assertWalletSession,
+} from "../dingo/walletSession";
 import { Blaze, Core, type Wallet } from "@blaze-cardano/sdk";
 import { AssetAmount } from "@sundaeswap/asset";
 import {
@@ -103,6 +106,11 @@ export async function buildSwapOrder({
     assertConnection();
     const built = await composed.build();
     assertConnection();
+    await assertTransactionNetwork(
+      built.builtTx,
+      assertConnection,
+      blaze.provider,
+    );
     const txFee = BigInt(built.builtTx.body().fee()?.toString() ?? "0");
 
     return {
@@ -123,10 +131,19 @@ export async function buildSwapOrder({
               );
           };
           await assertAccount();
+          await assertTransactionNetwork(
+            built.builtTx,
+            assertConnection,
+            blaze.provider,
+          );
           const signed = await built.sign();
           await assertAccount();
           const tx = Core.Transaction.fromCbor(Core.TxCBOR(signed.cbor));
-          const txId = await blaze.provider.postTransactionToChain(tx);
+          await assertTransactionNetwork(tx, assertConnection, blaze.provider);
+          const txId = await blaze.provider.postTransactionToChain(
+            tx,
+            assertConnection,
+          );
           return txId.toString();
         } catch (error) {
           throw governanceError(

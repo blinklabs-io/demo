@@ -25,3 +25,20 @@ it("replaces an invalid URL context with an explicit valid recovery choice", asy
     realWindow.history.replaceState(null, "", "/");
   }
 });
+it("continues recovery through an explicit URL when storage is blocked", async () => {
+  const realWindow = window;
+  const assign = vi.fn();
+  vi.stubGlobal("window", new Proxy(realWindow, { get(target, key) {
+    if (key === "localStorage") throw new DOMException("Blocked", "SecurityError");
+    return key === "location" ? { assign } : Reflect.get(target, key, target);
+  } }));
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<NetworkRecovery />));
+    await act(async () => [...container.querySelectorAll("button")].find((button) => button.textContent === "Preprod")!.click());
+    expect(assign).toHaveBeenCalledWith("/?network=preprod");
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
+  } finally { await act(async () => root.unmount()); vi.unstubAllGlobals(); }
+});

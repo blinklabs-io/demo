@@ -199,7 +199,7 @@ function AnswerForm({
               />
             </div>
             <p>
-              Network fee <strong>{formatAda(draft.tx.body().fee())}</strong> ·
+              Network fee <strong>{formatAda(draft.tx.body().fee())}</strong> ·{" "}
               {DINGO_NETWORK.label}
             </p>
             <p>

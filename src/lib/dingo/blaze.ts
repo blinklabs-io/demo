@@ -1,4 +1,5 @@
 import { Blaze, Core, WebWallet } from "@blaze-cardano/sdk";
+import { assertDingoTransactionBackends } from "./walletSession";
 import type { Cip30WalletApi } from "./cip30";
 import { getDingoProvider } from "./utxorpc/provider";
 
@@ -9,7 +10,9 @@ export async function getBlaze(walletApi: Cip30WalletApi) {
   const webWallet = new WebWallet(
     walletApi as unknown as ConstructorParameters<typeof WebWallet>[0],
   );
-  const blaze = await Blaze.from(getDingoProvider(), webWallet);
+  const provider = getDingoProvider();
+  await assertDingoTransactionBackends();
+  const blaze = await Blaze.from(provider, webWallet);
   return { blaze, webWallet };
 }
 

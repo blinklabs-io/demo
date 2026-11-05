@@ -1,5 +1,5 @@
 import { DINGO_NETWORK } from "../../lib/dingo/config";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { useNodeHealth } from "../../lib/dingo/nodeHealth";

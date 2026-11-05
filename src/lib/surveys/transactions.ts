@@ -1,5 +1,8 @@
 import { DINGO_NETWORK } from "../dingo/config";
-import { assertWalletSession } from "../dingo/walletSession";
+import {
+  assertTransactionNetwork,
+  assertWalletSession,
+} from "../dingo/walletSession";
 import { Core } from "@blaze-cardano/sdk";
 import type { Cip30WalletApi } from "../dingo/cip30";
 import { getBlaze } from "../dingo/blaze";
@@ -50,7 +53,9 @@ async function walletIdentity(
     address.getNetworkId() !== 0 ||
     key?.type !== Core.Cardano.CredentialType.KeyHash
   )
-    throw new Error(`Connect a ${DINGO_NETWORK.label} wallet with a payment signing key.`);
+    throw new Error(
+      `Connect a ${DINGO_NETWORK.label} wallet with a payment signing key.`,
+    );
   return { address: address.toBech32(), key: key.hash.toString() };
 }
 async function validateAction(action: SurveyAction, key: string) {
@@ -143,6 +148,7 @@ export async function prepareSurveyTransaction(
     .setValidUntil(Core.Slot(validUntil))
     .complete();
   assertConnection();
+  await assertTransactionNetwork(tx, assertConnection);
   return { tx, blaze, identity, action, validUntil };
 }
 export type PreparedSurvey = Awaited<
@@ -163,8 +169,10 @@ export async function submitSurveyTransaction(
   if (tip.slot >= prepared.validUntil)
     throw new Error("This transaction draft expired.");
   await assertWalletSession(api, assertConnection);
+  await assertTransactionNetwork(prepared.tx, assertConnection);
   const signed = await prepared.blaze.signTransaction(prepared.tx);
   await assertWalletSession(api, assertConnection);
+  await assertTransactionNetwork(signed, assertConnection);
   const witness = signed
     .witnessSet()
     .vkeys()
@@ -183,5 +191,10 @@ export async function submitSurveyTransaction(
     throw new Error(
       "Wallet did not sign with the required payment key. Nothing was submitted.",
     );
-  return (await prepared.blaze.submitTransaction(signed, true)).toString();
+  return (
+    await prepared.blaze.provider.postTransactionToChain(
+      signed,
+      assertConnection,
+    )
+  ).toString();
 }

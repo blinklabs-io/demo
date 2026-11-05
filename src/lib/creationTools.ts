@@ -46,7 +46,7 @@ const definitions = [
     id: "treasury",
     icon: "◎",
     name: "Treasury donation",
-    description: "Donate test ADA directly to the Preview treasury.",
+    description: "Donate test ADA directly to the treasury.",
     color: "amber",
   },
 ] as const;

@@ -1,7 +1,8 @@
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useState } from "react";
 import { BlockfrostError } from "../../lib/dingo/blockfrost";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
+import { Link } from "../../components/NetworkLink";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Core } from "@blaze-cardano/sdk";
 import {

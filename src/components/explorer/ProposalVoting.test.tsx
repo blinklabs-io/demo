@@ -58,7 +58,7 @@ it.each(["valid", "failed", "unavailable"] as const)("tracks a submitted vote th
     expect(container.querySelector<HTMLFieldSetElement>("fieldset")!.disabled).toBe(true);
     expect([...container.querySelectorAll("button")].some((button) => button.textContent === "Review vote")).toBe(false);
     await act(async () => container.querySelector<HTMLInputElement>('input[value="no"]')!.click());
-    expect(container.querySelector(`a[href="/explorer/tx/${hash}"]`)).not.toBeNull();
+    expect(container.querySelector(`a[href="/explorer/tx/${hash}?network=preview"]`)).not.toBeNull();
     expect(fetch).toHaveBeenCalledTimes(1);
     await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
     expect(fetch).toHaveBeenCalledTimes(2);
@@ -81,9 +81,9 @@ it.each(["valid", "failed", "unavailable"] as const)("tracks a submitted vote th
     expect(container.textContent).toContain("Vote confirmed");
     expect(container.textContent).toContain("Included on chain.");
     expect(refreshBalance).toHaveBeenCalledTimes(2);
-    expect(container.querySelector(`a[href="/explorer/tx/${hash}"]`)).not.toBeNull();
+    expect(container.querySelector(`a[href="/explorer/tx/${hash}?network=preview"]`)).not.toBeNull();
     await click("Start new draft");
-    expect(container.querySelector(`a[href="/explorer/tx/${hash}"]`)).toBeNull();
+    expect(container.querySelector(`a[href="/explorer/tx/${hash}?network=preview"]`)).toBeNull();
     expect(container.querySelector<HTMLFieldSetElement>("fieldset")!.disabled).toBe(false);
   } finally {
     await act(async () => root.unmount());

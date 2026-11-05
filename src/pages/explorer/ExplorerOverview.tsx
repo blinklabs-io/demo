@@ -6,7 +6,7 @@ import { BlockHeaderVersion } from "../../components/explorer/BlockHeaderVersion
 import { epochProgress } from "../../lib/visualFormat";
 import { useState } from "react";
 import { BarChart, Metric, PageIntro } from "../../components/explorer/Visuals";
-import { Link } from "react-router";
+import { Link } from "../../components/NetworkLink";
 import { useQuery } from "@tanstack/react-query";
 import { Panel } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";

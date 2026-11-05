@@ -211,7 +211,7 @@ it("preserves the submitted hash and confirmation when the authored action chang
   expect(container.textContent).toContain("Submitted to Dingo");
   await amount("20");
   expect(
-    container.querySelector('a[href="/explorer/tx/' + "11".repeat(32) + '"]'),
+    container.querySelector('a[href="/explorer/tx/' + "11".repeat(32) + '?network=preview"]'),
   ).not.toBeNull();
   boundary.confirmed = true;
   await act(async () =>
@@ -226,7 +226,7 @@ it("preserves the submitted hash and confirmation when the authored action chang
 it("keeps the consolidation transaction hash when post-submit wallet refresh prunes spent selections", async () => {
   await act(async () =>
     container
-      .querySelector<HTMLAnchorElement>('a[href="/wallet/tools/utxos"]')!
+      .querySelector<HTMLAnchorElement>('a[href="/wallet/tools/utxos?network=preview"]')!
       .click(),
   );
   await click("Select up to 100");
@@ -235,7 +235,7 @@ it("keeps the consolidation transaction hash when post-submit wallet refresh pru
   await finish();
   expect(container.textContent).toContain("No eligible UTxOs");
   expect(
-    container.querySelector('a[href="/explorer/tx/' + "11".repeat(32) + '"]'),
+    container.querySelector('a[href="/explorer/tx/' + "11".repeat(32) + '?network=preview"]'),
   ).not.toBeNull();
   expect(container.textContent).toContain("Submitted to Dingo");
   expect(boundary.posts).toBe(1);

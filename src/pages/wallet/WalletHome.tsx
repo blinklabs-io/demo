@@ -1,7 +1,7 @@
 import { WalletConnectSummary } from "../../components/layout/WalletConnectSummary";
 import { WalletRewards } from "../../components/explorer/WalletRewards";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link } from "../../components/NetworkLink";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import { PageIntro, Metric, BarChart } from "../../components/explorer/Visuals";

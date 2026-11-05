@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { useMempoolStore } from "../../stores/mempoolStore";
 import { BlockHeaderVersion } from "../explorer/BlockHeaderVersion";
 import { PoolIdentity } from "../explorer/PoolIdentity";

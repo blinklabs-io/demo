@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { DINGO_NETWORKS, NETWORK_STORAGE_KEY, networkSearch, type DingoNetworkId } from "./lib/dingo/networks";
+import { DINGO_NETWORKS, persistDingoNetwork, networkSearch, type DingoNetworkId } from "./lib/dingo/networks";
 
 export default function NetworkRecovery() {
   const [error, setError] = useState("");
   function choose(network: DingoNetworkId) {
     try {
-      window.localStorage.setItem(NETWORK_STORAGE_KEY, network);
+      persistDingoNetwork(network);
       window.location.assign(`/${networkSearch("", network)}`);
     } catch {
-      setError("The browser could not save your network choice. Allow site storage and try again.");
+      setError("The browser could not open the selected network. Try choosing it again.");
     }
   }
   return (

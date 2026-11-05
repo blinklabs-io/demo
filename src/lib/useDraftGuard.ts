@@ -1,6 +1,6 @@
 import { DINGO_NETWORK } from "./dingo/config";
 import { useContext, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { UNSAFE_DataRouterContext, useLocation } from "react-router";
+import { NavigationType, UNSAFE_DataRouterContext, useLocation } from "react-router";
 
 function routeIdentity(location: { pathname: string; search: string }) {
   const params = new URLSearchParams(location.search);
@@ -29,12 +29,12 @@ export function useDraftGuard(key: string): () => void {
   useLayoutEffect(() => {
     if (!router) return;
     let previous = router.state.location;
-    return router.subscribe(({ location: next }) => {
+    return router.subscribe(({ location: next, historyAction }) => {
       const before = routeIdentity(previous), after = routeIdentity(next);
       const sameRoute = before.route === after.route;
-      const canonicalMetadata = sameRoute && before.currentNetwork && after.currentNetwork && before.networkPresent !== after.networkPresent;
-      const changed = !sameRoute || previous.key !== next.key;
-      const anchorOnly = sameRoute && previous.hash !== next.hash;
+      const canonicalMetadata = historyAction === NavigationType.Replace && previous.state === next.state && sameRoute && before.currentNetwork && after.currentNetwork && before.networkPresent !== after.networkPresent;
+      const changed = !sameRoute || previous.key !== next.key || previous.state !== next.state;
+      const anchorOnly = sameRoute && previous.search === next.search && previous.state === next.state && previous.hash !== next.hash;
       previous = next;
       if (changed && !anchorOnly && !canonicalMetadata) {
         // Router navigation can precede React's transition/unmount commit.

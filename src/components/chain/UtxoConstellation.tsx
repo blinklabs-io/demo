@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Core } from "@blaze-cardano/sdk";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { fraction, fingerprint, visualColors } from "../../lib/chain/geometry";
 import { inputId, assetName } from "../../lib/tools/transactions";
 import { formatAda, shortenHash } from "../../lib/format";

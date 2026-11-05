@@ -2,7 +2,7 @@ import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { metadataJson } from "../../lib/tools/cip25";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import { WalletConnectSummary } from "../layout/WalletConnectSummary";

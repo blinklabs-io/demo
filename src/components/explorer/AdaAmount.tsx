@@ -1,5 +1,5 @@
 import { formatAda, shortenHash } from "../../lib/format";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 
 export interface AmountEntry {
   unit: string;

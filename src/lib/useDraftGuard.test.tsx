@@ -83,3 +83,23 @@ it.each(["preprod", "invalid"])("immediately invalidates an approval on explicit
   expect(() => old()).toThrow("Draft details changed");
   expect(() => latest()).not.toThrow();
 });
+it.each([false, true])("invalidates same-page changed-state navigation when replace=%s", async (replace) => {
+  await act(async () => { await router.navigate("/a?network=preview", { replace: true, state: { transactionCbor: "first" } }); });
+  const old = latest;
+  await act(async () => {
+    const pending = router.navigate("/a", { replace, state: { transactionCbor: "second" } });
+    expect(() => old()).toThrow("Draft details changed");
+    await pending;
+  });
+  expect(() => old()).toThrow("Draft details changed");
+  expect(() => latest()).not.toThrow();
+});
+it("does not exempt a PUSH merely because it only drops canonical network metadata", async () => {
+  await act(async () => { await router.navigate("/a?network=preview", { replace: true }); });
+  const old = latest;
+  await act(async () => {
+    const pending = router.navigate("/a");
+    expect(() => old()).toThrow("Draft details changed");
+    await pending;
+  });
+});

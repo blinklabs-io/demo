@@ -1,3 +1,4 @@
+import { assertTransactionNetwork } from "../dingo/walletSession";
 import { assertPreviewSundae } from "./protocol";
 import { Blaze, Core, type Wallet } from "@blaze-cardano/sdk";
 import { AssetAmount } from "@sundaeswap/asset";
@@ -665,6 +666,11 @@ export async function buildV4Swap(
     throw error;
   });
   assertConnection();
+  await assertTransactionNetwork(
+    built.builtTx,
+    assertConnection,
+    blaze.provider,
+  );
   const requiredAda =
     offeredAda +
     composed.fees.deposit.amount +
@@ -687,6 +693,11 @@ export async function buildV4Swap(
         );
       await checkAda(requiredAda);
       assertConnection();
+      await assertTransactionNetwork(
+        built.builtTx,
+        assertConnection,
+        blaze.provider,
+      );
       const signed = await built.sign();
       assertConnection();
       const networkAfterSigning = await blaze.wallet.getNetworkId();
@@ -695,9 +706,15 @@ export async function buildV4Swap(
         throw new Error(
           "Wallet network changed while signing. Review the V4 intent again on testnet.",
         );
+      await assertTransactionNetwork(
+        Core.Transaction.fromCbor(Core.TxCBOR(signed.cbor)),
+        assertConnection,
+        blaze.provider,
+      );
       return String(
         await blaze.provider.postTransactionToChain(
           Core.Transaction.fromCbor(Core.TxCBOR(signed.cbor)),
+          assertConnection,
         ),
       );
     },

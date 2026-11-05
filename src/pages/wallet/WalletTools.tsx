@@ -11,7 +11,8 @@ import {
   type ComponentType,
   type ComponentProps,
 } from "react";
-import { Link, NavLink, useParams } from "react-router";
+import { useParams } from "react-router";
+import { Link, NavLink } from "../../components/NetworkLink";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import {

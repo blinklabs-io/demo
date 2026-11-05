@@ -35,3 +35,26 @@ it("opens a shared Preprod URL ahead of saved Preview and remembers that explici
   expect(renderToStaticMarkup(boundary.render.mock.calls[0][0])).toContain("Application");
   expect(fetch).not.toHaveBeenCalled();
 });
+it("loads explicit Preprod context even when browser persistence is blocked", async () => {
+  window.history.replaceState(null, "", "/explorer/tx/shared?network=preprod");
+  const storage = vi.spyOn(window, "localStorage", "get").mockImplementation(() => { throw new DOMException("Blocked", "SecurityError"); });
+  try {
+    await import("./main");
+    await vi.waitFor(() => expect(boundary.render).toHaveBeenCalledOnce());
+    expect(renderToStaticMarkup(boundary.render.mock.calls[0][0])).toContain("Application");
+    expect(fetch).not.toHaveBeenCalled();
+  } finally { storage.mockRestore(); }
+});
+
+it("renders a reload action if the application chunk cannot load", async () => {
+  vi.doMock("./App.tsx", () => { throw new Error("Chunk unavailable"); });
+  try {
+    await import("./main");
+    await vi.waitFor(() => expect(boundary.render).toHaveBeenCalledOnce());
+    const html = renderToStaticMarkup(boundary.render.mock.calls[0][0]);
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("Reload workspace");
+  } finally {
+    vi.doMock("./App.tsx", () => { boundary.appImported(); return { default: () => <div>Application</div> }; });
+  }
+});

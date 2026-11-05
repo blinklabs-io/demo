@@ -14,7 +14,7 @@ import {
 import { PageIntro } from "../../components/explorer/Visuals";
 import { WalletConnectSummary } from "../../components/layout/WalletConnectSummary";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link } from "../../components/NetworkLink";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   ADA_METADATA,

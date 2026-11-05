@@ -1,3 +1,4 @@
+import { assertTransactionNetwork } from "../dingo/walletSession";
 import { Blaze, ColdWallet, Core } from "@blaze-cardano/sdk";
 import { parseAdaToLovelace } from "../dingo/amount";
 import { blockfrostFetch } from "../dingo/blockfrost";
@@ -104,15 +105,11 @@ function readTransactionForEra(input: string, selectedEra?: Era) {
   )
     throw new Error("Transaction contains unsupported body fields.");
   if (era === "BabbageEra" && [...fields.keys()].some((key) => key >= 19))
-    throw new Error(
-      "Transaction contains fields introduced after Babbage.",
-    );
+    throw new Error("Transaction contains fields introduced after Babbage.");
   if (era === "ConwayEra" && [...fields.keys()].some((key) => key >= 23))
     throw new Error("Transaction contains fields introduced after Conway.");
   if (era === "ConwayEra" && fields.has(6))
-    throw new Error(
-      "Legacy protocol updates are not supported in Conway.",
-    );
+    throw new Error("Legacy protocol updates are not supported in Conway.");
   const witnessFields = entries(encoded[1]);
   const maxWitnessKey = era === "BabbageEra" ? 6 : 7;
   if ([...witnessFields.keys()].some((key) => key > maxWitnessKey))
@@ -152,10 +149,19 @@ function readTransactionForEra(input: string, selectedEra?: Era) {
     );
   for (const certificate of tx.body().certs()?.values() ?? []) {
     const kind = certificate.kind();
+    const owners = certificate
+      .asPoolRegistration()
+      ?.poolParameters()
+      .poolOwners();
+    if (
+      era === "BabbageEra" &&
+      owners &&
+      new Core.CborReader(owners.toCbor()).peekState() ===
+        Core.CborReaderState.Tag
+    )
+      throw new Error("Tagged pool-owner sets require Conway.");
     if (era === "BabbageEra" && kind >= 7)
-      throw new Error(
-        "Transaction contains Conway certificates.",
-      );
+      throw new Error("Transaction contains Conway certificates.");
     if (era === "ConwayEra" && (kind === 5 || kind === 6))
       throw new Error(
         "Genesis delegation and MIR certificates are not supported in Conway.",
@@ -393,6 +399,7 @@ export async function addWalletWitness(
   if ((await api.getNetworkId()) !== 0)
     throw new Error("Wallet network changed while signing.");
   assertConnection();
+  await assertTransactionNetwork(transaction.tx, assertConnection, provider);
   const returned = entries(response),
     original = entries(transaction.encoded[1]);
   for (const [key, value] of returned)

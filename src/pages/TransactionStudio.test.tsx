@@ -1,4 +1,5 @@
 import { act } from "react";
+import { Core } from "@blaze-cardano/sdk";
 import { createRoot, type Root } from "react-dom/client";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -159,4 +160,42 @@ it("opens a transaction passed from the explorer without another inspection step
   expect(readTransaction).toHaveBeenCalledWith(cbor);
   expect(container.querySelector<HTMLTextAreaElement>("#transaction-cbor")!.value).toBe(cbor);
   expect(container.textContent).toContain("Rejected fixture CBOR");
+});
+
+it.each(["file", "paste", "navigation"])("shows a successful %s import immediately", async (path) => {
+  const cbor = "84a3008001800200a0f5f6";
+  const tx = Core.Transaction.fromCbor(Core.TxCBOR(cbor));
+  const id = Core.TransactionId("36fdff68dfe3660f1ceea60f018a0fd7a83da13def229108794c397a879b0436");
+  // Use this fixture's actual digest without crossing jsdom and Node crypto realms.
+  vi.spyOn(tx, "getId").mockReturnValue(id);
+  vi.mocked(readTransaction).mockReturnValue({ cbor, tx, id, encoded: ["a3008001800200", "a0", "f5", "f6"], era: "ConwayEra", eraSource: "compatible", compatibleEras: ["ConwayEra", "BabbageEra"] });
+  if (path === "file") {
+    const file = await pendingFile();
+    await act(async () => file.resolve(cbor));
+  } else if (path === "navigation") {
+    await act(async () => router.navigate("/studio", { state: { transactionCbor: cbor } }));
+  } else {
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", { value: { getData: () => cbor } });
+    await act(async () => container.querySelector("textarea")!.dispatchEvent(event));
+  }
+  expect(container.textContent).toContain("Transaction passport");
+  expect(container.textContent).toContain(id);
+  expect(container.querySelector('[role="alert"]')).toBeNull();
+});
+
+it("keeps the caret immediately after a mid-input paste", async () => {
+  const field = container.querySelector<HTMLTextAreaElement>("#transaction-cbor")!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(field, "aabbcc");
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  field.setSelectionRange(2, 4);
+  const event = new Event("paste", { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "clipboardData", { value: { getData: () => "dd" } });
+  await act(async () => field.dispatchEvent(event));
+  expect(field.value).toBe("aaddcc");
+  expect(field.selectionStart).toBe(4);
+  expect(field.selectionEnd).toBe(4);
+  expect(readTransaction).toHaveBeenCalledWith("aaddcc");
 });

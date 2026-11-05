@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from "react";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 
 import { ratio } from "../../lib/visualFormat";
 

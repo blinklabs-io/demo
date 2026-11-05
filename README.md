@@ -44,15 +44,19 @@ node, so use a test network and connect a test wallet.
 
 Choose Preview or Preprod in the header. Shared links include the network
 (`?network=preview` or `?network=preprod`), which takes precedence over a saved
-choice. Switching disconnects the wallet,
+choice. Explicit network links work when browser storage is blocked. Switching disconnects the wallet,
 clears drafts and transient chain data, and reloads the current tool or a safe
-list view for the new network. Wallet connections are always explicit.
+list view for the new network. Safe ticker filters and page anchors survive;
+old-network delegation and entity prefills are discarded. Wallet connections are always explicit.
 
 The existing `VITE_DINGO_*_URL` settings configure Preview. Preprod has separate
 `VITE_DINGO_PREPROD_BLOCKFROST_URL`, `VITE_DINGO_PREPROD_MESH_URL` and
 `VITE_DINGO_PREPROD_UTXORPC_URL` overrides. Each API must serve the selected
 network. SundaeSwap markets remain tied to the verified Preview deployments;
-other creation and participation tools use the selected network.
+other creation and participation tools use the selected network. CIP-30 reports
+only mainnet versus testnet, so transaction review and signing additionally
+require the actual spending and collateral inputs to be unspent on the selected
+Dingo chain.
 
 ## Explore without a wallet
 
@@ -84,7 +88,7 @@ balances from input references or claim ledger validation.
 
 Exports use cardano-cli JSON text envelopes with `type`, `description` and
 `cborHex` fields, downloaded as `.tx` files. The type is `Tx ConwayEra` or
-`Tx BabbageEra`, matching the selected or imported era. The CBOR is a complete
+`Tx BabbageEra`, matching the transaction’s supported export era. The CBOR is a complete
 transaction, including its existing witness set and auxiliary data. Both
 unsigned and partially witnessed transactions use this format; the inspector
 shows the number of key witnesses separately.

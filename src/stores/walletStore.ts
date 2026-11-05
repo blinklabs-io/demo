@@ -28,7 +28,7 @@ interface WalletDetails {
 }
 
 // CIP-30 distinguishes mainnet from testnets; Dingo genesis verifies the selected testnet.
-const EXPECTED_NETWORK_ID = 0; // CIP-30 network id 0 = testnet (Preview/Preprod), 1 = mainnet
+const EXPECTED_NETWORK_ID = 0; // CIP-30 distinguishes testnet from mainnet; actual funding inputs are verified against selected Dingo before review/signing.
 
 interface WalletState extends WalletDetails {
   connectionId: number;
@@ -152,8 +152,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         if (connectGeneration === requestGeneration) {
           set({
             status: "error",
-            error:
-              `Wrong network. Switch your wallet to ${DINGO_NETWORK.label}, then reconnect.`,
+            error: `Wrong network. Switch your wallet to ${DINGO_NETWORK.label}, then reconnect.`,
           });
         }
         return;

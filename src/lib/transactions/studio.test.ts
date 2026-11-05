@@ -1,6 +1,13 @@
 // @vitest-environment node
-import { expect, it } from "vitest";
-import { readTransaction, transactionEnvelope } from "./studio";
+import { Core } from "@blaze-cardano/sdk";
+import { getDingoProvider } from "../dingo/utxorpc/provider";
+import type { Cip30WalletApi } from "../dingo/cip30";
+import { expect, it, vi } from "vitest";
+import {
+  addWalletWitness,
+  readTransaction,
+  transactionEnvelope,
+} from "./studio";
 
 const shared = "84a3008001800200a0f4f6";
 const conway = "84a40080018002001601a0f5f6";
@@ -44,11 +51,11 @@ it("preserves a CLI envelope's era when its bytes are era-ambiguous", () => {
   expect(JSON.parse(transactionEnvelope(result)).type).toBe("Tx BabbageEra");
 });
 it.each([
-  shared + "00",
-  "84a40080018002001700a0f5f6",
-  "84a500800180020016010682a000a0f5f6",
-])("does not loosen structural or era rejection: %s", (value) => {
-  expect(() => readTransaction(value)).toThrow();
+  [shared + "00", /Unexpected data after the transaction/],
+  ["84a40080018002001700a0f5f6", /unsupported body fields/],
+  ["84a500800180020016010682a000a0f5f6", /Legacy protocol updates/],
+])("rejects invalid transaction %s", (value, message) => {
+  expect(() => readTransaction(value)).toThrow(message);
 });
 it("rejects Plutus V3 witnesses declared as Babbage", () => {
   const cbor = "84a3008001800200a107814101f5f6";
@@ -92,3 +99,93 @@ it("classifies governance and removed genesis certificates by supported era", ()
     eraSource: "features",
   });
 });
+it("checks nested pool-owner set tags when inferring era compatibility", () => {
+  const registration = (tag: string) =>
+    `84a400800180020004818a03581c${"11".repeat(28)}5820${"22".repeat(32)}0000d81e820001581de0${"33".repeat(28)}${tag}81581c${"44".repeat(28)}80f6a0f5f6`;
+  expect(readTransaction(registration(""))).toMatchObject({
+    eraSource: "compatible",
+  });
+  const tagged = registration("d90102");
+  expect(readTransaction(tagged)).toMatchObject({
+    era: "ConwayEra",
+    eraSource: "features",
+  });
+  expect(() =>
+    readTransaction(JSON.stringify({ type: "Tx BabbageEra", cborHex: tagged })),
+  ).toThrow(/pool-owner/);
+});
+
+it.each([false, true])(
+  "preserves bytes and era provenance through an actual wallet witness merge (envelope=%s)",
+  async (envelope) => {
+    await Core.initCrypto();
+    const key = Core.Ed25519PrivateKey.fromNormalHex(
+      Core.Ed25519PrivateNormalKeyHex("55".repeat(32)),
+    );
+    const address = Core.addressFromCredential(
+      0,
+      Core.Credential.fromCore({
+        type: Core.CredentialType.KeyHash,
+        hash: key.toPublic().hash().hex(),
+      }),
+    );
+    const input = new Core.TransactionInput(
+      Core.TransactionId("66".repeat(32)),
+      0n,
+    );
+    const output = new Core.TransactionUnspentOutput(
+      input,
+      new Core.TransactionOutput(address, new Core.Value(10000000n)),
+    );
+    const body = `a30081825820${"66".repeat(32)}0001800200`;
+    const raw = `84${body}a0f4f6`;
+    const original = readTransaction(
+      envelope ? JSON.stringify({ type: "Tx BabbageEra", cborHex: raw }) : raw,
+    );
+    const provider = getDingoProvider();
+    const genesis = vi
+      .spyOn(provider.queryClient, "readGenesis")
+      .mockResolvedValue({ networkMagic: 2 } as Awaited<
+        ReturnType<typeof provider.queryClient.readGenesis>
+      >);
+    const resolve = vi
+      .spyOn(provider, "resolveUnspentOutputs")
+      .mockResolvedValue([output]);
+    try {
+      const api = {
+        getNetworkId: async () => 0,
+        signTx: async () => {
+          const witness = new Core.TransactionWitnessSet();
+          witness.setVkeys(
+            Core.CborSet.fromCore(
+              [
+                [
+                  key.toPublic().hex(),
+                  key.sign(Core.HexBlob(original.id)).hex(),
+                ],
+              ],
+              Core.VkeyWitness.fromCore,
+            ),
+          );
+          return witness.toCbor();
+        },
+      } as unknown as Cip30WalletApi;
+      const signed = await addWalletWitness(original, api, () => {});
+      expect(signed.encoded[0]).toBe(body);
+      expect(signed.encoded.slice(2)).toEqual(["f4", "f6"]);
+      expect(signed.id).toBe(original.id);
+      expect(signed.tx.witnessSet().vkeys()?.size()).toBe(1);
+      expect(signed).toMatchObject(
+        envelope
+          ? { era: "BabbageEra", eraSource: "envelope" }
+          : { era: "ConwayEra", eraSource: "features" },
+      );
+      expect(JSON.parse(transactionEnvelope(signed)).type).toBe(
+        envelope ? "Tx BabbageEra" : "Tx ConwayEra",
+      );
+    } finally {
+      genesis.mockRestore();
+      resolve.mockRestore();
+    }
+  },
+);

@@ -1,11 +1,10 @@
-import { useTipStore } from "../stores/tipStore";
 import { DINGO_NETWORK } from "../lib/dingo/config";
 import { useQuery } from "@tanstack/react-query";
 import { recentBlocksQuery, type BlockSummary } from "../lib/explorer/recentBlocks";
 import { creationTools, type CreationToolId } from "../lib/creationTools";
 import { ChainSnapshot } from "../components/explorer/ChainSnapshot";
-import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { useState } from "react";
+import { Link } from "../components/NetworkLink";
 import { useNodeHealth } from "../lib/dingo/nodeHealth";
 import { useMempoolStore } from "../stores/mempoolStore";
 import { BlockMosaic } from "../components/chain/BlockMosaic";
@@ -132,12 +131,9 @@ export default function Experiences() {
   const [inspectedBlock, setInspectedBlock] = useState<BlockSummary | null>(null);
   const recent = useQuery({ ...recentBlocksQuery, enabled: inspectedBlock === null });
   const candidate = recent.data?.blocks.find((block) => block.tx_count > 0) ?? recent.data?.blocks[0];
-  if (!inspectedBlock && candidate) setInspectedBlock(candidate);
-  const shownBlock = inspectedBlock ?? candidate;
-  useEffect(() => useTipStore.subscribe((next, previous) => {
-    if (next.revision !== previous.revision && next.lastAction !== "apply")
-      setInspectedBlock(null);
-  }), []);
+  if (inspectedBlock && !recent.data) setInspectedBlock(null);
+  else if (!inspectedBlock && candidate && !recent.isFetching && (recent.isFetchedAfterMount || !recent.isStale)) setInspectedBlock(candidate);
+  const shownBlock = inspectedBlock;
   const pending = useMempoolStore((s) => s.pendingTxs.size);
   const stream = useMempoolStore((s) => s.status);
 
@@ -255,6 +251,7 @@ export default function Experiences() {
           See what transactions do and how much space they occupy. Select a tile
           to inspect the transaction behind it.
         </p>
+        {recent.error && shownBlock && <p role="status" className="text-amber-300">Recent activity refresh unavailable. Showing the selected block.</p>}
         {shownBlock ? (
           <BlockMosaic
             hash={shownBlock.hash}
@@ -263,13 +260,14 @@ export default function Experiences() {
         ) : (
           <div className="experience-unavailable">
             <p>
-              {health.error
-                ? "Could not load the latest block from Dingo."
+              {recent.error || health.error
+                ? "Could not load recent blocks from Dingo."
                 : "Waiting for chain data…"}
             </p>
             <button
               type="button"
               onClick={() => {
+                void recent.refetch();
                 void health.refetch();
               }}
             >

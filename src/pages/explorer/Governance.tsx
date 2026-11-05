@@ -11,7 +11,8 @@ import {
   Distribution,
   PageIntro,
 } from "../../components/explorer/Visuals";
-import { Link, useParams, useLocation } from "react-router";
+import { useParams, useLocation } from "react-router";
+import { Link } from "../../components/NetworkLink";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";

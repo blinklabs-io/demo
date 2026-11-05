@@ -16,7 +16,7 @@ it("delegates to the canonical pool ID when viewing a hex alias and preserves ca
   notifyManager.setScheduler(queueMicrotask);
   try {
     await act(async () => root.render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[`/pool/${alias}`]}><Routes><Route path="/pool/:poolId" element={<PoolDetail />} /></Routes></MemoryRouter></QueryClientProvider>));
-    const href = `/wallet/delegate?pool=${canonical}`;
+    const href = `/wallet/delegate?pool=${canonical}&network=preview`;
     expect(container.querySelector(`a[href="${href}"]`)).not.toBeNull();
     vi.mocked(fetch).mockResolvedValue(new Response('{}', { status: 503, headers: { "Content-Type": "application/json" } }));
     await act(async () => { await client.refetchQueries({ queryKey: key, exact: true }); });

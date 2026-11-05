@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";

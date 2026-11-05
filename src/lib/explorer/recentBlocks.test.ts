@@ -66,3 +66,14 @@ it("clears the window when the latest-block endpoint itself returns not found", 
     expect(queryClient.getQueryData(recentBlocksQuery.queryKey)).toBeUndefined();
   } finally { queryClient.clear(); }
 });
+
+it("retains the complete cached window when an HTTP-success refresh contains a competing ancestor", async () => {
+  const previous = { blocks: Array.from({ length: 12 }, (_, i) => block(12-i)), incomplete: false };
+  queryClient.setQueryData(recentBlocksQuery.queryKey, previous);
+  vi.mocked(fetch).mockResolvedValueOnce(response(block(13)))
+    .mockResolvedValueOnce(response([{ ...block(12), hash: hash(1000) }]));
+  try {
+    await expect(queryClient.fetchQuery({ ...recentBlocksQuery, retry: false, staleTime: 0 })).rejects.toThrow("Could not refresh recent blocks.");
+    expect(queryClient.getQueryData(recentBlocksQuery.queryKey)).toEqual(previous);
+  } finally { queryClient.clear(); }
+});

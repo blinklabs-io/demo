@@ -2,7 +2,7 @@ import { creationTools } from "../creationTools";
 import { useWalletStore } from "../../stores/walletStore";
 import { useTipStore } from "../../stores/tipStore";
 import { useMempoolStore } from "../../stores/mempoolStore";
-import { NETWORK_STORAGE_KEY, networkSearch, isDingoNetworkId, type DingoNetworkId } from "./networks";
+import { markNetworkNavigationPending, persistDingoNetwork, networkSearch, isDingoNetworkId, type DingoNetworkId } from "./networks";
 import { DINGO_NETWORK } from "./config";
 
 export function networkDestination(pathname: string): string {
@@ -18,16 +18,27 @@ export function networkDestination(pathname: string): string {
   return "/";
 }
 
+export function networkSwitchDestination(pathname: string, search: string, hash: string, network: DingoNetworkId): string {
+  const destination = networkDestination(pathname);
+  const sameCapability = destination === (pathname.replace(/\/+$/, "") || "/");
+  const retained = new URLSearchParams();
+  const ticker = new URLSearchParams(search).get("ticker");
+  if (sameCapability && destination === "/explorer/pools" && ticker !== null)
+    retained.set("ticker", ticker);
+  return `${destination}${networkSearch(retained.toString(), network)}${sameCapability ? hash : ""}`;
+}
+
 export function reloadDingoPage(destination: string, selected?: DingoNetworkId) {
   useWalletStore.getState().disconnect();
   useTipStore.getState().stop();
   useMempoolStore.getState().stop();
-  if (selected !== undefined) window.localStorage.setItem(NETWORK_STORAGE_KEY, selected);
+  if (selected !== undefined) persistDingoNetwork(selected);
+  markNetworkNavigationPending();
   window.location.assign(destination);
 }
 
 export function changeDingoNetwork(next: DingoNetworkId) {
   if (!isDingoNetworkId(next)) throw new Error("Choose Preview or Preprod.");
   if (next === DINGO_NETWORK.id) return;
-  reloadDingoPage(`${networkDestination(window.location.pathname)}${networkSearch("", next)}`, next);
+  reloadDingoPage(networkSwitchDestination(window.location.pathname, window.location.search, window.location.hash, next), next);
 }

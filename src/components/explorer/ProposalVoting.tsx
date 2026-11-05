@@ -6,7 +6,7 @@ import {
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { useWalletStore } from "../../stores/walletStore";
 import { useWalletDRep } from "../../lib/dingo/useWalletDRep";
 import { useNodeHealth } from "../../lib/dingo/nodeHealth";

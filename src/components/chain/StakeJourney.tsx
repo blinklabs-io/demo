@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { fraction } from "../../lib/chain/geometry";
 import { formatAda } from "../../lib/format";
@@ -123,7 +123,7 @@ function Journey({ stake }: { stake: string }) {
           </label>
         )}
         {!open && (
-          <button onClick={() => setOpen(true)}>Load rewards & delegation history</button>
+          <button onClick={() => setOpen(true)}>Load stake history</button>
         )}
       </header>
       {!open ? (

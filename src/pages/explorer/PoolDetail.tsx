@@ -1,6 +1,7 @@
 import { PoolIdentity } from "../../components/explorer/PoolIdentity";
 import { Gauge, Metric, PageIntro } from "../../components/explorer/Visuals";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
+import { Link } from "../../components/NetworkLink";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";

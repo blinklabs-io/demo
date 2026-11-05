@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link } from "../NetworkLink";
 import { Core } from "@blaze-cardano/sdk";
 import { Panel } from "./Panel";
 import { CopyButton } from "./CopyButton";

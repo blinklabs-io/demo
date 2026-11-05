@@ -19,6 +19,15 @@ export function networkSearch(search: string, network: DingoNetworkId): string {
   params.set("network", network);
   return `?${params.toString()}`;
 }
+export function persistDingoNetwork(network: DingoNetworkId): boolean {
+  try {
+    window.localStorage.setItem(NETWORK_STORAGE_KEY, network);
+    return true;
+  } catch {
+    // The explicit URL remains authoritative when browser storage is unavailable.
+    return false;
+  }
+}
 export function selectedDingoNetwork() {
   const explicit = typeof window === "undefined" ? null : urlDingoNetwork(window.location.search);
   if (explicit !== null) return DINGO_NETWORKS[explicit];
@@ -27,4 +36,16 @@ export function selectedDingoNetwork() {
   if (!isDingoNetworkId(value))
     throw new Error(`Unsupported saved Dingo network "${value}". Clear the saved network selection to continue.`);
   return DINGO_NETWORKS[value];
+}
+
+let networkNavigationPending = false;
+export function markNetworkNavigationPending() {
+  networkNavigationPending = true;
+}
+export function installNetworkRestoreGuard(): () => void {
+  const restore = (event: PageTransitionEvent) => {
+    if (event.persisted && networkNavigationPending) window.location.reload();
+  };
+  window.addEventListener("pageshow", restore);
+  return () => window.removeEventListener("pageshow", restore);
 }

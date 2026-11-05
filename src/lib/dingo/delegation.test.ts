@@ -9,10 +9,12 @@ vi.mock("./blaze", async (original) => ({
   ...(await original<typeof import("./blaze")>()),
   getBlaze: vi.fn(),
 }));
+const fundingResolver = vi.hoisted(() => vi.fn());
 vi.mock("./utxorpc/provider", async (original) => ({
   ...(await original<typeof import("./utxorpc/provider")>()),
   getDingoProvider: () => ({
     queryClient: { readGenesis: async () => ({ networkMagic: 2 }) },
+    resolveUnspentOutputs: fundingResolver,
   }),
 }));
 beforeAll(async () => {
@@ -35,14 +37,24 @@ function fixture(registered = true) {
     0,
     Core.Credential.fromCore(credential),
   );
+  const funding = new Core.TransactionInput(
+    Core.TransactionId("44".repeat(32)),
+    0n,
+  );
   const tx = new Core.Transaction(
     new Core.TransactionBody(
-      Core.CborSet.fromCore([], Core.TransactionInput.fromCore),
+      Core.CborSet.fromCore([funding.toCore()], Core.TransactionInput.fromCore),
       [new Core.TransactionOutput(change, new Core.Value(10000000n))],
       170000n,
     ),
     new Core.TransactionWitnessSet(),
   );
+  fundingResolver.mockResolvedValue([
+    new Core.TransactionUnspentOutput(
+      funding,
+      new Core.TransactionOutput(change, new Core.Value(10000000n)),
+    ),
+  ]);
   let network = 0,
     active = true;
   const api = {
@@ -84,7 +96,7 @@ function fixture(registered = true) {
   const blaze = {
     newTransaction: () => builder,
     signTransaction: sign,
-    submitTransaction: post,
+    provider: { postTransactionToChain: post },
     params: { stakeKeyDeposit: 2000000 },
   };
   vi.mocked(getBlaze).mockResolvedValue({ blaze } as unknown as Awaited<
@@ -97,6 +109,8 @@ function fixture(registered = true) {
   };
   vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
     const path = String(url);
+    if (path.endsWith("/api/v0/genesis"))
+      return new Response(JSON.stringify({ network_magic: 2 }));
     if (path.includes("/pools/") && !targetState.exists)
       return new Response(JSON.stringify({ message: "Not found" }), {
         status: 404,

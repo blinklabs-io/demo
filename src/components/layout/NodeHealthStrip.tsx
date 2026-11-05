@@ -48,10 +48,6 @@ export function NodeHealthStrip() {
     );
   }
 
-  if (!genesis.data) return <span role="status" className="text-amber-300">
-    {genesis.isLoading ? "Verifying network…" : "Network verification unavailable"}
-  </span>;
-
   const usingLiveTip = tipStatus === "live" && liveTip !== null;
   const tipHeight = usingLiveTip ? liveTip.height : data.tipHeight;
   const age = usingLiveTip && liveTip.hash !== data.tipHash
@@ -60,9 +56,12 @@ export function NodeHealthStrip() {
 
   return (
     <span
-      className="flex items-center gap-3 text-slate-400"
+      className="flex flex-wrap items-center gap-3 text-slate-400"
       title={`Tip #${tipHeight} · ${usingLiveTip && liveTip.hash !== data.tipHash ? "Epoch pending refresh" : `Epoch ${data.tipEpoch}`} · ${age}${usingLiveTip ? " · FollowTip connected" : ""}`}
     >
+      {!genesis.data && <span role="status" className="text-amber-300">
+        {genesis.isLoading ? "Verifying network…" : "Network verification unavailable"}
+      </span>}
       {genesis.data && genesis.data.network_magic !== DINGO_NETWORK.networkMagic && (
         <span className="text-red-300" role="alert">API reports {networkName(genesis.data.network_magic)}</span>
       )}
