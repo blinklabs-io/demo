@@ -3,8 +3,17 @@ import { networkSearch, urlDingoNetwork } from "../../lib/dingo/networks";
 import { reloadDingoPage } from "../../lib/dingo/networkSelection";
 import { useChainReconciliation } from "../../lib/chain/useChainReconciliation";
 import { useEffect, useLayoutEffect } from "react";
-import { mainNavigation, normalizePath, sectionNavigation } from "../../lib/navigation";
-import { Outlet, useLocation, useNavigate, useNavigationType } from "react-router";
+import {
+  mainNavigation,
+  normalizePath,
+  sectionNavigation,
+} from "../../lib/navigation";
+import {
+  Outlet,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from "react-router";
 import { Link } from "../NetworkLink";
 import { Header } from "./Header";
 import { useMempoolStore } from "../../stores/mempoolStore";
@@ -15,20 +24,40 @@ export function AppShell() {
   const { pathname: rawPathname, search, hash } = location;
   const navigate = useNavigate();
   let requestedNetwork: string | null;
-  try { requestedNetwork = urlDingoNetwork(search); }
-  catch { requestedNetwork = "invalid"; }
-  const reload = requestedNetwork !== null && requestedNetwork !== DINGO_NETWORK.id;
+  try {
+    requestedNetwork = urlDingoNetwork(search);
+  } catch {
+    requestedNetwork = "invalid";
+  }
+  const reload =
+    requestedNetwork !== null && requestedNetwork !== DINGO_NETWORK.id;
   useLayoutEffect(() => {
     if (reload) {
       reloadDingoPage(`${rawPathname}${search}${hash}`);
     } else if (requestedNetwork === null) {
-      void navigate({ pathname: rawPathname, search: networkSearch(search, DINGO_NETWORK.id), hash }, { replace: true, state: location.state, preventScrollReset: true });
+      void navigate(
+        {
+          pathname: rawPathname,
+          search: networkSearch(search, DINGO_NETWORK.id),
+          hash,
+        },
+        { replace: true, state: location.state, preventScrollReset: true },
+      );
     }
-  }, [reload, requestedNetwork, rawPathname, search, hash, location.state, navigate]);
+  }, [
+    reload,
+    requestedNetwork,
+    rawPathname,
+    search,
+    hash,
+    location.state,
+    navigate,
+  ]);
   const pathname = normalizePath(rawPathname);
   const navigationType = useNavigationType();
   const section = sectionNavigation(pathname);
-  const area = mainNavigation.find((item) => item.matches(pathname))?.area ?? "discover";
+  const area =
+    mainNavigation.find((item) => item.matches(pathname))?.area ?? "discover";
   useChainReconciliation();
   useEffect(() => {
     if (navigationType === "POP" && !hash) return;
@@ -48,22 +77,32 @@ export function AppShell() {
   if (reload) return <main role="status">Changing network…</main>;
 
   return (
-    <div className="app-shell min-h-screen bg-slate-950 text-slate-100" data-area={area}>
+    <div
+      className="app-shell min-h-screen bg-slate-950 text-slate-100"
+      data-area={area}
+    >
       <Header />
       <main className="workspace-main">
         {section && (
           <div className="section-nav">
             <nav aria-label={section.label}>
-              {section.items.map(({ to, label, matches }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  className={matches(pathname) ? "selected" : ""}
-                  aria-current={pathname === to ? "page" : undefined}
-                >
-                  {label}
-                </Link>
-              ))}
+              {section.items.map((item) => {
+                const { to, label, matches } = item;
+                const target =
+                  "network" in item && item.network === "preprod"
+                    ? `${to}${networkSearch("", "preprod")}`
+                    : to;
+                return (
+                  <Link
+                    key={to}
+                    to={target}
+                    className={matches(pathname) ? "selected" : ""}
+                    aria-current={pathname === to ? "page" : undefined}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
         )}

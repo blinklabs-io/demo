@@ -1,0 +1,12 @@
+DeFi Kernel integration
+
+Datum schemas and contract layouts are derived from the following Apache-2.0
+projects by fallen-icarus:
+
+https://github.com/fallen-icarus/cardano-swaps
+https://github.com/fallen-icarus/cardano-loans
+https://github.com/fallen-icarus/cardano-options
+https://github.com/fallen-icarus/cardano-aftermarket
+
+The source revisions are recorded in KERNEL_SOURCES in protocol.ts.
+The application integration and transaction builders are maintained by Blink Labs.

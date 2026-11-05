@@ -25,6 +25,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@blaze-cardano/vm": "0.3.3",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.1.18",
     "@testing-library/jest-dom": "^7.0.1",

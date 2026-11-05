@@ -12,6 +12,7 @@ export function isMutableChainQuery(key: QueryKey, rollback = false): boolean {
     case "epoch-clock-tip":
     case "lookup":
       return true;
+    case "markets":
     case "holder-results":
     case "delegation-confirmation":
     case "handle":

@@ -1,5 +1,5 @@
+import { MinswapMarket } from "../../components/markets/MinswapMarket";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
-import { changeDingoNetwork } from "../../lib/dingo/networkSelection";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import "./wallet-swap.css";
 import {
@@ -88,20 +88,8 @@ function createQueryProvider(): DingoSundaeQueryProvider {
 export default function WalletSwap() {
   const [version, setVersion] = useState<"V3" | "V4">("V4");
   const [busy, setBusy] = useState(false);
-  const [switchError, setSwitchError] = useState("");
-  if (DINGO_NETWORK.id !== "preview") return <div className="wallet-workbench swap-workbench">
-    <PageIntro eyebrow={`Build with Dingo · ${DINGO_NETWORK.label}`} title="Asset swaps" symbol="⇄"
-      detail="These SundaeSwap markets use the verified Preview deployment." />
-    <section className="swap-venue-card">
-      <div><span className="eyebrow">SundaeSwap V3 & V4</span><h2>Explore Preview markets.</h2>
-        <p>Browse pools, charts and quotes before connecting a wallet.</p></div>
-      <button className="experience-primary" onClick={() => {
-        try { changeDingoNetwork("preview"); }
-        catch (error) { setSwitchError(error instanceof Error ? error.message : "Could not switch networks."); }
-      }}>Open Preview swaps →</button>
-    </section>
-    {switchError && <p role="alert" className="tool-error">{switchError}</p>}
-  </div>;
+  if (DINGO_NETWORK.id !== "preview")
+    return <MinswapMarket initialAction="swap" />;
 
   return (
     <>

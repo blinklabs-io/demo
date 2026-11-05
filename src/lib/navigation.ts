@@ -70,6 +70,32 @@ export function isWalletPath(path: string) {
   return /^\/wallet(?:\/(send|delegate))?$/.test(normalizePath(path));
 }
 
+export function isMarketsPath(path: string) {
+  return /^\/wallet\/(swap|markets)(\/|$)/.test(normalizePath(path));
+}
+
+export const marketSections = [
+  {
+    to: "/wallet/swap",
+    label: "Swap",
+    matches: (path: string) => path === "/wallet/swap",
+  },
+  ...[
+    ["liquidity", "Liquidity"],
+    ["lending", "Lending"],
+    ["options", "Options"],
+    ["orders", "Order book"],
+    ["marketplace", "Marketplace"],
+  ].map(([id, label]) => ({
+    to: `/wallet/markets/${id}`,
+    label,
+    network: "preprod" as const,
+    matches: (path: string) =>
+      path === `/wallet/markets/${id}` ||
+      (id === "lending" && path === "/wallet/markets"),
+  })),
+];
+
 export const walletSections = [
   {
     to: "/wallet",
@@ -90,6 +116,8 @@ export const walletSections = [
 
 export function sectionNavigation(path: string) {
   path = normalizePath(path);
+  if (isMarketsPath(path))
+    return { label: "Markets navigation", items: marketSections };
   if (isExplorePath(path))
     return { label: "Explorer navigation", items: exploreSections };
   if (isParticipationPath(path))
@@ -127,10 +155,10 @@ export const mainNavigation = [
   {
     to: "/wallet/swap",
     area: "swap",
-    label: "Swap",
+    label: "Markets",
     icon: "⇄",
-    matches: (path: string) => path === "/wallet/swap",
-    group: false,
+    matches: isMarketsPath,
+    group: true,
   },
   {
     to: "/wallet/tools",

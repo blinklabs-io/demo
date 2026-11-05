@@ -18,7 +18,15 @@ flowchart TD
   Discover[Discover capabilities] --> Explore[Explore the chain]
   Discover --> Create[Create and build]
   Discover --> Participate[Participate]
-  Discover --> Swap[Asset swaps]
+  Discover --> Markets[Markets]
+  Markets --> Swap[Preview SundaeSwap / Preprod Minswap]
+  Markets --> Liquidity[Liquidity and order management]
+  Markets --> Kernel[Loans, options, orders and financial NFTs]
+  Liquidity --> Gravity[Gravity contract-output monitor]
+  Kernel --> Review[Build and review unsigned transaction]
+  Liquidity --> Review
+  Review --> Sign[Wallet signs; Dingo evaluates and submits]
+  Sign --> Confirm[Persistent confirmation status]
   Discover --> API[API playground]
   Explore --> Blocks[Blocks and transactions]
   Explore --> Live[Mempool and epochs]
@@ -217,3 +225,18 @@ A response remains associated with the request that produced it.
 | Swaps | `/wallet/swap`; shared V3/V4 market previews and explicit order review |
 | Creation | `/wallet/tools` and `/wallet/tools/:tool`; transaction, token, proof, batch, UTxO, DRep and treasury capabilities |
 | Developer access | `/api`; inspect existing Dingo REST and Mesh responses |
+
+## Preprod contract data
+
+Market discovery queries existing Dingo endpoints in bounded pages. Kernel
+beacons authenticate protocol outputs; reference scripts are checked against
+pinned deployment hashes before construction. Minswap pool and order datums
+retain exact integer amounts and output minima. Gravity oracles connect pool
+identities to token-holding contracts; the monitor labels these holdings without
+claiming a swap quote. No protocol-specific external indexer is used.
+
+A draft belongs to its form inputs, network and wallet session. Any change clears
+the reviewed draft and guards outstanding asynchronous signing work. An accepted
+transaction hash survives form edits and position selection while confirmation
+is pending. Chain rollbacks invalidate affected market snapshots and reset opaque
+Kernel cursors before further discovery.
