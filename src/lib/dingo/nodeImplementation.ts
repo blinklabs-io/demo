@@ -1,5 +1,7 @@
 export function nodeImplementation(minor: string, major?: string) {
   switch (minor) {
+    case "65":
+      return { id: "amaru", name: "Amaru", icon: "/nodes/amaru.svg" };
     case "69":
       return { id: "dingo", name: "Dingo", icon: "/nodes/dingo.png" };
     case "67":

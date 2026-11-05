@@ -46,6 +46,9 @@ it.each([
   ["dingo", "metadata-label", "674", "json", 6, 1],
   ["dingo", "proposals", 20, 1],
   ["dingo", "committee"],
+  ["dingo", "markets", "kernel", "one-way", ""],
+  ["dingo", "markets", "minswap", "positions"],
+  ["dingo", "markets", "confirmation", "hash"],
   ["dingo", "drep", "identity", "delegators", 20, 1],
 ])("clears an active orphaned record %j before reconciliation while retaining immutable bytes and not refetching inactive data", async (...record) => {
   const { act, createElement } = await import("react");
@@ -113,6 +116,9 @@ it.each([
   ["dingo", "metadata-label", "674", "cbor", 6, 1],
   ["dingo", "proposals", 20, 1],
   ["dingo", "committee"],
+  ["dingo", "markets", "kernel", "one-way", ""],
+  ["dingo", "markets", "minswap", "positions"],
+  ["dingo", "markets", "confirmation", "hash"],
   ["dingo", "drep", "identity", "delegators", 20, 1],
 ])("does not restart indexed catalogs on each apply %j", (...key) => {
   expect(isMutableChainQuery(key)).toBe(false);

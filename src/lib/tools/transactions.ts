@@ -49,7 +49,7 @@ export function assetName(id: string) {
   try {
     return (
       Core.AssetName.toUTF8(
-        Core.AssetId.getAssetName(Core.AssetId(id)),
+        Core.AssetName(Core.AssetId.getAssetName(Core.AssetId(id)).replace(/^(?:000643b0|000de140|0014df10|001bc280)/, "")),
         true,
       ) || id
     );

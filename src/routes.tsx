@@ -1,5 +1,6 @@
 import Experiences from "./pages/Experiences";
 import Participate from "./pages/Participate";
+import Markets from "./pages/Markets";
 import PolicyDetail from "./pages/explorer/PolicyDetail";
 import HandleLookup from "./pages/explorer/HandleLookup";
 import {
@@ -91,6 +92,8 @@ export const router = createBrowserRouter([
           { path: "wallet/tools/:tool", element: <WalletTools /> },
           { path: "wallet/send", element: <WalletSend /> },
           { path: "wallet/swap", element: <WalletSwap /> },
+          { path: "wallet/markets", element: <Markets /> },
+          { path: "wallet/markets/:tab", element: <Markets /> },
           { path: "wallet/delegate", element: <WalletDelegate /> },
           { path: "api", element: <ApiConsole /> },
           { path: "*", element: <NotFound /> },

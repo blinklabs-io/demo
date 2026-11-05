@@ -167,7 +167,9 @@ publishers, without a third-party pool registry or indexer.
 
 Recent blocks and block details show the protocol version decoded from the
 block header bytes returned by UTxO RPC. A minor version of 69 displays the
-Dingo forging marker. Header versions are distinct from the current epoch's
+Dingo forging marker; 67 identifies Bean and 65 identifies Amaru. Versions
+11.1 and 11.2 identify Haskell cardano-node; other unidentified versions are
+shown as assumed Haskell. Header versions are distinct from the current epoch's
 protocol parameters.
 
 Global search accepts registered pool tickers and `$handle` names. Numeric pool
@@ -343,3 +345,44 @@ Illustrative data, captured at desktop and mobile widths.
 | Epoch fingerprints      | [Desktop](docs/screenshots/epoch1500.jpg)            | [Mobile](docs/screenshots/epoch390.jpg)            |
 | Pool logos & saturation | [Desktop](docs/screenshots/poollogos1500.jpg)        | [Mobile](docs/screenshots/poollogos390.jpg)        |
 | Wallet pool saturation  | [Desktop](docs/screenshots/walletsaturation1500.jpg) | [Mobile](docs/screenshots/walletsaturation390.jpg) |
+
+## Preprod markets
+
+Markets brings existing Preprod contracts into the same Dingo-backed application:
+
+- Minswap V2 pool discovery, weekly six-hour price samples, swap previews,
+  liquidity deposits and withdrawals, wallet LP positions and order cancellation.
+  Orders settle through Minswap batchers; the review separates execution fees,
+  deposits and slippage minima. Dynamic-fee pools show a base-fee estimate.
+- DeFi Kernel loan requests and offers, loan acceptance, repayment, elapsed
+  interest application and expired claims; covered option writing, purchasing,
+  exercise and expired writer reclaim; direct one-way and two-way order fills;
+  and financial NFT spot listings and purchases. Bids remain inspectable.
+- Gravity pool discovery and contract-output visualization. Its on-chain asset index
+  locates oracle records describing token-holding contracts. Loaded holdings are
+  distinct from available liquidity and swap quotes.
+
+Discovery and previews work without a wallet. Creation, signing and submission
+require a compatible connected wallet and separate review. Dingo supplies all
+chain reads, protocol parameters, transaction evaluation and submission; protocol
+websites and source links are references, not data dependencies. Discovery is
+paged and bounded, so counts describe loaded outputs rather than total market
+size. Market routes preserve the selected network; Preview retains SundaeSwap.
+
+Kernel deployment identities and datum layouts follow the pinned upstream
+specifications recorded in `src/lib/kernel/protocol.ts`. Minswap transaction
+layouts and integer quote calculations follow the upstream SDK; attribution and
+its license are included in `src/lib/minswap/`.
+
+| Preprod view | Desktop | Mobile |
+| --- | --- | --- |
+| Liquidity | [Desktop](docs/screenshots/preprod-liquidity1500.jpg) | [Mobile](docs/screenshots/preprod-liquidity390.jpg) |
+| Gravity pool monitor | [Desktop](docs/screenshots/preprod-gravity1500.jpg) | [Mobile](docs/screenshots/preprod-gravity390.jpg) |
+| Direct order book | [Desktop](docs/screenshots/preprod-orders1500.jpg) | [Mobile](docs/screenshots/preprod-orders390.jpg) |
+| Covered options | [Desktop](docs/screenshots/preprod-options1500.jpg) | [Mobile](docs/screenshots/preprod-options390.jpg) |
+| Financial NFT marketplace | [Desktop](docs/screenshots/preprod-marketplace1500.jpg) | [Mobile](docs/screenshots/preprod-marketplace390.jpg) |
+
+The contract lifecycle tests execute pinned Kernel validators with the Blaze VM
+on an isolated in-memory ledger. The VM is a direct development dependency at
+the same version used by the application SDK; these tests require no wallet,
+external protocol API or transaction submission.

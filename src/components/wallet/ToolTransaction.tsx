@@ -1,3 +1,4 @@
+import { TransactionOutputs } from "./TransactionOutputs";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { metadataJson } from "../../lib/tools/cip25";
@@ -6,7 +7,6 @@ import { Link } from "../NetworkLink";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import { WalletConnectSummary } from "../layout/WalletConnectSummary";
-import { CopyButton } from "../explorer/CopyButton";
 import { governanceError } from "../../lib/dingo/governanceVote";
 import {
   ConfirmationFailure,
@@ -15,7 +15,6 @@ import {
 import {
   prepareToolTransaction,
   submitToolTransaction,
-  assetName,
   type PreparedTool,
   type ToolAction,
 } from "../../lib/tools/transactions";
@@ -167,7 +166,9 @@ export function ToolTransaction({
         <section className="tool-review" aria-label="Transaction review">
           <div className="tool-review-heading">
             <div>
-              <span className="eyebrow">Unsigned draft · {DINGO_NETWORK.label}</span>
+              <span className="eyebrow">
+                Unsigned draft · {DINGO_NETWORK.label}
+              </span>
               <h3>Check the actual transaction.</h3>
             </div>
             <strong>
@@ -198,33 +199,7 @@ export function ToolTransaction({
               </div>
             ))}
           </dl>
-          <details open>
-            <summary>Outputs, including change</summary>
-            <div className="tool-output-list">
-              {draft.tx
-                .body()
-                .outputs()
-                .map((o, i) => (
-                  <article key={i}>
-                    <span className="eyebrow">Output {i + 1}</span>
-                    <strong>{formatAda(o.amount().coin())}</strong>
-                    <div className="tool-identifier">
-                      <code>{o.address().toBech32()}</code>
-                      <CopyButton
-                        value={o.address().toBech32()}
-                        label="recipient address"
-                      />
-                    </div>
-                    {[...(o.amount().multiasset() ?? [])].map(([asset, n]) => (
-                      <p key={asset}>
-                        {n.toString()} raw units · {assetName(asset)}
-                        <code>{asset}</code>
-                      </p>
-                    ))}
-                  </article>
-                ))}
-            </div>
-          </details>
+          <TransactionOutputs tx={draft.tx} />
           {draft.action.kind === "mint" &&
             draft.tx.auxiliaryData()?.metadata()?.toCore().get(721n) && (
               <details className="metadata-json" open>

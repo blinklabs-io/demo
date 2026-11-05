@@ -80,18 +80,22 @@ function positions(outputs: Core.TransactionUnspentOutput[]): Node[] {
 }
 export function UtxoConstellation({
   outputs,
-  selected,
+  selected = [],
   onToggle,
+  inspectOnly = false,
 }: {
   outputs: Core.TransactionUnspentOutput[];
-  selected: string[];
-  onToggle: (id: string) => void;
-}) {
+} & (
+  | { inspectOnly: true; selected?: never; onToggle?: never }
+  | { inspectOnly?: false; selected: string[]; onToggle: (id: string) => void }
+)) {
   const nodes = useMemo(() => positions(outputs), [outputs]);
   const [inspected, setInspected] = useState<string | null>(null);
   const active = nodes.find((n) => n.id === inspected);
   const chosen = new Set(selected);
-  const chosenVisible = outputs.filter((u) => chosen.has(inputId(u)));
+  const chosenVisible = inspectOnly
+    ? outputs
+    : outputs.filter((u) => chosen.has(inputId(u)));
   const total = chosenVisible.reduce(
     (n, u) => n + u.output().amount().coin(),
     0n,
@@ -100,18 +104,28 @@ export function UtxoConstellation({
     <section className="chain-visual utxo-constellation">
       <header className="chain-heading">
         <div>
-          <span className="eyebrow">Your spendable universe</span>
-          <h2>Gather the stars.</h2>
+          <span className="eyebrow">
+            {inspectOnly
+              ? "On-chain contract outputs"
+              : "Your spendable universe"}
+          </span>
+          <h2>{inspectOnly ? "The pool, unpacked." : "Gather the stars."}</h2>
         </div>
         <div className="constellation-count">
           <strong>{chosenVisible.length}</strong>
-          <span>selected · {formatAda(total)}</span>
+          <span>
+            {inspectOnly ? "loaded outputs" : "selected"} · {formatAda(total)}
+          </span>
         </div>
       </header>
       <div className="constellation-layout">
         <svg
           viewBox="0 0 1000 600"
-          aria-label="Wallet outputs grouped by address; use the checkbox list below for an alternative selection control"
+          aria-label={
+            inspectOnly
+              ? "Contract outputs grouped by address; select a node to inspect its value"
+              : "Wallet outputs grouped by address; use the checkbox list below for an alternative selection control"
+          }
           role="group"
         >
           <circle cx="500" cy="300" r="240" className="constellation-orbit" />
@@ -120,18 +134,19 @@ export function UtxoConstellation({
           {nodes.map((n) => (
             <g
               key={n.id}
-              role="checkbox"
-              aria-checked={chosen.has(n.id)}
+              role={inspectOnly ? "button" : "checkbox"}
+              aria-checked={inspectOnly ? undefined : chosen.has(n.id)}
               aria-label={`${n.id}: ${formatAda(n.utxo.output().amount().coin())}, ${n.utxo.output().amount().multiasset()?.size ?? 0} native assets`}
               tabIndex={0}
               onClick={() => {
                 setInspected(n.id);
-                onToggle(n.id);
+                if (!inspectOnly) onToggle?.(n.id);
               }}
               onKeyDown={(e) => {
                 if (e.key === " " || e.key === "Enter") {
                   e.preventDefault();
-                  onToggle(n.id);
+                  setInspected(n.id);
+                  if (!inspectOnly) onToggle?.(n.id);
                 }
               }}
               onFocus={() => setInspected(n.id)}
@@ -190,10 +205,7 @@ export function UtxoConstellation({
               </Link>
               <div className="tool-identifier">
                 <code>{active.address}</code>
-                <CopyButton
-                  value={active.address}
-                  label="wallet output address"
-                />
+                <CopyButton value={active.address} label="output address" />
               </div>
               {[...(active.utxo.output().amount().multiasset() ?? [])]
                 .slice(0, 8)
@@ -208,9 +220,11 @@ export function UtxoConstellation({
                   assets
                 </p>
               )}
-              <button type="button" onClick={() => onToggle(active.id)}>
-                {chosen.has(active.id) ? "Deselect output" : "Select output"}
-              </button>
+              {!inspectOnly && (
+                <button type="button" onClick={() => onToggle?.(active.id)}>
+                  {chosen.has(active.id) ? "Deselect output" : "Select output"}
+                </button>
+              )}
             </>
           ) : (
             <>
@@ -219,8 +233,9 @@ export function UtxoConstellation({
               </span>
               <h3>Each node is an output.</h3>
               <p>
-                Inspect a star to see its value. Select the ones you want to
-                consolidate.
+                {inspectOnly
+                  ? "Inspect a star to see its locked value and native assets."
+                  : "Inspect a star to see its value. Select the ones you want to consolidate."}
               </p>
               <p>
                 Outputs cluster by address; colors are decorative. Dotted rings
@@ -231,10 +246,9 @@ export function UtxoConstellation({
         </aside>
       </div>
       <p className="chain-footnote">
-        {nodes.length} of {outputs.length} eligible outputs shown; the checkbox
-        list below includes all of them. Node area approximates ADA, with a
-        minimum visible size. Selection uses only outputs exposed by your
-        connected wallet.
+        {inspectOnly
+          ? `${nodes.length} of ${outputs.length} loaded contract outputs shown. Node area approximates ADA; rings mark native assets. These outputs are controlled by the pool contracts.`
+          : `${nodes.length} of ${outputs.length} eligible outputs shown; the checkbox list below includes all of them. Node area approximates ADA, with a minimum visible size. Selection uses only outputs exposed by your connected wallet.`}
       </p>
     </section>
   );

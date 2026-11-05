@@ -1,6 +1,9 @@
 import { DINGO_NETWORK } from "../lib/dingo/config";
 import { useQuery } from "@tanstack/react-query";
-import { recentBlocksQuery, type BlockSummary } from "../lib/explorer/recentBlocks";
+import {
+  recentBlocksQuery,
+  type BlockSummary,
+} from "../lib/explorer/recentBlocks";
 import { creationTools, type CreationToolId } from "../lib/creationTools";
 import { ChainSnapshot } from "../components/explorer/ChainSnapshot";
 import { useState } from "react";
@@ -9,7 +12,12 @@ import { useNodeHealth } from "../lib/dingo/nodeHealth";
 import { useMempoolStore } from "../stores/mempoolStore";
 import { BlockMosaic } from "../components/chain/BlockMosaic";
 
-function creationExperience(id: CreationToolId, art: string, tag: string, category = "Create") {
+function creationExperience(
+  id: CreationToolId,
+  art: string,
+  tag: string,
+  category = "Create",
+) {
   const tool = creationTools.find((tool) => tool.id === id)!;
   return {
     to: tool.to,
@@ -38,15 +46,15 @@ const experiences = [
   },
   creationExperience("mint", "mint", "CIP-25 · Native assets"),
   {
-    to: "/wallet/swap",
-    title: "Asset swaps",
+    to: "/wallet/markets/liquidity?network=preprod",
+    title: "DeFi markets",
     category: "Use",
     symbol: "⇄",
     description:
-      "Explore SundaeSwap pools, compare price history, and build a swap through Dingo.",
-    tag: "SundaeSwap · Preview",
+      "Explore lending, covered options, liquidity positions and direct on-chain markets through Dingo.",
+    tag: "DeFi Kernel + Minswap · Preprod",
     art: "swap",
-    action: "Explore swaps",
+    action: "Explore markets",
   },
   {
     to: "/explorer/mempool",
@@ -61,7 +69,12 @@ const experiences = [
   },
   creationExperience("proof", "proof", "Local hashing · On-chain proofs"),
   creationExperience("utxos", "utxo", "Consolidate · Split", "Use"),
-  creationExperience("batch", "flow", "Multiple recipients · CSV import", "Use"),
+  creationExperience(
+    "batch",
+    "flow",
+    "Multiple recipients · CSV import",
+    "Use",
+  ),
   {
     to: "/explorer/network",
     title: "Network operations",
@@ -128,11 +141,24 @@ function ExperienceArt({ kind }: { kind: string }) {
 export default function Experiences() {
   const [filter, setFilter] = useState("All");
   const health = useNodeHealth();
-  const [inspectedBlock, setInspectedBlock] = useState<BlockSummary | null>(null);
-  const recent = useQuery({ ...recentBlocksQuery, enabled: inspectedBlock === null });
-  const candidate = recent.data?.blocks.find((block) => block.tx_count > 0) ?? recent.data?.blocks[0];
+  const [inspectedBlock, setInspectedBlock] = useState<BlockSummary | null>(
+    null,
+  );
+  const recent = useQuery({
+    ...recentBlocksQuery,
+    enabled: inspectedBlock === null,
+  });
+  const candidate =
+    recent.data?.blocks.find((block) => block.tx_count > 0) ??
+    recent.data?.blocks[0];
   if (inspectedBlock && !recent.data) setInspectedBlock(null);
-  else if (!inspectedBlock && candidate && !recent.isFetching && (recent.isFetchedAfterMount || !recent.isStale)) setInspectedBlock(candidate);
+  else if (
+    !inspectedBlock &&
+    candidate &&
+    !recent.isFetching &&
+    (recent.isFetchedAfterMount || !recent.isStale)
+  )
+    setInspectedBlock(candidate);
   const shownBlock = inspectedBlock;
   const pending = useMempoolStore((s) => s.pendingTxs.size);
   const stream = useMempoolStore((s) => s.status);
@@ -141,7 +167,9 @@ export default function Experiences() {
     <div className="experience-page">
       <section className="experience-hero">
         <div>
-          <span className="eyebrow">Build with Dingo · Cardano {DINGO_NETWORK.label}</span>
+          <span className="eyebrow">
+            Build with Dingo · Cardano {DINGO_NETWORK.label}
+          </span>
           <h1>
             Build apps.
             <br />
@@ -151,14 +179,17 @@ export default function Experiences() {
           </h1>
           <p>
             A Cardano node is an app platform. Trade, create, participate, and
-            follow the chain in motion. This workspace shows how Dingo services dApp development and
-            operation. No wallet is needed to explore; connect only when you
-            need to sign.
+            follow the chain in motion. This workspace shows how Dingo services
+            dApp development and operation. No wallet is needed to explore;
+            connect only when you need to sign.
           </p>
           <div className="experience-actions">
-            <a className="experience-primary" href="#experiences">
-              Explore Dingo capabilities ↓
-            </a>
+            <Link
+              className="experience-primary"
+              to="/wallet/markets/liquidity?network=preprod"
+            >
+              Explore Preprod DeFi →
+            </Link>
             <a href="#live-block">See a block come alive ↓</a>
           </div>
         </div>
@@ -232,13 +263,21 @@ export default function Experiences() {
               {inspectedBlock &&
                 health.data &&
                 inspectedBlock.hash !== health.data.tipHash && (
-                  <button type="button" disabled={recent.isFetching} onClick={() => {
-                    void recent.refetch().then(({ data }) => {
-                      const next = data?.blocks.find((block) => block.tx_count > 0) ?? data?.blocks[0];
-                      if (next) setInspectedBlock(next);
-                    });
-                  }}>
-                    {recent.isFetching ? "Refreshing…" : "Refresh recent activity →"}
+                  <button
+                    type="button"
+                    disabled={recent.isFetching}
+                    onClick={() => {
+                      void recent.refetch().then(({ data }) => {
+                        const next =
+                          data?.blocks.find((block) => block.tx_count > 0) ??
+                          data?.blocks[0];
+                        if (next) setInspectedBlock(next);
+                      });
+                    }}
+                  >
+                    {recent.isFetching
+                      ? "Refreshing…"
+                      : "Refresh recent activity →"}
                   </button>
                 )}
               <Link to={`/explorer/block/${shownBlock.hash}`}>
@@ -251,12 +290,13 @@ export default function Experiences() {
           See what transactions do and how much space they occupy. Select a tile
           to inspect the transaction behind it.
         </p>
-        {recent.error && shownBlock && <p role="status" className="text-amber-300">Recent activity refresh unavailable. Showing the selected block.</p>}
+        {recent.error && shownBlock && (
+          <p role="status" className="text-amber-300">
+            Recent activity refresh unavailable. Showing the selected block.
+          </p>
+        )}
         {shownBlock ? (
-          <BlockMosaic
-            hash={shownBlock.hash}
-            total={shownBlock.tx_count}
-          />
+          <BlockMosaic hash={shownBlock.hash} total={shownBlock.tx_count} />
         ) : (
           <div className="experience-unavailable">
             <p>
@@ -330,8 +370,9 @@ export default function Experiences() {
       <footer className="experience-footnote">
         <strong>Built with Dingo. From development to operation.</strong>
         <p>
-          {DINGO_NETWORK.label} is a public test network. Transactions use test ADA. Your
-          wallet signs; Dingo provides chain data and submits transactions.
+          {DINGO_NETWORK.label} is a public test network. Transactions use test
+          ADA. Your wallet signs; Dingo provides chain data and submits
+          transactions.
         </p>
         <Link to="/api">See the APIs powering these experiences →</Link>
       </footer>
