@@ -1,3 +1,4 @@
+import { TransactionRehearsalCbor } from "../../components/wallet/TransactionRehearsal";
 import { MinswapMarket } from "../../components/markets/MinswapMarket";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
@@ -826,6 +827,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
             >
               <span className="eyebrow">Unsigned order · SundaeSwap V3</span>
               <h3>Review the fixed order.</h3>
+              <TransactionRehearsalCbor cbor={prepared.built.unsignedCbor} />
               <dl className="tool-facts">
                 <div>
                   <dt>Minimum received</dt>
@@ -1561,6 +1563,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
                 Unsigned intent · ready for review
               </span>
               <h3>Your exact transaction costs</h3>
+              <TransactionRehearsalCbor cbor={prepared.built.cbor} />
               <p>Nothing has been signed or submitted.</p>
               <dl className="v4-order-summary">
                 <dt>Minimum received</dt>

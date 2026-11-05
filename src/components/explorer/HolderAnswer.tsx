@@ -1,3 +1,4 @@
+import { TransactionRehearsal } from "../wallet/TransactionRehearsal";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
 import { useState } from "react";
@@ -207,6 +208,7 @@ function AnswerForm({
               Eligibility is checked again before signing. Dingo submits the
               transaction.
             </p>
+            <TransactionRehearsal tx={draft.tx} />
             <div className="survey-actions">
               <button
                 className="survey-primary"

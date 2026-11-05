@@ -408,3 +408,29 @@ reuse. Full blocks and transaction bodies are not persisted. Incomplete reads
 remain explicitly incomplete and can resume their verified prefix.
 
 [Desktop comparison](docs/screenshots/header-history1500.jpg) · [Mobile comparison](docs/screenshots/header-history390.jpg)
+
+## Visual transaction review and block capacity
+
+Transaction details group repeated addresses into value-flow branches. Select a
+branch to inspect its full address and amount, switch assets, or expand every
+branch. Sources enter a shared value pool; the diagram does not attribute an
+individual input to an output.
+
+Explore → Network includes a block capacity cockpit. The byte, execution-memory
+and execution-step gauges use the selected block and its epoch limits. Any
+resource at its limit makes the block full. The recent-block bars show serialized
+size; selecting one loads its exact resource budgets without fetching every
+full block.
+
+Transaction rehearsal visualizes the actual draft before signing and works for
+offline Studio imports. It shows output allocation, network fees, mint/burn,
+withdrawals and separate collateral/reference inputs. Output allocation is not a
+wallet balance forecast: unresolved input values and address ownership are not
+inferred. Signing still requires explicit approval of the reviewed draft.
+
+| Visual | Desktop | Mobile |
+| --- | --- | --- |
+| Block capacity cockpit | [Desktop](docs/screenshots/capacity-review1500.jpg) | [Mobile](docs/screenshots/capacity-review390.jpg) |
+| Transaction flow inspection | [Desktop](docs/screenshots/flow-review1500.jpg) | [Mobile](docs/screenshots/flow-review390.jpg) |
+| Transaction rehearsal | [Desktop](docs/screenshots/rehearsal-review1500.jpg) | [Mobile](docs/screenshots/rehearsal-review390.jpg) |
+| Native-asset rehearsal | [Desktop](docs/screenshots/rehearsal-native1500.jpg) | [Mobile](docs/screenshots/rehearsal-native390.jpg) |

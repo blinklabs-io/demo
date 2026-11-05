@@ -1,3 +1,4 @@
+import { TransactionRehearsal } from "../components/wallet/TransactionRehearsal";
 import { DINGO_NETWORK } from "../lib/dingo/config";
 import { useDraftGuard } from "../lib/useDraftGuard";
 import { WalletConnectSummary } from "../components/layout/WalletConnectSummary";
@@ -6,7 +7,7 @@ import { useLocation } from "react-router";
 import { Link } from "../components/NetworkLink";
 import { Panel } from "../components/explorer/Panel";
 import { CopyButton } from "../components/explorer/CopyButton";
-import { formatAda as ada } from "../lib/format";
+import { formatAda as ada, formatAddress } from "../lib/format";
 import { useWalletStore } from "../stores/walletStore";
 import {
   addWalletWitness,
@@ -440,23 +441,7 @@ function StudioWorkspace({ imported }: { imported: string }) {
                     <span>Key witnesses</span>
                   </div>
                 </div>
-                <div className="studio-value-flow">
-                  <div>
-                    <strong>{body.inputs().size()}</strong>
-                    <span>spending inputs</span>
-                  </div>
-                  <b>→</b>
-                  <div className="studio-flow-core">
-                    DINGO
-                    <br />
-                    <small>transaction</small>
-                  </div>
-                  <b>→</b>
-                  <div>
-                    <strong>{body.outputs().length}</strong>
-                    <span>outputs</span>
-                  </div>
-                </div>
+                <TransactionRehearsal tx={transaction.tx} />
                 <p className="tool-help">
                   Decoded, not ledger-validated. Witness count does not prove
                   signing is complete.{" "}
@@ -554,17 +539,9 @@ function StudioWorkspace({ imported }: { imported: string }) {
                     <strong>{ada(output.amount().coin())}</strong>
                   </div>
                   <div className="tx-address">
-                    <code>
-                      {output.address().asByron()
-                        ? output.address().toBase58()
-                        : output.address().toBech32()}
-                    </code>
+                    <code>{formatAddress(output.address())}</code>
                     <CopyButton
-                      value={
-                        output.address().asByron()
-                          ? output.address().toBase58()
-                          : output.address().toBech32()
-                      }
+                      value={formatAddress(output.address())}
                     />
                   </div>
                   {[...(output.amount().multiasset() ?? [])].map(

@@ -176,21 +176,6 @@ export function ToolTransaction({
               <small>Network fee</small>
             </strong>
           </div>
-          <div className="tool-flow">
-            <span>
-              {draft.tx.body().inputs().values().length}
-              <small>Wallet inputs</small>
-            </span>
-            <b aria-hidden="true">→</b>
-            <span>
-              {draft.tx.body().outputs().length}
-              <small>Outputs</small>
-            </span>
-            <b aria-hidden="true">→</b>
-            <span>
-              Dingo<small>Submission</small>
-            </span>
-          </div>
           <dl className="tool-facts">
             {draft.facts.map((fact, i) => (
               <div key={i}>

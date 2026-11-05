@@ -1,3 +1,4 @@
+import { TransactionRehearsal } from "../wallet/TransactionRehearsal";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import {
   ConfirmationFailure,
@@ -192,7 +193,8 @@ function VotingForm({
         ) : !role.data || role.data.retired ? (
           <p className="text-sm text-slate-400">
             This wallet’s DRep credential is{" "}
-            {role.data?.retired ? "retired" : "not registered"} on {DINGO_NETWORK.label}.
+            {role.data?.retired ? "retired" : "not registered"} on{" "}
+            {DINGO_NETWORK.label}.
           </p>
         ) : (
           <>
@@ -270,6 +272,7 @@ function VotingForm({
                   Your wallet pays the network fee and asks you to approve this
                   DRep vote.
                 </p>
+                <TransactionRehearsal tx={prepared.tx} />
                 <div className="vote-actions">
                   <button
                     type="button"

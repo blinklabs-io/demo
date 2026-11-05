@@ -1,3 +1,4 @@
+import { TransactionRehearsal } from "../../components/wallet/TransactionRehearsal";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import {
   ConfirmationFailure,
@@ -324,7 +325,9 @@ function DelegationForm({
           className="tool-review tool-transaction"
           aria-label="Delegation review"
         >
-          <span className="eyebrow">Unsigned delegation · {DINGO_NETWORK.label}</span>
+          <span className="eyebrow">
+            Unsigned delegation · {DINGO_NETWORK.label}
+          </span>
           <h3>
             {draft.target.kind === "pool"
               ? "Stake pool delegation"
@@ -360,6 +363,7 @@ function DelegationForm({
               </dd>
             </div>
           </dl>
+          <TransactionRehearsal tx={draft.tx} />
           <p>
             Your wallet approves this fixed draft. Edits require a new review.
             Submission goes through Dingo.
