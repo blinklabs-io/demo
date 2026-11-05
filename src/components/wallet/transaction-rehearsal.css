@@ -362,3 +362,16 @@
 .transaction-rehearsal > * {
   min-width: 0;
 }
+
+.rehearsal-asset-id {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  min-width: 0;
+}
+.rehearsal-asset-id code {
+  overflow-wrap: anywhere;
+  min-width: 0;
+  color: #adc7df;
+  font-size: 0.72rem;
+}

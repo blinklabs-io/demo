@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Core } from "@blaze-cardano/sdk";
-import { formatAda } from "../../lib/format";
+import { formatAda, formatAddress } from "../../lib/format";
 import { assetName } from "../../lib/tools/transactions";
 import { fraction, visualColors } from "../../lib/chain/geometry";
 import { CopyButton } from "../explorer/CopyButton";
@@ -115,6 +115,12 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
           </select>
         </label>
       </div>
+      {unit !== "lovelace" && (
+        <div className="rehearsal-asset-id">
+          <code>{unit}</code>
+          <CopyButton value={unit} label="selected asset ID" />
+        </div>
+      )}
       {total > 0n ? (
         <div
           className="rehearsal-allocation"
@@ -183,9 +189,9 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
             <strong>{display(values[index])}</strong>
           </div>
           <div className="rehearsal-address">
-            <code>{selected.address().toBech32()}</code>
+            <code>{formatAddress(selected.address())}</code>
             <CopyButton
-              value={selected.address().toBech32()}
+              value={formatAddress(selected.address())}
               label={`output ${index + 1} address`}
             />
           </div>
@@ -290,9 +296,9 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
                   {formatAda(collateralReturn.amount().coin())}
                 </summary>
                 <div className="rehearsal-address">
-                  <code>{collateralReturn.address().toBech32()}</code>
+                  <code>{formatAddress(collateralReturn.address())}</code>
                   <CopyButton
-                    value={collateralReturn.address().toBech32()}
+                    value={formatAddress(collateralReturn.address())}
                     label="collateral return address"
                   />
                 </div>

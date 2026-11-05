@@ -1,6 +1,6 @@
 import { TransactionRehearsal } from "./TransactionRehearsal";
 import type { Core } from "@blaze-cardano/sdk";
-import { formatAda } from "../../lib/format";
+import { formatAda, formatAddress } from "../../lib/format";
 import { assetName } from "../../lib/tools/transactions";
 import { CopyButton } from "../explorer/CopyButton";
 
@@ -19,9 +19,9 @@ export function TransactionOutputs({ tx }: { tx: Core.Transaction }) {
                 <span className="eyebrow">Output {index + 1}</span>
                 <strong>{formatAda(output.amount().coin())}</strong>
                 <div className="tool-identifier">
-                  <code>{output.address().toBech32()}</code>
+                  <code>{formatAddress(output.address())}</code>
                   <CopyButton
-                    value={output.address().toBech32()}
+                    value={formatAddress(output.address())}
                     label="recipient address"
                   />
                 </div>

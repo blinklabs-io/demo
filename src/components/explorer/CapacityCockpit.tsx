@@ -74,6 +74,7 @@ export function CapacityCockpit() {
             </div>
             <div
               className="capacity-history"
+              role="group"
               aria-label="Select a recent block to inspect its capacity"
             >
               {[...blocks].reverse().map((block) => {

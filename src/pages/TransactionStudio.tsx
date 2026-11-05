@@ -7,7 +7,7 @@ import { useLocation } from "react-router";
 import { Link } from "../components/NetworkLink";
 import { Panel } from "../components/explorer/Panel";
 import { CopyButton } from "../components/explorer/CopyButton";
-import { formatAda as ada } from "../lib/format";
+import { formatAda as ada, formatAddress } from "../lib/format";
 import { useWalletStore } from "../stores/walletStore";
 import {
   addWalletWitness,
@@ -539,17 +539,9 @@ function StudioWorkspace({ imported }: { imported: string }) {
                     <strong>{ada(output.amount().coin())}</strong>
                   </div>
                   <div className="tx-address">
-                    <code>
-                      {output.address().asByron()
-                        ? output.address().toBase58()
-                        : output.address().toBech32()}
-                    </code>
+                    <code>{formatAddress(output.address())}</code>
                     <CopyButton
-                      value={
-                        output.address().asByron()
-                          ? output.address().toBase58()
-                          : output.address().toBech32()
-                      }
+                      value={formatAddress(output.address())}
                     />
                   </div>
                   {[...(output.amount().multiasset() ?? [])].map(

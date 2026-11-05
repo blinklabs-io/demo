@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { createRequire } from "node:module";
 const { JSDOM } = createRequire(import.meta.url)("jsdom");
+import { TransactionOutputs } from "./TransactionOutputs";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { Core } from "@blaze-cardano/sdk";
@@ -101,6 +102,9 @@ it("allocates actual outputs independently of fees, switches assets, and inspect
       select.value = asset;
       select.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
     });
+    expect(host.querySelector(".rehearsal-asset-id code")?.textContent).toBe(
+      asset,
+    );
     expect(segments().map((button) => button.style.width)).toEqual([
       "25%",
       "75%",
@@ -193,6 +197,34 @@ it("decodes CBOR locally, reports malformed input, and replaces stale rehearsal 
     expect(fetch).not.toHaveBeenCalled();
   } finally {
     fetch.mockRestore();
+    await close();
+  }
+});
+
+it("renders Byron output and collateral-return destinations without changing their encoding", async () => {
+  const byron = Core.Cardano.ByronAddress.fromCredentials(
+    Core.Hash28ByteBase16("99".repeat(28)),
+    { magic: 1 },
+    Core.Cardano.ByronAddressType.PubKey,
+  ).toAddress();
+  const tx = fixture();
+  const body = tx.body();
+  body.setOutputs([
+    new Core.TransactionOutput(byron, new Core.Value(2000000n)),
+  ]);
+  body.setCollateralReturn(
+    new Core.TransactionOutput(byron, new Core.Value(1700000n)),
+  );
+  tx.setBody(body);
+  const { host, close } = await render(<TransactionOutputs tx={tx} />);
+  try {
+    expect(host.querySelector(".rehearsal-output code")?.textContent).toBe(
+      byron.toBase58(),
+    );
+    expect(host.querySelector(".rehearsal-collateral code")?.textContent).toBe(
+      byron.toBase58(),
+    );
+  } finally {
     await close();
   }
 });

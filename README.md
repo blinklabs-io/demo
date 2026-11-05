@@ -411,3 +411,4 @@ inferred. Signing still requires explicit approval of the reviewed draft.
 | Block capacity cockpit | [Desktop](docs/screenshots/capacity-review1500.jpg) | [Mobile](docs/screenshots/capacity-review390.jpg) |
 | Transaction flow inspection | [Desktop](docs/screenshots/flow-review1500.jpg) | [Mobile](docs/screenshots/flow-review390.jpg) |
 | Transaction rehearsal | [Desktop](docs/screenshots/rehearsal-review1500.jpg) | [Mobile](docs/screenshots/rehearsal-review390.jpg) |
+| Native-asset rehearsal | [Desktop](docs/screenshots/rehearsal-native1500.jpg) | [Mobile](docs/screenshots/rehearsal-native390.jpg) |

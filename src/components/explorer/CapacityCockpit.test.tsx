@@ -215,3 +215,61 @@ it("keeps the summary history usable when exact execution data is unavailable", 
     container.remove();
   }
 });
+
+it("marks the cockpit full from body bytes while both execution budgets remain below their limits", async () => {
+  notifyManager.setScheduler(queueMicrotask);
+  vi.mocked(getSyncClient).mockReturnValue({
+    fetchBlock: vi.fn(async () => ({
+      nativeBytes: bytes(1, 1),
+      parsedBlock: { header: { hash: hexToBytes(latest.hash) } },
+    })),
+  } as unknown as ReturnType<typeof getSyncClient>);
+  vi.mocked(fetch).mockImplementation(
+    async (url) =>
+      new Response(
+        JSON.stringify(
+          String(url).endsWith("/blocks/latest")
+            ? latest
+            : String(url).includes("/previous?")
+              ? [older]
+              : {
+                  max_block_size: 900,
+                  protocol_major_ver: 11,
+                  max_block_ex_mem: "20",
+                  max_block_ex_steps: "20",
+                },
+        ),
+        { status: 200 },
+      ),
+  );
+  const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+    }),
+    host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await act(async () =>
+      root.render(
+        <MemoryRouter>
+          <QueryClientProvider client={client}>
+            <CapacityCockpit />
+          </QueryClientProvider>
+        </MemoryRouter>,
+      ),
+    );
+    expect(host.querySelector(".capacity-status")?.textContent).toContain(
+      "Full · body bytes",
+    );
+    expect(host.querySelector(".gauge-red title")?.textContent).toContain(
+      "Body bytes: 100.0 percent",
+    );
+    expect(host.querySelector(".gauge-violet title")?.textContent).toContain(
+      "Execution memory: 5.0 percent",
+    );
+  } finally {
+    await act(async () => root.unmount());
+    client.clear();
+    host.remove();
+  }
+});

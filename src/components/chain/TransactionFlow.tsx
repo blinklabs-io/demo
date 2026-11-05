@@ -2,7 +2,7 @@ import { useId, useMemo, useState } from "react";
 import { Core } from "@blaze-cardano/sdk";
 import { Link } from "../NetworkLink";
 import { fraction } from "../../lib/chain/geometry";
-import { formatAda, shortenHash } from "../../lib/format";
+import { formatAda, shortenHash, formatAddress } from "../../lib/format";
 import { CopyButton } from "../explorer/CopyButton";
 import "./transaction-flow.css";
 import { assetName } from "../../lib/tools/transactions";
@@ -130,7 +130,7 @@ export function TransactionFlow({
     : parsed.body.collateralReturn()
       ? [
           {
-            address: parsed.body.collateralReturn()!.address().toBech32(),
+            address: formatAddress(parsed.body.collateralReturn()!.address()),
             tx_hash: summary.hash,
             output_index: parsed.body.outputs().length,
             collateral: true,
@@ -220,8 +220,8 @@ export function TransactionFlow({
   const from = expanded ? sourceRows : grouped(sourceRows),
     to = expanded ? sinkRows : grouped(sinkRows);
   const selected = [
-    ...sourceRows.map((n) => ({ ...n, side: "Source" })),
-    ...sinkRows.map((n) => ({ ...n, side: "Destination" })),
+    ...from.map((n) => ({ ...n, side: "Source" })),
+    ...to.map((n) => ({ ...n, side: "Destination" })),
   ].find((n) => `${n.side}:${n.id}` === focus);
   const totalIn = sources.reduce((n, r) => n + r.value, 0n),
     totalOut = sinks.reduce((n, r) => n + r.value, 0n);
@@ -321,8 +321,10 @@ export function TransactionFlow({
                   <button
                     type="button"
                     aria-pressed={
-                      focus ===
-                      `${index === 0 ? "Source" : "Destination"}:${n.id}`
+                      n.id === "other"
+                        ? undefined
+                        : focus ===
+                          `${index === 0 ? "Source" : "Destination"}:${n.id}`
                     }
                     onClick={() => {
                       if (n.id === "other") setExpanded(true);
@@ -332,7 +334,11 @@ export function TransactionFlow({
                         );
                     }}
                   >
-                    {n.href ? shortenHash(n.label, 6) : n.label}
+                    {n.id === "other"
+                      ? `Show all ${n.label}`
+                      : n.href
+                        ? shortenHash(n.label, 6)
+                        : n.label}
                   </button>
                   <strong>{format(n.value)}</strong>
                 </div>
@@ -438,9 +444,15 @@ export function TransactionFlow({
                   role="button"
                   tabIndex={0}
                   className="flow-branch"
-                  aria-label={`Inspect ${left ? "source" : "destination"} ${n.label}: ${format(n.value)}`}
+                  aria-label={
+                    n.id === "other"
+                      ? `Show all ${n.label}`
+                      : `Inspect ${left ? "source" : "destination"} ${n.label}: ${format(n.value)}`
+                  }
                   aria-pressed={
-                    focus === `${left ? "Source" : "Destination"}:${n.id}`
+                    n.id === "other"
+                      ? undefined
+                      : focus === `${left ? "Source" : "Destination"}:${n.id}`
                   }
                   onClick={() => {
                     if (n.id === "other") setExpanded(true);

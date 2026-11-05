@@ -129,7 +129,13 @@ it("expands every branch instead of dropping small destinations", async () => {
       b.textContent?.startsWith("Show all"),
     )!;
     expect(button).toBeTruthy();
+    expect(
+      view.host.querySelector('.river-svg [aria-label^="Show all"]'),
+    ).toBeTruthy();
     await act(async () => button.click());
+    expect(
+      view.host.querySelector('.river-svg [aria-label^="Show all"]'),
+    ).toBeNull();
     expect(
       view.host.querySelectorAll('.river-svg [role="button"]'),
     ).toHaveLength(8);
@@ -159,6 +165,47 @@ it("keeps reference and unused collateral outside successful value flows", async
     expect(view.host.querySelector(".river-totals")?.textContent).not.toContain(
       "18.00 ADA",
     );
+  } finally {
+    await view.close();
+  }
+});
+
+it("removes inspection of hidden branches when returning to main branches", async () => {
+  const view = await render({
+    ...fixture(),
+    inputs: [row(address("11"), "7000000")],
+    outputs: Array.from({ length: 6 }, (_, i) =>
+      row(address(String(i + 2).padStart(2, "0")), "1000000", i),
+    ),
+  });
+  try {
+    const more = view.host.querySelector(
+      '.river-svg [aria-label^="Show all"]',
+    )!;
+    expect(more).toBeTruthy();
+    expect(more.hasAttribute("aria-pressed")).toBe(false);
+    await act(async () =>
+      more.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      ),
+    );
+    const nodes = view.host.querySelectorAll('.river-svg [role="button"]');
+    await act(async () =>
+      nodes[nodes.length - 1].dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      ),
+    );
+    expect(view.host.querySelector(".flow-inspector")).toBeTruthy();
+    const collapse = [...view.host.querySelectorAll("button")].find(
+      (b) => b.textContent === "Show main branches",
+    )!;
+    await act(async () => collapse.click());
+    expect(view.host.querySelector(".flow-inspector")).toBeNull();
+    expect(
+      [...view.host.querySelectorAll(".river-svg path")].every(
+        (p) => p.getAttribute("opacity") === ".65",
+      ),
+    ).toBe(true);
   } finally {
     await view.close();
   }
