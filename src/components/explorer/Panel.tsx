@@ -1,3 +1,4 @@
+import { CopyButton } from "./CopyButton";
 import type { ReactNode } from "react";
 
 export function Panel({
@@ -23,6 +24,20 @@ export function Panel({
 }
 
 export function Field({ label, value }: { label: string; value: ReactNode }) {
+  let url: string | null = null;
+  if (typeof value === "string") {
+    try {
+      const parsed = new URL(value);
+      if (
+        ["http:", "https:"].includes(parsed.protocol) &&
+        !parsed.username &&
+        !parsed.password
+      )
+        url = parsed.href;
+    } catch {
+      url = null;
+    }
+  }
   return (
     <div className="data-field">
       <span className="field-label">{label}</span>
@@ -32,6 +47,23 @@ export function Field({ label, value }: { label: string; value: ReactNode }) {
             className={`status-badge ${value === "Yes" ? "positive" : "neutral"}`}
           >
             {value}
+          </span>
+        ) : url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-sky-400 hover:underline"
+          >
+            {value} ↗
+          </a>
+        ) : typeof value === "string" &&
+          /^(?:[a-fA-F0-9]{40,512}|(?:addr|stake|pool|drep|asset|script|cc_cold|cc_hot)[a-z0-9_]+)$/.test(
+            value,
+          ) ? (
+          <span className="address-identifier address-identifier-full">
+            <span className="identifier-text">{value}</span>
+            <CopyButton value={value} label={label.toLowerCase()} />
           </span>
         ) : (
           value

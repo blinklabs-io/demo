@@ -146,7 +146,6 @@ function AddressDetailContent({ address }: { address?: string }) {
                         <HashLink
                           kind="account"
                           id={summaryQuery.data.stake_address}
-                          visible={10}
                         />
                       ) : (
                         "—"
@@ -189,7 +188,7 @@ function AddressDetailContent({ address }: { address?: string }) {
                 key={`${utxo.tx_hash}:${utxo.output_index}`}
                 className="rounded border border-slate-800 p-2 text-sm"
               >
-                <HashLink kind="tx" id={utxo.tx_hash} visible={12} />
+                <HashLink kind="tx" id={utxo.tx_hash} />
                 <span className="text-slate-500">#{utxo.output_index}</span>
                 <div className="mt-1">
                   <AdaAmount amount={utxo.amount} assetLimit={3} />
@@ -237,7 +236,7 @@ function AddressDetailContent({ address }: { address?: string }) {
           <ul className="activity-list address-timeline">
             {txsQuery.data?.map((tx) => (
               <li key={tx.tx_hash} className="flex items-center gap-2">
-                <HashLink kind="tx" id={tx.tx_hash} visible={12} />
+                <HashLink kind="tx" id={tx.tx_hash} />
                 <span className="text-slate-500">
                   block {tx.block_height} ·{" "}
                   {new Date(tx.block_time * 1000).toLocaleString()}

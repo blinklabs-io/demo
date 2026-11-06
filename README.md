@@ -159,18 +159,17 @@ keyboard controls, mobile layouts, and reduced-motion support.
 The explorer includes transaction and block-size charts, ADA supply breakdowns,
 reward and holder charts, and timelines for eras, blocks, and governance actions.
 Charts link to the underlying records and expose values on keyboard focus.
-Pool identities use registered tickers and names. Icons are resolved from each
-pool’s published metadata and extended metadata files, using the URL supplied
-by Dingo. Both CIP-6 and legacy extended metadata layouts are supported. The small icon is preferred over the full logo; missing or unavailable
-images show ticker initials. Metadata and image files load directly from their
-publishers, without a third-party pool registry or indexer.
+Pool identities use registered tickers and names returned by Dingo and show
+ticker initials. Pool-controlled metadata and image URLs are never fetched
+automatically by the browser.
 
 Recent blocks and block details show the protocol version decoded from the
-block header bytes returned by UTxO RPC. A minor version of 69 displays the
-Dingo forging marker; 67 identifies Bean and 65 identifies Amaru. Versions
-11.1 and 11.2 identify Haskell cardano-node; other unidentified versions are
-shown as assumed Haskell. Header versions are distinct from the current epoch's
-protocol parameters.
+block header bytes returned by UTxO RPC. CIP-203 scheme-zero IDs identify Dingo
+(69), Amaru (65), and the shared Gerolamo/cardano-bean signal (67). Amaru release
+dates are decoded from payload layout zero; other payloads remain opaque.
+Reserved schemes and unknown layouts are not interpreted. Unsignalled blocks
+are displayed as assumed Haskell; legacy release minors identify Haskell.
+Header versions are distinct from the current epoch's protocol parameters.
 
 Global search accepts registered pool tickers and `$handle` names. Numeric pool
 tickers can be qualified as `pool:8964` to distinguish them from block heights.
@@ -398,8 +397,11 @@ The frozen snapshot is rechecked against Dingo’s canonical chain.
 Pie slices, version legends, hourly bars and alternative-node markers expose even rare header
 versions. Select a version or hour to inspect its blocks. The block list is
 paginated; counts always cover the verified records rather than just displayed
-links. Protocol minor markers identify the displayed node implementations;
-unrecognized versions remain assumed Haskell cardano-node.
+links. CIP-203 scheme, identifier and payload fields identify self-reported producers.
+Amaru layout 0 payloads expose a release date or unreleased build status; reserved
+layouts and unspecified payload formats remain opaque.
+ID 67 is ambiguous between Gerolamo and cardano-bean. Unsignalled blocks remain
+assumed Haskell; opt-outs and unsupported or unregistered signals stay unidentified.
 
 Loading is progressive and can be cancelled by switching to Latest blocks or
 leaving the page. Compact verified header records are cached per network and
@@ -434,3 +436,19 @@ inferred. Signing still requires explicit approval of the reviewed draft.
 | Transaction flow inspection | [Desktop](docs/screenshots/flow-review1500.jpg) | [Mobile](docs/screenshots/flow-review390.jpg) |
 | Transaction rehearsal | [Desktop](docs/screenshots/rehearsal-review1500.jpg) | [Mobile](docs/screenshots/rehearsal-review390.jpg) |
 | Native-asset rehearsal | [Desktop](docs/screenshots/rehearsal-native1500.jpg) | [Mobile](docs/screenshots/rehearsal-native390.jpg) |
+| Pool owner metadata | [Desktop](docs/screenshots/pool-profile1440.png) | [Mobile](docs/screenshots/pool-profile390.png) |
+
+Pool detail pages show both bech32 and hex pool identifiers, a recent producer
+signal from the current epoch, paginated delegators, and owner metadata with
+provenance. Registered IPv4, IPv6, DNS and DNS SRV relays have copyable endpoints. SRV records retain their own port discovery; addresses are registration data, not reachability checks.
+
+Epoch totals use a browser cache scoped to the selected network and Dingo backend:
+completed epochs stay fresh for seven days, current-epoch snapshots for ten
+minutes. Cache expiry survives reloads without being extended, and partial
+snapshots are never promoted to completed totals. Observed rollbacks clear stored
+summaries. Refresh totals forces a new Dingo read; heavy epoch-summary reads are
+serialized. Cached snapshots show their read time.
+
+Pool profiles display the registered owner metadata returned by Dingo and link
+to its declared website and source. The browser does not automatically request
+pool-controlled metadata, extended documents, or image URLs.

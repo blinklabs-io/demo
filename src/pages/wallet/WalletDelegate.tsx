@@ -208,7 +208,6 @@ function DelegationForm({
                 <HashLink
                   kind="pool"
                   id={accountQuery.data.pool_id}
-                  visible={8}
                 />
               ) : (
                 "none"
@@ -218,7 +217,6 @@ function DelegationForm({
                 <HashLink
                   kind="drep"
                   id={accountQuery.data.drep_id}
-                  visible={8}
                 />
               ) : (
                 "none"

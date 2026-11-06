@@ -921,3 +921,37 @@
   .experience-actions { margin: 18px 0 22px; }
   .experience-pulse > a { padding: 16px 12px; }
 }
+
+.theme-studio { --experience-accent: #ffd27e; }
+.theme-voice { --experience-accent: #c2a4ff; }
+.theme-mint { --experience-accent: #72f1c9; }
+.theme-swap { --experience-accent: #ffbd79; }
+.theme-mempool { --experience-accent: #adacff; }
+.theme-proof { --experience-accent: #9be2af; }
+.theme-utxo { --experience-accent: #73c7ff; }
+.theme-payments { --experience-accent: #efa5d5; }
+.theme-network { --experience-accent: #87b7ff; }
+.experience-card {
+  border-top: 2px solid var(--experience-accent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--experience-accent) 7%, #101f2d), #101f2d 70%);
+}
+.experience-card .eyebrow,
+.experience-card strong { color: var(--experience-accent); }
+.experience-card:hover,
+.experience-card:focus-visible {
+  border-color: var(--experience-accent);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--experience-accent) 12%, transparent);
+}
+.experience-page a.experience-card:focus-visible { outline: 2px solid var(--experience-accent); outline-offset: 4px; }
+.experience-hero em {
+  background: linear-gradient(100deg, #70edd0 10%, #89cdff 65%, #baa5ff);
+  background-clip: text;
+  color: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  .experience-card { transition: none; }
+  .experience-card:hover { transform: none; }
+}
+@media (forced-colors: active) {
+  .experience-hero em { background: none; color: CanvasText; }
+}

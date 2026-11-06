@@ -94,7 +94,9 @@ it("labels partial counts and pages all blocks without rendering thousands of li
   try {
     expect(host.textContent).toContain("of verified blocks");
     expect(host.textContent).toContain("Verified blocks so far");
-    expect(host.textContent).toContain("No alternative node markers");
+    expect(host.textContent).toContain(
+      "No alternative or unidentified producer signals",
+    );
     const all = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
       (b) => b.textContent === "All blocks",
     )!;
@@ -124,7 +126,7 @@ it("uses hourly boundaries and full versions while excluding out-of-window cache
   try {
     expect(host.querySelectorAll(".header-node-legend button")).toHaveLength(3);
     expect(host.textContent).toContain("Amaru");
-    expect(host.textContent).toContain("Bean");
+    expect(host.textContent).toContain("cardano-bean");
     expect(host.textContent).not.toContain("Dingo");
     const hours = host.querySelectorAll<HTMLButtonElement>(
       ".header-hour-chart button",
@@ -216,6 +218,34 @@ it("gives different full Haskell versions distinct chart colors", async () => {
       p.getAttribute("fill"),
     );
     expect(new Set(fills).size).toBe(4);
+  } finally {
+    await close();
+  }
+});
+it("displays packed producer signals consistently in the chart and inspection list", async () => {
+  const { host, close } = await render([
+    record(1, "315973"),
+    record(2, String((1234 << 8) | 65)),
+    record(3, "67"),
+    record(4, "255"),
+    record(5, "1073741893"),
+  ]);
+  try {
+    const legend = host.querySelector(".header-node-legend")!;
+    expect(legend.textContent).toContain("Dingo");
+    expect(legend.textContent).toContain("Amaru");
+    expect(legend.textContent).toContain("Gerolamo / cardano-bean");
+    expect(legend.textContent).toContain("Identity withheld");
+    expect(legend.textContent).toContain("Unsupported scheme 1");
+    const dingo = [
+      ...legend.querySelectorAll<HTMLButtonElement>("button"),
+    ].find((b) => b.textContent?.includes("Dingo"))!;
+    expect(dingo.title).toContain("opaque payload 1234");
+    await act(async () => dingo.click());
+    expect(host.querySelectorAll(".header-history-blocks a")).toHaveLength(1);
+    expect(host.querySelector(".header-history-blocks")?.textContent).toContain(
+      "11.315973",
+    );
   } finally {
     await close();
   }

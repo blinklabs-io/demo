@@ -11,7 +11,7 @@ export interface VersionRecord {
   minor: string;
 }
 const implementation = (record: Pick<VersionRecord, "minor" | "major">) =>
-  nodeImplementation(record.minor, record.major);
+  nodeImplementation(record.minor);
 const versionOf = (record: VersionRecord) => `${record.major}.${record.minor}`;
 const time = (seconds: number) =>
   new Date(seconds * 1000).toLocaleTimeString([], {
@@ -25,12 +25,14 @@ function color(record: Pick<VersionRecord, "minor" | "major">) {
       ? 150
       : family === "amaru"
         ? 260
-        : family === "bean"
+        : family === "gerolamo-bean"
           ? 35
-          : 195;
+          : family === "unknown"
+            ? 0
+            : 195;
   const version = BigInt(record.major) * 37n + BigInt(record.minor) * 17n;
   const range = family === "cardano-node" ? 45n : 15n;
-  return `hsl(${hue + Number(version % range)} 65% ${55 + Number(version % 13n)}%)`;
+  return `hsl(${hue + Number(version % range)} ${family === "unknown" ? 10 : 65}% ${55 + Number(version % 13n)}%)`;
 }
 
 type Scope =
@@ -131,7 +133,7 @@ export function HeaderVersionChart({
       : scope.kind === "hour"
         ? `${time(data.hours[scope.index].start)}–${time(data.hours[scope.index].start + 3600)}`
         : scope.kind === "alternatives"
-          ? "Alternative node markers"
+          ? "Node diversity"
           : "All header versions";
   return (
     <div className="header-history-chart">
@@ -212,6 +214,7 @@ export function HeaderVersionChart({
             {nodes.map((node) => (
               <button
                 key={node.id}
+                title={node.detail}
                 type="button"
                 aria-pressed={
                   scope.kind === "version" && scope.version === node.id
@@ -225,6 +228,7 @@ export function HeaderVersionChart({
                   <small>
                     Header {node.id} · {node.count.toLocaleString()} blocks
                   </small>
+                  {node.release && <small>{node.release}</small>}
                 </span>
                 <b>{((node.count / windowRecords.length) * 100).toFixed(2)}%</b>
               </button>
@@ -233,7 +237,7 @@ export function HeaderVersionChart({
         </div>
         <p className="header-history-note">
           Select a slice or legend entry to inspect that version’s blocks.
-          Haskell includes unrecognized versions assumed to be Haskell.
+          Haskell includes unsignalled blocks attributed by display assumption.
         </p>
       </section>
       <div className="header-hour-heading">
@@ -323,7 +327,7 @@ export function HeaderVersionChart({
               aria-pressed={scope.kind === "alternatives"}
               onClick={() => choose({ kind: "alternatives" })}
             >
-              Alternative markers
+              Node diversity
             </button>
             <button
               type="button"
@@ -341,6 +345,7 @@ export function HeaderVersionChart({
               return (
                 <Link
                   key={record.hash}
+                  title={node.detail}
                   to={`/explorer/block/${record.hash}`}
                   style={
                     { "--version-color": color(record) } as React.CSSProperties
@@ -362,7 +367,7 @@ export function HeaderVersionChart({
         ) : (
           <p className="header-history-empty">
             {scope.kind === "alternatives"
-              ? "No alternative node markers in the verified blocks yet."
+              ? "No alternative or unidentified producer signals in the verified blocks yet."
               : "No verified blocks match this selection."}
           </p>
         )}
@@ -393,8 +398,19 @@ export function HeaderVersionChart({
         )}
       </section>
       <p className="header-history-note">
-        Node identities follow protocol minor markers. Unrecognized versions are
-        assumed Haskell cardano-node; they are not independently identified.
+        Producer signals follow (
+        <a
+          href="https://github.com/cardano-foundation/CIPs/pull/1276"
+          target="_blank"
+          rel="noreferrer"
+        >
+          CIP-203 ↗
+        </a>
+        ). Amaru release dates are decoded from its published payload format;
+        other payloads remain opaque. ID 67 can be Gerolamo or cardano-bean.
+        Unsignalled blocks are assumed Haskell; explicit opt-outs, unregistered
+        IDs and unsupported schemes stay unidentified. Signals are
+        self-reported.
       </p>
     </div>
   );

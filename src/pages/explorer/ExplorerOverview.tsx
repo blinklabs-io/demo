@@ -177,7 +177,7 @@ export default function ExplorerOverview() {
                 {txs.data?.map((hash) => (
                   <li key={hash}>
                     <span className="status-badge positive">TX</span>
-                    <HashLink kind="tx" id={hash} visible={12} />
+                    <HashLink kind="tx" id={hash} />
                     <span className="text-slate-500">↗</span>
                   </li>
                 ))}
@@ -218,7 +218,7 @@ export default function ExplorerOverview() {
                     <HashLink kind="block" id={String(block.height)} />
                   </td>
                   <td>
-                    <HashLink kind="pool" id={block.slot_leader} visible={8} />
+                    <HashLink kind="pool" id={block.slot_leader} />
                   </td>
                   <td>
                     <BlockHeaderVersion hash={block.hash} slot={block.slot} />

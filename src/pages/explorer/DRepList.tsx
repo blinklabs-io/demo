@@ -68,7 +68,7 @@ function DRepCard({ row }: { row: DRepDirectoryRow }) {
                   ? "Always no confidence"
                   : "Representative")}
           </strong>
-          <HashLink kind="drep" id={row.drep_id} visible={10} />
+          <HashLink kind="drep" id={row.drep_id} />
         </span>
         {row.has_script && (
           <span className="ml-2 text-xs text-slate-500">(script)</span>

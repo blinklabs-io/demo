@@ -163,7 +163,6 @@ export default function AccountDetail() {
                         <HashLink
                           kind="pool"
                           id={summaryQuery.data.pool_id}
-                          visible={10}
                         />
                       ) : (
                         "—"
@@ -177,7 +176,6 @@ export default function AccountDetail() {
                         <HashLink
                           kind="drep"
                           id={summaryQuery.data.drep_id}
-                          visible={10}
                         />
                       ) : (
                         "—"
@@ -206,8 +204,8 @@ export default function AccountDetail() {
                 emptyLabel="No UTxOs delegating to this account."
                 renderItem={(row) => (
                   <span>
-                    <HashLink kind="address" id={row.address} visible={10} /> ·{" "}
-                    <HashLink kind="tx" id={row.tx_hash} visible={8} />#
+                    <HashLink kind="address" id={row.address} /> ·{" "}
+                    <HashLink kind="tx" id={row.tx_hash} />#
                     {row.output_index}
                   </span>
                 )}
@@ -225,7 +223,7 @@ export default function AccountDetail() {
                 keyFor={(row) => row.address}
                 emptyLabel="No associated addresses."
                 renderItem={(row) => (
-                  <HashLink kind="address" id={row.address} visible={12} />
+                  <HashLink kind="address" id={row.address} />
                 )}
               />
             </Panel>
@@ -241,7 +239,7 @@ export default function AccountDetail() {
               emptyLabel="No transactions for this stake account."
               renderItem={(row) => (
                 <span>
-                  <HashLink kind="tx" id={row.tx_hash} visible={12} /> · block{" "}
+                  <HashLink kind="tx" id={row.tx_hash} /> · block{" "}
                   {row.block_height} ·{" "}
                   {new Date(row.block_time * 1000).toLocaleString()}
                 </span>

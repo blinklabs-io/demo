@@ -400,3 +400,4 @@
     gap: 8px;
   }
 }
+.header-node-legend strong, .header-node-legend small { overflow-wrap: anywhere; }

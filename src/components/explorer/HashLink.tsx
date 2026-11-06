@@ -1,7 +1,6 @@
 import { CopyButton } from "./CopyButton";
 import { PoolIdentity } from "./PoolIdentity";
 import { Link } from "../NetworkLink";
-import { shortenHash } from "../../lib/format";
 
 type Kind = "tx" | "block" | "address" | "account" | "pool" | "drep" | "asset";
 
@@ -18,12 +17,10 @@ const ROUTE: Record<Kind, (id: string) => string> = {
 export function HashLink({
   kind,
   id,
-  visible = 8,
   full = false,
 }: {
   kind: Kind;
   id: string;
-  visible?: number;
   full?: boolean;
 }) {
   if (kind === "pool") return <PoolIdentity poolId={id} compact />;
@@ -43,18 +40,21 @@ export function HashLink({
       </span>
     );
   return (
-    <Link
-      to={ROUTE[kind](id)}
-      title={id}
-      className="font-mono text-sky-400 hover:text-sky-300 hover:underline"
+    <span
+      className={`address-identifier${full ? " address-identifier-full" : ""}`}
     >
-      {kind === "drep" && id === "drep_always_abstain"
-        ? "Always abstain"
-        : kind === "drep" && id === "drep_always_no_confidence"
-          ? "Always no confidence"
-          : full
-            ? id
-            : shortenHash(id, visible)}
-    </Link>
+      <Link
+        to={ROUTE[kind](id)}
+        title={id}
+        className="font-mono text-sky-400 hover:text-sky-300 hover:underline"
+      >
+        {kind === "drep" && id === "drep_always_abstain"
+          ? "Always abstain"
+          : kind === "drep" && id === "drep_always_no_confidence"
+            ? "Always no confidence"
+            : id}
+      </Link>
+      <CopyButton value={id} label={`${kind} ID`} />
+    </span>
   );
 }

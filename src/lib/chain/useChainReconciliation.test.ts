@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { isMutableChainQuery } from "./useChainReconciliation";
+import { describe, expect, it, vi } from "vitest";
+import { isMutableChainQuery, useChainReconciliation } from "./useChainReconciliation";
+
+const cleared = vi.hoisted(() => vi.fn());
+vi.mock("../explorer/epochSummary", () => ({ clearEpochSummaryCache: cleared }));
 
 describe("chain transition query ownership", () => {
   it.each([
@@ -167,6 +170,42 @@ it("clears an uncertain manual census without starting an unsolicited recount", 
   } finally {
     await act(async () => root.unmount());
     unsubscribe();
+    client.clear();
+  }
+});
+
+it("reconciles pool delegators on apply and producer signals on rollback", () => {
+  const delegators = ["dingo", "pool", "pool1", "delegators"];
+  const producer = ["dingo", "pool", "pool1", "producer-block", 500];
+  expect(isMutableChainQuery(delegators)).toBe(true);
+  expect(isMutableChainQuery(producer)).toBe(false);
+  expect(isMutableChainQuery(producer, true)).toBe(true);
+});
+
+it("clears stored epoch summaries on reset and on reconnect after an observed tip", async () => {
+  const { act, createElement } = await import("react");
+  const { createRoot } = await import("react-dom/client");
+  const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
+  const { useTipStore } = await import("../../stores/tipStore");
+  const clear = cleared;
+  clear.mockClear();
+  const client = new QueryClient();
+  function Reconcile() { useChainReconciliation(); return null; }
+  const root = createRoot(document.createElement("div"));
+  const tip = { hash: "aa" } as never;
+  try {
+    await act(async () => root.render(createElement(QueryClientProvider, { client }, createElement(Reconcile))));
+    const step = (lastAction: "apply" | "reset" | "connect", t: unknown) =>
+      act(async () => useTipStore.setState((s) => ({ revision: s.revision + 1, lastAction, tip: t as never })));
+    await step("connect", null);
+    expect(clear).not.toHaveBeenCalled();
+    await step("reset", null);
+    expect(clear).toHaveBeenCalledTimes(1);
+    await step("apply", tip);
+    await step("connect", null);
+    expect(clear).toHaveBeenCalledTimes(2);
+  } finally {
+    await act(async () => root.unmount());
     client.clear();
   }
 });

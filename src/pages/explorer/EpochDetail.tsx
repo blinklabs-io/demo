@@ -1,3 +1,7 @@
+import {
+  epochSummaryQuery,
+  useRefetchOnEpochCompletion,
+} from "../../lib/explorer/epochSummary";
 import { EpochFingerprints } from "../../components/chain/EpochFingerprints";
 import { eraNameFromProtocol } from "../../lib/dingo/networkNames";
 import {
@@ -8,24 +12,11 @@ import {
 } from "../../components/explorer/Visuals";
 import { useNow } from "../../lib/useNow";
 import { useParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
 import { formatAda } from "../../lib/format";
-
-interface EpochResponse {
-  epoch: number;
-  start_time: number;
-  end_time: number;
-  first_block_time: number;
-  last_block_time: number;
-  block_count: number;
-  tx_count: number;
-  output: string;
-  fees: string;
-  active_stake: string | null;
-}
 
 interface ProtocolParamsResponse {
   epoch: number;
@@ -45,6 +36,7 @@ interface ProtocolParamsResponse {
 
 export default function EpochDetail() {
   const { epoch } = useParams();
+  const queryClient = useQueryClient();
   const invalidEpoch =
     epoch !== undefined &&
     (!/^\d+$/.test(epoch) ||
@@ -99,20 +91,27 @@ export default function EpochDetail() {
         )
       : undefined;
   const epochQuery = useQuery({
-    queryKey: ["dingo", "epoch", selectedEpoch],
-    queryFn: () =>
-      blockfrostFetch<EpochResponse>(`/api/v0/epochs/${selectedEpoch}`),
+    ...epochSummaryQuery(selectedEpoch, tipQuery.data?.epoch),
     enabled:
       !invalidEpoch &&
       selectedEpoch !== undefined &&
       Number.isSafeInteger(selectedEpoch) &&
       selectedEpoch >= 0,
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
   });
+  useRefetchOnEpochCompletion(
+    selectedEpoch,
+    tipQuery.data?.epoch,
+    epochQuery.refetch,
+    !invalidEpoch,
+  );
 
   const paramsQuery = useQuery({
-    queryKey: ["dingo", "epoch", epoch === undefined ? "latest" : String(selectedEpoch), "parameters"],
+    queryKey: [
+      "dingo",
+      "epoch",
+      epoch === undefined ? "latest" : String(selectedEpoch),
+      "parameters",
+    ],
     queryFn: ({ signal }) =>
       blockfrostFetch<ProtocolParamsResponse>(
         `/api/v0/epochs/${epoch === undefined ? "latest" : selectedEpoch}/parameters`,
@@ -148,9 +147,14 @@ export default function EpochDetail() {
             : "Epoch timing"
         }
       >
-        <QueryState hasData={Boolean(era && selectedEpoch !== undefined)}
-          isLoading={(epoch === undefined && tipQuery.isLoading) || erasQuery.isLoading}
-          error={(epoch === undefined ? tipQuery.error : null) || erasQuery.error}
+        <QueryState
+          hasData={Boolean(era && selectedEpoch !== undefined)}
+          isLoading={
+            (epoch === undefined && tipQuery.isLoading) || erasQuery.isLoading
+          }
+          error={
+            (epoch === undefined ? tipQuery.error : null) || erasQuery.error
+          }
         >
           {progress !== undefined &&
           starts !== undefined &&
@@ -203,7 +207,35 @@ export default function EpochDetail() {
           )}
         </QueryState>
       </Panel>
-      <Panel title="Epoch activity totals">
+      <Panel
+        title="Epoch activity totals"
+        action={
+          <button
+            type="button"
+            className="status-badge"
+            disabled={selectedEpoch === undefined || epochQuery.isFetching}
+            onClick={() =>
+              void queryClient.invalidateQueries({
+                queryKey: epochSummaryQuery(selectedEpoch, tipQuery.data?.epoch)
+                  .queryKey,
+                exact: true,
+              })
+            }
+          >
+            {epochQuery.isFetching ? "Reading totals…" : "Refresh totals ↻"}
+          </button>
+        }
+      >
+        {epochQuery.data && (
+          <p className="tool-help">
+            Read {new Date(epochQuery.data.observedAt).toLocaleString()} ·{" "}
+            {tipQuery.data?.epoch === undefined
+              ? "completion unverified"
+              : epochQuery.data.epoch < tipQuery.data.epoch
+                ? "completed epoch"
+                : "partial epoch snapshot"}
+          </p>
+        )}
         {epochQuery.isLoading ? (
           <div role="status" className="text-sm text-slate-400">
             <span className="live-dot" />
@@ -211,7 +243,8 @@ export default function EpochDetail() {
             parameters are available independently.
           </div>
         ) : (
-          <QueryState hasData={epochQuery.data !== undefined}
+          <QueryState
+            hasData={epochQuery.data !== undefined}
             isLoading={false}
             error={epochQuery.error}
             notFoundLabel="Epoch not found."
@@ -256,7 +289,11 @@ export default function EpochDetail() {
       )}
 
       <Panel title="Protocol parameters">
-        <QueryState hasData={paramsQuery.data !== undefined} isLoading={paramsQuery.isLoading} error={paramsQuery.error}>
+        <QueryState
+          hasData={paramsQuery.data !== undefined}
+          isLoading={paramsQuery.isLoading}
+          error={paramsQuery.error}
+        >
           {paramsQuery.data && (
             <div>
               <Field

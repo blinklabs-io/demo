@@ -2098,7 +2098,7 @@ summary {
     radial-gradient(ellipse at 100% 100%, #2dd4bf12, transparent 65%), #102230;
   border-radius: 16px;
 }
-.pool-card > .pool-identity {
+.pool-card > .pool-identity-with-copy {
   grid-column: 1/-1;
 }
 .pool-card-metrics {
@@ -5323,3 +5323,14 @@ summary {
     overflow-wrap: anywhere;
   }
 }
+.address-identifier > .identifier-text { min-width: 0; overflow-wrap: anywhere; }
+.field-value { min-width: 0; }
+.pool-identity-with-copy { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.pool-identity-with-copy > .pool-identity { min-width: 0; }
+.pool-label strong, .pool-label small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.panel-heading h2 { min-width: 0; }
+.copy-identifier { position: relative; }
+
+.field-value > a { color: #8ed5ef; }
+.field-value > a:hover { text-decoration: underline; }

@@ -1,0 +1,104 @@
+.block-activity-strip {
+  padding: 18px 20px 12px;
+  margin: 0 0 18px;
+  border: 1px solid #375471;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 80% 0, #6837a329, transparent 70%),
+    linear-gradient(110deg, #102c36, #171c36);
+}
+.block-activity-strip header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: #b6c4d9;
+  font-size: 11px;
+}
+.block-activity-skyline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 12px;
+}
+.block-activity-skyline button {
+  min-width: 0;
+  padding: 6px 3px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #a9c2d8;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
+}
+.block-activity-skyline button:hover,
+.block-activity-skyline button:focus-visible {
+  border-color: #9fbcff;
+  background: #a5c3ff15;
+}
+.block-activity-skyline button:focus-visible {
+  outline: 2px solid #b0ffe3;
+  outline-offset: 2px;
+}
+.block-activity-skyline button[aria-pressed="true"] {
+  border-color: #f5c775;
+  background: #e9b85f12;
+  color: #ffdc9b;
+}
+.block-activity-count {
+  display: block;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.block-activity-track {
+  height: 62px;
+  display: flex;
+  align-items: end;
+  border-bottom: 1px solid #6474a765;
+  margin: 6px 0 8px;
+}
+.block-activity-track i {
+  width: 100%;
+  border-radius: 5px 5px 0 0;
+  background: linear-gradient(0deg, #687bf2, #6bebd3);
+  box-shadow: 0 -5px 18px #76d8fa15;
+}
+.block-activity-skyline button[aria-pressed="true"] i {
+  background: linear-gradient(0deg, #d87d65, #ffd783);
+  box-shadow: 0 -5px 18px #ffc46525;
+}
+.block-activity-height {
+  display: block;
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.block-activity-strip p {
+  margin: 10px 0 0;
+  color: #9eb2c9;
+  font-size: 11px;
+}
+@media (max-width: 700px) {
+  .block-activity-strip {
+    padding: 14px 10px 10px;
+  }
+  .block-activity-skyline {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .block-activity-skyline button {
+    padding: 6px 1px;
+  }
+  .block-activity-height {
+    font-size: 9px;
+  }
+  .block-activity-track {
+    height: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .block-activity-skyline button {
+    transition: none;
+  }
+}
