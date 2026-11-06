@@ -229,9 +229,11 @@ export default function EpochDetail() {
         {epochQuery.data && (
           <p className="tool-help">
             Read {new Date(epochQuery.data.observedAt).toLocaleString()} ·{" "}
-            {epochQuery.data.completed
-              ? "completed epoch"
-              : "partial epoch snapshot"}
+            {tipQuery.data?.epoch === undefined
+              ? "completion unverified"
+              : epochQuery.data.epoch < tipQuery.data.epoch
+                ? "completed epoch"
+                : "partial epoch snapshot"}
           </p>
         )}
         {epochQuery.isLoading ? (
