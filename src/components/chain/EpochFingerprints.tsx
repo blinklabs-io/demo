@@ -1,21 +1,12 @@
 import { useId, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Link } from "../NetworkLink";
-import { blockfrostFetch } from "../../lib/dingo/blockfrost";
+import {
+  epochSummaryQuery,
+  type EpochSummary as Epoch,
+} from "../../lib/explorer/epochSummary";
 import { fraction, visualColors } from "../../lib/chain/geometry";
 import { formatAda } from "../../lib/format";
-interface Epoch {
-  epoch: number;
-  start_time: number;
-  end_time: number;
-  first_block_time: number;
-  last_block_time: number;
-  block_count: number;
-  tx_count: number;
-  output: string;
-  fees: string;
-  active_stake: string | null;
-}
 const axes = [
   {
     name: "Blocks",
@@ -56,6 +47,7 @@ function Fingerprints({
   epoch: number;
   currentEpoch?: number;
 }) {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false),
     [count, setCount] = useState(3),
     [hover, setHover] = useState<number | null>(null);
@@ -66,12 +58,9 @@ function Fingerprints({
   ).reverse();
   const queries = useQueries({
     queries: numbers.map((n) => ({
-      queryKey: ["dingo", "epoch", n],
+      ...epochSummaryQuery(n, currentEpoch),
       enabled: open,
       retry: false,
-      staleTime: 60000,
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        blockfrostFetch<Epoch>(`/api/v0/epochs/${n}`, { signal }),
     })),
   });
   const loaded = queries.flatMap((q) => (q.data ? [q.data] : []));
@@ -103,26 +92,47 @@ function Fingerprints({
           <span className="eyebrow">No two epochs are alike</span>
           <h2>The shape of an epoch.</h2>
         </div>
-        {open ? (
-          <label className="chain-select">
-            Compare
-            <select
-              value={count}
-              onChange={(e) => setCount(Number(e.target.value))}
-              aria-label="Number of epochs to compare"
+        <div className="fingerprint-actions">
+          {open ? (
+            <label className="chain-select">
+              Compare
+              <select
+                value={count}
+                onChange={(e) => setCount(Number(e.target.value))}
+                aria-label="Number of epochs to compare"
+              >
+                {[3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n} recent epochs
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <button onClick={() => setOpen(true)}>
+              Compare epoch fingerprints
+            </button>
+          )}
+          {open && (
+            <button
+              type="button"
+              disabled={queries.some((query) => query.isFetching)}
+              onClick={() =>
+                void Promise.all(
+                  numbers.map((number) =>
+                    queryClient.invalidateQueries({
+                      queryKey: epochSummaryQuery(number, currentEpoch)
+                        .queryKey,
+                      exact: true,
+                    }),
+                  ),
+                )
+              }
             >
-              {[3, 4, 5, 6].map((n) => (
-                <option key={n} value={n}>
-                  {n} recent epochs
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : (
-          <button onClick={() => setOpen(true)}>
-            Compare epoch fingerprints
-          </button>
-        )}
+              Refresh totals ↻
+            </button>
+          )}
+        </div>
       </header>
       {!open ? (
         <div className="fingerprint-teaser" aria-hidden="true">
@@ -273,6 +283,9 @@ function Fingerprints({
                     )}
                     {q.data && (
                       <>
+                        <small>
+                          Read {new Date(q.data.observedAt).toLocaleString()}
+                        </small>
                         <strong>
                           {q.data.tx_count.toLocaleString()}
                           <small>transactions</small>

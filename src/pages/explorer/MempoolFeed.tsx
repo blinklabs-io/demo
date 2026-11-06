@@ -95,7 +95,7 @@ export default function MempoolFeed() {
               className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-800 p-2 text-sm"
             >
               <div className="flex items-center gap-3">
-                <HashLink kind="tx" id={tx.hash} visible={10} />
+                <HashLink kind="tx" id={tx.hash} />
                 <span className="text-xs text-slate-500">
                   {tx.inputCount} in · {tx.outputCount} out
                 </span>

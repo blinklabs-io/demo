@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { readPoolLogos } from "../../lib/dingo/poolLogo";
+import { readPoolProfile } from "../../lib/dingo/poolLogo";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
-import { shortenHash } from "../../lib/format";
+import { CopyButton } from "./CopyButton";
 
 export interface PoolMetadata {
   url?: string | null;
@@ -21,15 +21,16 @@ function PoolAvatar({
 }) {
   const [failed, setFailed] = useState<string[]>([]);
   const logos = useQuery({
-    queryKey: ["pool-logo", metadata?.url, metadata?.hash],
-    queryFn: ({ signal }) => readPoolLogos(metadata!.url!, signal),
-    enabled: Boolean(metadata?.url),
+    queryKey: ["pool-profile-verified-v3", metadata?.url, metadata?.hash],
+    queryFn: ({ signal }) =>
+      readPoolProfile(metadata!.url!, metadata!.hash!, signal),
+    enabled: Boolean(metadata?.url && metadata.hash),
     staleTime: 86_400_000,
     gcTime: 86_400_000,
     refetchOnWindowFocus: false,
     retry: false,
   });
-  const image = logos.data?.find((url) => !failed.includes(url));
+  const image = logos.data?.logos.find((url) => !failed.includes(url));
   const initials =
     metadata?.ticker?.slice(0, 2) || poolId.slice(-2).toUpperCase();
   return (
@@ -55,10 +56,12 @@ export function PoolIdentity({
   poolId,
   metadata,
   compact = false,
+  copyable = true,
 }: {
   poolId: string;
   metadata?: PoolMetadata | null;
   compact?: boolean;
+  copyable?: boolean;
 }) {
   const query = useQuery({
     queryKey: ["dingo", "pool", poolId, "metadata"],
@@ -71,7 +74,7 @@ export function PoolIdentity({
     retry: false,
   });
   const info = metadata === undefined ? query.data : metadata;
-  return (
+  const identity = (
     <Link
       to={`/explorer/pool/${encodeURIComponent(poolId)}`}
       className={`pool-identity ${compact ? "compact" : ""}`}
@@ -84,11 +87,19 @@ export function PoolIdentity({
       />
       <span className="pool-label">
         <strong>
-          {info?.ticker ? info.ticker : shortenHash(poolId, 6)}
+          {info?.ticker ? info.ticker : compact ? poolId : "Stake pool"}
           {!compact && info?.name && <span> {info.name}</span>}
         </strong>
-        {!compact && <small>{shortenHash(poolId, 10)}</small>}
+        {!compact && <small>{poolId}</small>}
       </span>
     </Link>
+  );
+  return copyable ? (
+    <span className="pool-identity-with-copy">
+      {identity}
+      <CopyButton value={poolId} label="pool ID" />
+    </span>
+  ) : (
+    identity
   );
 }

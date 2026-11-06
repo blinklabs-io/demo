@@ -1,7 +1,10 @@
 import { nodeImplementation } from "../../lib/dingo/nodeImplementation";
 import { useQueries } from "@tanstack/react-query";
 import { Link } from "../NetworkLink";
-import { blockBytesQuery, decodeHeaderVersion } from "../../lib/dingo/blockHeader";
+import {
+  blockBytesQuery,
+  decodeHeaderVersion,
+} from "../../lib/dingo/blockHeader";
 import { Distribution } from "./Visuals";
 
 const colors = ["#2dd4bf", "#818cf8", "#fbbf24", "#f472b6", "#60a5fa"];
@@ -48,7 +51,7 @@ export function RecentHeaderVersions({
             title="Decoded headers"
             unit={`${decoded} blocks`}
             items={versions.map(([version, count]) => ({
-              label: `${version} · ${nodeImplementation(version.split(".")[1], version.split(".")[0]).name}`,
+              label: `${version} · ${nodeImplementation(version.split(".")[1]).name}`,
               value: BigInt(count),
               display: `${count} · ${((count / decoded) * 100).toFixed(1)}%`,
             }))}
@@ -72,7 +75,7 @@ export function RecentHeaderVersions({
                 ? `${header.data.major}.${header.data.minor}`
                 : undefined;
               const node = header.data
-                ? nodeImplementation(header.data.minor, header.data.major)
+                ? nodeImplementation(header.data.minor)
                 : undefined;
               const colorIndex = versions.findIndex(
                 ([name]) => name === version,
@@ -86,8 +89,8 @@ export function RecentHeaderVersions({
                       ? colors[colorIndex % colors.length]
                       : "#293b4b",
                   }}
-                  aria-label={`Block ${block.height}, ${node ? `${node.name}, ` : ""}header version ${version ?? (header.isError ? "unavailable" : "loading")}`}
-                  title={`Block ${block.height} · ${date(block.time)} · ${node ? `${node.name} · ` : ""}${version ?? (header.isError ? "Header unavailable" : "Loading header")}`}
+                  aria-label={`Block ${block.height}, ${node ? `${node.name}, ` : ""}${node?.release ? `${node.release}, ` : ""}header version ${version ?? (header.isError ? "unavailable" : "loading")}`}
+                  title={`Block ${block.height} · ${date(block.time)} · ${node ? `${node.name} · ${node.detail} · ` : ""}${version ?? (header.isError ? "Header unavailable" : "Loading header")}`}
                 >
                   {node && (
                     <img
@@ -116,24 +119,12 @@ export function RecentHeaderVersions({
               <strong>{version}</strong>
               <img
                 className="node-icon"
-                src={
-                  nodeImplementation(
-                    version.split(".")[1],
-                    version.split(".")[0],
-                  ).icon
-                }
+                src={nodeImplementation(version.split(".")[1]).icon}
                 alt=""
                 width="22"
                 height="22"
               />
-              <small>
-                {
-                  nodeImplementation(
-                    version.split(".")[1],
-                    version.split(".")[0],
-                  ).name
-                }
-              </small>
+              <small>{nodeImplementation(version.split(".")[1]).name}</small>
               <span>
                 {count} {count === 1 ? "block" : "blocks"}
               </span>
@@ -151,9 +142,10 @@ export function RecentHeaderVersions({
         <p className="mt-2 text-xs text-slate-500">
           Uses the same headers as the block list below. Shares cover decoded
           headers in this recent window, not a 24-hour network total. Node
-          identities use protocol minor markers. Headers 11.1 and 11.2 identify
-          Haskell cardano-node; other unrecognized versions are displayed as
-          assumed Haskell cardano-node.
+          identities decode CIP-203 scheme, identifier and payload fields,
+          including Amaru release dates. ID 67 is shared by Gerolamo and
+          cardano-bean; unsignalled blocks are assumed Haskell. Explicit
+          opt-outs and unsupported signals stay unidentified.
         </p>
       </section>
     </div>

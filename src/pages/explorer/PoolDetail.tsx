@@ -1,3 +1,7 @@
+import { PoolProducer } from "../../components/explorer/PoolProducer";
+import { PoolMetadataPanel } from "../../components/explorer/PoolMetadataPanel";
+import { PoolDelegators } from "../../components/explorer/PoolDelegators";
+import { PoolRelays } from "../../components/explorer/PoolRelays";
 import { PoolIdentity } from "../../components/explorer/PoolIdentity";
 import { Gauge, Metric, PageIntro } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
@@ -32,6 +36,7 @@ interface PoolMetadataResponse {
   description?: string;
   homepage?: string;
   url?: string;
+  hash?: string;
 }
 
 export default function PoolDetail() {
@@ -51,7 +56,9 @@ export default function PoolDetail() {
     enabled: Boolean(poolId),
   });
 
-  const notFound = poolQuery.error instanceof BlockfrostError && poolQuery.error.status === 404;
+  const notFound =
+    poolQuery.error instanceof BlockfrostError &&
+    poolQuery.error.status === 404;
 
   return (
     <div className="flex flex-col gap-4 detail-showcase">
@@ -60,11 +67,18 @@ export default function PoolDetail() {
         title={metadataQuery.data?.name || "Stake pool"}
         detail={metadataQuery.data?.description}
         symbol="⬡"
-        action={poolId && !notFound && poolQuery.data && (
-          <Link className="experience-primary" to={`/wallet/delegate?pool=${encodeURIComponent(poolQuery.data.pool_id)}`}>
-            Delegate to this pool
-          </Link>
-        )}
+        action={
+          poolId &&
+          !notFound &&
+          poolQuery.data && (
+            <Link
+              className="experience-primary"
+              to={`/wallet/delegate?pool=${encodeURIComponent(poolQuery.data.pool_id)}`}
+            >
+              Delegate to this pool
+            </Link>
+          )
+        }
       />
       <Panel
         title={
@@ -75,7 +89,8 @@ export default function PoolDetail() {
           )
         }
       >
-        <QueryState hasData={poolQuery.data !== undefined}
+        <QueryState
+          hasData={poolQuery.data !== undefined}
           isLoading={poolQuery.isLoading}
           error={poolQuery.error}
           notFoundLabel="Pool not found."
@@ -110,22 +125,12 @@ export default function PoolDetail() {
                   />
                 </div>
               </div>
-              <Field label="Pool ID" value={poolQuery.data.pool_id} />
-              {metadataQuery.data?.homepage && (
-                <Field
-                  label="Homepage"
-                  value={
-                    <a
-                      href={metadataQuery.data.homepage}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sky-400 hover:underline"
-                    >
-                      {metadataQuery.data.homepage}
-                    </a>
-                  }
-                />
-              )}
+              <PoolProducer
+                key={poolQuery.data.pool_id}
+                poolId={poolQuery.data.pool_id}
+              />
+              <Field label="Pool ID (bech32)" value={poolQuery.data.pool_id} />
+              <Field label="Pool key hash (hex)" value={poolQuery.data.hex} />
 
               <Field
                 label="Active stake"
@@ -161,7 +166,7 @@ export default function PoolDetail() {
                   <ul className="flex flex-col gap-0.5">
                     {poolQuery.data.owners.map((owner) => (
                       <li key={owner}>
-                        <HashLink kind="account" id={owner} visible={12} />
+                        <HashLink kind="account" id={owner} />
                       </li>
                     ))}
                   </ul>
@@ -171,6 +176,20 @@ export default function PoolDetail() {
           )}
         </QueryState>
       </Panel>
+      {poolQuery.data && !notFound && (
+        <>
+          <PoolRelays poolId={poolQuery.data.pool_id} />
+          <PoolDelegators
+            key={poolQuery.data.pool_id}
+            poolId={poolQuery.data.pool_id}
+          />
+          <PoolMetadataPanel
+            metadata={metadataQuery.data}
+            isLoading={metadataQuery.isLoading}
+            error={metadataQuery.error}
+          />
+        </>
+      )}
     </div>
   );
 }

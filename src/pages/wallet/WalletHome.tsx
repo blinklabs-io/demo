@@ -193,7 +193,7 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
         <div className="wallet-stake-identity">
           <span className="eyebrow">Stake account</span>
           {stakeAddress ? (
-            <HashLink kind="account" id={stakeAddress} visible={12} />
+            <HashLink kind="account" id={stakeAddress} />
           ) : (
             <span>No stake credential on this address</span>
           )}

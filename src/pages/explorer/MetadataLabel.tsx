@@ -69,7 +69,7 @@ export default function MetadataLabel() {
           emptyLabel="No transactions use this metadata label."
           renderItem={(row) => (
             <div className="metadata-card">
-              <HashLink kind="tx" id={row.tx_hash} visible={14} />
+              <HashLink kind="tx" id={row.tx_hash} />
               <MetadataDocument value={row.json_metadata} />
             </div>
           )}
@@ -88,7 +88,7 @@ export default function MetadataLabel() {
             emptyLabel="No CBOR metadata found for this label."
             renderItem={(row) => (
               <div className="metadata-card">
-                <HashLink kind="tx" id={row.tx_hash} visible={14} />
+                <HashLink kind="tx" id={row.tx_hash} />
                 <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all font-mono text-xs text-slate-400">
                   {row.cbor_metadata ?? row.metadata}
                 </pre>

@@ -102,8 +102,9 @@ export async function blockfrostFetchResponse(
 const lanes = new Map<string, { active: number; waiting: Array<() => void> }>();
 function readLane(path: string): [string, number] {
   const route = path.split("?")[0];
-  if (/^\/api\/v0\/(network$|epochs\/[^/]+(\/(next|previous))?$)/.test(route))
-    return ["chain", 2];
+  if (/^\/api\/v0\/epochs\/[^/]+(\/(next|previous))?$/.test(route))
+    return ["epoch-summary", 1];
+  if (route === "/api/v0/network") return ["chain", 2];
   if (/^\/api\/v0\/assets\/[^/]+$/.test(route)) return ["assets", 2];
   if (/^\/api\/v0\/governance\/dreps\/[^/]+$/.test(route)) return ["dreps", 1];
   if (

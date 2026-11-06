@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Link } from "../components/NetworkLink";
 import { useNodeHealth } from "../lib/dingo/nodeHealth";
 import { useMempoolStore } from "../stores/mempoolStore";
+import { BlockActivityStrip } from "../components/chain/BlockActivityStrip";
 import { BlockMosaic } from "../components/chain/BlockMosaic";
 
 function creationExperience(
@@ -286,6 +287,9 @@ export default function Experiences() {
           See what transactions do and how much space they occupy. Select a tile
           to inspect the transaction behind it.
         </p>
+        {recent.data && (
+          <BlockActivityStrip blocks={recent.data.blocks} selectedHash={shownBlock?.hash} onSelect={setInspectedBlock} />
+        )}
         {recent.error && shownBlock && (
           <p role="status" className="text-amber-300">
             Recent activity refresh unavailable. Showing the selected block.

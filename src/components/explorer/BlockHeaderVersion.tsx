@@ -1,7 +1,10 @@
 import { nodeImplementation } from "../../lib/dingo/nodeImplementation";
 import { eraNameFromProtocol } from "../../lib/dingo/networkNames";
 import { useQuery } from "@tanstack/react-query";
-import { blockBytesQuery, decodeHeaderVersion } from "../../lib/dingo/blockHeader";
+import {
+  blockBytesQuery,
+  decodeHeaderVersion,
+} from "../../lib/dingo/blockHeader";
 
 export function BlockHeaderVersion({
   hash,
@@ -36,11 +39,11 @@ export function BlockHeaderVersion({
         Unavailable
       </span>
     );
-  const node = nodeImplementation(query.data.minor, query.data.major);
+  const node = nodeImplementation(query.data.minor);
   return (
     <span
-      className={`header-version ${query.data.minor === "69" ? "dingo-version" : ""}`}
-      title={`${node.name} · ${eraNameFromProtocol(Number(query.data.major))} · protocol version decoded from this block's header`}
+      className={`header-version ${node.id === "dingo" ? "dingo-version" : ""}`}
+      title={`${node.name} · ${node.detail} · ${eraNameFromProtocol(Number(query.data.major))} · protocol version decoded from this block's header`}
     >
       <img
         className="node-icon"
@@ -50,6 +53,7 @@ export function BlockHeaderVersion({
         height="22"
       />
       {query.data.major}.{query.data.minor}
+      {node.release && <small>{node.release}</small>}
     </span>
   );
 }

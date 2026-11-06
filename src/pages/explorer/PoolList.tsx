@@ -28,7 +28,11 @@ interface PoolExtendedRow {
 function PoolRow({ row }: { row: PoolExtendedRow }) {
   return (
     <div className="pool-card">
-      <PoolIdentity poolId={row.pool_id} metadata={row.metadata} />
+      <PoolIdentity
+        poolId={row.pool_id}
+        metadata={row.metadata}
+        copyable={false}
+      />
       <div className="pool-card-metrics">
         <strong>
           {compactAda(row.live_stake)}
@@ -296,8 +300,8 @@ function PoolDirectory() {
             emptyLabel="No pools are retiring."
             renderItem={(row) => (
               <span>
-                <HashLink kind="pool" id={row.pool_id} visible={10} /> retiring
-                at epoch {row.epoch}
+                <HashLink kind="pool" id={row.pool_id} /> retiring at epoch{" "}
+                {row.epoch}
               </span>
             )}
           />

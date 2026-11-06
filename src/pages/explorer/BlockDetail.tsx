@@ -196,7 +196,7 @@ export default function BlockDetail() {
               renderItem={(hash) => (
                 <>
                   <span className="status-badge positive">TX</span>
-                  <HashLink kind="tx" id={hash} visible={16} />
+                  <HashLink kind="tx" id={hash} />
                 </>
               )}
             />

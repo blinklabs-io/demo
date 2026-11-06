@@ -1,3 +1,4 @@
+import { Core } from "@blaze-cardano/sdk";
 function documentUrl(value: unknown, base?: string): string | null {
   if (typeof value !== "string" || !value.trim()) return null;
   try {
@@ -50,7 +51,7 @@ async function readDocument(url: string, signal: AbortSignal) {
   }
   const document = object(JSON.parse(new TextDecoder().decode(bytes)));
   if (!document) throw new Error("Pool metadata must be a JSON object.");
-  return { document, url: response.url || url };
+  return { document, bytes, url: response.url || url };
 }
 
 function images(document: Record<string, unknown>, base: string) {
@@ -67,17 +68,108 @@ function images(document: Record<string, unknown>, base: string) {
     .filter((url): url is string => url !== null);
 }
 
-export async function readPoolLogos(metadataUrl: string, signal: AbortSignal) {
+export interface PoolSocialLink {
+  label: string;
+  url: string;
+}
+function extendedProfile(document: Record<string, unknown>) {
+  const info = object(document.info),
+    pool = object(document.pool);
+  if (!info && !pool)
+    throw new Error("Extended metadata has no recognized pool or info object.");
+  for (const value of [
+    info?.social,
+    info?.about,
+    pool?.contact,
+    pool?.media_assets,
+  ]) {
+    if (value !== undefined && !object(value))
+      throw new Error("Extended metadata contains malformed profile fields.");
+  }
+  const social = { ...object(pool?.contact), ...object(info?.social) };
+  const links: PoolSocialLink[] = [];
+  for (const [label, keys, base] of [
+    ["X / Twitter", ["twitter_handle", "twitter"], "https://x.com/"],
+    ["GitHub", ["github_handle", "github"], "https://github.com/"],
+    ["Telegram", ["telegram_handle", "telegram"], "https://t.me/"],
+    ["Discord", ["discord"], "https://discord.gg/"],
+    ["Facebook", ["facebook"], "https://www.facebook.com/"],
+    ["YouTube", ["youtube"], "https://www.youtube.com/@"],
+  ] as const) {
+    const value = keys
+      .map((key) => social[key])
+      .find((value) => typeof value === "string" && value.trim());
+    if (typeof value !== "string") continue;
+    const direct = documentUrl(value);
+    const handle = value.trim().replace(/^@/, "");
+    const url =
+      direct ??
+      (/^[a-zA-Z0-9_.-]+$/.test(handle)
+        ? base + encodeURIComponent(handle)
+        : null);
+    if (url) links.push({ label, url });
+  }
+  const about = object(info?.about);
+  const fields = [
+    ["About", about?.me],
+    ["Infrastructure", about?.server],
+    ["Organization", about?.company],
+    ["Country", pool?.country],
+    ["Status", pool?.status],
+  ].filter(
+    (field): field is [string, string] =>
+      typeof field[1] === "string" && Boolean(field[1].trim()),
+  );
+  return { links, fields };
+}
+
+export async function readPoolProfile(
+  metadataUrl: string,
+  metadataHash: string,
+  signal: AbortSignal,
+) {
   const url = documentUrl(metadataUrl);
   if (!url) throw new Error("Pool metadata URL must use HTTP or HTTPS.");
+  if (!/^[a-f0-9]{64}$/i.test(metadataHash))
+    throw new Error("A registered metadata hash is required.");
   const bounded = AbortSignal.any([signal, AbortSignal.timeout(10_000)]);
   const metadata = await readDocument(url, bounded);
+  if (
+    String(Core.blake2b_256(Core.HexBlob.fromBytes(metadata.bytes))) !==
+    metadataHash.toLowerCase()
+  )
+    throw new Error("Owner metadata does not match the registered hash.");
   const direct = images(metadata.document, metadata.url);
-  if (direct.length) return [...new Set(direct)];
   const extendedUrl =
     documentUrl(metadata.document.extDataUrl, metadata.url) ??
     documentUrl(metadata.document.extended, metadata.url);
-  if (!extendedUrl) return [...new Set(direct)];
-  const extended = await readDocument(extendedUrl, bounded);
-  return [...new Set(images(extended.document, extended.url))];
+  if (!extendedUrl || direct.length > 0)
+    return {
+      metadata: metadata.document,
+      extended: null,
+      extendedUrl,
+      logos: [...new Set(direct)],
+      links: [] as PoolSocialLink[],
+      fields: [] as [string, string][],
+    };
+  const extended = await readExtendedPoolProfile(extendedUrl, bounded);
+  return { metadata: metadata.document, ...extended };
+}
+
+export async function readExtendedPoolProfile(
+  url: string,
+  signal: AbortSignal,
+) {
+  const safeUrl = documentUrl(url);
+  if (!safeUrl)
+    throw new Error("Extended metadata URL must use HTTP or HTTPS.");
+  const bounded = AbortSignal.any([signal, AbortSignal.timeout(10_000)]);
+  const extended = await readDocument(safeUrl, bounded);
+  const presentation = extendedProfile(extended.document);
+  return {
+    extended: extended.document,
+    extendedUrl: extended.url,
+    logos: [...new Set(images(extended.document, extended.url))],
+    ...presentation,
+  };
 }

@@ -1,3 +1,4 @@
+import { clearEpochSummaryCache } from "../explorer/epochSummary";
 import { useEffect } from "react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { useTipStore } from "../../stores/tipStore";
@@ -61,7 +62,11 @@ export function useChainReconciliation() {
     const filter = {
       predicate: (query: { queryKey: QueryKey }) => isMutableChainQuery(query.queryKey, rollback),
     };
-    if (rollback) void client.resetQueries(filter);
+    if (rollback) {
+      if (state.lastAction === "undo" || (state.lastAction === "reset" && previous.tip !== null))
+        clearEpochSummaryCache();
+      void client.resetQueries(filter);
+    }
     else void client.invalidateQueries({ ...filter, type: "active" });
   }), [client]);
 }

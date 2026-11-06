@@ -53,3 +53,24 @@ describe("blockfrostFetch", () => {
     });
   });
 });
+it("serializes heavy epoch summaries instead of running their aggregates concurrently", async () => {
+  let release!: (response: Response) => void;
+  vi.mocked(fetch)
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    )
+    .mockResolvedValueOnce(new Response("{}"));
+  const first = blockfrostFetch("/api/v0/epochs/10");
+  const second = blockfrostFetch("/api/v0/epochs/11");
+  try {
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  } finally {
+    release(new Response("{}"));
+    await Promise.all([first, second]);
+  }
+});
