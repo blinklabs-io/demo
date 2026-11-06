@@ -215,3 +215,100 @@ it("does not revive an orphaned snapshot when a new run fails before progress", 
     await close();
   }
 });
+it("preserves the inspected version and page across an automatic refresh", async () => {
+  vi.useFakeTimers();
+  const rows = Array.from({ length: 25 }, (_, i) => {
+    const time = i === 24 ? end : progress.cutoff + 1000 + i * 3000;
+    return {
+      ...progress.rows[0],
+      height: i + 1,
+      hash: (i + 1).toString(16).padStart(64, "0"),
+      parent: i.toString(16).padStart(64, "0"),
+      slot: time - systemStart,
+      time,
+    };
+  });
+  const window = { ...complete, rows, snapshot: rows[24], total: 25 };
+  let finish!: (data: HeaderHistoryProgress) => void;
+  vi.mocked(loadHeaderHistory)
+    .mockResolvedValueOnce(window)
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+  const { host, close } = await render();
+  try {
+    await act(async () =>
+      host
+        .querySelector<HTMLButtonElement>(".header-node-legend button")!
+        .click(),
+    );
+    const next = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+      (b) => b.textContent === "Next →",
+    )!;
+    await act(async () => next.click());
+    expect(host.querySelector(".header-history-pages")?.textContent).toContain(
+      "2 / 3",
+    );
+    await act(async () => vi.advanceTimersByTimeAsync(60000));
+    expect(host.querySelector(".header-history-chart")).toBeNull();
+    await act(async () => finish(window));
+    expect(
+      host.querySelector(".header-history-records .eyebrow")?.textContent,
+    ).toBe("Header 11.69");
+    expect(host.querySelector(".header-history-pages")?.textContent).toContain(
+      "2 / 3",
+    );
+    expect(
+      host
+        .querySelector(".header-node-legend button")
+        ?.getAttribute("aria-pressed"),
+    ).toBe("true");
+  } finally {
+    await close();
+  }
+});
+it.each(["success", "failure"])(
+  "ignores cancelled progress and late %s after a newer window completes",
+  async (settlement) => {
+    let finish!: (data: HeaderHistoryProgress) => void;
+    let fail!: (error: Error) => void;
+    vi.mocked(loadHeaderHistory)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve, reject) => {
+            finish = resolve;
+            fail = reject;
+          }),
+      )
+      .mockResolvedValueOnce(complete);
+    const { host, close } = await render();
+    try {
+      const old = vi.mocked(loadHeaderHistory).mock.calls[0][0]!;
+      const button = (text: string) =>
+        [...host.querySelectorAll<HTMLButtonElement>("button")].find((b) =>
+          b.textContent?.startsWith(text),
+        )!;
+      await act(async () => button("Latest ").click());
+      expect(old.signal?.aborted).toBe(true);
+      await act(async () => button("24 hours").click());
+      expect(host.querySelector(".header-history-chart")).not.toBeNull();
+      expect(host.textContent).toContain("3 blocks · complete 24 hours");
+      await act(async () => old.onProgress?.(progress));
+      expect(host.querySelector(".header-history-chart")).not.toBeNull();
+      expect(host.textContent).toContain("3 blocks · complete 24 hours");
+      await act(async () =>
+        settlement === "success"
+          ? finish(progress)
+          : fail(new Error("Old request failed")),
+      );
+      expect(host.querySelector(".header-history-chart")).not.toBeNull();
+      expect(host.textContent).toContain("3 blocks · complete 24 hours");
+      expect(host.querySelector('[role="alert"]')).toBeNull();
+    } finally {
+      await close();
+    }
+  },
+);

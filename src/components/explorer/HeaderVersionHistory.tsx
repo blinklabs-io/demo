@@ -3,7 +3,10 @@ import {
   loadHeaderHistory,
   type HeaderHistoryProgress,
 } from "../../lib/explorer/headerHistory";
-import { HeaderVersionChart } from "./HeaderVersionChart";
+import {
+  HeaderVersionChart,
+  type HeaderVersionSelection,
+} from "./HeaderVersionChart";
 import { RecentHeaderVersions } from "./RecentHeaderVersions";
 import "./header-history.css";
 
@@ -17,6 +20,10 @@ type Job = {
 export function HeaderVersionHistory({ recent }: { recent: RecentBlock[] }) {
   const [view, setView] = useState<"day" | "recent">("day");
   const [run, setRun] = useState(0);
+  const [selection, setSelection] = useState<HeaderVersionSelection>({
+    scope: { kind: "alternatives" },
+    page: 0,
+  });
   const [job, setJob] = useState<Job>({
     id: -1,
     data: null,
@@ -168,6 +175,8 @@ export function HeaderVersionHistory({ recent }: { recent: RecentBlock[] }) {
           )}
           {data && (
             <HeaderVersionChart
+              selection={selection}
+              onSelectionChange={setSelection}
               records={data.rows}
               startTime={data.cutoff}
               endTime={data.snapshot.time}

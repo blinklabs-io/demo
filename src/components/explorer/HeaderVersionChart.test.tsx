@@ -1,8 +1,12 @@
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router";
 import { expect, it } from "vitest";
-import { HeaderVersionChart, type VersionRecord } from "./HeaderVersionChart";
+import {
+  HeaderVersionChart,
+  type VersionRecord,
+  type HeaderVersionSelection,
+} from "./HeaderVersionChart";
 const end = 1800000000,
   start = end - 86400;
 const record = (
@@ -16,6 +20,28 @@ const record = (
   major: "11",
   minor,
 });
+function Chart({
+  records,
+  complete,
+}: {
+  records: VersionRecord[];
+  complete: boolean;
+}) {
+  const [selection, setSelection] = useState<HeaderVersionSelection>({
+    scope: { kind: "alternatives" },
+    page: 0,
+  });
+  return (
+    <HeaderVersionChart
+      records={records}
+      startTime={start}
+      endTime={end}
+      complete={complete}
+      selection={selection}
+      onSelectionChange={setSelection}
+    />
+  );
+}
 async function render(records: VersionRecord[], complete = true) {
   const host = document.createElement("div");
   document.body.append(host);
@@ -23,12 +49,7 @@ async function render(records: VersionRecord[], complete = true) {
   await act(async () =>
     root.render(
       <MemoryRouter initialEntries={["/explorer?network=preview"]}>
-        <HeaderVersionChart
-          records={records}
-          startTime={start}
-          endTime={end}
-          complete={complete}
-        />
+        <Chart records={records} complete={complete} />
       </MemoryRouter>,
     ),
   );

@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo } from "react";
 import { Link } from "../NetworkLink";
 import { nodeImplementation } from "../../lib/dingo/nodeImplementation";
 import "./header-history.css";
@@ -38,20 +38,27 @@ type Scope =
   | { kind: "alternatives" }
   | { kind: "version"; version: string }
   | { kind: "hour"; index: number };
+export interface HeaderVersionSelection {
+  scope: Scope;
+  page: number;
+}
 export function HeaderVersionChart({
   records,
   startTime,
   endTime,
   complete,
+  selection,
+  onSelectionChange,
 }: {
   records: VersionRecord[];
   startTime: number;
   endTime: number;
   complete: boolean;
+  selection: HeaderVersionSelection;
+  onSelectionChange: (selection: HeaderVersionSelection) => void;
 }) {
   const pieId = useId();
-  const [scope, setScope] = useState<Scope>({ kind: "alternatives" });
-  const [page, setPage] = useState(0);
+  const { scope, page } = selection;
   const windowRecords = useMemo(
     () =>
       records.filter(
@@ -116,8 +123,7 @@ export function HeaderVersionChart({
     rows = matching.slice(currentPage * 12, (currentPage + 1) * 12);
   const peak = Math.max(1, ...data.hours.map((hour) => hour.records.length));
   const choose = (next: Scope) => {
-    setScope(next);
-    setPage(0);
+    onSelectionChange({ scope: next, page: 0 });
   };
   const scopeLabel =
     scope.kind === "version"
@@ -365,7 +371,9 @@ export function HeaderVersionChart({
             <button
               type="button"
               disabled={currentPage === 0}
-              onClick={() => setPage(currentPage - 1)}
+              onClick={() =>
+                onSelectionChange({ scope, page: currentPage - 1 })
+              }
             >
               ← Previous
             </button>
@@ -375,7 +383,9 @@ export function HeaderVersionChart({
             <button
               type="button"
               disabled={(currentPage + 1) * 12 >= matching.length}
-              onClick={() => setPage(currentPage + 1)}
+              onClick={() =>
+                onSelectionChange({ scope, page: currentPage + 1 })
+              }
             >
               Next →
             </button>
