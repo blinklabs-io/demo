@@ -450,5 +450,19 @@ summaries. Refresh totals forces a new Dingo read; heavy epoch-summary reads are
 serialized. Cached snapshots show their read time.
 
 Pool profiles display the registered owner metadata returned by Dingo and link
-to its declared website and source. The browser does not automatically request
-pool-controlled metadata, extended documents, or image URLs.
+to its declared website and source. Pool icons load through the same-origin
+`/pool-image` Pages Function. It verifies the primary document against the
+registered BLAKE2b-256 hash before resolving CIP-6 extended metadata and images.
+The browser never requests pool-controlled metadata or image servers directly.
+Missing or unusable images retain ticker initials.
+
+The image endpoint runs in Cloudflare Pages Functions, using Cloudflare's public
+fetch network rather than a node's network access. It accepts HTTP(S) domain
+URLs without credentials or custom ports, validates every redirect, limits
+metadata to 1 MiB and images to 2 MiB, and bounds the complete read to ten
+seconds. Only recognized image formats are returned, with upstream headers
+removed and SVG documents sandboxed. Successful responses are cached for one
+hour, keyed by the metadata URL, hash and image position. An image that cannot
+decode advances to the next candidate through the proxy. Static hosting without Pages Functions
+does not serve the image endpoint. To test the complete app locally, run
+`npm run build` and `npx wrangler pages dev dist`; Vite alone serves the UI.

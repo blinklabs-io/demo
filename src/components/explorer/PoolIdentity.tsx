@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { CopyButton } from "./CopyButton";
@@ -17,10 +18,67 @@ function PoolAvatar({
   metadata?: PoolMetadata | null;
   poolId: string;
 }) {
+  const [offset, setOffset] = useState(0);
+  const [image, setImage] = useState<{
+    src: string;
+    next: number | null;
+  } | null>(null);
   const initials =
     metadata?.ticker?.slice(0, 2) || poolId.slice(-2).toUpperCase();
+  const source =
+    metadata?.url && metadata.hash && /^[a-f\d]{64}$/i.test(metadata.hash)
+      ? `/pool-image?${new URLSearchParams({ url: metadata.url, hash: metadata.hash, offset: String(offset) })}`
+      : null;
+  useEffect(() => {
+    if (!source) return;
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const response = await fetch(source, {
+          signal: controller.signal,
+          referrerPolicy: "no-referrer",
+        });
+        if (
+          !response.ok ||
+          !response.headers.get("content-type")?.startsWith("image/")
+        )
+          return;
+        // Complete the cacheable read before the image decoder uses this URL.
+        // Keep SVGs on the endpoint so their sandbox headers also apply to navigation.
+        await response.arrayBuffer();
+        const header = response.headers.get("X-Pool-Image-Next");
+        const next = header === null ? NaN : Number(header);
+        if (!controller.signal.aborted)
+          setImage({
+            src: source,
+            next:
+              Number.isInteger(next) && next > offset && next < 10
+                ? next
+                : null,
+          });
+      } catch {
+        // An unavailable image leaves this pool's initials visible.
+      }
+    })();
+    return () => controller.abort();
+  }, [source, offset]);
   return (
-    <span className="pool-avatar" aria-hidden="true">{initials}</span>
+    <span className="pool-avatar" aria-hidden="true">
+      {image ? (
+        <img
+          src={image.src}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => {
+            setImage(null);
+            if (image.next !== null) setOffset(image.next);
+          }}
+        />
+      ) : (
+        initials
+      )}
+    </span>
   );
 }
 
