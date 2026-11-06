@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { CopyButton } from "./CopyButton";
@@ -17,10 +18,27 @@ function PoolAvatar({
   metadata?: PoolMetadata | null;
   poolId: string;
 }) {
+  const [failed, setFailed] = useState(false);
   const initials =
     metadata?.ticker?.slice(0, 2) || poolId.slice(-2).toUpperCase();
+  const image =
+    metadata?.url && metadata.hash && /^[a-f\d]{64}$/i.test(metadata.hash)
+      ? `/pool-image?${new URLSearchParams({ url: metadata.url, hash: metadata.hash })}`
+      : null;
   return (
-    <span className="pool-avatar" aria-hidden="true">{initials}</span>
+    <span className="pool-avatar" aria-hidden="true">
+      {image && !failed ? (
+        <img
+          src={image}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        initials
+      )}
+    </span>
   );
 }
 

@@ -49,3 +49,39 @@ it("does not request pool-controlled metadata or image URLs", async () => {
     request.mockRestore();
   }
 });
+
+it("loads pool icons only through the same-origin proxy and retains initials on failure", async () => {
+  const client = new QueryClient();
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const metadata = {
+    ticker: "BLINK",
+    url: "https://pool.org/metadata.json",
+    hash: "ab".repeat(32),
+  };
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <MemoryRouter>
+            <PoolIdentity poolId="pool1blink" metadata={metadata} />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      ),
+    );
+    const img = host.querySelector(".pool-avatar img")!;
+    expect(img).not.toBeNull();
+    const src = new URL(img.getAttribute("src")!, "https://demo.pages.dev");
+    expect(src.origin).toBe("https://demo.pages.dev");
+    expect(src.pathname).toBe("/pool-image");
+    expect(src.searchParams.get("url")).toBe(metadata.url);
+    expect(src.searchParams.get("hash")).toBe(metadata.hash);
+    expect(img.getAttribute("referrerpolicy")).toBe("no-referrer");
+    await act(async () => img.dispatchEvent(new Event("error")));
+    expect(host.querySelector(".pool-avatar img")).toBeNull();
+    expect(host.querySelector(".pool-avatar")?.textContent).toBe("BL");
+  } finally {
+    await act(async () => root.unmount());
+    client.clear();
+  }
+});
