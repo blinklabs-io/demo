@@ -58,7 +58,7 @@ export function Field({ label, value }: { label: string; value: ReactNode }) {
             {value} ↗
           </a>
         ) : typeof value === "string" &&
-          /^(?:[a-fA-F0-9]{40,512}|(?:addr|stake|pool|drep|asset|script)[a-z0-9_]+)$/.test(
+          /^(?:[a-fA-F0-9]{40,512}|(?:addr|stake|pool|drep|asset|script|cc_cold|cc_hot)[a-z0-9_]+)$/.test(
             value,
           ) ? (
           <span className="address-identifier address-identifier-full">

@@ -453,5 +453,5 @@ serialized. Cached snapshots show their read time.
 Owner-hosted pool documents are checked against the registered BLAKE2b-256
 metadata hash before use. Well-formed extended metadata follows that authenticated
 owner reference, with explicit provenance rather than an independent endorsement.
-Pool profiles render logos, clickable URLs, and social links; raw owner JSON is
-available separately.
+Pool profiles render logos, clickable URLs, and social links; the fetched
+extended owner JSON is shown when an extended document exists.

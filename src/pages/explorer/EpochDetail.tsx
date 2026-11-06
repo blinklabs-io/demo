@@ -1,4 +1,7 @@
-import { epochSummaryQuery } from "../../lib/explorer/epochSummary";
+import {
+  epochSummaryQuery,
+  useRefetchOnEpochCompletion,
+} from "../../lib/explorer/epochSummary";
 import { EpochFingerprints } from "../../components/chain/EpochFingerprints";
 import { eraNameFromProtocol } from "../../lib/dingo/networkNames";
 import {
@@ -95,6 +98,12 @@ export default function EpochDetail() {
       Number.isSafeInteger(selectedEpoch) &&
       selectedEpoch >= 0,
   });
+  useRefetchOnEpochCompletion(
+    selectedEpoch,
+    tipQuery.data?.epoch,
+    epochQuery.refetch,
+    !invalidEpoch,
+  );
 
   const paramsQuery = useQuery({
     queryKey: [

@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Link } from "../NetworkLink";
 import {
@@ -63,6 +63,22 @@ function Fingerprints({
       retry: false,
     })),
   });
+  // The summary key omits completion, so a tip-epoch change must invalidate
+  // the shown epochs for the observers to re-evaluate their cached rows.
+  const seenCurrent = useRef(currentEpoch);
+  useEffect(() => {
+    if (seenCurrent.current === currentEpoch) return;
+    seenCurrent.current = currentEpoch;
+    if (open)
+      void queryClient.invalidateQueries({
+        predicate: ({ queryKey: k }) =>
+          k.length === 3 &&
+          k[0] === "dingo" &&
+          k[1] === "epoch" &&
+          typeof k[2] === "number" &&
+          k[2] <= epoch,
+      });
+  }, [currentEpoch, epoch, open, queryClient]);
   const loaded = queries.flatMap((q) => (q.data ? [q.data] : []));
   const availableAxes = axes.filter(
     (a) => loaded.length > 0 && loaded.every((e) => a.get(e) !== null),

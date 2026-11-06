@@ -42,7 +42,7 @@ export function isMutableChainQuery(key: QueryKey, rollback = false): boolean {
     case "epoch":
       return rollback && (key.length === 3 || key[3] === "parameters");
     case "pool":
-      return key.length === 3;
+      return key.length === 3 || key[3] === "delegators" || (rollback && key[3] === "producer-block");
     case "drep":
       return key.length === 3 || (rollback && key[3] === "delegators");
     case "proposal":
@@ -63,7 +63,13 @@ export function useChainReconciliation() {
       predicate: (query: { queryKey: QueryKey }) => isMutableChainQuery(query.queryKey, rollback),
     };
     if (rollback) {
-      if (state.lastAction === "undo" || (state.lastAction === "reset" && previous.tip !== null))
+      // A reconnect after an observed tip may have skipped a rollback that
+      // happened while the stream was down, so stored summaries are suspect.
+      if (
+        state.lastAction === "undo" ||
+        state.lastAction === "reset" ||
+        (state.lastAction === "connect" && previous.tip !== null)
+      )
         clearEpochSummaryCache();
       void client.resetQueries(filter);
     }

@@ -36,7 +36,10 @@
 .block-activity-skyline button:focus-visible {
   border-color: #9fbcff;
   background: #a5c3ff15;
-  outline: 2px solid transparent;
+}
+.block-activity-skyline button:focus-visible {
+  outline: 2px solid #b0ffe3;
+  outline-offset: 2px;
 }
 .block-activity-skyline button[aria-pressed="true"] {
   border-color: #f5c775;
@@ -88,7 +91,7 @@
     padding: 6px 1px;
   }
   .block-activity-height {
-    display: none;
+    font-size: 9px;
   }
   .block-activity-track {
     height: 36px;

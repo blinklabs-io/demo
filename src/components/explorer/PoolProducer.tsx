@@ -36,6 +36,7 @@ export function PoolProducer({ poolId }: { poolId: string }) {
       return latest;
     },
     staleTime: 60000,
+    refetchInterval: 60000,
     enabled: epoch !== undefined,
   });
   const header = useQuery({
@@ -53,7 +54,7 @@ export function PoolProducer({ poolId }: { poolId: string }) {
       <span className="eyebrow">Recent block producer</span>
       <QueryState
         hasData={Boolean(node) || block.data === null}
-        isLoading={block.isLoading || (Boolean(block.data) && header.isLoading)}
+        isLoading={health.isLoading || block.isLoading || (Boolean(block.data) && header.isLoading)}
         error={health.error || block.error || header.error}
         notFoundLabel="Dingo has no retained blocks for this pool in the current epoch."
       >

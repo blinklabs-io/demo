@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { queryOptions } from "@tanstack/react-query";
 import { blockfrostFetch } from "../dingo/blockfrost";
 import { DINGO_CONFIG, DINGO_NETWORK } from "../dingo/config";
@@ -121,4 +122,23 @@ export function epochSummaryQuery(
     gcTime: 8 * 86400000,
     refetchOnWindowFocus: false,
   });
+}
+
+// The query key does not carry completion, so an observer that stays mounted
+// as the tip epoch advances would otherwise keep a partial summary labelled
+// completed until the next manual refresh.
+export function useRefetchOnEpochCompletion(
+  epoch: number | undefined,
+  currentEpoch: number | undefined,
+  refetch: () => unknown,
+  enabled = true,
+) {
+  const completed =
+    epoch !== undefined && currentEpoch !== undefined && epoch < currentEpoch;
+  const previous = useRef(completed);
+  useEffect(() => {
+    if (previous.current === completed) return;
+    previous.current = completed;
+    if (enabled && completed) void refetch();
+  }, [completed, enabled, refetch]);
 }
