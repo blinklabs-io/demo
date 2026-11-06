@@ -69,6 +69,9 @@ it("serializes heavy epoch summaries instead of running their aggregates concurr
     await Promise.resolve();
     await Promise.resolve();
     expect(fetch).toHaveBeenCalledTimes(1);
+    release(new Response("{}"));
+    await Promise.all([first, second]);
+    expect(fetch).toHaveBeenCalledTimes(2);
   } finally {
     release(new Response("{}"));
     await Promise.all([first, second]);

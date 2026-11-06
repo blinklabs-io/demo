@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { readPoolProfile } from "../../lib/dingo/poolLogo";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
@@ -17,10 +19,36 @@ function PoolAvatar({
   metadata?: PoolMetadata | null;
   poolId: string;
 }) {
+  const [failed, setFailed] = useState<string[]>([]);
+  const logos = useQuery({
+    queryKey: ["pool-profile-verified-v3", metadata?.url, metadata?.hash],
+    queryFn: ({ signal }) =>
+      readPoolProfile(metadata!.url!, metadata!.hash!, signal),
+    enabled: Boolean(metadata?.url && metadata.hash),
+    staleTime: 86_400_000,
+    gcTime: 86_400_000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const image = logos.data?.logos.find((url) => !failed.includes(url));
   const initials =
     metadata?.ticker?.slice(0, 2) || poolId.slice(-2).toUpperCase();
   return (
-    <span className="pool-avatar" aria-hidden="true">{initials}</span>
+    <span className="pool-avatar" aria-hidden="true">
+      {image ? (
+        <img
+          key={image}
+          src={image}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed((previous) => [...previous, image])}
+        />
+      ) : (
+        initials
+      )}
+    </span>
   );
 }
 
