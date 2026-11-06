@@ -462,6 +462,7 @@ URLs without credentials or custom ports, validates every redirect, limits
 metadata to 1 MiB and images to 2 MiB, and bounds the complete read to ten
 seconds. Only recognized image formats are returned, with upstream headers
 removed and SVG documents sandboxed. Successful responses are cached for one
-hour, keyed by the metadata URL and hash. Static hosting without Pages Functions
+hour, keyed by the metadata URL, hash and image position. An image that cannot
+decode advances to the next candidate through the proxy. Static hosting without Pages Functions
 does not serve the image endpoint. To test the complete app locally, run
 `npm run build` and `npx wrangler pages dev dist`; Vite alone serves the UI.

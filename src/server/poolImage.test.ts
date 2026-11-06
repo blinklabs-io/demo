@@ -154,9 +154,12 @@ it("isolates SVG documents with a sandbox and no external resource access", asyn
 });
 
 it("limits streamed bodies even when Content-Length is absent", async () => {
-  const fetch = upstream();
-  fetch.mockResolvedValue(new Response(new Uint8Array(1_048_577)));
-  expect((await poolImage(request())).status).toBe(404);
+  const doc = JSON.stringify({
+    padding: " ".repeat(1_048_576),
+    extended: "./extended.json",
+  });
+  const fetch = upstream(doc);
+  expect((await poolImage(request(doc))).status).toBe(404);
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 
@@ -172,12 +175,12 @@ it("does not let an unavailable extended document hide a direct logo", async () 
 
 it("bounds image bodies independently of metadata", async () => {
   const doc = JSON.stringify({ info: { url_png_icon_64x64: "./large.png" } });
+  const oversized = new Uint8Array(2_097_153);
+  oversized.set(png);
   upstream(doc).mockImplementation(
     async (input) =>
       new Response(
-        new URL(String(input)).pathname === "/pool.json"
-          ? doc
-          : new Uint8Array(2_097_153),
+        new URL(String(input)).pathname === "/pool.json" ? doc : oversized,
       ),
   );
   expect((await poolImage(request(doc))).status).toBe(404);
@@ -218,6 +221,16 @@ it("reuses successful images through the actual Pages route and keeps hashes sep
     const calls = fetch.mock.calls.length;
     expect((await onRequestGet(context)).status).toBe(200);
     expect(fetch).toHaveBeenCalledTimes(calls);
+    const noisy = new URL(context.request.url);
+    noisy.searchParams.set("unused", "unique-value");
+    noisy.searchParams.set(
+      "hash",
+      noisy.searchParams.get("hash")!.toUpperCase(),
+    );
+    expect(
+      (await onRequestGet({ ...context, request: new Request(noisy) })).status,
+    ).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(calls);
     const changed = new URL(context.request.url);
     changed.searchParams.set("hash", "00".repeat(32));
     expect(
@@ -228,4 +241,68 @@ it("reuses successful images through the actual Pages route and keeps hashes sep
   } finally {
     vi.unstubAllGlobals();
   }
+});
+
+it("tries extended images after all primary images fail", async () => {
+  const doc = JSON.stringify({
+    info: { url_png_icon_64x64: "./broken.png" },
+    extended: "./extended.json",
+  });
+  const fetch = upstream(doc);
+  const normal = fetch.getMockImplementation()!;
+  fetch.mockImplementation(async (...args) =>
+    new URL(String(args[0])).pathname === "/broken.png"
+      ? new Response("Not found", { status: 404 })
+      : normal(...args),
+  );
+  expect((await poolImage(request(doc))).status).toBe(200);
+  expect(
+    fetch.mock.calls.map(([url]) => new URL(String(url)).pathname),
+  ).toEqual(["/pool.json", "/broken.png", "/extended.json", "/icon.png"]);
+});
+
+it("advances to the next candidate when the browser cannot decode an image", async () => {
+  const doc = JSON.stringify({
+    info: { url_png_icon_64x64: "./broken.png" },
+    extended: "./extended.json",
+  });
+  const fetch = upstream(doc);
+  const normal = fetch.getMockImplementation()!;
+  fetch.mockImplementation(async (...args) =>
+    new URL(String(args[0])).pathname === "/broken.png"
+      ? new Response(png.subarray(0, 8))
+      : normal(...args),
+  );
+  const first = await poolImage(request(doc));
+  expect(first.status).toBe(200);
+  const next = new URL(request(doc).url);
+  next.searchParams.set("offset", first.headers.get("X-Pool-Image-Next")!);
+  const second = await poolImage(new Request(next));
+  expect(second.status).toBe(200);
+  expect(new Uint8Array(await second.arrayBuffer())).toEqual(png);
+  expect(
+    fetch.mock.calls.filter(
+      ([url]) => new URL(String(url)).pathname === "/broken.png",
+    ),
+  ).toHaveLength(1);
+});
+
+it("recognizes self-contained SVG documents with a standard DOCTYPE", async () => {
+  const doc = JSON.stringify({
+    pool: { media_assets: { logo_svg: "./logo.svg" } },
+  });
+  upstream(doc).mockImplementation(
+    async (input) =>
+      new Response(
+        new URL(String(input)).pathname === "/pool.json"
+          ? doc
+          : '<?xml version="1.0"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg xmlns="http://www.w3.org/2000/svg"/>',
+      ),
+  );
+  const response = await poolImage(request(doc));
+  expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toBe("image/svg+xml");
+  expect(response.headers.get("content-security-policy")).toContain(
+    "sandbox; default-src 'none'",
+  );
 });

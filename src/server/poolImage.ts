@@ -108,7 +108,40 @@ function imageType(bytes: Uint8Array): string {
   const text = new TextDecoder().decode(bytes);
   if (/^GIF8[79]a/.test(text)) return "image/gif";
   if (/^RIFF[\s\S]{4}WEBP/.test(text)) return "image/webp";
-  if (/^\s*(?:<\?xml[^>]*>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg[\s>]/i.test(text))
+  let cursor = 0;
+  const nonSpace = /\S/g;
+  const skipSpace = () => {
+    nonSpace.lastIndex = cursor;
+    cursor = nonSpace.exec(text)?.index ?? text.length;
+  };
+  skipSpace();
+  if (text.startsWith("<?xml", cursor)) {
+    const end = text.indexOf("?>", cursor + 5);
+    if (end < 0) throw new Error("Image");
+    cursor = end + 2;
+    skipSpace();
+  }
+  while (text.startsWith("<!--", cursor)) {
+    const end = text.indexOf("-->", cursor + 4);
+    if (end < 0) throw new Error("Image");
+    cursor = end + 3;
+    skipSpace();
+  }
+  if (text.slice(cursor, cursor + 9).toUpperCase() === "<!DOCTYPE") {
+    const end = text.indexOf(">", cursor + 9);
+    if (end < 0) throw new Error("Image");
+    const declaration = text.slice(cursor, end + 1);
+    if (
+      !/^<!DOCTYPE\s+svg(?:\s|>)/i.test(declaration) ||
+      declaration.includes("[") ||
+      declaration.includes("]") ||
+      declaration.includes("<", 1)
+    )
+      throw new Error("Image");
+    cursor = end + 1;
+    skipSpace();
+  }
+  if (/^<svg[\s>]/i.test(text.slice(cursor, cursor + 5)))
     return "image/svg+xml";
   throw new Error("Image");
 }
@@ -117,10 +150,13 @@ export async function poolImage(request: Request): Promise<Response> {
   const endpoint = new URL(request.url);
   const params = endpoint.searchParams;
   const hash = params.get("hash");
+  const offset = Number(params.get("offset") ?? "0");
   let url: URL;
   try {
     url = publicUrl(params.get("url"));
     if (!hash || !/^[a-f\d]{64}$/i.test(hash)) throw new Error("Hash");
+    if (!Number.isInteger(offset) || offset < 0 || offset >= 10)
+      throw new Error("Offset");
     if (url.origin === endpoint.origin) throw new Error("Recursive");
   } catch {
     return new Response("Invalid pool metadata reference", { status: 400 });
@@ -131,36 +167,49 @@ export async function poolImage(request: Request): Promise<Response> {
     if (blake2bHex(primary.bytes, undefined, 32) !== hash!.toLowerCase())
       throw new Error("Hash");
     const doc = document(primary.bytes);
-    const candidates = images(doc, primary.url);
     const extended = doc.extDataUrl ?? doc.extended;
-    if (extended && candidates.length === 0) {
+    const seen = new Set<string>();
+    let profile = doc;
+    let base = primary.url;
+    let index = 0;
+    for (let stage = 0; stage < 2; stage++) {
+      for (const candidate of images(profile, base).slice(0, 5)) {
+        if (seen.has(candidate.href)) continue;
+        seen.add(candidate.href);
+        const current = index++;
+        if (current < offset) continue;
+        try {
+          const image = await read(
+            candidate,
+            signal,
+            2_097_152,
+            endpoint.origin,
+          );
+          const type = imageType(image.bytes);
+          return new Response(image.bytes, {
+            headers: {
+              "Content-Type": type,
+              "Cache-Control": "public, max-age=3600",
+              "X-Content-Type-Options": "nosniff",
+              "Content-Security-Policy":
+                "sandbox; default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
+              "Referrer-Policy": "no-referrer",
+              "X-Pool-Image-Next": String(index),
+            },
+          });
+        } catch {
+          signal.throwIfAborted();
+        }
+      }
+      if (stage === 1 || !extended) break;
       const result = await read(
         publicUrl(extended, primary.url),
         signal,
         1_048_576,
         endpoint.origin,
       );
-      candidates.push(...images(document(result.bytes), result.url));
-    }
-    for (const candidate of [
-      ...new Map(candidates.map((u) => [u.href, u])).values(),
-    ].slice(0, 5)) {
-      try {
-        const image = await read(candidate, signal, 2_097_152, endpoint.origin);
-        const type = imageType(image.bytes);
-        return new Response(image.bytes, {
-          headers: {
-            "Content-Type": type,
-            "Cache-Control": "public, max-age=3600",
-            "X-Content-Type-Options": "nosniff",
-            "Content-Security-Policy":
-              "sandbox; default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
-            "Referrer-Policy": "no-referrer",
-          },
-        });
-      } catch {
-        signal.throwIfAborted();
-      }
+      profile = document(result.bytes);
+      base = result.url;
     }
   } catch {
     // Do not relay upstream error bodies or redirect visitors to pool servers.
