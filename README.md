@@ -436,7 +436,7 @@ inferred. Signing still requires explicit approval of the reviewed draft.
 | Transaction flow inspection | [Desktop](docs/screenshots/flow-review1500.jpg) | [Mobile](docs/screenshots/flow-review390.jpg) |
 | Transaction rehearsal | [Desktop](docs/screenshots/rehearsal-review1500.jpg) | [Mobile](docs/screenshots/rehearsal-review390.jpg) |
 | Native-asset rehearsal | [Desktop](docs/screenshots/rehearsal-native1500.jpg) | [Mobile](docs/screenshots/rehearsal-native390.jpg) |
-| Pool owner metadata | [Desktop](docs/screenshots/pool-metadata-safe1440.png) | [Mobile](docs/screenshots/pool-metadata-safe390.png) |
+| Pool owner metadata | [Desktop](docs/screenshots/pool-profile1440.png) | [Mobile](docs/screenshots/pool-profile390.png) |
 
 Pool detail pages show both bech32 and hex pool identifiers, a recent producer
 signal from the current epoch, paginated delegators, and owner metadata with
