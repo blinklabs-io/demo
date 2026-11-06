@@ -1,11 +1,11 @@
 .transaction-explorer,
 .ti-insights {
   display: grid;
-  gap: 24px;
+  gap: 22px;
   min-width: 0;
 }
 .ti-passport {
-  padding: 30px;
+  padding: 27px;
   border: 1px solid #29545d;
   border-radius: 24px;
   background: radial-gradient(ellipse at 92% 10%, #1d716b40, transparent 60%),
@@ -37,7 +37,7 @@
   background: #5d203055;
 }
 .ti-passport-heading {
-  margin: 20px 0;
+  margin: 18px 0;
 }
 .transaction-explorer .ti-passport h1 {
   font-size: clamp(30px, 4vw, 52px);
@@ -84,8 +84,8 @@
 .ti-passport-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
-  margin: 26px 0;
+  gap: 18px;
+  margin: 23px 0;
 }
 .ti-passport-metrics > div {
   display: grid;
@@ -120,7 +120,7 @@
   color: #a3b7c4;
 }
 .ti-validity {
-  margin-top: 24px;
+  margin-top: 22px;
   padding-top: 14px;
 }
 .ti-validity-track {
@@ -128,7 +128,7 @@
   border-radius: 4px;
   background: linear-gradient(90deg, #254858, #5eead4, #254858);
   position: relative;
-  margin: 30px 0 20px;
+  margin: 27px 0 18px;
 }
 .ti-validity-track i {
   position: absolute;
@@ -174,7 +174,7 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 .ti-tabs button {
   display: flex;
@@ -326,7 +326,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 18px;
   font-size: 11px;
   color: #90a6b8;
 }
@@ -379,7 +379,7 @@
   color: #9aaec5;
 }
 .ti-asset-bars {
-  margin: 22px 0;
+  margin: 20px 0;
 }
 .ti-asset-bars > div {
   display: flex;
@@ -452,7 +452,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 12px;
-  margin: 22px 0;
+  margin: 20px 0;
 }
 .ti-redeemers > article {
   border: 1px solid #3a3b62;
@@ -527,12 +527,12 @@
 .ti-detail-columns {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-  gap: 24px;
+  gap: 22px;
   align-items: start;
 }
 .ti-signing-summary {
   display: flex;
-  gap: 24px;
+  gap: 22px;
   align-items: center;
 }
 .ti-signing-summary h3 {
@@ -623,7 +623,7 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
   flex-wrap: wrap;
 }
 .ti-byte-total strong {
@@ -648,7 +648,7 @@
 .ti-byte-legend {
   display: grid;
   gap: 14px;
-  margin-top: 24px;
+  margin-top: 22px;
 }
 .ti-byte-legend > div {
   display: flex;
@@ -677,7 +677,7 @@
   border: 1px solid #3b445d;
   border-radius: 14px;
   background: linear-gradient(145deg, #20244077, #0b1825);
-  padding: 20px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -760,7 +760,7 @@
 }
 @media (max-width: 700px) {
   .ti-passport {
-    padding: 22px 18px;
+    padding: 20px 18px;
   }
   .transaction-explorer .ti-passport h1 {
     font-size: 32px;
@@ -769,7 +769,7 @@
     display: none;
   }
   .ti-passport-metrics {
-    gap: 20px 12px;
+    gap: 18px 12px;
   }
   .ti-passport-metrics strong {
     font-size: 22px;
@@ -783,7 +783,7 @@
   }
   .ti-validity > div:last-child {
     font-size: 9px;
-    gap: 20px;
+    gap: 18px;
   }
   .ti-io-grid,
   .ti-asset-grid {
@@ -794,7 +794,7 @@
   }
   .ti-execution-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 22px 16px;
+    gap: 20px 16px;
   }
   .ti-execution-summary > div:nth-child(2) {
     border-right: 0;
@@ -857,8 +857,8 @@
   align-items: center;
   justify-content: space-around;
   gap: 12px;
-  padding: 32px 0;
-  margin: 24px 0;
+  padding: 29px 0;
+  margin: 22px 0;
   border-block: 1px solid #385461;
 }
 .ti-pending-flow > div {

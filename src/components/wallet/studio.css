@@ -1,10 +1,10 @@
 .cip25-editor {
-  padding: 22px;
+  padding: 20px;
   border: 1px solid #3a645b;
   border-radius: 17px;
   background: linear-gradient(145deg, #123c3233, #14223755);
   display: grid;
-  gap: 20px;
+  gap: 18px;
   min-width: 0;
 }
 .cip25-editor > header {
@@ -153,7 +153,7 @@
 }
 .send-bundle-form {
   display: grid;
-  gap: 27px;
+  gap: 24px;
 }
 .send-bundle-form label {
   display: grid;
@@ -176,7 +176,7 @@
 .send-ada {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 18px;
   padding: 19px;
   background: linear-gradient(110deg, #153c49, #173e3333);
   border: 1px solid #3d7872;
@@ -204,14 +204,14 @@
 .additional-assets {
   min-width: 0;
   border-top: 1px solid #35515b;
-  padding-top: 24px;
+  padding-top: 22px;
 }
 .additional-assets > header {
   display: flex;
   align-items: end;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 .additional-assets h2 {
   margin: 7px 0 0;
@@ -307,7 +307,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin: 15px 0 20px;
+  margin: 15px 0 18px;
 }
 .asset-choice-pagination span {
   font-size: 10px;
@@ -488,7 +488,7 @@
   border-color: #2e9d86;
   color: #a6ffea;
   font-weight: 600;
-  padding: 13px 20px;
+  padding: 13px 18px;
 }
 .tool-button-row {
   display: flex;

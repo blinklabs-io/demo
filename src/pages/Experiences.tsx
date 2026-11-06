@@ -1,3 +1,4 @@
+import { ExperienceDiagram } from "../components/illustrations/ExperienceDiagram";
 import { DINGO_NETWORK } from "../lib/dingo/config";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -32,7 +33,7 @@ function creationExperience(
 }
 
 const experiences = [
-  creationExperience("transactions", "flow", "Compose · Inspect · Export"),
+  creationExperience("transactions", "studio", "Compose · Inspect · Export"),
   {
     to: "/participate",
     title: "Participation",
@@ -64,14 +65,14 @@ const experiences = [
     description:
       "Follow transactions through Dingo’s live mempool, before they become part of a block.",
     tag: "Live transaction stream",
-    art: "flow",
+    art: "mempool",
     action: "Follow the flow",
   },
   creationExperience("proof", "proof", "Local hashing · On-chain proofs"),
   creationExperience("utxos", "utxo", "Consolidate · Split", "Use"),
   creationExperience(
     "batch",
-    "flow",
+    "payments",
     "Multiple recipients · CSV import",
     "Use",
   ),
@@ -83,14 +84,24 @@ const experiences = [
     description:
       "Explore supply, stake, network progress, and the signals behind the chain.",
     tag: "Network instruments",
-    art: "utxo",
+    art: "network",
     action: "See the instruments",
   },
 ];
 function ExperienceArt({ kind }: { kind: string }) {
+  const diagram =
+    kind === "mempool" ||
+    kind === "utxo" ||
+    kind === "payments" ||
+    kind === "network" ||
+    kind === "studio"
+      ? kind
+      : null;
   return (
     <div className={`experience-art art-${kind}`} aria-hidden="true">
-      {kind === "voice" ? (
+      {diagram ? (
+        <ExperienceDiagram kind={diagram} />
+      ) : kind === "voice" ? (
         <>
           {Array.from({ length: 21 }, (_, i) => (
             <i
@@ -119,22 +130,7 @@ function ExperienceArt({ kind }: { kind: string }) {
           <b>✓</b>
           <span>SHA-256</span>
         </>
-      ) : (
-        <>
-          {Array.from({ length: 9 }, (_, i) => (
-            <i
-              key={i}
-              style={{
-                left: `${12 + (i % 5) * 18}%`,
-                top: `${22 + Math.floor(i / 5) * 44}%`,
-                width: 12 + i * 3,
-                height: 12 + i * 3,
-              }}
-            />
-          ))}
-          <b>{kind === "flow" ? "→" : "◌"}</b>
-        </>
-      )}
+      ) : null}
     </div>
   );
 }

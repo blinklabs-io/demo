@@ -1,17 +1,17 @@
 .transaction-studio {
   display: grid;
-  gap: 24px;
+  gap: 22px;
   min-width: 0;
 }
 .tx-studio-hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 32px;
+  gap: 29px;
   align-items: center;
-  padding: 30px 0;
+  padding: 24px 0;
 }
 .workspace-main .tx-studio-hero h1 {
-  font-size: clamp(28px, 3vw, 40px);
+  font-size: clamp(28px, 2.6vw, 35px);
   letter-spacing: -1.2px;
   line-height: 1.04;
   margin: 16px 0;
@@ -19,13 +19,13 @@
 .tx-studio-hero p {
   max-width: 560px;
   color: #94a3b8;
-  line-height: 1.7;
+  line-height: 1.65;
 }
 .tx-pipeline {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 32px 20px;
+  padding: 29px 18px;
   background: radial-gradient(ellipse at center, #2dd4bf18, transparent 75%);
   border: 1px solid #334155;
   border-radius: 24px;
@@ -51,12 +51,12 @@
 .tx-studio-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: 24px;
+  gap: 22px;
   align-items: start;
 }
 .tx-review-column {
   display: grid;
-  gap: 24px;
+  gap: 22px;
   min-width: 0;
 }
 .tx-studio-input {
@@ -85,7 +85,7 @@
   gap: 12px;
 }
 .tx-output-label {
-  margin: 24px 0 12px;
+  margin: 22px 0 12px;
 }
 .tx-output-label span {
   color: #64748b;
@@ -105,7 +105,7 @@
 .tx-recipient-number {
   color: var(--accent);
   font: 14px monospace;
-  padding-top: 28px;
+  padding-top: 25px;
 }
 .tx-recipient label,
 .transaction-studio label {
@@ -169,7 +169,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
-  margin: 24px 0;
+  margin: 22px 0;
 }
 .tx-metrics > div {
   display: grid;
@@ -185,9 +185,9 @@
   align-items: center;
   justify-content: space-around;
   gap: 10px;
-  padding: 20px 0;
+  padding: 18px 0;
   border-block: 1px solid #1e293b;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 .studio-value-flow > div {
   display: grid;
@@ -236,7 +236,7 @@
   background: radial-gradient(ellipse at 50% 35%, #2dd4bf0d, transparent 65%);
   border: 1px dashed #334155;
   border-radius: 16px;
-  padding: 28px;
+  padding: 25px;
 }
 .tx-empty-review h2 {
   font-size: 24px;
@@ -267,7 +267,7 @@
   position: relative;
   display: grid;
   place-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 25px;
 }
 .tx-empty-orbit > span {
   font-size: 80px;
@@ -325,7 +325,7 @@
 .tx-detail-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px;
+  gap: 22px;
 }
 .transaction-studio pre {
   white-space: pre-wrap;
@@ -344,7 +344,7 @@
 }
 .tx-capability {
   border-top: 1px solid #334155;
-  padding: 28px 0;
+  padding: 25px 0;
 }
 .tx-capability h2 {
   font-size: 24px;
@@ -358,7 +358,7 @@
 .tx-capability a {
   display: inline-block;
   color: var(--accent);
-  margin: 16px 24px 0 0;
+  margin: 16px 22px 0 0;
   font-size: 13px;
 }
 @media (max-width: 1100px) {
@@ -389,7 +389,7 @@
     gap: 18px;
   }
   .tx-pipeline {
-    padding: 20px 10px;
+    padding: 18px 10px;
     gap: 8px;
   }
   .tx-pipeline b {
@@ -428,7 +428,7 @@
 .transaction-studio input[type="file"] {
   display: block;
   max-width: 100%;
-  margin: 12px 0 24px;
+  margin: 12px 0 22px;
   color: #94a3b8;
   font-size: 12px;
 }
