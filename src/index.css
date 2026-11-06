@@ -2098,7 +2098,7 @@ summary {
     radial-gradient(ellipse at 100% 100%, #2dd4bf12, transparent 65%), #102230;
   border-radius: 16px;
 }
-.pool-card > .pool-identity {
+.pool-card > .pool-identity-with-copy {
   grid-column: 1/-1;
 }
 .pool-card-metrics {

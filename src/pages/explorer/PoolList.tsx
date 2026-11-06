@@ -31,7 +31,6 @@ function PoolRow({ row }: { row: PoolExtendedRow }) {
       <PoolIdentity
         poolId={row.pool_id}
         metadata={row.metadata}
-        copyable={false}
       />
       <div className="pool-card-metrics">
         <strong>
