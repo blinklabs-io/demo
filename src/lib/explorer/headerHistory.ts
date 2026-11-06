@@ -216,18 +216,23 @@ export async function loadHeaderHistory({
       "Header history requires genesis data for the selected network.",
     );
   const eras = await blockfrostFetch<Era[]>("/api/v0/network/eras", { signal });
+  // Blockfrost reports era start times in seconds since system start, while
+  // Dingo reports UNIX timestamps; a value below system_start can only be relative.
+  const startTime = (era: Era) =>
+    era.start.time < genesis.system_start
+      ? genesis.system_start + era.start.time
+      : era.start.time;
   if (
     !eras.length ||
     eras.some(
       (era, i) =>
         !integer(era.start?.slot) ||
         !integer(era.start?.time) ||
-        era.start.time < genesis.system_start ||
         !Number.isSafeInteger(era.parameters?.slot_length) ||
         era.parameters.slot_length <= 0 ||
         (i > 0 &&
           (era.start.slot <= eras[i - 1].start.slot ||
-            era.start.time <= eras[i - 1].start.time)),
+            startTime(era) <= startTime(eras[i - 1]))),
     )
   )
     throw new Error("Dingo returned invalid era timing for header history.");
@@ -235,7 +240,7 @@ export async function loadHeaderHistory({
     const era = eras.findLast((era) => era.start.slot <= slot);
     if (!era) throw new Error("Dingo has no era timing for this block.");
     const time =
-      era.start.time + (slot - era.start.slot) * era.parameters.slot_length;
+      startTime(era) + (slot - era.start.slot) * era.parameters.slot_length;
     if (!integer(time))
       throw new Error("Invalid block time in header history.");
     return time;

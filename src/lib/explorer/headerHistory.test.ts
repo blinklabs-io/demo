@@ -133,6 +133,11 @@ beforeEach(() => {
   eras = [{ start: { slot: 0, time: base }, parameters: { slot_length: 1 } }];
   response();
 });
+it("accepts era start times relative to system start", async () => {
+  eras = [{ start: { slot: 0, time: 0 }, parameters: { slot_length: 1 } }];
+  const result = await loadHeaderHistory();
+  expect(result.rows.map((r) => r.height)).toEqual([4, 5, 6, 7, 8]);
+});
 it("loads every header at the inclusive cutoff through a fixed tip, honoring continuation on short byte-capped pages", async () => {
   const updates: HeaderHistoryProgress[] = [];
   const result = await loadHeaderHistory({
