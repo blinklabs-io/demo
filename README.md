@@ -159,11 +159,9 @@ keyboard controls, mobile layouts, and reduced-motion support.
 The explorer includes transaction and block-size charts, ADA supply breakdowns,
 reward and holder charts, and timelines for eras, blocks, and governance actions.
 Charts link to the underlying records and expose values on keyboard focus.
-Pool identities use registered tickers and names. Icons are resolved from each
-pool’s published metadata and extended metadata files, using the URL supplied
-by Dingo. Both CIP-6 and legacy extended metadata layouts are supported. The small icon is preferred over the full logo; missing or unavailable
-images show ticker initials. Metadata and image files load directly from their
-publishers, without a third-party pool registry or indexer.
+Pool identities use registered tickers and names returned by Dingo and show
+ticker initials. Pool-controlled metadata and image URLs are never fetched
+automatically by the browser.
 
 Recent blocks and block details show the protocol version decoded from the
 block header bytes returned by UTxO RPC. CIP-203 scheme-zero IDs identify Dingo
@@ -438,6 +436,7 @@ inferred. Signing still requires explicit approval of the reviewed draft.
 | Transaction flow inspection | [Desktop](docs/screenshots/flow-review1500.jpg) | [Mobile](docs/screenshots/flow-review390.jpg) |
 | Transaction rehearsal | [Desktop](docs/screenshots/rehearsal-review1500.jpg) | [Mobile](docs/screenshots/rehearsal-review390.jpg) |
 | Native-asset rehearsal | [Desktop](docs/screenshots/rehearsal-native1500.jpg) | [Mobile](docs/screenshots/rehearsal-native390.jpg) |
+| Pool owner metadata | [Desktop](docs/screenshots/pool-profile1440.png) | [Mobile](docs/screenshots/pool-profile390.png) |
 
 Pool detail pages show both bech32 and hex pool identifiers, a recent producer
 signal from the current epoch, paginated delegators, and owner metadata with
@@ -450,8 +449,6 @@ snapshots are never promoted to completed totals. Observed rollbacks clear store
 summaries. Refresh totals forces a new Dingo read; heavy epoch-summary reads are
 serialized. Cached snapshots show their read time.
 
-Owner-hosted pool documents are checked against the registered BLAKE2b-256
-metadata hash before use. Well-formed extended metadata follows that authenticated
-owner reference, with explicit provenance rather than an independent endorsement.
-Pool profiles render logos, clickable URLs, and social links; the fetched
-extended owner JSON is shown when an extended document exists.
+Pool profiles display the registered owner metadata returned by Dingo and link
+to its declared website and source. The browser does not automatically request
+pool-controlled metadata, extended documents, or image URLs.
