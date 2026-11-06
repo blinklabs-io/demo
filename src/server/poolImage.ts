@@ -101,13 +101,19 @@ function images(doc: Record<string, unknown>, base: string) {
 }
 
 function imageType(bytes: Uint8Array): string {
-  const starts = (...prefix: number[]) =>
-    prefix.every((b, i) => bytes[i] === b);
-  if (starts(137, 80, 78, 71, 13, 10, 26, 10)) return "image/png";
-  if (starts(255, 216, 255)) return "image/jpeg";
+  const matches = (offset: number, ...prefix: number[]) =>
+    prefix.every((b, i) => bytes[offset + i] === b);
+  if (matches(0, 137, 80, 78, 71, 13, 10, 26, 10)) return "image/png";
+  if (matches(0, 255, 216, 255)) return "image/jpeg";
+  if (
+    matches(0, 71, 73, 70, 56) &&
+    [55, 57].includes(bytes[4]) &&
+    bytes[5] === 97
+  )
+    return "image/gif";
+  if (matches(0, 82, 73, 70, 70) && matches(8, 87, 69, 66, 80))
+    return "image/webp";
   const text = new TextDecoder().decode(bytes);
-  if (/^GIF8[79]a/.test(text)) return "image/gif";
-  if (/^RIFF[\s\S]{4}WEBP/.test(text)) return "image/webp";
   let cursor = 0;
   const nonSpace = /\S/g;
   const skipSpace = () => {

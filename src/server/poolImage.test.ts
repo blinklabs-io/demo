@@ -33,6 +33,43 @@ function upstream(doc = primary) {
 }
 afterEach(() => vi.restoreAllMocks());
 
+it("recognizes WebP when its binary RIFF size contains a UTF-8 sequence", async () => {
+  const sample = Buffer.from(
+    "UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v02aAA=",
+    "base64",
+  );
+  // The even RIFF size starts with C2 A9, which UTF-8 collapses into one character.
+  const webp = Buffer.alloc(0xa9c2 + 8);
+  sample.copy(webp);
+  webp.writeUInt32LE(webp.length - 8, 4);
+  webp.write("JUNK", sample.length);
+  webp.writeUInt32LE(webp.length - sample.length - 8, sample.length + 4);
+  const doc = JSON.stringify({ info: { url_png_icon_64x64: "./icon.webp" } });
+  upstream(doc).mockImplementation(
+    async (input) =>
+      new Response(
+        new URL(String(input)).pathname === "/pool.json" ? doc : webp,
+      ),
+  );
+  const response = await poolImage(request(doc));
+  expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toBe("image/webp");
+  expect(new Uint8Array(await response.arrayBuffer())).toEqual(
+    new Uint8Array(webp),
+  );
+});
+
+it("rejects RIFF containers that do not carry the WebP signature", async () => {
+  const doc = JSON.stringify({ info: { url_png_icon_64x64: "./audio.wav" } });
+  upstream(doc).mockImplementation(
+    async (input) =>
+      new Response(
+        new URL(String(input)).pathname === "/pool.json" ? doc : "RIFF0000WAVE",
+      ),
+  );
+  expect((await poolImage(request(doc))).status).toBe(404);
+});
+
 it("verifies the registered bytes, resolves relative extended logos and returns only image bytes", async () => {
   const fetch = upstream();
   const response = await poolImage(request());
