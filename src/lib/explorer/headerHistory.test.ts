@@ -16,34 +16,52 @@ vi.mock("../dingo/utxorpc/streaming", () => ({ getSyncClient: vi.fn() }));
 const base = 1_000_000;
 const dump = vi.fn();
 const timing = (slot: number) => base + slot;
-function chain(length = 12, forkAt = Infinity, slotShift = 0) {
+function chain(
+  length = 12,
+  forkAt = Infinity,
+  slotShift = 0,
+  dijkstra = false,
+) {
   const rows = [];
   let parent = "";
   for (let height = 0; height < length; height++) {
     const slot = height * 21600 + (height >= forkAt ? slotShift : 0),
       minor = height >= forkAt ? 69 : height % 2 ? 65 : 0;
     const body = new Core.CborWriter()
-      .writeStartArray(10)
+      .writeStartArray(dijkstra ? 12 : 10)
       .writeInt(height)
       .writeInt(slot);
     if (parent) body.writeByteString(hexToBytes(parent));
     else body.writeNull();
     for (let i = 3; i < 9; i++) body.writeInt(0);
-    body.writeStartArray(2).writeInt(11).writeInt(minor);
+    body
+      .writeStartArray(2)
+      .writeInt(dijkstra ? 12 : 11)
+      .writeInt(minor);
+    if (dijkstra) body.writeBoolean(false).writeNull();
     const header = new Core.CborWriter()
       .writeStartArray(2)
       .writeEncodedValue(body.encode())
       .writeByteString(new Uint8Array())
       .encode();
     const hash = String(Core.blake2b_256(Core.HexBlob.fromBytes(header)));
-    const nativeBytes = new Core.CborWriter()
-      .writeStartArray(5)
-      .writeEncodedValue(header)
-      .writeStartArray(0)
-      .writeStartArray(0)
-      .writeStartMap(0)
-      .writeStartArray(0)
-      .encode();
+    const nativeBytes = dijkstra
+      ? new Core.CborWriter()
+          .writeStartArray(2)
+          .writeEncodedValue(header)
+          .writeStartArray(3)
+          .writeStartArray(0)
+          .writeNull()
+          .writeNull()
+          .encode()
+      : new Core.CborWriter()
+          .writeStartArray(5)
+          .writeEncodedValue(header)
+          .writeStartArray(0)
+          .writeStartArray(0)
+          .writeStartMap(0)
+          .writeStartArray(0)
+          .encode();
     rows.push({
       summary: {
         hash,
@@ -427,9 +445,7 @@ it("re-searches a cutoff moved by a fork instead of trusting the former branch's
   expect(result.rows[0].height).toBe(4);
   expect(result.rows[0].time).toBe(result.cutoff);
   expect(result.rows.map((row) => row.hash)).not.toContain(former);
-  expect(fetch.mock.calls.map(([path]) => path)).toContain(
-    "/api/v0/blocks/5",
-  );
+  expect(fetch.mock.calls.map(([path]) => path)).toContain("/api/v0/blocks/5");
   expect(fetch.mock.calls.map(([path]) => path)).toContain("/api/v0/blocks/2");
   expect(dump).toHaveBeenCalledTimes(3);
 });
@@ -446,4 +462,19 @@ it("rebuilds cached versions that disagree with their native header", async () =
     original.rows.map((r) => r.minor),
   );
   expect(dump).toHaveBeenCalled();
+});
+
+it("reads Dijkstra extended headers in the two-part native block envelope", async () => {
+  blocks = chain(12, Infinity, 0, true);
+  response();
+  const result = await loadHeaderHistory();
+  expect(result.complete).toBe(true);
+  expect(result.rows.map((row) => row.major)).toEqual([
+    "12",
+    "12",
+    "12",
+    "12",
+    "12",
+  ]);
+  expect(result.rows.map((row) => row.height)).toEqual([4, 5, 6, 7, 8]);
 });

@@ -35,7 +35,9 @@ export default function Markets() {
             >
               Open Preprod markets →
             </Link>
-            <Link to="/wallet/swap">Explore Preview swaps ↗</Link>
+            <Link to="/wallet/swap?network=preview">
+              Explore Preview swaps ↗
+            </Link>
           </div>
         </div>
       </section>

@@ -496,3 +496,30 @@ Experiences include expandable **Build this yourself** sections with selected
 network API examples in JavaScript and cURL, implementation links, and access to
 the API playground. Examples make read-only requests; transaction construction
 and signing remain explicit in the linked source.
+
+## Musashi and Leios
+
+Choose **Musashi** in the network selector, or open
+`/explorer/leios?network=musashi`. Musashi uses network magic `164` and independent
+REST, UTxO RPC, and Mesh endpoints. Override them with
+`VITE_DINGO_MUSASHI_BLOCKFROST_URL`, `VITE_DINGO_MUSASHI_UTXORPC_URL`, and
+`VITE_DINGO_MUSASHI_MESH_URL`. Preview and Preprod overrides are not reused.
+Switching networks disconnects the wallet and removes entity-specific context.
+Swap integrations retain their Preview or Preprod contract boundaries.
+
+The Leios view samples the latest twelve indexed ranking blocks. It decodes
+native Dijkstra headers and bodies, verifies their header hashes and indexed
+positions, and shows two independent lanes: announced endorser-block payload
+sizes and certificate presence. Select a block to inspect its announcement,
+ranking-body transaction count, certificate bitfield size, and aggregate
+signature size. Block detail pages expose the same data in an optional panel.
+Protocol-version displays and header history understand the Dijkstra envelope.
+
+Announced bytes count announcements, including repetitions; they are not executed
+throughput. A certificate concerns an earlier announcement and is not paired
+with the announcement in the same ranking block. Signer counts are set-bit
+counts, not committee size, voting weight, or quorum. Certificates are decoded
+from node-supplied chain data rather than independently verified in the browser.
+Unsupported native records do not discard other decoded observations. Chain
+rollback and reconnect invalidate the sampled block list, clearing orphaned
+selections. The developer section includes REST and UTxO RPC examples.

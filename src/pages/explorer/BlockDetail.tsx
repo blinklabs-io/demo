@@ -1,3 +1,4 @@
+import { LeiosBlockPanel } from "../../components/explorer/LeiosPulse";
 import { BlockCapacity } from "../../components/explorer/BlockCapacity";
 import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
 import { PaginatedList } from "../../components/explorer/PaginatedList";
@@ -86,6 +87,7 @@ export default function BlockDetail() {
                   />
                 </div>
                 <BlockCapacity hash={block.hash} slot={block.slot} epoch={block.epoch} />
+                <LeiosBlockPanel key={block.hash} block={block} />
               </div>
               <div className="block-chain-timeline my-6">
                 <Timeline

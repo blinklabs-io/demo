@@ -4,35 +4,91 @@ import { bytesToHex } from "../dingo/utxorpc/bytes";
 export function decodeBlockResources(bytes: Uint8Array) {
   const reader = new Core.CborReader(Core.HexBlob(bytesToHex(bytes)));
   const length = reader.readStartArray();
-  if (length !== 4 && length !== 5)
+  if (length !== 2 && length !== 4 && length !== 5)
     throw new Error("Unsupported block encoding");
   const header = new Core.CborReader(Core.HexBlob.fromBytes(reader.readEncodedValue()));
   if (header.readStartArray() !== 2) throw new Error("Invalid block header");
   const fields = header.readStartArray();
-  const sizeIndex = fields === 10 ? 6 : fields === 15 ? 7 : undefined;
+  const sizeIndex = fields === 10 || fields === 12 ? 6 : fields === 15 ? 7 : undefined;
   if (sizeIndex === undefined) throw new Error("Unsupported block header");
   for (let i = 0; i < sizeIndex; i++) header.skipValue();
   const bodySize = header.readUInt();
   if (bodySize > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error("Invalid block body size");
-  reader.skipValue();
-  reader.readStartArray();
   let memory = 0n, steps = 0n;
-  while (reader.peekState() !== Core.CborReaderState.EndArray) {
-    const witness = Core.TransactionWitnessSet.fromCbor(
-      Core.HexBlob.fromBytes(reader.readEncodedValue()),
-    );
-    for (const redeemer of witness.redeemers()?.values() ?? []) {
-      memory += redeemer.exUnits().mem();
-      steps += redeemer.exUnits().steps();
+  if (length === 2) {
+    if (reader.readStartArray() !== 3) throw new Error("Invalid Dijkstra block body");
+    reader.readStartArray();
+    while (reader.peekState() !== Core.CborReaderState.EndArray) {
+      const units = dijkstraTransactionResources(reader);
+      memory += units.memory;
+      steps += units.steps;
     }
+    reader.readEndArray();
+    reader.skipValue();
+    reader.skipValue();
+    reader.readEndArray();
+  } else {
+    reader.skipValue();
+    reader.readStartArray();
+    while (reader.peekState() !== Core.CborReaderState.EndArray) {
+      const witness = Core.TransactionWitnessSet.fromCbor(
+        Core.HexBlob.fromBytes(reader.readEncodedValue()),
+      );
+      for (const redeemer of witness.redeemers()?.values() ?? []) {
+        memory += redeemer.exUnits().mem();
+        steps += redeemer.exUnits().steps();
+      }
+    }
+    reader.readEndArray();
+    reader.skipValue();
+    if (length === 5) reader.skipValue();
   }
-  reader.readEndArray();
-  reader.skipValue();
-  if (length === 5) reader.skipValue();
   reader.readEndArray();
   if (reader.peekState() !== Core.CborReaderState.Finished)
     throw new Error("Trailing block data");
-  return { bytes: Number(bodySize), memory, steps };
+  return { bytes: Number(bodySize), memory, steps, ...(length === 2 ? { rankingBody: true } : {}) };
+}
+
+function dijkstraTransactionResources(reader: Core.CborReader, sub = false): { memory: bigint; steps: bigint } {
+  if (reader.readStartArray() !== (sub ? 3 : 4)) throw new Error("Invalid Dijkstra block transaction");
+  let memory = 0n, steps = 0n;
+  reader.readStartMap();
+  while (reader.peekState() !== Core.CborReaderState.EndMap) {
+    const key = reader.readUInt();
+    if (sub || key !== 23n) { reader.skipValue(); continue; }
+    if (reader.peekState() === Core.CborReaderState.Tag && Number(reader.readTag()) !== 258)
+      throw new Error("Invalid subtransaction set tag");
+    reader.readStartArray();
+    while (reader.peekState() !== Core.CborReaderState.EndArray) {
+      const units = dijkstraTransactionResources(reader, true);
+      memory += units.memory;
+      steps += units.steps;
+    }
+    reader.readEndArray();
+  }
+  reader.readEndMap();
+  reader.readStartMap();
+  while (reader.peekState() !== Core.CborReaderState.EndMap) {
+    const key = reader.readUInt();
+    if (key !== 5n) { reader.skipValue(); continue; }
+    reader.readStartMap();
+    while (reader.peekState() !== Core.CborReaderState.EndMap) {
+      reader.skipValue();
+      if (reader.readStartArray() !== 2) throw new Error("Invalid Dijkstra redeemer");
+      reader.skipValue();
+      if (reader.readStartArray() !== 2) throw new Error("Invalid execution units");
+      memory += reader.readUInt();
+      steps += reader.readUInt();
+      reader.readEndArray();
+      reader.readEndArray();
+    }
+    reader.readEndMap();
+  }
+  reader.readEndMap();
+  reader.skipValue();
+  if (!sub) reader.readBoolean();
+  reader.readEndArray();
+  return { memory, steps };
 }
 
 export function blockResourceUsage(

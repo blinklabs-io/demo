@@ -1,0 +1,237 @@
+.leios-panel {
+  padding: clamp(1rem, 3vw, 2.25rem);
+  margin-block: 1.5rem;
+  border: 1px solid #2d3b54;
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 90% 0%, #39235460, transparent 50%), #101827;
+  min-width: 0;
+}
+.leios-heading,
+.leios-inspection > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+.leios-heading h1 {
+  margin-block: 1rem;
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+.leios-heading em {
+  color: #c4b5fd;
+  font-style: normal;
+}
+.leios-panel p {
+  color: #b4c2d4;
+  line-height: 1.65;
+}
+.leios-panel a {
+  color: #5eead4;
+}
+.leios-orbit {
+  position: relative;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 130px;
+  height: 130px;
+  border: 1px dashed #7c6aaa;
+  border-radius: 50%;
+  color: #c4b5fd;
+  font-size: 3rem;
+}
+.leios-orbit i,
+.leios-orbit b {
+  position: absolute;
+  font:
+    600 0.8rem ui-monospace,
+    monospace;
+  padding: 0.6rem;
+  border-radius: 9px;
+  background: #1e2a42;
+}
+.leios-orbit i {
+  top: -7px;
+  right: 5px;
+  color: #c4b5fd;
+}
+.leios-orbit b {
+  bottom: -7px;
+  left: 5px;
+  color: #5eead4;
+}
+.leios-metrics,
+.leios-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-block: 2rem;
+}
+.leios-metrics > div {
+  padding: 1rem;
+  border: 1px solid #2b3a50;
+  border-radius: 12px;
+  background: #0b1322;
+}
+.leios-metrics strong {
+  display: block;
+  font-size: clamp(1.3rem, 2.5vw, 2.2rem);
+  color: #e2e8f0;
+  overflow-wrap: anywhere;
+}
+.leios-metrics span,
+.leios-facts dt {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: #9aacc2;
+}
+.leios-key {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: #9aacc2;
+}
+.leios-purple {
+  color: #c4b5fd;
+}
+.leios-teal {
+  color: #5eead4;
+}
+.leios-timeline {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-block: 1.5rem;
+}
+.leios-timeline button {
+  flex: 1 0 64px;
+  min-width: 0;
+  padding: 0.6rem;
+  border: 1px solid #2b3a50;
+  border-radius: 10px;
+  background: #0b1322;
+  cursor: pointer;
+}
+.leios-timeline button[aria-pressed="true"] {
+  border-color: #c4b5fd;
+  background: #211d38;
+}
+.leios-timeline button > span {
+  font-size: 0.65rem;
+  color: #9aacc2;
+  white-space: nowrap;
+}
+.leios-payload {
+  height: 115px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  border-bottom: 1px solid #403456;
+}
+.leios-payload i {
+  display: block;
+  width: 65%;
+  border-radius: 5px 5px 0 0;
+  background: linear-gradient(#c4b5fd, #7c3aed);
+}
+.leios-certificate {
+  margin-block: 0.6rem;
+  color: #9aacc2;
+}
+.leios-certificate.present {
+  color: #5eead4;
+}
+.leios-inspection {
+  padding: 1.25rem;
+  border: 1px solid #3d405b;
+  border-radius: 14px;
+  background: #0a1221;
+}
+.leios-inspection h3 {
+  font-size: 1.25rem;
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+.leios-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-block: 1.25rem;
+}
+.leios-facts dd {
+  margin-top: 0.3rem;
+  font-size: 1.1rem;
+  color: #e2e8f0;
+}
+.leios-announcement {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+.leios-announcement > span {
+  flex-basis: 100%;
+  color: #c4b5fd;
+}
+.leios-announcement code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.leios-panel .leios-note {
+  font-size: 0.75rem;
+  color: #91a3ba;
+  margin-top: 1.25rem;
+}
+.leios-links {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+.leios-panel > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.leios-panel :is(button, a, summary):focus-visible {
+  outline: 2px solid #5eead4;
+  outline-offset: 4px;
+}
+@media (max-width: 650px) {
+  .leios-heading {
+    align-items: start;
+  }
+  .leios-orbit {
+    width: 64px;
+    height: 64px;
+    font-size: 1.8rem;
+    margin-top: 1rem;
+  }
+  .leios-orbit i,
+  .leios-orbit b {
+    padding: 0.3rem;
+    font-size: 0.55rem;
+  }
+  .leios-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .leios-facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  .leios-inspection > header {
+    flex-direction: column;
+    align-items: start;
+  }
+  .leios-panel {
+    border-radius: 14px;
+  }
+  .leios-inspection {
+    padding: 1rem;
+  }
+}

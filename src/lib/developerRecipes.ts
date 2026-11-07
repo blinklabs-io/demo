@@ -1,6 +1,13 @@
 import { DINGO_CONFIG, DINGO_NETWORK } from "./dingo/config";
 
 export const recipes = {
+  leios: {
+    title: "Read Leios ranking blocks",
+    path: "/api/v0/blocks/latest",
+    source: "src/lib/dingo/leios.ts",
+    context:
+      "Read the latest indexed block with Blockfrost, then fetch its native bytes through UTxO RPC. Leios fields appear when the header includes the extension. The decoder checks header identity and extracts announcements and certificates without assigning certificates to the announcement in the same block.",
+  },
   tracker: {
     title: "Track a transaction",
     path: "/api/v0/txs/TRANSACTION_ID",
@@ -89,6 +96,15 @@ export const recipes = {
 export type BuildRecipe = keyof typeof recipes;
 
 export function recipeSdkExample(recipe: BuildRecipe): string | null {
+  if (recipe === "leios")
+    return `import { CardanoSyncClient } from "@utxorpc/sdk";
+const response = await fetch(${JSON.stringify(DINGO_CONFIG.blockfrostUrl + "/api/v0/blocks/latest")});
+if (!response.ok) throw new Error(\`HTTP \${response.status}\`);
+const point = await response.json();
+const client = new CardanoSyncClient({ uri: ${JSON.stringify(DINGO_CONFIG.utxorpcUrl)} });
+const block = await client.fetchBlock({ hash: point.hash, slot: point.slot });
+console.log(block.nativeBytes);
+// See the linked decoder for header identity checks and Leios fields.`;
   if (recipe === "workbench")
     return `import { Core } from "@blaze-cardano/sdk";
 

@@ -6,6 +6,7 @@ describe("network names", () => {
     [764824073, "Mainnet"],
     [1, "Preprod"],
     [2, "Preview"],
+    [164, "Musashi"],
     [42, "Custom network"],
   ])("names network magic %s", (magic, name) =>
     expect(networkName(Number(magic))).toBe(name),

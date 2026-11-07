@@ -143,7 +143,7 @@ function nativeHeader(
     Core.HexBlob(bytesToHex(block.nativeBytes)),
   );
   const blockLength = reader.readStartArray();
-  if (blockLength !== 4 && blockLength !== 5)
+  if (blockLength !== 2 && blockLength !== 4 && blockLength !== 5)
     throw new Error("Unsupported block format in header history.");
   const encoded = reader.readEncodedValue();
   const row = decodeHeader(encoded, timeAtSlot);
@@ -166,7 +166,7 @@ function decodeHeader(
   if (header.readStartArray() !== 2)
     throw new Error("Invalid native block header.");
   const fields = header.readStartArray();
-  if (fields !== 10 && fields !== 15)
+  if (fields !== 10 && fields !== 12 && fields !== 15)
     throw new Error("Unsupported native block header.");
   const height = safeUInt(header.readUInt()),
     slot = safeUInt(header.readUInt());
@@ -176,8 +176,8 @@ function decodeHeader(
       : bytesToHex(header.readByteString());
   if (parent !== "" && !HASH.test(parent))
     throw new Error("Invalid native parent hash.");
-  for (let i = 3; i < (fields === 10 ? 9 : 13); i++) header.skipValue();
-  if (fields === 10 && header.readStartArray() !== 2)
+  for (let i = 3; i < (fields === 15 ? 13 : 9); i++) header.skipValue();
+  if (fields !== 15 && header.readStartArray() !== 2)
     throw new Error("Invalid native header version.");
   const major = header.readUInt().toString(),
     minor = header.readUInt().toString();

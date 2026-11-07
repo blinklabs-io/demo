@@ -34,6 +34,21 @@ function creationExperience(
 }
 
 const experiences = [
+  ...(DINGO_NETWORK.id === "musashi"
+    ? [
+        {
+          to: "/explorer/leios",
+          title: "Leios in motion",
+          category: "Explore",
+          symbol: "◉",
+          description:
+            "Follow ranking blocks, endorser-block announcements, and certificates on Musashi.",
+          tag: "Musashi · Leios",
+          art: "network",
+          action: "Explore Leios",
+        },
+      ]
+    : []),
   creationExperience("transactions", "studio", "Compose · Inspect · Export"),
   creationExperience("data", "studio", "Datums · Redeemers · CBOR"),
   {
