@@ -1,4 +1,6 @@
 import { LeiosBlockPanel } from "../../components/explorer/LeiosPulse";
+import { LeiosTransactions } from "../../components/explorer/LeiosTransactions";
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { BlockCapacity } from "../../components/explorer/BlockCapacity";
 import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
 import { PaginatedList } from "../../components/explorer/PaginatedList";
@@ -178,13 +180,14 @@ export default function BlockDetail() {
         </QueryState>
       </Panel>
 
-      {block && (
+      {block && DINGO_NETWORK.id === "musashi" && <LeiosTransactions block={block} />}
+      {block && DINGO_NETWORK.id !== "musashi" && (
         <BlockMosaic
           hash={block.hash}
           total={block.tx_count}
         />
       )}
-      {block && (
+      {block && DINGO_NETWORK.id !== "musashi" && (
         <LazyDisclosure key={block.hash} title="Transaction hash list">
           <Panel title="Transactions">
             <PaginatedList<string>
