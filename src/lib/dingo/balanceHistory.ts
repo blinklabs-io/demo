@@ -1,6 +1,6 @@
 import { blockfrostFetch, BlockfrostError } from "./blockfrost";
 import { DINGO_CONFIG, DINGO_NETWORK } from "./config";
-import { formatAda } from "../format";
+import { formatNativeCoin } from "../format";
 
 interface BalanceResponse {
   block_identifier: { index: number; hash: string };
@@ -98,7 +98,7 @@ export async function readEpochBalanceHistory(
       time: sample.time * 1000,
       label: `Epoch ${sample.epoch}${sample.hash === latest.hash ? " · current" : " · close"}`,
       value: Number(BigInt(ada.value)) / 1_000_000,
-      displayValue: formatAda(BigInt(ada.value)),
+      displayValue: formatNativeCoin(BigInt(ada.value)),
     });
   }
   return { points, unavailableEpochs };

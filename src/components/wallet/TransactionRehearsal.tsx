@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Core } from "@blaze-cardano/sdk";
-import { formatAda, formatAddress } from "../../lib/format";
+import { formatNativeCoin, formatAddress , nativeTicker } from "../../lib/format";
 import { assetName } from "../../lib/tools/transactions";
 import { fraction, visualColors } from "../../lib/chain/geometry";
 import { CopyButton } from "../explorer/CopyButton";
@@ -52,7 +52,7 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
     selected = outputs[index];
   const display = (value: bigint, asset = unit) =>
     asset === "lovelace"
-      ? formatAda(value)
+      ? formatNativeCoin(value)
       : `${value.toLocaleString()} raw units`;
   const withdrawals = [...(body.withdrawals() ?? [])];
   const withdrawn = withdrawals.reduce((sum, [, value]) => sum + value, 0n);
@@ -108,7 +108,7 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
             {units.map((asset) => (
               <option value={asset} key={asset}>
                 {asset === "lovelace"
-                  ? "ADA"
+                  ? `${nativeTicker()}`
                   : `${assetName(asset)} · ${asset.slice(0, 8)}`}
               </option>
             ))}
@@ -151,7 +151,7 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
         </div>
       ) : (
         <p className="rehearsal-note">
-          No {unit === "lovelace" ? "ADA" : "selected asset"} in the declared
+          No {unit === "lovelace" ? `${nativeTicker()}` : "selected asset"} in the declared
           outputs.
         </p>
       )}
@@ -196,7 +196,7 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
             />
           </div>
           <div className="rehearsal-output-facts">
-            <span>{formatAda(selected.amount().coin())}</span>
+            <span>{formatNativeCoin(selected.amount().coin())}</span>
             <span>
               {selected.amount().multiasset()?.size ?? 0} native assets
             </span>
@@ -215,7 +215,7 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
         {withdrawals.length > 0 && (
           <div>
             <span>Reward withdrawals{valid ? "" : " · not applied"}</span>
-            <strong>{formatAda(withdrawn)}</strong>
+            <strong>{formatNativeCoin(withdrawn)}</strong>
             <small>
               {withdrawals.length} reward accounts
               {withdrawals.some(([, value]) => value === 0n)
@@ -255,7 +255,7 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
         {(body.donation() ?? 0n) > 0n && (
           <div>
             <span>Treasury donation{valid ? "" : " · not applied"}</span>
-            <strong>{formatAda(body.donation()!)}</strong>
+            <strong>{formatNativeCoin(body.donation()!)}</strong>
           </div>
         )}
       </div>
@@ -286,14 +286,14 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
             </p>
             {body.totalCollateral() !== undefined && (
               <p>
-                {formatAda(body.totalCollateral()!)} declared total collateral
+                {formatNativeCoin(body.totalCollateral()!)} declared total collateral
               </p>
             )}
             {collateralReturn && (
               <details>
                 <summary>
                   Collateral return ·{" "}
-                  {formatAda(collateralReturn.amount().coin())}
+                  {formatNativeCoin(collateralReturn.amount().coin())}
                 </summary>
                 <div className="rehearsal-address">
                   <code>{formatAddress(collateralReturn.address())}</code>

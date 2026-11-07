@@ -6,7 +6,7 @@ import { Core } from "@blaze-cardano/sdk";
 import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { treemap } from "../../lib/chain/geometry";
-import { formatAda, shortenHash } from "../../lib/format";
+import { formatNativeCoin, shortenHash } from "../../lib/format";
 const kinds = [
   { id: "transfer", label: "Transfers / other", color: "#43d9b6" },
   { id: "stake", label: "Stake / certificates", color: "#69b8f2" },
@@ -146,7 +146,7 @@ function Mosaic({ hash, total }: MosaicProps) {
           <div className="mosaic-caption">
             <strong>
               {filtered.length} transactions · {(bytes / 1024).toFixed(1)} KiB ·{" "}
-              {formatAda(fees)} fees
+              {formatNativeCoin(fees)} fees
             </strong>
             <span>
               {loaded} of {total} records loaded
@@ -187,7 +187,7 @@ function Mosaic({ hash, total }: MosaicProps) {
                   <Link
                     key={t.id}
                     to={`/explorer/tx/${t.id}`}
-                    aria-label={`${t.id}, ${t.bytes} bytes, ${t.kind}, ${formatAda(t.fee)} fee`}
+                    aria-label={`${t.id}, ${t.bytes} bytes, ${t.kind}, ${formatNativeCoin(t.fee)} fee`}
                   >
                     <rect
                       x={t.x + 2}
@@ -201,7 +201,7 @@ function Mosaic({ hash, total }: MosaicProps) {
                       strokeOpacity=".65"
                     />
                     <title>
-                      {t.id} · {t.bytes} bytes · {t.kind} · {formatAda(t.fee)}
+                      {t.id} · {t.bytes} bytes · {t.kind} · {formatNativeCoin(t.fee)}
                     </title>
                     {t.width > 115 && t.height > 65 && (
                       <>
@@ -268,7 +268,7 @@ function Mosaic({ hash, total }: MosaicProps) {
               <Link key={t.id} to={`/explorer/tx/${t.id}`}>
                 <code>{t.id}</code>
                 <span>
-                  {t.kind} · {t.bytes} B · {formatAda(t.fee)}
+                  {t.kind} · {t.bytes} B · {formatNativeCoin(t.fee)}
                 </span>
               </Link>
             ))}

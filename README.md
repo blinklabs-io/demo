@@ -42,8 +42,8 @@ node, so use a test network and connect a test wallet.
 
 ## Network selection
 
-Choose Preview or Preprod in the header. Shared links include the network
-(`?network=preview` or `?network=preprod`), which takes precedence over a saved
+Choose Preview, Preprod, Musashi, Dijkstra, or Prime Testnet in the header. Shared links include the network
+(for example, `?network=dijkstra` or `?network=prime-testnet`), which takes precedence over a saved
 choice. Explicit network links work when browser storage is blocked. Switching disconnects the wallet,
 clears drafts and transient chain data, and reloads the current tool or a safe
 list view for the new network. Safe ticker filters and page anchors survive;
@@ -538,3 +538,16 @@ of the entire pending set. Circle size scales with fee; connections identify
 transactions spending another pending transaction’s output. Search by hash, zoom,
 or drag the view, then select a transaction to inspect its fee, inputs, outputs,
 and native assets. Transaction view retains the paginated input/output webs.
+
+## Dijkstra and Prime Testnet
+
+Dijkstra and Prime Testnet have separate REST, UTxO RPC, and Mesh connections.
+Their overrides use `VITE_DINGO_DIJKSTRA_BLOCKFROST_URL`,
+`VITE_DINGO_DIJKSTRA_UTXORPC_URL`, `VITE_DINGO_DIJKSTRA_MESH_URL`,
+`VITE_DINGO_PRIME_TESTNET_BLOCKFROST_URL`,
+`VITE_DINGO_PRIME_TESTNET_UTXORPC_URL`, and
+`VITE_DINGO_PRIME_TESTNET_MESH_URL`. Network identity checks require magic 6
+and 3311 respectively. Prime Testnet amounts display AP3X with up to six decimal places, keeping at least two.
+
+Wallet swaps remain available only for networks with configured market deployments.
+Musashi header history uses its genesis slot clock because all its eras activate at genesis.

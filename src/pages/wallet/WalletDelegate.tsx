@@ -14,7 +14,7 @@ import { Link } from "../../components/NetworkLink";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/walletStore";
 import { HashLink } from "../../components/explorer/HashLink";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 import {
   delegationAccount,
   prepareDelegation,
@@ -346,11 +346,11 @@ function DelegationForm({
             </div>
             <div>
               <dt>Network fee</dt>
-              <dd>{formatAda(draft.tx.body().fee())}</dd>
+              <dd>{formatNativeCoin(draft.tx.body().fee())}</dd>
             </div>
             <div>
               <dt>Registration deposit</dt>
-              <dd>{formatAda(draft.deposit)}</dd>
+              <dd>{formatNativeCoin(draft.deposit)}</dd>
             </div>
             <div>
               <dt>Stake registration</dt>

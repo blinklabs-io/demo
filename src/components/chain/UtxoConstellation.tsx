@@ -3,7 +3,7 @@ import { Core } from "@blaze-cardano/sdk";
 import { Link } from "../NetworkLink";
 import { fraction, fingerprint, visualColors } from "../../lib/chain/geometry";
 import { inputId, assetName } from "../../lib/tools/transactions";
-import { formatAda, shortenHash } from "../../lib/format";
+import { formatNativeCoin, shortenHash, nativeTicker } from "../../lib/format";
 import { CopyButton } from "../explorer/CopyButton";
 interface Node {
   utxo: Core.TransactionUnspentOutput;
@@ -114,7 +114,7 @@ export function UtxoConstellation({
         <div className="constellation-count">
           <strong>{chosenVisible.length}</strong>
           <span>
-            {inspectOnly ? "loaded outputs" : "selected"} · {formatAda(total)}
+            {inspectOnly ? "loaded outputs" : "selected"} · {formatNativeCoin(total)}
           </span>
         </div>
       </header>
@@ -136,7 +136,7 @@ export function UtxoConstellation({
               key={n.id}
               role={inspectOnly ? "button" : "checkbox"}
               aria-checked={inspectOnly ? undefined : chosen.has(n.id)}
-              aria-label={`${n.id}: ${formatAda(n.utxo.output().amount().coin())}, ${n.utxo.output().amount().multiasset()?.size ?? 0} native assets`}
+              aria-label={`${n.id}: ${formatNativeCoin(n.utxo.output().amount().coin())}, ${n.utxo.output().amount().multiasset()?.size ?? 0} native assets`}
               tabIndex={0}
               onClick={() => {
                 setInspected(n.id);
@@ -185,7 +185,7 @@ export function UtxoConstellation({
                 </text>
               )}
               <title>
-                {n.id} · {formatAda(n.utxo.output().amount().coin())} ·{" "}
+                {n.id} · {formatNativeCoin(n.utxo.output().amount().coin())} ·{" "}
                 {n.address}
               </title>
             </g>
@@ -195,7 +195,7 @@ export function UtxoConstellation({
           {active ? (
             <>
               <span className="eyebrow">Output under the lens</span>
-              <strong>{formatAda(active.utxo.output().amount().coin())}</strong>
+              <strong>{formatNativeCoin(active.utxo.output().amount().coin())}</strong>
               <Link
                 className="chain-link"
                 to={`/explorer/tx/${active.utxo.input().transactionId()}`}
@@ -247,8 +247,8 @@ export function UtxoConstellation({
       </div>
       <p className="chain-footnote">
         {inspectOnly
-          ? `${nodes.length} of ${outputs.length} loaded contract outputs shown. Node area approximates ADA; rings mark native assets. These outputs are controlled by the pool contracts.`
-          : `${nodes.length} of ${outputs.length} eligible outputs shown; the checkbox list below includes all of them. Node area approximates ADA, with a minimum visible size. Selection uses only outputs exposed by your connected wallet.`}
+          ? `${nodes.length} of ${outputs.length} loaded contract outputs shown. Node area approximates ${nativeTicker()}; rings mark native assets. These outputs are controlled by the pool contracts.`
+          : `${nodes.length} of ${outputs.length} eligible outputs shown; the checkbox list below includes all of them. Node area approximates ${nativeTicker()}, with a minimum visible size. Selection uses only outputs exposed by your connected wallet.`}
       </p>
     </section>
   );

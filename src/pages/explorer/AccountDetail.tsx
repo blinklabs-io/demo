@@ -11,7 +11,7 @@ import { HashLink } from "../../components/explorer/HashLink";
 import { QueryState } from "../../components/explorer/QueryState";
 import { PaginatedList } from "../../components/explorer/PaginatedList";
 import { YoursBadge } from "../../components/explorer/YoursBadge";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 
 interface AccountResponse {
   stake_address: string;
@@ -130,29 +130,29 @@ export default function AccountDetail() {
                   />
                   <Field
                     label="Controlled amount"
-                    value={formatAda(
+                    value={formatNativeCoin(
                       BigInt(summaryQuery.data.controlled_amount),
                     )}
                   />
                   <Field
                     label="Rewards sum"
-                    value={formatAda(BigInt(summaryQuery.data.rewards_sum))}
+                    value={formatNativeCoin(BigInt(summaryQuery.data.rewards_sum))}
                   />
                   <Field
                     label="Withdrawals sum"
-                    value={formatAda(BigInt(summaryQuery.data.withdrawals_sum))}
+                    value={formatNativeCoin(BigInt(summaryQuery.data.withdrawals_sum))}
                   />
                   <Field
                     label="Reserves"
-                    value={formatAda(BigInt(summaryQuery.data.reserves_sum))}
+                    value={formatNativeCoin(BigInt(summaryQuery.data.reserves_sum))}
                   />
                   <Field
                     label="Treasury"
-                    value={formatAda(BigInt(summaryQuery.data.treasury_sum))}
+                    value={formatNativeCoin(BigInt(summaryQuery.data.treasury_sum))}
                   />
                   <Field
                     label="Withdrawable"
-                    value={formatAda(
+                    value={formatNativeCoin(
                       BigInt(summaryQuery.data.withdrawable_amount),
                     )}
                   />

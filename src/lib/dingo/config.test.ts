@@ -113,3 +113,20 @@ it("honors independent Musashi endpoint overrides", async () => {
     meshUrl: "https://musashi-mesh.invalid",
   });
 });
+
+it.each([
+  ["dijkstra", "DIJKSTRA", 6],
+  ["prime-testnet", "PRIME_TESTNET", 3311],
+] as const)("isolates %s defaults and all endpoint overrides", async (id, prefix, magic) => {
+  window.history.replaceState(null, "", `/explorer?network=${id}`);
+  vi.stubEnv("VITE_DINGO_BLOCKFROST_URL", "https://preview.invalid");
+  vi.stubEnv("VITE_DINGO_MUSASHI_BLOCKFROST_URL", "https://musashi.invalid");
+  const config = await import("./config");
+  expect(config.DINGO_NETWORK.networkMagic).toBe(magic);
+  expect(config.DINGO_CONFIG).toEqual({ blockfrostUrl: `https://dingo.${id}.blinklabs.cloud`, utxorpcUrl: `https://dingo.${id}.blinklabs.cloud:9090`, meshUrl: `https://dingo.${id}.blinklabs.cloud:8080` });
+  vi.stubEnv(`VITE_DINGO_${prefix}_BLOCKFROST_URL`, "https://rest.invalid/");
+  vi.stubEnv(`VITE_DINGO_${prefix}_UTXORPC_URL`, "https://rpc.invalid/");
+  vi.stubEnv(`VITE_DINGO_${prefix}_MESH_URL`, "https://mesh.invalid/");
+  vi.resetModules();
+  expect((await import("./config")).DINGO_CONFIG).toEqual({ blockfrostUrl: "https://rest.invalid", utxorpcUrl: "https://rpc.invalid", meshUrl: "https://mesh.invalid" });
+});

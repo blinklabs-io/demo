@@ -10,6 +10,8 @@ import {
   TransactionRehearsal,
   TransactionRehearsalCbor,
 } from "./TransactionRehearsal";
+const network = vi.hoisted(() => ({ id: "preview", label: "Preview", networkMagic: 2 }));
+vi.mock("../../lib/dingo/config", () => ({ DINGO_NETWORK: network, DINGO_CONFIG: {} }));
 const dom = new JSDOM("<!doctype html><html><body></body></html>", {
   url: "http://localhost",
 });
@@ -226,5 +228,20 @@ it("renders Byron output and collateral-return destinations without changing the
     );
   } finally {
     await close();
+  }
+});
+
+it("shows Prime native amounts and asset choices as AP3X", async () => {
+  Object.assign(network, { id: "prime-testnet", label: "Prime Testnet", networkMagic: 3311 });
+  window.history.replaceState(null, "", "/?network=prime-testnet");
+  const { host, close } = await render(<TransactionRehearsal tx={fixture()} />);
+  try {
+    expect(host.querySelector(".rehearsal-allocation-heading strong")?.textContent).toBe("4.00 AP3X");
+    expect(host.querySelector("select option")?.textContent).toBe("AP3X");
+    expect(host.querySelector(".rehearsal-output-facts")?.textContent).toContain("3.00 AP3X");
+  } finally {
+    await close();
+    Object.assign(network, { id: "preview", label: "Preview", networkMagic: 2 });
+    window.history.replaceState(null, "", "/");
   }
 });

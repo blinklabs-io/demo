@@ -7,7 +7,7 @@ import { holderClosingEpoch } from "../lib/surveys/cip204";
 import { useNodeHealth } from "../lib/dingo/nodeHealth";
 import { PaginatedList } from "../components/explorer/PaginatedList";
 import { Panel } from "../components/explorer/Panel";
-import { shortenHash } from "../lib/format";
+import { shortenHash, nativeSymbol } from "../lib/format";
 interface Action {
   id: string;
   governance_type: string;
@@ -56,9 +56,9 @@ function ActionCard({ action }: { action: Action }) {
             ? "Accepting holder answers"
             : "Answers closed"}
       </span>
-      <span className="participation-emblem" aria-hidden="true">
+      <span className="participation-emblem" aria-hidden="true" style={{ fontSize: nativeSymbol().length > 1 ? 12 : undefined }}>
         {{
-          treasury_withdrawals: "₳",
+          treasury_withdrawals: `${nativeSymbol()}`,
           new_constitution: "§",
           no_confidence: "◇",
           info_action: "i",

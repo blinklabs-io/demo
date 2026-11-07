@@ -33,7 +33,7 @@ import {
   type Payment,
 } from "../../lib/tools/transactions";
 import { fileDigest, verifyDocumentProof } from "../../lib/tools/proofs";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin, nativeTicker } from "../../lib/format";
 import { readWalletDRep } from "../../lib/dingo/governanceVote";
 
 function ToolTransaction(
@@ -57,7 +57,7 @@ function AssetOptions() {
   const tokens = useWalletStore((s) => s.tokens);
   return (
     <>
-      <option value="lovelace">ADA</option>
+      <option value="lovelace">{nativeTicker()}</option>
       {tokens.map((t) => (
         <option key={t.assetId} value={t.assetId}>
           {assetName(t.assetId)} · {t.quantity.toString()} raw units
@@ -126,7 +126,7 @@ function Batch() {
     <>
       <div className="tool-metrics">
         <Metric label="Recipients" value={rows.length} />
-        <Metric label="ADA in draft" value={formatAda(total)} />
+        <Metric label={`${nativeTicker()} in draft`} value={formatNativeCoin(total)} />
         <Metric label="On-chain transactions" value="1" />
       </div>
       <section className="data-panel tool-form">
@@ -177,7 +177,7 @@ function Batch() {
                 </select>
               </label>
               <label>
-                {r.asset === "lovelace" ? "Amount · ADA" : "Amount · raw units"}
+                {r.asset === "lovelace" ? `Amount · ${nativeTicker()}` : "Amount · raw units"}
                 <input
                   inputMode="decimal"
                   value={r.amount}
@@ -216,7 +216,7 @@ function Batch() {
         </details>
         <p className="tool-help">
           Native asset amounts use raw units. The review includes each token
-          output’s required ADA and every change output.
+          output’s required {nativeTicker()} and every change output.
         </p>
         <ToolTransaction
           action={() => ({
@@ -265,7 +265,7 @@ function Utxos() {
           label="Spendable wallet outputs"
           value={query.data ? available.length : "—"}
         />
-        <Metric label="Selected ADA" value={formatAda(total)} />
+        <Metric label={`Selected ${nativeTicker()}`} value={formatNativeCoin(total)} />
         <Metric label="Assets stay in your wallet" value="100%" />
       </div>
       <div className="tool-segment">
@@ -350,7 +350,7 @@ function Utxos() {
                       }
                     />
                     <span>
-                      <strong>{formatAda(u.output().amount().coin())}</strong>
+                      <strong>{formatNativeCoin(u.output().amount().coin())}</strong>
                       <code>{inputId(u)}</code>
                       <small>
                         {u.output().amount().multiasset()?.size ?? 0} native
@@ -376,7 +376,7 @@ function Utxos() {
           ) : (
             <>
               <label>
-                Number of equal ADA outputs
+                Number of equal {nativeTicker()} outputs
                 <input
                   inputMode="numeric"
                   value={count}
@@ -384,7 +384,7 @@ function Utxos() {
                 />
               </label>
               <label>
-                ADA per output
+                {nativeTicker()} per output
                 <input
                   inputMode="decimal"
                   value={amount}
@@ -392,8 +392,8 @@ function Utxos() {
                 />
               </label>
               <p className="tool-help">
-                Creates 2–40 equal ADA outputs at your wallet’s change address,
-                plus remaining ADA and native assets as change.
+                Creates 2–40 equal {nativeTicker()} outputs at your wallet’s change address,
+                plus remaining {nativeTicker()} and native assets as change.
               </p>
             </>
           )}
@@ -435,7 +435,7 @@ function Utxos() {
             <h3>Give your wallet room to move.</h3>
             <p>
               Separate outputs can fund independent transactions. Each one must
-              meet Cardano’s minimum ADA requirement.
+              meet Cardano’s minimum {nativeTicker()} requirement.
             </p>
             <Gauge
               label="Output count"
@@ -849,7 +849,7 @@ function Treasury() {
       <section className="data-panel tool-form">
         <h2>Fund {DINGO_NETWORK.label}’s treasury.</h2>
         <label>
-          Donation · ADA
+          Donation · {nativeTicker()}
           <input
             inputMode="decimal"
             value={amount}
@@ -867,7 +867,7 @@ function Treasury() {
         <div aria-hidden="true">◎</div>
         <strong>
           {amount || "—"}
-          <small>test ADA</small>
+          <small>test {nativeTicker()}</small>
         </strong>
         <p>{DINGO_NETWORK.label} treasury donation</p>
         <span className="tool-route-pill">Your wallet → Cardano treasury</span>

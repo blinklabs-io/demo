@@ -1,3 +1,4 @@
+import { nativeTicker } from "../../lib/format";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
@@ -196,8 +197,8 @@ export function AssetChooser({
         </div>
       )}
       <p className="metadata-hint">
-        Amounts use raw units. ADA stays in the same recipient output with your
-        chosen assets; the reviewed amount must meet its minimum ADA
+        Amounts use raw units. {nativeTicker()} stays in the same recipient output with your
+        chosen assets; the reviewed amount must meet its minimum {nativeTicker()}
         requirement.
       </p>
     </section>

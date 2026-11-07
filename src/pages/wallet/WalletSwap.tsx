@@ -89,7 +89,7 @@ function createQueryProvider(): DingoSundaeQueryProvider {
 export default function WalletSwap() {
   const [version, setVersion] = useState<"V3" | "V4">("V4");
   const [busy, setBusy] = useState(false);
-  if (DINGO_NETWORK.id === "musashi")
+  if (DINGO_NETWORK.id !== "preview" && DINGO_NETWORK.id !== "preprod")
     return (
       <section className="market-hero">
         <div>
@@ -102,7 +102,7 @@ export default function WalletSwap() {
           <div className="market-actions">
             <Link to="/wallet/swap?network=preview">Open Preview swaps →</Link>
             <Link to="/wallet/swap?network=preprod">Open Preprod swaps →</Link>
-            <Link to="/explorer/leios">Explore Leios on Musashi →</Link>
+            <Link to="/explorer/leios?network=musashi">Explore Leios on Musashi →</Link>
           </div>
         </div>
       </section>

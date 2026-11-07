@@ -24,7 +24,7 @@ import { WalletConnectSummary } from "../layout/WalletConnectSummary";
 import { Panel } from "./Panel";
 import { HashLink } from "./HashLink";
 import { CopyButton } from "./CopyButton";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin, nativeTicker } from "../../lib/format";
 
 export function HolderAnswer({ proposal }: { proposal: VotingProposal }) {
   const connection = useWalletStore((s) => s.connectionId);
@@ -200,7 +200,7 @@ function AnswerForm({
               />
             </div>
             <p>
-              Network fee <strong>{formatAda(draft.tx.body().fee())}</strong> ·{" "}
+              Network fee <strong>{formatNativeCoin(draft.tx.body().fee())}</strong> ·{" "}
               {DINGO_NETWORK.label}
             </p>
             <p>
@@ -275,7 +275,7 @@ function AnswerForm({
         <p className="survey-note">
           CIP-204 is a proposed standard. Answers close when the action leaves
           voting or its lifetime ends. Ratification alone does not close this
-          window. Fees are test ADA.
+          window. Fees are test {nativeTicker()}.
         </p>
       </div>
     </Panel>

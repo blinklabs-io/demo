@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 import { Panel } from "./Panel";
 import { QueryState } from "./QueryState";
 import { HashLink } from "./HashLink";
@@ -33,7 +33,7 @@ export function PoolDelegators({ poolId }: { poolId: string }) {
           {rows.map((row) => (
             <div className="pool-delegator" key={row.address}>
               <HashLink kind="account" id={row.address} full />
-              <strong>{formatAda(BigInt(row.live_stake))}</strong>
+              <strong>{formatNativeCoin(BigInt(row.live_stake))}</strong>
             </div>
           ))}
         </div>

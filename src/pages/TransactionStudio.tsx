@@ -7,7 +7,7 @@ import { useLocation } from "react-router";
 import { Link } from "../components/NetworkLink";
 import { Panel } from "../components/explorer/Panel";
 import { CopyButton } from "../components/explorer/CopyButton";
-import { formatAda as ada, formatAddress } from "../lib/format";
+import { formatNativeCoin as ada, formatAddress , nativeTicker } from "../lib/format";
 import { useWalletStore } from "../stores/walletStore";
 import {
   addWalletWitness,
@@ -239,7 +239,7 @@ function StudioWorkspace({ imported }: { imported: string }) {
                         );
                       }}
                     />
-                    <label htmlFor={`ada-${i}`}>ADA</label>
+                    <label htmlFor={`ada-${i}`}>{nativeTicker()}</label>
                     <input
                       id={`ada-${i}`}
                       className="tx-studio-input"

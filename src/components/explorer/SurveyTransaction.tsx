@@ -17,7 +17,7 @@ import {
   ConfirmationFailure,
   readTransactionConfirmation,
 } from "../../lib/dingo/transactionConfirmation";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 import { HashLink } from "./HashLink";
 import { answerLabel, questionNames } from "../../lib/surveys/cip179";
 export function SurveyTransaction({
@@ -229,7 +229,7 @@ function TransactionForm({
           )}
           <TransactionRehearsal tx={prepared.tx} />
           <p className="survey-fee">
-            Network fee <strong>{formatAda(prepared.tx.body().fee())}</strong>
+            Network fee <strong>{formatNativeCoin(prepared.tx.body().fee())}</strong>
           </p>
           <p>
             Questions, answers, and signing credentials are public and permanent

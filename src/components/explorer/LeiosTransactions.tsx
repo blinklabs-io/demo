@@ -7,7 +7,7 @@ import { blockBytesQuery } from "../../lib/dingo/blockHeader";
 import { decodeLeiosBlock } from "../../lib/dingo/leios";
 import { LEIOS_TRANSACTION_PAGE_SIZE, readLeiosTransactionPage } from "../../lib/explorer/leiosTransactions";
 import type { BlockSummary } from "../../lib/explorer/recentBlocks";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 import { HashLink } from "./HashLink";
 import { CopyButton } from "./CopyButton";
 import { Link } from "../NetworkLink";
@@ -104,7 +104,7 @@ function Transactions({ block }: { block: BlockSummary }) {
             <span className="status-badge">{certified ? "EB TX" : "RB TX"}</span>
             <HashLink kind="tx" id={record.hash} />
             <span>{record.bytes.toLocaleString()} bytes</span>
-            <span>{formatAda(record.fee)} fee</span>
+            <span>{formatNativeCoin(record.fee)} fee</span>
             {!record.valid && <span className="status-badge">Failed scripts</span>}
           </li>)}
         </ol>

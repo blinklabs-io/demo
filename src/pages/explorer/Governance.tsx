@@ -21,7 +21,7 @@ import { Panel, Field } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
 import { Pagination } from "../../components/explorer/Pagination";
 import { HashLink } from "../../components/explorer/HashLink";
-import { formatAda, shortenHash } from "../../lib/format";
+import { formatNativeCoin, shortenHash, nativeSymbol } from "../../lib/format";
 
 interface ProposalSummary {
   id: string;
@@ -65,9 +65,9 @@ function ProposalCard({ row }: { row: ProposalSummary }) {
   const title = governanceName(metadata.data?.json_metadata);
   return (
     <div className={`proposal-card proposal-${row.governance_type}`}>
-      <span className="proposal-emblem" aria-hidden="true">
+      <span className="proposal-emblem" aria-hidden="true" style={{ fontSize: nativeSymbol().length > 1 ? 12 : undefined }}>
         {{
-          treasury_withdrawals: "₳",
+          treasury_withdrawals: `${nativeSymbol()}`,
           new_constitution: "§",
           no_confidence: "◇",
           info_action: "i",
@@ -293,7 +293,7 @@ export function ProposalDetail() {
               <div className="metric-grid mb-5">
                 <Metric
                   label="Deposit"
-                  value={formatAda(BigInt(record.deposit))}
+                  value={formatNativeCoin(BigInt(record.deposit))}
                 />
                 <Metric
                   label="Expires"

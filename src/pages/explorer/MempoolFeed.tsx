@@ -2,7 +2,7 @@ import { Metric, PageIntro } from "../../components/explorer/Visuals";
 import { useMempoolStore } from "../../stores/mempoolStore";
 import { Panel } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 import { useNow } from "../../lib/useNow";
 import { MempoolGraph } from "../../components/explorer/MempoolGraph";
 import { useMemo } from "react";
@@ -56,7 +56,7 @@ export default function MempoolFeed() {
           <Metric label="Pending transactions" value={sorted.length} />
           <Metric
             label="Total fees"
-            value={formatAda(sorted.reduce((sum, tx) => sum + tx.fee, 0n))}
+            value={formatNativeCoin(sorted.reduce((sum, tx) => sum + tx.fee, 0n))}
           />
           <Metric
             label="Live feed"
@@ -104,8 +104,8 @@ export default function MempoolFeed() {
                 </span>
               </div>
               <div className="flex items-center gap-3 text-xs text-slate-400">
-                <span>{formatAda(tx.totalOutputLovelace)}</span>
-                <span>fee {formatAda(tx.fee)}</span>
+                <span>{formatNativeCoin(tx.totalOutputLovelace)}</span>
+                <span>fee {formatNativeCoin(tx.fee)}</span>
                 <span className="text-slate-600">
                   {formatAge(tx.seenAt, now)}
                 </span>

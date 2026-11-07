@@ -1,3 +1,4 @@
+import { nativeTicker } from "../../lib/format";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { BarChart, Metric } from "../../components/explorer/Visuals";
 import { compactAda } from "../../lib/visualFormat";
@@ -106,7 +107,7 @@ function AddressDetailContent({ address }: { address?: string }) {
             <div>
               <div className="metric-grid mb-6">
                 <Metric
-                  label="ADA balance"
+                  label={`${nativeTicker()} balance`}
                   value={compactAda(
                     summaryQuery.data.amount.find(
                       (amount) => amount.unit === "lovelace",
@@ -167,7 +168,7 @@ function AddressDetailContent({ address }: { address?: string }) {
           {utxosQuery.data && utxosQuery.data.length > 0 && (
             <div className="mb-6">
               <BarChart
-                title="ADA per UTxO (current page)"
+                title={`${nativeTicker()} per UTxO (current page)`}
                 items={utxosQuery.data.map((utxo) => ({
                   label: `#${utxo.output_index}`,
                   value:

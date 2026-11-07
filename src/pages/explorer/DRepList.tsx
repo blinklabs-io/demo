@@ -6,7 +6,7 @@ import { HashLink } from "../../components/explorer/HashLink";
 import { Pagination } from "../../components/explorer/Pagination";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin, nativeTicker } from "../../lib/format";
 
 interface DRepListRow {
   drep_id: string;
@@ -97,7 +97,7 @@ function DRepCard({ row }: { row: DRepDirectoryRow }) {
         )}
       </span>
       <span className="text-xs text-slate-500">
-        <strong>{formatAda(BigInt(row.amount))}</strong>{" "}
+        <strong>{formatNativeCoin(BigInt(row.amount))}</strong>{" "}
         <span className="status-badge">{statusLabel(row)}</span>
       </span>
     </div>
@@ -335,7 +335,7 @@ export default function DRepList() {
               Voting power · representatives on this page
             </span>
             <BarChart
-              title="ADA voting power"
+              title={`${nativeTicker()} voting power`}
               items={visible.map((row) => ({
                 label: drepName(row),
                 value: Number(BigInt(row.amount)) / 1_000_000,
