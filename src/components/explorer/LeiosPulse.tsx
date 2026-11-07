@@ -1,6 +1,6 @@
 import { BuildThis } from "../developer/BuildThis";
 import { useCallback, useMemo, useState } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { queryOptions, useQueries, useQuery } from "@tanstack/react-query";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { blockBytesQuery } from "../../lib/dingo/blockHeader";
@@ -111,15 +111,17 @@ function MusashiPulse() {
     refetchInterval: 15000,
   });
   const blocks = useMemo(
-    () => (!verified || recent.isError ? [] : (recent.data?.blocks ?? [])),
-    [verified, recent.data, recent.isError],
+    () => (!verified ? [] : (recent.data?.blocks ?? [])),
+    [verified, recent.data],
   );
+  if (active && !blocks.some((block) => block.hash === active)) setActive("");
   const queries = useMemo(
     () =>
-      blocks.map((block) => ({
+      blocks.map((block) => queryOptions({
         ...blockBytesQuery(block.hash, block.slot),
         select: (bytes: Uint8Array) => decodeLeiosBlock(bytes, block),
         enabled: verified,
+        refetchInterval: (query) => query.state.status === "error" ? 15000 : false,
       })),
     [blocks, verified],
   );
@@ -138,7 +140,7 @@ function MusashiPulse() {
     <section className="leios-panel" aria-label="Leios activity">
       <header className="leios-heading">
         <div>
-          <span className="eyebrow">Musashi · live Leios observations</span>
+          <span className="eyebrow">Musashi · {recent.isError ? "saved Leios sample" : "live Leios observations"}</span>
           <h1>
             Small ranking blocks.
             <br />
@@ -163,7 +165,10 @@ function MusashiPulse() {
               : "Verifying Musashi…"}
         </p>
       )}
+      {!verified && !genesis.isFetching && <button type="button" onClick={() => void genesis.refetch()}>Retry network verification</button>}
       {recent.error && <p role="alert">{recent.error.message}</p>}
+      {verified && recent.data?.incomplete && <p role="status">The recent block sample is incomplete. Announcements and certificates may be missing.</p>}
+      {recent.isError && recent.data && <p role="status">Showing the last successful sample, read {new Date(recent.dataUpdatedAt).toLocaleString()}. Refresh is unavailable.</p>}
       <div className="leios-metrics">
         <div>
           <strong>{rows.length}</strong>
@@ -222,7 +227,7 @@ function MusashiPulse() {
           {selected && <Observation row={selected} />}
         </>
       )}
-      {verified && !recent.isLoading && !rows.length && (
+      {verified && !recent.isLoading && !recent.isError && !rows.length && (
         <p role="status">
           {observations.some((query) => query.isLoading)
             ? "Reading native ranking blocks…"
@@ -236,7 +241,7 @@ function MusashiPulse() {
         </p>
       )}
       <p className="leios-note">
-        Latest {blocks.length} indexed blocks · refreshes every 15 seconds.
+        {recent.isError ? "Last successful sample of" : "Latest"} {blocks.length} indexed blocks · refreshes every 15 seconds.
         Announcements describe proposed payloads, not executed bytes. A
         certificate refers to an earlier announcement; it is not linked to the
         announcement on the same card. Signatures are displayed as node-supplied

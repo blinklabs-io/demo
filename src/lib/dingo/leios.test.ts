@@ -88,7 +88,7 @@ it.each([
   { certified: true, signatureBytes: 47 },
 ])("rejects inconsistent or malformed certificates: %j", (options) => {
   const { bytes, expected } = fixture(options);
-  expect(() => decodeLeiosBlock(bytes, expected)).toThrow();
+  expect(() => decodeLeiosBlock(bytes, expected)).toThrow(/certification flag|signer bitfield/);
 });
 it("verifies native header identity and indexed position", () => {
   const { bytes, expected } = fixture();

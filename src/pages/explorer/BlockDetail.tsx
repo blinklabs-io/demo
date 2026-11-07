@@ -43,11 +43,10 @@ export default function BlockDetail() {
     enabled: Boolean(id),
   });
 
-  const block =
-    blockQuery.error instanceof BlockfrostError &&
-    blockQuery.error.status === 404
-      ? undefined
-      : blockQuery.data;
+  const block = blockQuery.error instanceof BlockfrostError && blockQuery.error.status === 404
+    ? undefined
+    : blockQuery.data;
+
 
   return (
     <div className="flex flex-col gap-4 detail-showcase">
@@ -56,10 +55,8 @@ export default function BlockDetail() {
         title="Block explorer"
         symbol="⬡"
       />
-      {block && <LeiosBlockPanel key={block.hash} block={block} />}
       <Panel title="Block details">
-        <QueryState
-          hasData={block !== undefined}
+        <QueryState hasData={block !== undefined}
           isLoading={blockQuery.isLoading}
           error={blockQuery.error}
           notFoundLabel="Block not found."
@@ -84,13 +81,13 @@ export default function BlockDetail() {
                   </span>
                   <span className="eyebrow">Forged by</span>
                   <HashLink kind="pool" id={block.slot_leader} />
-                  <BlockHeaderVersion hash={block.hash} slot={block.slot} />
+                  <BlockHeaderVersion
+                    hash={block.hash}
+                    slot={block.slot}
+                  />
                 </div>
-                <BlockCapacity
-                  hash={block.hash}
-                  slot={block.slot}
-                  epoch={block.epoch}
-                />
+                <BlockCapacity hash={block.hash} slot={block.slot} epoch={block.epoch} />
+                <LeiosBlockPanel key={block.hash} block={block} />
               </div>
               <div className="block-chain-timeline my-6">
                 <Timeline
@@ -99,7 +96,10 @@ export default function BlockDetail() {
                       label: "Previous block",
                       complete: Boolean(block.previous_block),
                       detail: block.previous_block ? (
-                        <HashLink kind="block" id={block.previous_block} />
+                        <HashLink
+                          kind="block"
+                          id={block.previous_block}
+                        />
                       ) : (
                         "Genesis boundary"
                       ),
@@ -107,13 +107,18 @@ export default function BlockDetail() {
                     {
                       label: `Block #${block.height.toLocaleString()}`,
                       complete: true,
-                      detail: new Date(block.time * 1000).toLocaleString(),
+                      detail: new Date(
+                        block.time * 1000,
+                      ).toLocaleString(),
                     },
                     {
                       label: "Next block",
                       complete: Boolean(block.next_block),
                       detail: block.next_block ? (
-                        <HashLink kind="block" id={block.next_block} />
+                        <HashLink
+                          kind="block"
+                          id={block.next_block}
+                        />
                       ) : (
                         "At the chain tip"
                       ),
@@ -164,13 +169,21 @@ export default function BlockDetail() {
                   />
                 )}
               </details>
-              <Field label="Confirmations" value={block.confirmations} />
+              <Field
+                label="Confirmations"
+                value={block.confirmations}
+              />
             </div>
           )}
         </QueryState>
       </Panel>
 
-      {block && <BlockMosaic hash={block.hash} total={block.tx_count} />}
+      {block && (
+        <BlockMosaic
+          hash={block.hash}
+          total={block.tx_count}
+        />
+      )}
       {block && (
         <LazyDisclosure key={block.hash} title="Transaction hash list">
           <Panel title="Transactions">

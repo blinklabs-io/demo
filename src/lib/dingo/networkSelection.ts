@@ -85,7 +85,7 @@ export function reloadDingoPage(
 }
 
 export function changeDingoNetwork(next: DingoNetworkId) {
-  if (!isDingoNetworkId(next)) throw new Error("Choose Preview or Preprod.");
+  if (!isDingoNetworkId(next)) throw new Error("Choose Preview, Preprod, or Musashi.");
   if (next === DINGO_NETWORK.id) return;
   reloadDingoPage(
     networkSwitchDestination(

@@ -6,7 +6,7 @@ export const recipes = {
     path: "/api/v0/blocks/latest",
     source: "src/lib/dingo/leios.ts",
     context:
-      "Read the ranking-block index with Blockfrost, then fetch native block bytes through UTxO RPC. The decoder checks header identity and extracts announcements and certificates without assigning certificates to the announcement in the same block.",
+      "Read the latest indexed block with Blockfrost, then fetch its native bytes through UTxO RPC. Leios fields appear when the header includes the extension. The decoder checks header identity and extracts announcements and certificates without assigning certificates to the announcement in the same block.",
   },
   tracker: {
     title: "Track a transaction",

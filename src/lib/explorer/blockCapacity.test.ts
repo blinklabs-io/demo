@@ -4,6 +4,28 @@ import { hexToBytes } from "../dingo/utxorpc/bytes";
 import { blockResourceUsage, decodeBlockResources } from "./blockCapacity";
 
 const header = `828a${"00".repeat(6)}18190000820b0040`;
+const dijkstraHeader = `828c${"00".repeat(6)}18190000820c00f4f640`;
+
+it("reads Dijkstra full transactions with final validity flags and extended witness keys", () => {
+  const witness = "a205a18207008200820304088140";
+  const transaction = `84a0${witness}f6f4`;
+  expect(decodeBlockResources(hexToBytes(`82${dijkstraHeader}8381${transaction}f6f6`))).toEqual({ bytes: 25, memory: 3n, steps: 4n, rankingBody: true });
+});
+
+it("reads an empty certified Dijkstra body without counting announced payloads as executed bytes", () => {
+  expect(decodeBlockResources(hexToBytes(`82${dijkstraHeader}8380f6f6`))).toEqual({ bytes: 25, memory: 0n, steps: 0n, rankingBody: true });
+});
+
+it("includes Dijkstra subtransaction witness budgets", () => {
+  const witness = "a105a18207008200820304";
+  const sub = `83a0${witness}f6`;
+  const transaction = `84a117d9010281${sub}${witness}f6f5`;
+  expect(decodeBlockResources(hexToBytes(`82${dijkstraHeader}8381${transaction}f6f6`))).toEqual({ bytes: 25, memory: 6n, steps: 8n, rankingBody: true });
+});
+
+it("rejects truncated Dijkstra execution units", () => {
+  expect(() => decodeBlockResources(hexToBytes(`82${dijkstraHeader}838184a0a105a182070082008203`))).toThrow();
+});
 
 it("sums declared budgets across witnesses, including an invalid transaction", () => {
   // Two transaction witness sets: list and map redeemer encodings.

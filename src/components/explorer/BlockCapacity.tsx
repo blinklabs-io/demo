@@ -65,6 +65,12 @@ export function BlockCapacity({
   }
   return (
     <>
+      {units.data?.rankingBody && (
+        <p className="tool-help">
+          Ranking-block body resources. Endorser Block execution is excluded;
+          its transactions appear in the block's transaction list.
+        </p>
+      )}
       <QueryState
         hasData={Boolean(usage)}
         isLoading={parameters.isLoading || units.isLoading}
