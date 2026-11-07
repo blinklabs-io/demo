@@ -6,6 +6,7 @@ import { useCompactVisual } from "../../lib/chain/useCompactVisual";
 import { formatAda, shortenHash } from "../../lib/format";
 import { HashLink } from "./HashLink";
 import { Pagination } from "./Pagination";
+import { MempoolOverview } from "./MempoolOverview";
 import "./mempool-graph.css";
 
 function outputAmounts(output: PendingTx["outputs"][number]) {
@@ -16,13 +17,15 @@ export function MempoolGraph({ transactions, status }: { transactions: PendingTx
   const compact = useCompactVisual();
   const [page, setPage] = useState(1);
   const [active, setActive] = useState("");
+  const [mode, setMode] = useState<"overview" | "transactions">("overview");
+  const overview = transactions.length > MEMPOOL_GRAPH_PAGE_SIZE && mode === "overview";
   const lastPage = Math.max(1, Math.ceil(transactions.length / MEMPOOL_GRAPH_PAGE_SIZE));
   if (page > lastPage) setPage(lastPage);
   if (active && !transactions.some((tx) => tx.hash === active)) setActive("");
   const start = (Math.min(page, lastPage) - 1) * MEMPOOL_GRAPH_PAGE_SIZE;
-  const shown = transactions.slice(start, start + MEMPOOL_GRAPH_PAGE_SIZE);
-  const graph = mempoolGraph(shown, compact);
   const selected = transactions.find((tx) => tx.hash === active);
+  const shown = overview ? selected ? [selected] : [] : transactions.slice(start, start + MEMPOOL_GRAPH_PAGE_SIZE);
+  const graph = mempoolGraph(shown, compact);
   return (
     <section className="mempool-web" aria-label="Mempool transaction web">
       <header>
@@ -30,7 +33,12 @@ export function MempoolGraph({ transactions, status }: { transactions: PendingTx
         <span className="status-badge">{transactions.length.toLocaleString()} pending · {status === "live" ? "Live" : status === "error" ? "Reconnecting" : status === "connecting" ? "Connecting" : "Not started"}</span>
       </header>
       {status !== "live" && transactions.length > 0 && <p role="status">Showing the last observed pending set while the feed reconnects.</p>}
-      <p>Choose a TX hub to inspect its fee, inputs, and outputs. Purple links connect dependent transactions visible on this page.</p>
+      <p>Choose a transaction to inspect its fee, inputs, and outputs. Purple links connect dependent pending transactions.</p>
+      {transactions.length > MEMPOOL_GRAPH_PAGE_SIZE && <nav className="mempool-overview-modes" aria-label="Mempool view">
+        <button type="button" aria-pressed={overview} onClick={() => setMode("overview")}>Whole mempool</button>
+        <button type="button" aria-pressed={!overview} onClick={() => setMode("transactions")}>Transaction view</button>
+      </nav>}
+      {overview && <MempoolOverview transactions={transactions} active={active} onSelect={setActive} />}
       <div className="mempool-web-legend"><span>● Inputs</span><span>● Transaction & fee</span><span>● Outputs</span></div>
       {shown.length > 0 ? <>
         <div className="mempool-web-canvas">
@@ -52,9 +60,9 @@ export function MempoolGraph({ transactions, status }: { transactions: PendingTx
             </g>)}
           </svg>
         </div>
-        <p className="mempool-web-scope">Showing {start + 1}–{start + shown.length} of {transactions.length.toLocaleString()} pending transactions. Up to six inputs and outputs are drawn per hub; select it to inspect all of them.</p>
-        <Pagination page={Math.min(page, lastPage)} onPageChange={setPage} hasNextPage={page < lastPage} />
-      </> : <div className="mempool-web-empty"><span aria-hidden="true">✧</span><p>Waiting for the next connection.</p></div>}
+        <p className="mempool-web-scope">{overview ? "Selected transaction" : `Showing ${start + 1}–${start + shown.length} of ${transactions.length.toLocaleString()} pending transactions`}. Up to six inputs and outputs are drawn per hub; inspect all of them below.</p>
+        {!overview && <Pagination page={Math.min(page, lastPage)} onPageChange={setPage} hasNextPage={page < lastPage} />}
+      </> : !overview && <div className="mempool-web-empty"><span aria-hidden="true">✧</span><p>Waiting for the next connection.</p></div>}
       {selected && <section className="mempool-web-detail" aria-label="Selected pending transaction">
         <header><div><span className="eyebrow">Pending transaction</span><HashLink kind="tx" id={selected.hash} /></div><strong>{formatAda(selected.fee)} fee</strong></header>
         <div className="mempool-web-io">

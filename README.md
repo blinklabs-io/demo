@@ -530,3 +530,11 @@ from node-supplied chain data rather than independently verified in the browser.
 Unsupported native records do not discard other decoded observations. Chain
 rollback and reconnect invalidate the sampled block list, clearing orphaned
 selections. The developer section includes REST and UTxO RPC examples.
+
+### Whole mempool overview
+
+When more than 12 transactions are pending, the transaction web opens an overview
+of the entire pending set. Circle size scales with fee; connections identify
+transactions spending another pending transaction’s output. Search by hash, zoom,
+or drag the view, then select a transaction to inspect its fee, inputs, outputs,
+and native assets. Transaction view retains the paginated input/output webs.

@@ -14,6 +14,7 @@ it("selects hubs by keyboard, shows all ports, paginates, and removes departed t
     transactions[1].inputs = [{ hash: transactions[0].hash, index: 0 }];
     transactions[0].outputs[0].assets = [{ unit: "33".repeat(28) + "544f4b", quantity: 42n }];
     await act(async () => render(transactions));
+    await act(async () => Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Transaction view")!.click());
     expect(container.querySelectorAll('.mempool-tx-hub')).toHaveLength(12);
     expect(container.querySelectorAll('.mempool-dependency')).toHaveLength(1);
     expect(container.querySelector('.mempool-tx-hub title')?.textContent).toContain("42 base units");
@@ -31,6 +32,26 @@ it("selects hubs by keyboard, shows all ports, paginates, and removes departed t
     expect(container.textContent).toContain("last observed pending set");
     await act(async () => render(transactions));
     expect(container.querySelectorAll('.mempool-tx-hub')).toHaveLength(12);
+    expect(container.querySelector('[aria-label="Selected pending transaction"]')).toBeNull();
+  } finally { await act(async () => root.unmount()); }
+});
+
+it("shows all 320 pending transactions, retains positions on arrivals, and inspects a transaction outside the old page", async () => {
+  const transactions: PendingTx[] = Array.from({ length: 320 }, (_, i) => ({ hash: i.toString(16).padStart(64, "0"), fee: 200000n, inputCount: 0, outputCount: 0, totalOutputLovelace: 0n, seenAt: i, inputs: [], outputs: [] }));
+  const container = document.createElement("div"), root = createRoot(container);
+  const render = (rows: PendingTx[]) => root.render(<MemoryRouter><MempoolGraph transactions={rows} status="live" /></MemoryRouter>);
+  try {
+    await act(async () => render(transactions));
+    expect(container.querySelectorAll(".mempool-overview-node")).toHaveLength(320);
+    const node = container.querySelectorAll(".mempool-overview-node")[319];
+    const position = [node.getAttribute("data-x"), node.getAttribute("data-y")];
+    await act(async () => node.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    expect(container.querySelector('[aria-label="Selected pending transaction"]')?.textContent).toContain(transactions[319].hash);
+    await act(async () => render([{ ...transactions[0], hash: "ff".repeat(32) }, ...transactions]));
+    const retained = container.querySelector(`[data-hash="${transactions[319].hash}"]`)!;
+    expect([retained.getAttribute("data-x"), retained.getAttribute("data-y")]).toEqual(position);
+    expect(container.querySelectorAll(".mempool-overview-node")).toHaveLength(321);
+    await act(async () => render([]));
     expect(container.querySelector('[aria-label="Selected pending transaction"]')).toBeNull();
   } finally { await act(async () => root.unmount()); }
 });

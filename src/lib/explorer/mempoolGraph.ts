@@ -1,6 +1,41 @@
 import type { PendingTx } from "../dingo/utxorpc/streaming";
 
 export const MEMPOOL_GRAPH_PAGE_SIZE = 12;
+
+export function reconcileMempoolSlots(transactions: PendingTx[], previous: Map<string, number>) {
+  const hashes = new Set(transactions.map((tx) => tx.hash));
+  if (hashes.size === previous.size && [...hashes].every((hash) => previous.has(hash))) return previous;
+  const next = new Map([...previous].filter(([hash]) => hashes.has(hash)));
+  const used = new Set(next.values());
+  let slot = 0;
+  for (const tx of transactions) {
+    if (next.has(tx.hash)) continue;
+    while (used.has(slot)) slot++;
+    next.set(tx.hash, slot);
+    used.add(slot);
+  }
+  return next;
+}
+
+export function mempoolOverview(transactions: PendingTx[], slots: Map<string, number>) {
+  const capacity = Math.max(64, 2 ** Math.ceil(Math.log2(Math.max(1, ...slots.values()) + 1)));
+  const maximumFee = transactions.reduce((max, tx) => tx.fee > max ? tx.fee : max, 0n);
+  const nodes = transactions.map((tx) => {
+    const slot = slots.get(tx.hash);
+    if (slot === undefined) throw new Error("Missing mempool layout slot.");
+    const angle = slot * Math.PI * (3 - Math.sqrt(5));
+    const radius = Math.sqrt((slot + 0.5) / capacity);
+    const weight = maximumFee > 0n ? Number(tx.fee * 1000n / maximumFee) / 1000 : 0;
+    return { tx, x: 500 + Math.cos(angle) * radius * 465, y: 300 + Math.sin(angle) * radius * 265, radius: 4 + Math.sqrt(weight) * 3 };
+  });
+  const byHash = new Map(nodes.map((node) => [node.tx.hash, node]));
+  const dependencies = nodes.flatMap((node) => node.tx.inputs.flatMap((input) => {
+    const parent = byHash.get(input.hash);
+    return parent && input.index >= 0 && input.index < parent.tx.outputs.length
+      ? [{ from: parent, to: node }] : [];
+  }));
+  return { nodes, dependencies, maximumFee };
+}
 const PORTS = 6;
 export function mempoolGraph(transactions: PendingTx[], compact: boolean) {
   const columns = compact ? 1 : 3;
