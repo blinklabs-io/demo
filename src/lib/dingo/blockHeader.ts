@@ -11,11 +11,11 @@ export interface HeaderVersion {
 export function decodeHeaderVersion(bytes: Uint8Array): HeaderVersion {
   const reader = new Core.CborReader(Core.HexBlob(bytesToHex(bytes)));
   const blockLength = reader.readStartArray();
-  if (blockLength !== 4 && blockLength !== 5)
+  if (blockLength !== 2 && blockLength !== 4 && blockLength !== 5)
     throw new Error("Unsupported block encoding");
   if (reader.readStartArray() !== 2) throw new Error("Invalid block header");
   const headerLength = reader.readStartArray();
-  if (headerLength === 10) {
+  if (headerLength === 10 || headerLength === 12) {
     for (let i = 0; i < 9; i++) reader.skipValue();
     if (reader.readStartArray() !== 2)
       throw new Error("Invalid header version");
@@ -38,7 +38,9 @@ export function blockBytesQuery(hash: string, slot: number) {
       const block = await getSyncClient().fetchBlock({ hash, slot });
       if (!block?.nativeBytes?.length)
         throw new Error("Block bytes unavailable");
-      if (bytesToHex(block.parsedBlock.header?.hash ?? new Uint8Array()) !== hash)
+      if (
+        bytesToHex(block.parsedBlock.header?.hash ?? new Uint8Array()) !== hash
+      )
         throw new Error("Returned block does not match the requested hash");
       return block.nativeBytes;
     },

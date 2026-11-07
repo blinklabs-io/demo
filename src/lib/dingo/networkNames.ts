@@ -4,6 +4,8 @@ export function networkName(magic: number): string {
       return "Mainnet";
     case 1:
       return "Preprod";
+    case 164:
+      return "Musashi";
     case 2:
       return "Preview";
     default:

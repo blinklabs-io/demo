@@ -35,3 +35,10 @@ These views use synthetic transaction and input records and illustrative API end
 - [Transaction tracker](tracker1440.jpg) and [mobile](tracker390.jpg)
 - [Datum and redeemer workbench](plutus-workbench1440.jpg) and [mobile local decoder](plutus-workbench390.jpg)
 - [Copyable developer example](developer-example1440.jpg) and [mobile](developer-example390.jpg)
+
+## Musashi Leios
+
+These views use synthetic ranking blocks, announcements, and certificate bytes.
+
+- [Leios activity](leios1440.jpg) and [mobile](leios390.jpg)
+- [Optional block Leios details](leios-block1440.jpg) and [mobile](leios-block390.jpg)

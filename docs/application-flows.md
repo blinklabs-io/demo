@@ -218,7 +218,7 @@ A response remains associated with the request that produced it.
 | Area             | Routes and contextual actions                                                                                                                                                                                                         |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Discover         | `/`; capability filters, current chain snapshot and a block mosaic                                                                                                                                                                    |
-| Explore          | `/explorer`, `/explorer/track[/:hash]`, `/explorer/mempool`, `/explorer/epoch[/:epoch]`, `/explorer/network`, `/explorer/pools`; drill into blocks, transactions, pools and linked entities                                                                      |
+| Explore          | `/explorer`, `/explorer/leios`, `/explorer/track[/:hash]`, `/explorer/mempool`, `/explorer/epoch[/:epoch]`, `/explorer/network`, `/explorer/pools`; drill into blocks, transactions, pools and linked entities                                                                      |
 | Entity lookup    | `/explorer/lookup/:hash`, `/explorer/address/:address`, `/explorer/account/:stakeAddress`, `/explorer/asset/:assetId`, `/explorer/policy/:policyId`, `/explorer/handle/:handle`, `/explorer/metadata/:label`                          |
 | Participation    | `/participate`, `/explorer/governance`, `/explorer/proposal/:id`, `/explorer/dreps`, `/explorer/drep/:id`, `/explorer/surveys`, `/explorer/surveys/new`, `/explorer/surveys/:hash/:index`                                             |
 | Wallet           | `/wallet`, `/wallet/send`, `/wallet/delegate`; portfolio, rewards, transfers and delegation                                                                                                                                           |
@@ -264,3 +264,19 @@ workbench without a wallet prompt.
 
 Developer sections expose read-only requests using the selected network's API
 root, with copy controls and links to the source that builds each experience.
+
+## Musashi Leios observations
+
+Musashi is a separately selected test network with magic `164`. Its endpoints
+have separate overrides; no request borrows a Preview or Preprod endpoint.
+The Leios view verifies genesis before using even cached recent-block data.
+Native bytes are shared with existing block-header queries, and header identity
+and indexed position are checked before observations enter the visualization.
+
+Ranking-block announcements and certificate presence form independent timeline
+lanes. Neither an announcement nor its size establishes payload execution, and a
+certificate is not assigned to the announcement carried by the same block.
+The detail panel retains these distinctions and reports encoded signer counts
+without inferring committee weight or quorum. Decoding one unsupported native
+record leaves the other records available. Immutable native-byte caches remain
+keyed by hash while chain reconciliation refreshes the sampled block list.

@@ -1,3 +1,4 @@
+import { LeiosPulse } from "./components/explorer/LeiosPulse";
 import TransactionTracking from "./pages/explorer/TransactionTracking";
 import Experiences from "./pages/Experiences";
 import Participate from "./pages/Participate";
@@ -63,6 +64,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Experiences /> },
           { path: "participate", element: <Participate /> },
           { path: "explorer", element: <ExplorerOverview /> },
+          { path: "explorer/leios", element: <LeiosPulse /> },
           { path: "explorer/network", element: <NetworkDetail /> },
           { path: "explorer/surveys", element: <Surveys /> },
           { path: "explorer/surveys/new", element: <SurveyCreate /> },
