@@ -31,7 +31,7 @@ export interface PendingTx {
   seenAt: number;
   validUntil?: number;
   inputs: { hash: string; index: number }[];
-  outputs: { address: string; lovelace: bigint }[];
+  outputs: { address: string; lovelace: bigint; assets: { unit: string; quantity: bigint }[] }[];
 }
 
 // Dingo's WatchMempool/ReadMempool only ever populate raw tx bytes, never
@@ -58,7 +58,11 @@ export function decodeMempoolTx(nativeBytes: Uint8Array): PendingTx | null {
       seenAt: Date.now(),
       validUntil: body.ttl(),
       inputs: body.inputs().values().map((input) => ({ hash: String(input.transactionId()), index: Number(input.index()) })),
-      outputs: body.outputs().map((output) => ({ address: formatAddress(output.address()), lovelace: output.amount().coin() })),
+      outputs: body.outputs().map((output) => ({
+        address: formatAddress(output.address()),
+        lovelace: output.amount().coin(),
+        assets: [...(output.amount().multiasset() ?? [])].map(([unit, quantity]) => ({ unit: String(unit), quantity })),
+      })),
     };
   } catch {
     // A tx type this app's Blaze version doesn't understand (e.g. a very

@@ -43,6 +43,7 @@
 .mempool-web-io ol { max-height: 300px; overflow-y: auto; }
 .mempool-web-io li { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid #2b3b52; font-size: 12px; min-width: 0; }
 .mempool-web-io li span { color: #a4b5ca; }
+.mempool-web-io li > div { display: grid; gap: 6px; }
 .mempool-web-empty { text-align: center; padding: 80px 16px; color: #a6b7ce; }
 .mempool-web-empty > span { font-size: 64px; color: #b6a4ec; }
 @keyframes mempool-current { to { stroke-dashoffset: -120; } }

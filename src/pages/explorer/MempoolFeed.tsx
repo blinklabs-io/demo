@@ -28,7 +28,7 @@ export default function MempoolFeed() {
         detail="Live transaction arrivals, streamed directly from Dingo."
         symbol="≋"
       />
-      <MempoolGraph transactions={sorted} />
+      <MempoolGraph transactions={sorted} status={status} />
       <Panel
         title={
           <span className="flex items-center gap-2">

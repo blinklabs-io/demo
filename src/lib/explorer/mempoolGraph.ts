@@ -15,11 +15,10 @@ export function mempoolGraph(transactions: PendingTx[], compact: boolean) {
     return { tx, x, y, inputs: ports(tx.inputs.length, true), outputs: ports(tx.outputs.length, false) };
   });
   const byHash = new Map(nodes.map((node) => [node.tx.hash, node]));
-  const dependencies = nodes.flatMap((node) => node.inputs.flatMap((port) => {
-    const input = node.tx.inputs[port.index];
+  const dependencies = nodes.flatMap((node) => node.tx.inputs.flatMap((input, index) => {
     const parent = byHash.get(input.hash);
-    const output = parent?.outputs[input.index];
-    return parent && output ? [{ from: output, to: port, parent: parent.tx.hash, child: node.tx.hash }] : [];
+    if (!parent || input.index < 0 || input.index >= parent.tx.outputs.length) return [];
+    return [{ from: parent.outputs[input.index] ?? { x: parent.x, y: parent.y }, to: node.inputs[index] ?? { x: node.x, y: node.y }, parent: parent.tx.hash, child: node.tx.hash }];
   }));
   return { nodes, dependencies, width, height: Math.max(220, Math.ceil(nodes.length / columns) * 220) };
 }

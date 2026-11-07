@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PendingTx } from "../../lib/dingo/utxorpc/streaming";
+import type { MempoolStatus } from "../../stores/mempoolStore";
 import { MEMPOOL_GRAPH_PAGE_SIZE, mempoolGraph } from "../../lib/explorer/mempoolGraph";
 import { useCompactVisual } from "../../lib/chain/useCompactVisual";
 import { formatAda, shortenHash } from "../../lib/format";
@@ -7,7 +8,7 @@ import { HashLink } from "./HashLink";
 import { Pagination } from "./Pagination";
 import "./mempool-graph.css";
 
-export function MempoolGraph({ transactions }: { transactions: PendingTx[] }) {
+export function MempoolGraph({ transactions, status }: { transactions: PendingTx[]; status: MempoolStatus }) {
   const compact = useCompactVisual();
   const [page, setPage] = useState(1);
   const [active, setActive] = useState("");
@@ -22,8 +23,9 @@ export function MempoolGraph({ transactions }: { transactions: PendingTx[] }) {
     <section className="mempool-web" aria-label="Mempool transaction web">
       <header>
         <div><span className="eyebrow">Value in motion</span><h2>Before the chain connects.</h2></div>
-        <span className="status-badge">{transactions.length.toLocaleString()} pending</span>
+        <span className="status-badge">{transactions.length.toLocaleString()} pending · {status === "live" ? "Live" : status === "error" ? "Reconnecting" : status === "connecting" ? "Connecting" : "Not started"}</span>
       </header>
+      {status !== "live" && transactions.length > 0 && <p role="status">Showing the last observed pending set while the feed reconnects.</p>}
       <p>Choose a TX hub to inspect its fee, inputs, and outputs. Purple links connect dependent transactions visible on this page.</p>
       <div className="mempool-web-legend"><span>● Inputs</span><span>● Transaction & fee</span><span>● Outputs</span></div>
       {shown.length > 0 ? <>
@@ -52,7 +54,7 @@ export function MempoolGraph({ transactions }: { transactions: PendingTx[] }) {
         <header><div><span className="eyebrow">Pending transaction</span><HashLink kind="tx" id={selected.hash} /></div><strong>{formatAda(selected.fee)} fee</strong></header>
         <div className="mempool-web-io">
           <div><h3>{selected.inputs.length} inputs</h3><ol>{selected.inputs.map((input, index) => <li key={index}><HashLink kind="tx" id={input.hash} /><span>Output #{input.index}</span></li>)}</ol></div>
-          <div><h3>{selected.outputs.length} outputs</h3><ol>{selected.outputs.map((output, index) => <li key={index}><HashLink kind="address" id={output.address} /><span>#{index} · {formatAda(output.lovelace)}</span></li>)}</ol></div>
+          <div><h3>{selected.outputs.length} outputs</h3><ol>{selected.outputs.map((output, index) => <li key={index}><HashLink kind="address" id={output.address} /><span>#{index} · {formatAda(output.lovelace)}</span>{output.assets.map((asset) => <div key={asset.unit}><HashLink kind="asset" id={asset.unit} /><span>{asset.quantity.toLocaleString()} base units</span></div>)}</li>)}</ol></div>
         </div>
       </section>}
     </section>
