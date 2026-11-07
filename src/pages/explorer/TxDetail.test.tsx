@@ -33,6 +33,8 @@ it("resolves uppercase pending IDs with the same lowercase identity as the track
         {
           hash,
           inputCount: 1,
+          inputs: [{ hash: "22".repeat(32), index: 0 }],
+          outputs: [{ address: "address", lovelace: 1000000n }],
           outputCount: 1,
           fee: 1n,
           totalOutputLovelace: 1n,

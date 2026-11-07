@@ -4,6 +4,7 @@ import { Panel } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { formatAda } from "../../lib/format";
 import { useNow } from "../../lib/useNow";
+import { MempoolGraph } from "../../components/explorer/MempoolGraph";
 
 function formatAge(seenAt: number, now: number): string {
   const seconds = Math.max(0, Math.floor((now - seenAt) / 1000));
@@ -27,6 +28,7 @@ export default function MempoolFeed() {
         detail="Live transaction arrivals, streamed directly from Dingo."
         symbol="≋"
       />
+      <MempoolGraph transactions={sorted} />
       <Panel
         title={
           <span className="flex items-center gap-2">
