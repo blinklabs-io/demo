@@ -8,6 +8,10 @@ import { HashLink } from "./HashLink";
 import { Pagination } from "./Pagination";
 import "./mempool-graph.css";
 
+function outputAmounts(output: PendingTx["outputs"][number]) {
+  return [formatAda(output.lovelace), ...output.assets.map((asset) => `${asset.quantity.toLocaleString()} base units of ${asset.unit}`)].join(" + ");
+}
+
 export function MempoolGraph({ transactions, status }: { transactions: PendingTx[]; status: MempoolStatus }) {
   const compact = useCompactVisual();
   const [page, setPage] = useState(1);
@@ -34,8 +38,9 @@ export function MempoolGraph({ transactions, status }: { transactions: PendingTx
             {graph.dependencies.map((edge, index) => <path key={index} className="mempool-dependency" d={`M${edge.from.x},${edge.from.y} C${edge.from.x + 70},${edge.from.y} ${edge.to.x - 70},${edge.to.y} ${edge.to.x},${edge.to.y}`}><title>Pending dependency: {edge.parent} → {edge.child}</title></path>)}
             {graph.nodes.map((node) => <g key={node.tx.hash} className={selected?.hash === node.tx.hash ? "mempool-cluster selected" : "mempool-cluster"}>
               {node.inputs.map((port) => <g key={`in:${port.index}`} className="mempool-input"><path d={`M${port.x},${port.y} Q${node.x},${port.y} ${node.x},${node.y}`} /><circle cx={port.x} cy={port.y} r="9"><title>Input {port.index + 1}: {node.tx.inputs[port.index].hash}#{node.tx.inputs[port.index].index}</title></circle></g>)}
-              {node.outputs.map((port) => <g key={`out:${port.index}`} className="mempool-output"><path d={`M${node.x},${node.y} Q${node.x},${port.y} ${port.x},${port.y}`} /><circle cx={port.x} cy={port.y} r="9"><title>Output {port.index + 1}: {formatAda(node.tx.outputs[port.index].lovelace)} to {node.tx.outputs[port.index].address}</title></circle></g>)}
+              {node.outputs.map((port) => <g key={`out:${port.index}`} className="mempool-output"><path d={`M${node.x},${node.y} Q${node.x},${port.y} ${port.x},${port.y}`} /><circle cx={port.x} cy={port.y} r="9"><title>Output {port.index + 1}: {outputAmounts(node.tx.outputs[port.index])} to {node.tx.outputs[port.index].address}</title></circle></g>)}
               <g role="button" tabIndex={0} aria-pressed={selected?.hash === node.tx.hash} aria-label={`Inspect transaction ${node.tx.hash}, fee ${formatAda(node.tx.fee)}`} className="mempool-tx-hub" onClick={() => setActive(node.tx.hash)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setActive(node.tx.hash); } }}>
+                <title>{node.tx.hash} · Fee {formatAda(node.tx.fee)} · Outputs: {node.tx.outputs.map((output, index) => `#${index}: ${outputAmounts(output)}`).join("; ")}</title>
                 <circle className="mempool-halo" cx={node.x} cy={node.y} r="48" />
                 <circle cx={node.x} cy={node.y} r="40" />
                 <text x={node.x} y={node.y - 5} textAnchor="middle">TX</text>

@@ -16,6 +16,8 @@ it("selects hubs by keyboard, shows all ports, paginates, and removes departed t
     await act(async () => render(transactions));
     expect(container.querySelectorAll('.mempool-tx-hub')).toHaveLength(12);
     expect(container.querySelectorAll('.mempool-dependency')).toHaveLength(1);
+    expect(container.querySelector('.mempool-tx-hub title')?.textContent).toContain("42 base units");
+    expect(container.querySelector('.mempool-output circle title')?.textContent).toContain("42 base units");
     await act(async () => container.querySelector('.mempool-tx-hub')!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
     expect(container.querySelector('[aria-label="Selected pending transaction"]')?.textContent).toContain("Output #0");
     expect(container.querySelector('[aria-label="Selected pending transaction"]')?.textContent).toContain("42 base units");
