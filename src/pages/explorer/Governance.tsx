@@ -1,5 +1,7 @@
 import { governanceName } from "../../lib/governanceMetadata";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { votingClosed } from "../../lib/dingo/governanceVote";
+import { useNodeHealth } from "../../lib/dingo/nodeHealth";
 import { HolderResults } from "../../components/explorer/HolderResults";
 import { HolderAnswer } from "../../components/explorer/HolderAnswer";
 import { GovernanceChamber } from "../../components/chain/GovernanceChamber";
@@ -17,7 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
-import { PaginatedList } from "../../components/explorer/PaginatedList";
+import { Pagination } from "../../components/explorer/Pagination";
 import { HashLink } from "../../components/explorer/HashLink";
 import { formatAda, shortenHash } from "../../lib/format";
 
@@ -90,6 +92,27 @@ function ProposalCard({ row }: { row: ProposalSummary }) {
 }
 
 export default function Governance() {
+  const [showInactive, setShowInactive] = useState(false);
+  const [page, setPage] = useState(1);
+  const health = useNodeHealth();
+  const proposals = useQuery({
+    queryKey: ["dingo", "proposals", "lifecycle", page],
+    queryFn: async ({ signal }) => {
+      const summaries = await blockfrostFetch<ProposalSummary[]>(
+        `/api/v0/governance/proposals?page=${page}&count=20&order=desc`,
+        { signal },
+      );
+      return Promise.all(summaries.map((row) => blockfrostFetch<Proposal>(
+        `/api/v0/governance/proposals/${encodeURIComponent(row.id)}`,
+        { signal },
+      )));
+    },
+    refetchInterval: 15_000,
+  });
+  const rows = (proposals.data ?? []).filter((row) =>
+    showInactive || (health.data?.isHealthy === true && !health.isError && Number.isSafeInteger(row.expiration) &&
+      !votingClosed(row, health.data.tipEpoch)),
+  );
   const committee = useQuery({
     queryKey: ["dingo", "committee"],
     queryFn: () => blockfrostFetch<Committee>("/api/v0/governance/committee"),
@@ -104,12 +127,17 @@ export default function Governance() {
         symbol="§"
       />
       <Panel title="Governance proposals">
-        <PaginatedList<ProposalSummary>
-          queryKey={["dingo", "proposals"]}
-          buildUrl={(page, count) =>
-            `/api/v0/governance/proposals?page=${page}&count=${count}&order=desc`
-          }
-          visualize={(rows) => (
+        <label className="survey-check survey-note">
+          <input type="checkbox" checked={showInactive} onChange={(event) => {
+            setShowInactive(event.target.checked);
+            setPage(1);
+          }} />
+          Show inactive proposals
+        </label>
+        <QueryState hasData={proposals.data !== undefined} isLoading={proposals.isLoading} error={proposals.error}>
+          {!showInactive && <p className="tool-help">Only proposals still open for voting are shown.</p>}
+          {!showInactive && (health.isError || health.data?.isHealthy === false) && <p role="alert">Unable to verify the current epoch. Retry when the node is available.</p>}
+          {rows.length > 0 && (
             <div className="governance-mix">
               <Distribution
                 title="Proposals on page"
@@ -136,10 +164,13 @@ export default function Governance() {
               </div>
             </div>
           )}
-          keyFor={(row) => row.id}
-          emptyLabel="No governance proposals."
-          renderItem={(row) => <ProposalCard row={row} />}
-        />
+          {!proposals.isLoading && !proposals.isError && rows.length === 0 && (
+            <p className="list-empty">{showInactive ? "No governance proposals on this page." : "No proposals verified as active on this page."}</p>
+          )}
+          <ul className="activity-list">{rows.map((row) => <li key={row.id}><ProposalCard row={row} /></li>)}</ul>
+        </QueryState>
+        {proposals.isError && <button type="button" onClick={() => void proposals.refetch()} disabled={proposals.isFetching}>Retry proposal lifecycle</button>}
+        <Pagination page={page} onPageChange={setPage} hasNextPage={proposals.data?.length === 20} />
       </Panel>
       <Panel title="Constitutional committee">
         <QueryState hasData={committee.data !== undefined} isLoading={committee.isLoading} error={committee.error}>
