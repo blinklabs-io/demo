@@ -1,4 +1,4 @@
-import { formatAda } from "./format";
+import { formatNativeCoin, nativeSymbol, nativeTicker } from "./format";
 
 export function ratio(value: bigint, total: bigint): number {
   return total > 0n ? Number((value * 10000n) / total) / 100 : 0;
@@ -12,9 +12,9 @@ export function compactAda(value: string | bigint): string {
     ["K", 1_000n],
   ] as const) {
     if (ada >= divisor)
-      return `${Number((ada * 100n) / divisor) / 100}${unit} ₳`;
+      return `${Number((ada * 100n) / divisor) / 100}${unit} ${nativeSymbol()}`;
   }
-  return formatAda(BigInt(value)).replace(/ ADA$/, " ₳");
+  return formatNativeCoin(BigInt(value)).replace(` ${nativeTicker()}`, ` ${nativeSymbol()}`);
 }
 
 export function epochProgress(

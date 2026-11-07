@@ -1,3 +1,4 @@
+import { nativeTicker } from "../format";
 import { assertTransactionNetwork } from "../dingo/walletSession";
 import { Blaze, ColdWallet, Core } from "@blaze-cardano/sdk";
 import { parseAdaToLovelace } from "../dingo/amount";
@@ -310,7 +311,7 @@ export async function buildPayment(
       actual.amount().coin() !== p.coin
     )
       throw new Error(
-        "Payment amount is below minimum ADA or changed during balancing.",
+        `Payment amount is below minimum ${nativeTicker()} or changed during balancing.`,
       );
   });
   const available = new Map(

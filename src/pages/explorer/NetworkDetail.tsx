@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Field } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin, nativeTicker, nativeSymbol } from "../../lib/format";
 
 interface NetworkResponse {
   supply: {
@@ -47,7 +47,7 @@ interface NetworkEraResponse {
 }
 
 function ada(value: string): string {
-  return `${formatAda(BigInt(value))}`;
+  return `${formatNativeCoin(BigInt(value))}`;
 }
 
 function date(value: number): string {
@@ -135,10 +135,10 @@ export default function NetworkDetail() {
           <div className="network-economics">
             <section className="network-supply">
               <div className="network-section-heading">
-                <span className="eyebrow">ADA distribution</span>
-                <span className="network-unit">₳</span>
+                <span className="eyebrow">{nativeTicker()} distribution</span>
+                <span className="network-unit">{nativeSymbol()}</span>
               </div>
-              <h2>Where the ADA is</h2>
+              <h2>Where the {nativeTicker()} is</h2>
               <Distribution
                 title="Maximum supply"
                 unit={compactAda(network.supply.max)}
@@ -202,7 +202,7 @@ export default function NetworkDetail() {
                   BigInt(network.stake.live),
                   BigInt(network.supply.total),
                 )}
-                detail="Current delegation as a share of issued ADA"
+                detail={`Current delegation as a share of issued ${nativeTicker()}`}
                 tone="violet"
               />
               <div className="stake-footnote">

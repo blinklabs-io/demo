@@ -1,5 +1,5 @@
 import { assetName } from "../../lib/tools/transactions";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 
 export function marketAssetName(unit: string): string {
   return unit === "lovelace" || unit === "" ? "ADA" : assetName(unit);
@@ -7,7 +7,7 @@ export function marketAssetName(unit: string): string {
 
 export function marketAmount(quantity: bigint, unit: string): string {
   return unit === "lovelace" || unit === ""
-    ? formatAda(quantity)
+    ? formatNativeCoin(quantity)
     : `${quantity.toLocaleString()} ${marketAssetName(unit)}`;
 }
 

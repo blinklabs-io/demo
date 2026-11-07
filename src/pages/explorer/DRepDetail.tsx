@@ -1,7 +1,7 @@
 import { governanceName } from "../../lib/governanceMetadata";
 import { PaginatedList } from "../../components/explorer/PaginatedList";
 import { HashLink } from "../../components/explorer/HashLink";
-import { shortenHash } from "../../lib/format";
+import { shortenHash , nativeTicker } from "../../lib/format";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { Metric, Timeline, BarChart } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 
 interface DRepResponse {
   drep_id: string;
@@ -71,7 +71,7 @@ export default function DRepDetail() {
               <div className="metric-grid mb-6">
                 <Metric
                   label="Voting power"
-                  value={formatAda(BigInt(drepQuery.data.amount))}
+                  value={formatNativeCoin(BigInt(drepQuery.data.amount))}
                 />
                 <Metric
                   label="Status"
@@ -122,9 +122,9 @@ export default function DRepDetail() {
             emptyLabel="No delegators recorded."
             visualize={(rows) => (
               <div className="mb-6">
-                <span className="eyebrow">Delegators on this page · ADA</span>
+                <span className="eyebrow">Delegators on this page · {nativeTicker()}</span>
                 <BarChart
-                  title="ADA delegated"
+                  title={`${nativeTicker()} delegated`}
                   items={rows.map((row) => ({
                     label: shortenHash(row.address, 5),
                     value: Number(BigInt(row.amount)) / 1_000_000,
@@ -136,7 +136,7 @@ export default function DRepDetail() {
             renderItem={(row) => (
               <>
                 <HashLink kind="account" id={row.address} />
-                <strong>{formatAda(BigInt(row.amount))}</strong>
+                <strong>{formatNativeCoin(BigInt(row.amount))}</strong>
               </>
             )}
           />

@@ -1,3 +1,4 @@
+import { nativeTicker } from "../lib/format";
 import { ExperienceDiagram } from "../components/illustrations/ExperienceDiagram";
 import { DINGO_NETWORK } from "../lib/dingo/config";
 import { useQuery } from "@tanstack/react-query";
@@ -68,7 +69,7 @@ const experiences = [
     category: "Participate",
     symbol: "◉",
     description:
-      "Answer governance actions as an ADA holder. Create surveys. See what the chain thinks.",
+      `Answer governance actions as an ${nativeTicker()} holder. Create surveys. See what the chain thinks.`,
     tag: "CIP-204 + CIP-179",
     art: "voice",
     action: "Join the conversation",
@@ -402,7 +403,7 @@ export default function Experiences() {
         <strong>Built with Dingo. From development to operation.</strong>
         <p>
           {DINGO_NETWORK.label} is a public test network. Transactions use test
-          ADA. Your wallet signs; Dingo provides chain data and submits
+          {nativeTicker()}. Your wallet signs; Dingo provides chain data and submits
           transactions.
         </p>
         <Link to="/api">See the APIs powering these experiences →</Link>

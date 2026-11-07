@@ -1,13 +1,17 @@
 import type { Core } from "@blaze-cardano/sdk";
+import { DINGO_NETWORK } from "./dingo/config";
 
-// A grouping-only formatter applied to the whole-ADA part as a bigint
+export function nativeTicker() { return DINGO_NETWORK.id === "prime-testnet" ? "AP3X" : "ADA"; }
+export function nativeSymbol() { return DINGO_NETWORK.id === "prime-testnet" ? "AP3X" : "₳"; }
+
+// A grouping-only formatter applied to the whole-coin part as a bigint
 // (Intl.NumberFormat accepts bigint directly, exactly - no float round-trip).
 // The fractional part is derived from string digits of the remainder, so
 // this stays exact even for amounts well above Number.MAX_SAFE_INTEGER
 // lovelace (e.g. epoch active_stake, network supply figures).
 const groupFormatter = new Intl.NumberFormat("en-US");
 
-export function formatAda(lovelace: bigint | number): string {
+function formatCoin(lovelace: bigint | number, ticker: string): string {
   const value =
     typeof lovelace === "bigint" ? lovelace : BigInt(Math.trunc(lovelace));
   const negative = value < 0n;
@@ -20,8 +24,11 @@ export function formatAda(lovelace: bigint | number): string {
     fraction = fraction.padEnd(2, "0");
   }
 
-  return `${negative ? "-" : ""}${groupFormatter.format(whole)}.${fraction} ADA`;
+  return `${negative ? "-" : ""}${groupFormatter.format(whole)}.${fraction} ${ticker}`;
 }
+
+export function formatAda(value: bigint | number) { return formatCoin(value, "ADA"); }
+export function formatNativeCoin(value: bigint | number) { return formatCoin(value, nativeTicker()); }
 
 export function shortenHash(hash: string, visible = 8): string {
   if (hash.length <= visible * 2 + 3) {

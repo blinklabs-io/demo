@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { readEpochBalanceHistory } from "../../lib/dingo/balanceHistory";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin, nativeTicker } from "../../lib/format";
 import { Panel } from "./Panel";
 import { CopyButton } from "./CopyButton";
 import { PoolIdentity } from "./PoolIdentity";
@@ -93,7 +93,7 @@ export function WalletActivity({
                 <div className="metric-grid">
                   <Metric
                     label="Live stake"
-                    value={formatAda(BigInt(pool.data.live_stake))}
+                    value={formatNativeCoin(BigInt(pool.data.live_stake))}
                   />
                   <Metric
                     label="Delegators"
@@ -113,11 +113,11 @@ export function WalletActivity({
                   />
                   <Metric
                     label="Fixed epoch cost"
-                    value={formatAda(BigInt(pool.data.fixed_cost))}
+                    value={formatNativeCoin(BigInt(pool.data.fixed_cost))}
                   />
                   <Metric
                     label="Declared pledge"
-                    value={formatAda(BigInt(pool.data.declared_pledge))}
+                    value={formatNativeCoin(BigInt(pool.data.declared_pledge))}
                   />
                 </div>
               </div>
@@ -133,7 +133,7 @@ export function WalletActivity({
                 (rewardPoints.length ? (
                   <>
                     <BarChart
-                      title="Reward ADA"
+                      title={`Reward ${nativeTicker()}`}
                       items={rewardPoints.map(([epoch, amount]) => ({
                         label: `Epoch ${epoch}`,
                         value: Number(amount) / 1_000_000,
@@ -156,7 +156,7 @@ export function WalletActivity({
         )}
         <Panel title="Balance over time">
           <p className="mb-3 text-sm text-slate-400">
-            ADA at each epoch’s close, plus the current balance. Unwithdrawn
+            {nativeTicker()} at each epoch’s close, plus the current balance. Unwithdrawn
             staking rewards excluded.
           </p>
           <form
@@ -201,7 +201,7 @@ export function WalletActivity({
                     <>
                       <PriceChart
                         points={history.data.points}
-                        label="Address ADA balance by epoch"
+                        label={`Address ${nativeTicker()} balance by epoch`}
                         timeScale="date"
                       />
                       {history.data.unavailableEpochs.length > 0 && (

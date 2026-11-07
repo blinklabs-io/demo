@@ -1,3 +1,4 @@
+import { nativeSymbol } from "../../lib/format";
 import { useId } from "react";
 import "./experience-diagram.css";
 
@@ -237,7 +238,7 @@ export function ExperienceDiagram({ kind }: { kind: ExperienceDiagramKind }) {
           />
           <circle cx="80" cy="65" r="2" fill="#ffe0a1" />
           <text x="46" y="75" className="diagram-currency">
-            ₳
+            {nativeSymbol()}
           </text>
           {[
             [183, 29],

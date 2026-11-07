@@ -1,4 +1,4 @@
-import { formatAda, shortenHash } from "../../lib/format";
+import { formatNativeCoin, shortenHash } from "../../lib/format";
 import { Link } from "../NetworkLink";
 
 export interface AmountEntry {
@@ -59,7 +59,7 @@ export function AdaAmount({
     <>
       <span className="amount-bundle">
         <span className="ada-quantity">
-          {lovelace ? formatAda(BigInt(lovelace.quantity)) : formatAda(0n)}
+          {lovelace ? formatNativeCoin(BigInt(lovelace.quantity)) : formatNativeCoin(0n)}
         </span>
         {visible.length > 0 && <AssetChips assets={visible} />}
       </span>

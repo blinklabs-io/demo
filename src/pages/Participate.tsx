@@ -7,7 +7,7 @@ import { holderClosingEpoch } from "../lib/surveys/cip204";
 import { useNodeHealth } from "../lib/dingo/nodeHealth";
 import { PaginatedList } from "../components/explorer/PaginatedList";
 import { Panel } from "../components/explorer/Panel";
-import { shortenHash } from "../lib/format";
+import { shortenHash , nativeSymbol } from "../lib/format";
 interface Action {
   id: string;
   governance_type: string;
@@ -58,7 +58,7 @@ function ActionCard({ action }: { action: Action }) {
       </span>
       <span className="participation-emblem" aria-hidden="true">
         {{
-          treasury_withdrawals: "₳",
+          treasury_withdrawals: `${nativeSymbol()}`,
           new_constitution: "§",
           no_confidence: "◇",
           info_action: "i",

@@ -6,7 +6,7 @@ import {
   type EpochSummary as Epoch,
 } from "../../lib/explorer/epochSummary";
 import { fraction, visualColors } from "../../lib/chain/geometry";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin, nativeTicker } from "../../lib/format";
 const axes = [
   {
     name: "Blocks",
@@ -19,16 +19,16 @@ const axes = [
     format: (n: bigint) => n.toLocaleString(),
   },
   {
-    name: "Output ADA",
+    name: `Output ${nativeTicker()}`,
     get: (e: Epoch) => BigInt(e.output),
-    format: formatAda,
+    format: formatNativeCoin,
   },
-  { name: "Fees", get: (e: Epoch) => BigInt(e.fees), format: formatAda },
+  { name: "Fees", get: (e: Epoch) => BigInt(e.fees), format: formatNativeCoin },
   {
     name: "Active stake",
     get: (e: Epoch) =>
       e.active_stake === null ? null : BigInt(e.active_stake),
-    format: formatAda,
+    format: formatNativeCoin,
   },
 ];
 export function EpochFingerprints({
@@ -308,7 +308,7 @@ function Fingerprints({
                         </strong>
                         <span>
                           {q.data.block_count.toLocaleString()} blocks ·{" "}
-                          {formatAda(BigInt(q.data.fees))} fees
+                          {formatNativeCoin(BigInt(q.data.fees))} fees
                         </span>
                       </>
                     )}

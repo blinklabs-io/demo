@@ -3,7 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { fraction } from "../../lib/chain/geometry";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 import { PoolIdentity } from "../explorer/PoolIdentity";
 interface Reward {
   epoch: number;
@@ -82,7 +82,7 @@ function Journey({ stake }: { stake: string }) {
       hash: r.tx_hash,
       time: r.block_time,
       label: r.action,
-      value: `Deposit ${formatAda(BigInt(r.deposit))}`,
+      value: `Deposit ${formatNativeCoin(BigInt(r.deposit))}`,
       kind: "registration",
     })),
     ...(withdrawals.data?.pages.flat() ?? []).map((r, i) => ({
@@ -90,7 +90,7 @@ function Journey({ stake }: { stake: string }) {
       hash: r.tx_hash,
       time: r.block_time,
       label: "Rewards withdrawn",
-      value: formatAda(BigInt(r.amount)),
+      value: formatNativeCoin(BigInt(r.amount)),
       kind: "withdrawal",
     })),
   ].sort((a, b) => b.time - a.time);
@@ -220,7 +220,7 @@ function Journey({ stake }: { stake: string }) {
                         key={epoch}
                         tabIndex={0}
                         role="button"
-                        aria-label={`Epoch ${epoch}: ${totals.has(epoch) ? formatAda(value) + " loaded rewards" : "no reward records loaded"}${delegated ? ", delegation effective" : ""}`}
+                        aria-label={`Epoch ${epoch}: ${totals.has(epoch) ? formatNativeCoin(value) + " loaded rewards" : "no reward records loaded"}${delegated ? ", delegation effective" : ""}`}
                         onClick={() => setSelected(epoch)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
@@ -274,7 +274,7 @@ function Journey({ stake }: { stake: string }) {
                         <title>
                           Epoch {epoch}:{" "}
                           {totals.has(epoch)
-                            ? formatAda(value) + " loaded rewards"
+                            ? formatNativeCoin(value) + " loaded rewards"
                             : "no reward records loaded"}
                           {delegated ? " · delegation effective" : ""}
                         </title>
@@ -291,7 +291,7 @@ function Journey({ stake }: { stake: string }) {
                     </span>
                     <strong>
                       {totals.has(inspected)
-                        ? formatAda(totals.get(inspected)!)
+                        ? formatNativeCoin(totals.get(inspected)!)
                         : "No reward records loaded"}
                     </strong>
                     <Link to={`/explorer/epoch/${inspected}`}>
@@ -316,7 +316,7 @@ function Journey({ stake }: { stake: string }) {
                       .filter((r) => r.epoch === inspected)
                       .map((r, i) => (
                         <p key={i}>
-                          {r.type}: {formatAda(BigInt(r.amount))}
+                          {r.type}: {formatNativeCoin(BigInt(r.amount))}
                           {r.pool_id && (
                             <>
                               {" "}
@@ -368,7 +368,7 @@ function Journey({ stake }: { stake: string }) {
                       </>
                     )}
                   </span>
-                  <strong>{formatAda(BigInt(r.amount))}</strong>
+                  <strong>{formatNativeCoin(BigInt(r.amount))}</strong>
                 </div>
               ))}
             {delegationRows.map((d, i) => (

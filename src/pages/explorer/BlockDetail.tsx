@@ -14,7 +14,7 @@ import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { QueryState } from "../../components/explorer/QueryState";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 
 interface BlockDetailResponse {
   time: number;
@@ -142,13 +142,13 @@ export default function BlockDetail() {
               {block.output !== null && (
                 <Field
                   label="Output"
-                  value={`${formatAda(BigInt(block.output))}`}
+                  value={`${formatNativeCoin(BigInt(block.output))}`}
                 />
               )}
               {block.fees !== null && (
                 <Field
                   label="Fees"
-                  value={`${formatAda(BigInt(block.fees))}`}
+                  value={`${formatNativeCoin(BigInt(block.fees))}`}
                 />
               )}
               <details className="technical-details">

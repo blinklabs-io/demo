@@ -1,25 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { formatAda, shortenHash } from "./format";
+import { formatNativeCoin, shortenHash } from "./format";
 
-describe("formatAda", () => {
+describe("formatNativeCoin", () => {
   it("formats a whole-ADA lovelace amount", () => {
-    expect(formatAda(5_000_000n)).toBe("5.00 ADA");
+    expect(formatNativeCoin(5_000_000n)).toBe("5.00 ADA");
   });
 
   it("formats a fractional lovelace amount", () => {
-    expect(formatAda(1_500_000n)).toBe("1.50 ADA");
+    expect(formatNativeCoin(1_500_000n)).toBe("1.50 ADA");
   });
 
   it("formats zero", () => {
-    expect(formatAda(0n)).toBe("0.00 ADA");
+    expect(formatNativeCoin(0n)).toBe("0.00 ADA");
   });
 
   it("accepts a plain number", () => {
-    expect(formatAda(2_000_000)).toBe("2.00 ADA");
+    expect(formatNativeCoin(2_000_000)).toBe("2.00 ADA");
   });
 
   it("formats a large amount with thousands separators", () => {
-    expect(formatAda(1_234_000_000n)).toBe("1,234.00 ADA");
+    expect(formatNativeCoin(1_234_000_000n)).toBe("1,234.00 ADA");
   });
 });
 

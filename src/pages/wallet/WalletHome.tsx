@@ -20,7 +20,7 @@ import {
   walletStakeAccount,
   type WalletUtxo,
 } from "../../lib/dingo/wallet";
-import { formatAda, shortenHash } from "../../lib/format";
+import { formatNativeCoin, shortenHash , nativeTicker } from "../../lib/format";
 import { compactAda } from "../../lib/visualFormat";
 
 export default function WalletHome() {
@@ -177,17 +177,17 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
       <section className="wallet-balance-hero">
         <div>
           <span className="eyebrow">Total wallet balance</span>
-          <strong>{walletTotal === null ? "—" : formatAda(walletTotal)}</strong>
+          <strong>{walletTotal === null ? "—" : formatNativeCoin(walletTotal)}</strong>
           <p>
             {balance === null
               ? "UTxO balance unavailable"
-              : `${formatAda(balance)} in UTxOs`}
+              : `${formatNativeCoin(balance)} in UTxOs`}
             {" + "}
             {rewards === null
               ? account.isPending
                 ? "checking unclaimed rewards…"
                 : "rewards unavailable"
-              : `${formatAda(rewards)} in unclaimed rewards`}
+              : `${formatNativeCoin(rewards)} in unclaimed rewards`}
           </p>
         </div>
         <div className="wallet-stake-identity">
@@ -206,10 +206,10 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
         <Metric
           label={
             loadingUtxos || utxos.isError
-              ? "Stake-linked ADA loaded"
+              ? `Stake-linked ${nativeTicker()} loaded`
               : stakeAddress
-                ? "Stake-linked ADA"
-                : "Address ADA"
+                ? `Stake-linked ${nativeTicker()}`
+                : `Address ${nativeTicker()}`
           }
           value={utxos.data ? compactAda(total) : "—"}
           detail={
@@ -313,7 +313,7 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
         {groups.length > 1 && (
           <div className="mb-6">
             <BarChart
-              title="ADA per funded address"
+              title={`${nativeTicker()} per funded address`}
               items={groups.slice(0, 12).map((group) => ({
                 label: shortenHash(group.address, 5),
                 value: Number(group.lovelace) / 1_000_000,
@@ -341,11 +341,11 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
                 <div className="wallet-address-balance">
                   <strong>
                     {group
-                      ? formatAda(group.lovelace)
+                      ? formatNativeCoin(group.lovelace)
                       : loadingUtxos
                         ? "Checking…"
                         : utxos.isSuccess
-                          ? formatAda(0n)
+                          ? formatNativeCoin(0n)
                           : "—"}
                   </strong>
                   <span>

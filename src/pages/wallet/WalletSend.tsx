@@ -1,3 +1,4 @@
+import { nativeTicker, nativeSymbol } from "../../lib/format";
 import { useId, useRef, useState } from "react";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { useWalletStore } from "../../stores/walletStore";
@@ -60,8 +61,8 @@ function SendForm({
     <div className="wallet-workbench send-page">
       <PageIntro
         eyebrow="Transfers through Dingo"
-        title="Send ADA & assets"
-        detail="ADA first. Your assets alongside it."
+        title={`Send ${nativeTicker()} & assets`}
+        detail={`${nativeTicker()} first. Your assets alongside it.`}
         symbol="↗"
       />
       <div className="wallet-transfer-layout">
@@ -78,20 +79,20 @@ function SendForm({
           </label>
           <section className="send-ada">
             <div className="send-ada-icon" aria-hidden="true">
-              ₳
+              {nativeSymbol()}
             </div>
             <label>
-              ADA amount · required
+              {nativeTicker()} amount · required
               <input
                 form={formId}
-                aria-label="ADA amount"
+                aria-label={`${nativeTicker()} amount`}
                 value={ada}
                 inputMode="decimal"
                 onChange={(e) => edit(() => onAda(e.target.value))}
                 placeholder="5"
               />
               <small>
-                Every transfer includes ADA. Fees are paid separately.
+                Every transfer includes {nativeTicker()}. Fees are paid separately.
               </small>
             </label>
           </section>
@@ -106,7 +107,7 @@ function SendForm({
             <section className="additional-assets">
               <h2>Additional assets</h2>
               <p className="metadata-hint">
-                Enter a recipient and ADA amount to plan your transfer. Connect
+                Enter a recipient and {nativeTicker()} amount to plan your transfer. Connect
                 a wallet to choose from its assets and review the transaction.
               </p>
             </section>
@@ -139,7 +140,7 @@ function SendForm({
           </div>
           <strong>
             {ada || "—"}
-            <small>ADA</small>
+            <small>{nativeTicker()}</small>
           </strong>
           <span className="send-bundle-count">
             + {selected.size} additional asset{selected.size === 1 ? "" : "s"}

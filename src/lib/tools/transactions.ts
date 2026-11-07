@@ -15,7 +15,7 @@ import {
 import { parseAdaToLovelace, parseAssetAmount } from "../dingo/amount";
 import { drepIdForPublicKey } from "../dingo/wallet";
 import { readWalletDRep } from "../dingo/governanceVote";
-import { formatAda } from "../format";
+import { nativeTicker, formatNativeCoin } from "../format";
 
 export type Payment = { address: string; amount: string; asset: string };
 export type ToolAction =
@@ -45,7 +45,7 @@ export function inputId(u: Core.TransactionUnspentOutput) {
   return `${u.input().transactionId()}#${u.input().index()}`;
 }
 export function assetName(id: string) {
-  if (id === "lovelace") return "ADA";
+  if (id === "lovelace") return nativeTicker();
   try {
     return (
       Core.AssetName.toUTF8(
@@ -206,7 +206,7 @@ export async function prepareToolTransaction(
     const coin = parseAdaToLovelace(action.ada);
     if (coin <= 0n)
       throw new Error(
-        "Enter a positive ADA amount; every output requires ADA.",
+        `Enter a positive ${nativeTicker()} amount; every output requires ${nativeTicker()}.`,
       );
     if (action.assets.length > 24)
       throw new Error("Select at most 24 additional assets.");
@@ -235,7 +235,7 @@ export async function prepareToolTransaction(
     exactPayments.push({ address: address.toBech32(), coin, assets });
     facts.push(
       { label: "Recipient", value: address.toBech32() },
-      { label: "ADA", value: formatAda(coin) },
+      { label: nativeTicker(), value: formatNativeCoin(coin) },
       { label: "Additional assets", value: String(assets.size) },
     );
   } else if (action.kind === "batch") {
@@ -290,20 +290,20 @@ export async function prepareToolTransaction(
       { label: "Destination", value: who.address.toBech32() },
       {
         label: "Tokens",
-        value: "All assets retained; network fee deducted from ADA.",
+        value: `All assets retained; network fee deducted from ${nativeTicker()}.`,
       },
     );
   } else if (action.kind === "split") {
     const count = Number(action.count);
     const amount = parseAdaToLovelace(action.amount);
     if (!Number.isInteger(count) || count < 2 || count > 40 || amount <= 0n)
-      throw new Error("Choose 2–40 positive ADA outputs.");
+      throw new Error(`Choose 2–40 positive ${nativeTicker()} outputs.`);
     for (let i = 0; i < count; i++) {
       builder.payLovelace(who.address, amount);
       exactPayments.push({ address: who.address.toBech32(), coin: amount });
     }
     facts.push(
-      { label: "New outputs", value: `${count} × ${formatAda(amount)}` },
+      { label: "New outputs", value: `${count} × ${formatNativeCoin(amount)}` },
       { label: "Destination", value: who.address.toBech32() },
     );
   } else if (action.kind === "proof") {
@@ -458,7 +458,7 @@ export async function prepareToolTransaction(
     facts.push(
       {
         label: `${DINGO_NETWORK.label} treasury donation`,
-        value: formatAda(amount),
+        value: formatNativeCoin(amount),
       },
       {
         label: "Destination",
@@ -486,7 +486,7 @@ export async function prepareToolTransaction(
       if (deposit > 9223372036854775807n)
         throw new Error("Dingo returned an invalid DRep deposit.");
       builder.addRegisterDRep(Core.Credential.fromCore(credential), deposit);
-      facts.push({ label: "Registration deposit", value: formatAda(deposit) });
+      facts.push({ label: "Registration deposit", value: formatNativeCoin(deposit) });
     } else {
       if (!registered)
         throw new Error("Register this DRep before renewing its activity.");
@@ -522,7 +522,7 @@ export async function prepareToolTransaction(
           )))
     )
       throw new Error(
-        `Output ${i + 1} differs from the draft, often because its ADA is below the minimum output value. Increase its amount.`,
+        `Output ${i + 1} differs from the draft, often because its ${nativeTicker()} is below the minimum output value. Increase its amount.`,
       );
   }
   if (selected) {

@@ -3,17 +3,19 @@ export const DINGO_NETWORKS = {
   preview: { id: "preview", label: "Preview", networkMagic: 2 },
   preprod: { id: "preprod", label: "Preprod", networkMagic: 1 },
   musashi: { id: "musashi", label: "Musashi", networkMagic: 164 },
+  dijkstra: { id: "dijkstra", label: "Dijkstra", networkMagic: 6 },
+  "prime-testnet": { id: "prime-testnet", label: "Prime Testnet", networkMagic: 3311 },
 } as const;
 export type DingoNetworkId = keyof typeof DINGO_NETWORKS;
 export function isDingoNetworkId(value: string): value is DingoNetworkId {
-  return value === "preview" || value === "preprod" || value === "musashi";
+  return Object.hasOwn(DINGO_NETWORKS, value);
 }
 export function urlDingoNetwork(search: string): DingoNetworkId | null {
   const values = new URLSearchParams(search).getAll("network");
   if (!values.length) return null;
   if (values.length !== 1 || !isDingoNetworkId(values[0]))
     throw new Error(
-      "Choose a valid network in the URL: preview, preprod, or musashi.",
+      "Choose a valid network in the URL: preview, preprod, musashi, dijkstra, or prime-testnet.",
     );
   return values[0];
 }

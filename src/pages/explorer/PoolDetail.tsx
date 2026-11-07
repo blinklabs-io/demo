@@ -11,7 +11,7 @@ import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
 import { QueryState } from "../../components/explorer/QueryState";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 
 interface PoolDetailResponse {
   pool_id: string;
@@ -101,7 +101,7 @@ export default function PoolDetail() {
                 <div className="metric-grid">
                   <Metric
                     label="Live stake"
-                    value={formatAda(BigInt(poolQuery.data.live_stake))}
+                    value={formatNativeCoin(BigInt(poolQuery.data.live_stake))}
                   />
                   <Metric
                     label="Delegators"
@@ -134,15 +134,15 @@ export default function PoolDetail() {
 
               <Field
                 label="Active stake"
-                value={formatAda(BigInt(poolQuery.data.active_stake))}
+                value={formatNativeCoin(BigInt(poolQuery.data.active_stake))}
               />
               <Field
                 label="Declared pledge"
-                value={formatAda(BigInt(poolQuery.data.declared_pledge))}
+                value={formatNativeCoin(BigInt(poolQuery.data.declared_pledge))}
               />
               <Field
                 label="Margin / fixed cost"
-                value={`${(poolQuery.data.margin_cost * 100).toFixed(2)}% + ${formatAda(BigInt(poolQuery.data.fixed_cost))}`}
+                value={`${(poolQuery.data.margin_cost * 100).toFixed(2)}% + ${formatNativeCoin(BigInt(poolQuery.data.fixed_cost))}`}
               />
 
               <Field

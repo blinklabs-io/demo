@@ -4,6 +4,7 @@ import { loadHeaderHistory, type HeaderHistoryProgress } from "./headerHistory";
 import { blockfrostFetch } from "../dingo/blockfrost";
 import { getSyncClient } from "../dingo/utxorpc/streaming";
 import { bytesToHex, hexToBytes } from "../dingo/utxorpc/bytes";
+import { DINGO_NETWORK } from "../dingo/config";
 vi.mock("../dingo/config", () => ({
   DINGO_NETWORK: { id: "preview", networkMagic: 2 },
   DINGO_CONFIG: {
@@ -99,7 +100,7 @@ const fetch = vi.mocked(blockfrostFetch);
 function response() {
   fetch.mockImplementation(async (path) => {
     if (path === "/api/v0/genesis")
-      return { network_magic: 2, system_start: base } as never;
+      return { network_magic: DINGO_NETWORK.networkMagic, system_start: base, slot_length: 1 } as never;
     if (path === "/api/v0/network/eras") return eras as never;
     if (path === "/api/v0/blocks/latest")
       return {
@@ -139,6 +140,7 @@ function response() {
   );
 }
 beforeEach(() => {
+  Object.assign(DINGO_NETWORK, { id: "preview", networkMagic: 2 });
   localStorage.clear();
   fetch.mockReset();
   dump.mockReset();
@@ -150,6 +152,14 @@ beforeEach(() => {
   slotTime = timing;
   eras = [{ start: { slot: 0, time: base }, parameters: { slot_length: 1 } }];
   response();
+});
+it("reads Musashi's exact history from its verified genesis slot clock", async () => {
+  Object.assign(DINGO_NETWORK, { id: "musashi", networkMagic: 164 });
+  eras = [];
+  const result = await loadHeaderHistory();
+  expect(result.complete).toBe(true);
+  expect(result.rows.map((row) => row.height)).toEqual([4, 5, 6, 7, 8]);
+  expect(fetch.mock.calls.some(([path]) => path === "/api/v0/network/eras")).toBe(false);
 });
 it("accepts era start times relative to system start", async () => {
   eras = [{ start: { slot: 0, time: 0 }, parameters: { slot_length: 1 } }];

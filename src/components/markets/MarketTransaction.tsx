@@ -13,7 +13,7 @@ import {
   ConfirmationFailure,
   readTransactionConfirmation,
 } from "../../lib/dingo/transactionConfirmation";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 import { WalletConnectSummary } from "../layout/WalletConnectSummary";
 import { Link } from "../NetworkLink";
 import "./markets.css";
@@ -185,7 +185,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
         <>
           <div className="market-review">
             <span>Network fee</span>
-            <strong>{formatAda(draft.tx.body().fee())}</strong>
+            <strong>{formatNativeCoin(draft.tx.body().fee())}</strong>
           </div>
           <TransactionOutputs tx={draft.tx} />
           <p>

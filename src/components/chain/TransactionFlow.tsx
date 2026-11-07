@@ -2,7 +2,7 @@ import { useId, useMemo, useState } from "react";
 import { Core } from "@blaze-cardano/sdk";
 import { Link } from "../NetworkLink";
 import { fraction } from "../../lib/chain/geometry";
-import { formatAda, shortenHash, formatAddress } from "../../lib/format";
+import { formatNativeCoin, shortenHash, formatAddress , nativeTicker } from "../../lib/format";
 import { CopyButton } from "../explorer/CopyButton";
 import "./transaction-flow.css";
 import { assetName } from "../../lib/tools/transactions";
@@ -101,7 +101,7 @@ export function TransactionFlow({
   ];
   const active = units.includes(unit) ? unit : "lovelace";
   const format = (n: bigint) =>
-    active === "lovelace" ? formatAda(n) : `${n.toLocaleString()} raw units`;
+    active === "lovelace" ? formatNativeCoin(n) : `${n.toLocaleString()} raw units`;
   if (error || (parsed && "error" in parsed))
     return (
       <section className="chain-visual">
@@ -245,7 +245,7 @@ export function TransactionFlow({
             {units.map((u) => (
               <option key={u} value={u}>
                 {u === "lovelace"
-                  ? "ADA"
+                  ? `${nativeTicker()}`
                   : assetName(u) + " · " + u.slice(0, 8)}
               </option>
             ))}
