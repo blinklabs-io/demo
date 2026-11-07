@@ -1087,4 +1087,4 @@
     font-size: 22px;
   }
 }
-.fingerprint-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fingerprint-actions { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
