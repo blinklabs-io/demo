@@ -20,7 +20,7 @@ import {
   walletStakeAccount,
   type WalletUtxo,
 } from "../../lib/dingo/wallet";
-import { formatNativeCoin, shortenHash , nativeTicker } from "../../lib/format";
+import { formatNativeCoin, shortenHash, nativeTicker } from "../../lib/format";
 import { compactAda } from "../../lib/visualFormat";
 
 export default function WalletHome() {

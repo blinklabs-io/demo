@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseAdaToLovelace, parseAssetAmount } from "./amount";
+import { parseNativeToLovelace, parseAssetAmount } from "./amount";
 
 describe("parseAssetAmount", () => {
   it("parses a whole-number amount for a zero-decimal asset", () => {
@@ -47,16 +47,16 @@ describe("parseAssetAmount", () => {
   });
 });
 
-describe("parseAdaToLovelace", () => {
+describe("parseNativeToLovelace", () => {
   it("converts whole ADA to lovelace", () => {
-    expect(parseAdaToLovelace("5")).toBe(5_000_000n);
+    expect(parseNativeToLovelace("5")).toBe(5_000_000n);
   });
 
   it("converts fractional ADA to lovelace", () => {
-    expect(parseAdaToLovelace("1.5")).toBe(1_500_000n);
+    expect(parseNativeToLovelace("1.5")).toBe(1_500_000n);
   });
 
   it("rejects more than 6 decimal places", () => {
-    expect(() => parseAdaToLovelace("1.1234567")).toThrow();
+    expect(() => parseNativeToLovelace("1.1234567")).toThrow();
   });
 });

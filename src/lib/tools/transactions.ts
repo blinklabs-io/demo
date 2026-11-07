@@ -12,7 +12,7 @@ import {
   assertDingoNetwork,
   getDingoProvider,
 } from "../dingo/utxorpc/provider";
-import { parseAdaToLovelace, parseAssetAmount } from "../dingo/amount";
+import { parseNativeToLovelace, parseAssetAmount } from "../dingo/amount";
 import { drepIdForPublicKey } from "../dingo/wallet";
 import { readWalletDRep } from "../dingo/governanceVote";
 import { nativeTicker, formatNativeCoin } from "../format";
@@ -203,7 +203,7 @@ export async function prepareToolTransaction(
     }
     if (address.getNetworkId() !== 0 || !address.getProps().paymentPart)
       throw new Error("Recipient must be a testnet payment address.");
-    const coin = parseAdaToLovelace(action.ada);
+    const coin = parseNativeToLovelace(action.ada);
     if (coin <= 0n)
       throw new Error(
         `Enter a positive ${nativeTicker()} amount; every output requires ${nativeTicker()}.`,
@@ -251,7 +251,7 @@ export async function prepareToolTransaction(
       if (address.getNetworkId() !== 0 || !address.getProps().paymentPart)
         throw new Error("Recipients must be testnet payment addresses.");
       if (payment.asset === "lovelace") {
-        const amount = parseAdaToLovelace(payment.amount);
+        const amount = parseNativeToLovelace(payment.amount);
         if (amount <= 0n) throw new Error("Each payment must be positive.");
         builder.payLovelace(address, amount);
         exactPayments.push({ address: address.toBech32(), coin: amount });
@@ -295,7 +295,7 @@ export async function prepareToolTransaction(
     );
   } else if (action.kind === "split") {
     const count = Number(action.count);
-    const amount = parseAdaToLovelace(action.amount);
+    const amount = parseNativeToLovelace(action.amount);
     if (!Number.isInteger(count) || count < 2 || count > 40 || amount <= 0n)
       throw new Error(`Choose 2–40 positive ${nativeTicker()} outputs.`);
     for (let i = 0; i < count; i++) {
@@ -452,7 +452,7 @@ export async function prepareToolTransaction(
       { label: "Asset ID", value: policyId + name },
     );
   } else if (action.kind === "donate") {
-    const amount = parseAdaToLovelace(action.amount);
+    const amount = parseNativeToLovelace(action.amount);
     if (amount <= 0n) throw new Error("Enter a positive donation.");
     builder.setDonation(amount);
     facts.push(

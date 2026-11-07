@@ -402,7 +402,7 @@ export default function Experiences() {
       <footer className="experience-footnote">
         <strong>Built with Dingo. From development to operation.</strong>
         <p>
-          {DINGO_NETWORK.label} is a public test network. Transactions use test
+          {DINGO_NETWORK.label} is a public test network. Transactions use test{" "}
           {nativeTicker()}. Your wallet signs; Dingo provides chain data and submits
           transactions.
         </p>

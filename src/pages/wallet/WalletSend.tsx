@@ -78,7 +78,7 @@ function SendForm({
             />
           </label>
           <section className="send-ada">
-            <div className="send-ada-icon" aria-hidden="true">
+            <div className="send-ada-icon" aria-hidden="true" style={{ fontSize: nativeSymbol().length > 1 ? 12 : undefined }}>
               {nativeSymbol()}
             </div>
             <label>

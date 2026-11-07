@@ -1,7 +1,7 @@
 import { governanceName } from "../../lib/governanceMetadata";
 import { PaginatedList } from "../../components/explorer/PaginatedList";
 import { HashLink } from "../../components/explorer/HashLink";
-import { shortenHash , nativeTicker } from "../../lib/format";
+import { shortenHash, nativeTicker } from "../../lib/format";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { Metric, Timeline, BarChart } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";

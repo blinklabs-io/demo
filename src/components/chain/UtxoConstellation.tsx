@@ -3,7 +3,7 @@ import { Core } from "@blaze-cardano/sdk";
 import { Link } from "../NetworkLink";
 import { fraction, fingerprint, visualColors } from "../../lib/chain/geometry";
 import { inputId, assetName } from "../../lib/tools/transactions";
-import { formatNativeCoin, shortenHash , nativeTicker } from "../../lib/format";
+import { formatNativeCoin, shortenHash, nativeTicker } from "../../lib/format";
 import { CopyButton } from "../explorer/CopyButton";
 interface Node {
   utxo: Core.TransactionUnspentOutput;

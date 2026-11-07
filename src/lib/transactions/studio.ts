@@ -1,7 +1,7 @@
 import { nativeTicker } from "../format";
 import { assertTransactionNetwork } from "../dingo/walletSession";
 import { Blaze, ColdWallet, Core } from "@blaze-cardano/sdk";
-import { parseAdaToLovelace } from "../dingo/amount";
+import { parseNativeToLovelace } from "../dingo/amount";
 import { blockfrostFetch } from "../dingo/blockfrost";
 import { DINGO_NETWORK } from "../dingo/config";
 import {
@@ -260,7 +260,7 @@ export async function buildPayment(
     throw new Error("Add between 1 and 20 recipients.");
   const intended = payments.map((p) => ({
     address: paymentAddress(p.address),
-    coin: parseAdaToLovelace(p.ada),
+    coin: parseNativeToLovelace(p.ada),
   }));
   if (intended.some((p) => p.coin <= 0n))
     throw new Error("Each payment must be greater than zero.");

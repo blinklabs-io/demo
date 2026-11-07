@@ -1,8 +1,8 @@
 import { assetName } from "../../lib/tools/transactions";
-import { formatNativeCoin } from "../../lib/format";
+import { formatNativeCoin, nativeTicker } from "../../lib/format";
 
 export function marketAssetName(unit: string): string {
-  return unit === "lovelace" || unit === "" ? "ADA" : assetName(unit);
+  return unit === "lovelace" || unit === "" ? nativeTicker() : assetName(unit);
 }
 
 export function marketAmount(quantity: bigint, unit: string): string {

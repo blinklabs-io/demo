@@ -237,7 +237,7 @@ export function ExperienceDiagram({ kind }: { kind: ExperienceDiagramKind }) {
             stroke="#e4b6ff"
           />
           <circle cx="80" cy="65" r="2" fill="#ffe0a1" />
-          <text x="46" y="75" className="diagram-currency">
+          <text x="46" y="75" className="diagram-currency" style={{ fontSize: nativeSymbol().length > 1 ? 9 : undefined }}>
             {nativeSymbol()}
           </text>
           {[

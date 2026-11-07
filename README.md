@@ -531,7 +531,7 @@ Unsupported native records do not discard other decoded observations. Chain
 rollback and reconnect invalidate the sampled block list, clearing orphaned
 selections. The developer section includes REST and UTxO RPC examples.
 
-### Dijkstra and Prime Testnet
+## Dijkstra and Prime Testnet
 
 Dijkstra and Prime Testnet have separate REST, UTxO RPC, and Mesh connections.
 Their overrides use `VITE_DINGO_DIJKSTRA_BLOCKFROST_URL`,
@@ -539,7 +539,7 @@ Their overrides use `VITE_DINGO_DIJKSTRA_BLOCKFROST_URL`,
 `VITE_DINGO_PRIME_TESTNET_BLOCKFROST_URL`,
 `VITE_DINGO_PRIME_TESTNET_UTXORPC_URL`, and
 `VITE_DINGO_PRIME_TESTNET_MESH_URL`. Network identity checks require magic 6
-and 3311 respectively. Prime Testnet amounts display AP3X with six decimal places.
+and 3311 respectively. Prime Testnet amounts display AP3X with up to six decimal places, keeping at least two.
 
 Wallet swaps remain available only for networks with configured market deployments.
 Musashi header history uses its genesis slot clock because all its eras activate at genesis.

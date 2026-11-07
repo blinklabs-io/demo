@@ -29,6 +29,6 @@ export function parseAssetAmount(
   );
 }
 
-export function parseAdaToLovelace(value: string): bigint {
+export function parseNativeToLovelace(value: string): bigint {
   return parseAssetAmount(value, 6, nativeTicker());
 }
