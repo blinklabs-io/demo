@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { mempoolGraph } from "./mempoolGraph";
+import { mempoolGraph, mempoolOverview, reconcileMempoolSlots } from "./mempoolGraph";
 import type { PendingTx } from "../dingo/utxorpc/streaming";
 
 const tx = (hash: string, parent: string): PendingTx => ({ hash, inputs: [{ hash: parent, index: 0 }], outputs: [{ address: "address", lovelace: 1000000n, assets: [] }], inputCount: 1, outputCount: 1, totalOutputLovelace: 1000000n, fee: 200000n, seenAt: 1 });
@@ -34,4 +34,19 @@ it("connects dependencies through hubs when their actual input and output ports 
   child.inputCount = 8;
   const graph = mempoolGraph([parent, child], false);
   expect(graph.dependencies).toEqual([{ from: { x: graph.nodes[0].x, y: graph.nodes[0].y }, to: { x: graph.nodes[1].x, y: graph.nodes[1].y }, parent: "parent", child: "child" }]);
+});
+
+it("retains overview coordinates when arrivals cross a layout threshold and later depart", () => {
+  const rows = Array.from({ length: 512 }, (_, i) => tx(String(i), "confirmed"));
+  const slots = reconcileMempoolSlots(rows, new Map());
+  const position = (node: { x: number; y: number }) => [node.x, node.y];
+  const before = mempoolOverview(rows, slots).nodes.map(position);
+  const arrived = [tx("arrival", "300"), ...rows];
+  const nextSlots = reconcileMempoolSlots(arrived, slots);
+  const after = mempoolOverview(arrived, nextSlots);
+  expect(after.nodes.filter((node) => node.tx.hash !== "arrival").map(position)).toEqual(before);
+  expect(after.dependencies).toHaveLength(1);
+  const remaining = rows.slice(0, 320);
+  const departed = mempoolOverview(remaining, reconcileMempoolSlots(remaining, nextSlots));
+  expect(departed.nodes.map(position)).toEqual(before.slice(0, 320));
 });

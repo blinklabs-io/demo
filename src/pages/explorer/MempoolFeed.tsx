@@ -5,6 +5,7 @@ import { HashLink } from "../../components/explorer/HashLink";
 import { formatNativeCoin } from "../../lib/format";
 import { useNow } from "../../lib/useNow";
 import { MempoolGraph } from "../../components/explorer/MempoolGraph";
+import { useMemo } from "react";
 
 function formatAge(seenAt: number, now: number): string {
   const seconds = Math.max(0, Math.floor((now - seenAt) / 1000));
@@ -18,7 +19,7 @@ export default function MempoolFeed() {
   const pendingTxs = useMempoolStore((state) => state.pendingTxs);
   const now = useNow();
 
-  const sorted = [...pendingTxs.values()].sort((a, b) => b.seenAt - a.seenAt);
+  const sorted = useMemo(() => [...pendingTxs.values()].sort((a, b) => b.seenAt - a.seenAt), [pendingTxs]);
 
   return (
     <div className="flex flex-col gap-4">
