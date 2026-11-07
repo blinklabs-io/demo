@@ -159,11 +159,12 @@
   align-items: center;
   gap: 12px;
 }
-.leios-transaction-list li > a {
+.leios-transaction-list li > .address-identifier {
   min-width: 0;
   overflow-wrap: anywhere;
   flex: 1 1 220px;
 }
+.leios-transaction-list .address-identifier > a { white-space: normal; overflow-wrap: anywhere; }
 .leios-inspection h3 {
   font-size: 1.25rem;
   margin-top: 0.5rem;

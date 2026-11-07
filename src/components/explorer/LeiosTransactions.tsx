@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Core } from "@blaze-cardano/sdk";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
@@ -23,7 +24,7 @@ function Transactions({ block }: { block: BlockSummary }) {
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const client = useQueryClient();
-  const select = useCallback((bytes: Uint8Array) => ({ observation: decodeLeiosBlock(bytes, block), bytes: bytes.length }), [block]);
+  const select = useCallback((bytes: Uint8Array) => ({ observation: decodeLeiosBlock(bytes, block), bytes: bytes.length, dijkstra: new Core.CborReader(Core.HexBlob.fromBytes(bytes)).readStartArray() === 2 }), [block]);
   const native = useQuery({ ...blockBytesQuery(block.hash, block.slot), select });
   const parent = useQuery({
     queryKey: ["dingo", "block", block.hash, "certified-announcement"],
@@ -41,10 +42,13 @@ function Transactions({ block }: { block: BlockSummary }) {
     retry: false,
   });
   const transactions = useInfiniteQuery({
-    queryKey: ["dingo", "block", block.hash, "leios-transactions"],
+    queryKey: ["dingo", "block", block.hash, "leios-transactions", native.data?.dijkstra],
     enabled: native.isSuccess && block.tx_count > 0,
     initialPageParam: 1,
-    queryFn: ({ pageParam, signal }) => readLeiosTransactionPage(block.hash, pageParam, signal),
+    queryFn: ({ pageParam, signal }) => {
+      if (!native.data) throw new Error("Native block format is unavailable.");
+      return readLeiosTransactionPage(block.hash, pageParam, native.data.dijkstra, signal);
+    },
     getNextPageParam: (last, pages) => last.count === LEIOS_TRANSACTION_PAGE_SIZE && pages.reduce((sum, page) => sum + page.count, 0) < block.tx_count ? pages.length + 1 : undefined,
     staleTime: Infinity,
     retry: false,
@@ -75,10 +79,10 @@ function Transactions({ block }: { block: BlockSummary }) {
       </header>
       {native.isLoading && <p role="status">Reading the ranking block…</p>}
       {native.error && <p role="alert">{native.error.message} <button type="button" onClick={() => void native.refetch()}>Retry native block</button></p>}
-      
+
       {native.data && <>
         <div className="metric-grid">
-          <Metric label="Ranking-block bytes" value={native.data.bytes.toLocaleString()} />
+          <Metric label={native.data.dijkstra ? "Ranking-block bytes" : "Block bytes"} value={native.data.bytes.toLocaleString()} />
           <Metric label={certified ? "EB transactions" : "Ranking-body transactions"} value={block.tx_count.toLocaleString()} />
           <Metric label={complete ? "Transaction bytes" : "Loaded transaction bytes"} value={transactions.data || block.tx_count === 0 ? bytes.toLocaleString() : "—"} detail={`${records.length.toLocaleString()} decoded of ${block.tx_count.toLocaleString()} transactions`} />
           {certified && <Metric label="Announced EB manifest bytes" value={parent.data?.bytes.toLocaleString() ?? "—"} />}
