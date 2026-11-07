@@ -17,6 +17,7 @@ export const useSubmissionStore = create<{
   record: (hash, validUntil) =>
     set((state) => {
       const receipts = new Map(state.receipts);
+      receipts.delete(hash);
       receipts.set(hash, {
         hash,
         validUntil,

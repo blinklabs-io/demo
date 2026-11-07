@@ -67,10 +67,10 @@ export function AppShell() {
           ? "network"
           : pathname === "/wallet/swap"
             ? "swap"
-            : pathname.startsWith("/wallet/markets")
+            : /^\/wallet\/markets(?:\/|$)/.test(pathname)
               ? "markets"
               : pathname === "/participate" ||
-                  /^\/explorer\/(governance|proposal|surveys|drep)/.test(
+                  /^\/explorer\/(governance|proposal|surveys|dreps?)(?:\/|$)/.test(
                     pathname,
                   )
                 ? "participation"

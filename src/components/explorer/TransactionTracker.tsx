@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useMempoolStore } from "../../stores/mempoolStore";
 import { useSubmissionStore } from "../../stores/submissionStore";
@@ -16,6 +17,16 @@ export function TransactionTracker({ hash }: { hash: string }) {
   const receipt = useSubmissionStore((s) => s.receipts.get(normalized));
   const pending = useMempoolStore((s) => s.pendingTxs.get(normalized));
   const stream = useMempoolStore((s) => s.status);
+  const [observed, setObserved] = useState({
+    hash: normalized,
+    validUntil: pending?.validUntil,
+  });
+  if (
+    observed.hash !== normalized ||
+    (pending?.validUntil !== undefined &&
+      observed.validUntil !== pending.validUntil)
+  )
+    setObserved({ hash: normalized, validUntil: pending?.validUntil });
   const query = useQuery({
     queryKey: ["dingo", "transaction-tracker", DINGO_NETWORK.id, normalized],
     queryFn: ({ signal }) => readTrackingSnapshot(normalized, signal),
@@ -29,18 +40,11 @@ export function TransactionTracker({ hash }: { hash: string }) {
   const inclusion = snapshot?.inclusion;
   const validUntil =
     (receipt?.network === DINGO_NETWORK.id ? receipt.validUntil : undefined) ??
-    pending?.validUntil;
+    (observed.hash === normalized ? observed.validUntil : undefined);
   const verdict = query.isError
     ? "Tracking unavailable"
     : trackingVerdict(snapshot, !!pending && stream === "live", validUntil);
-  const depth =
-    inclusion &&
-    snapshot &&
-    snapshot.tip.height >= inclusion.block_height &&
-    (snapshot.tip.height !== inclusion.block_height ||
-      snapshot.tip.hash === inclusion.block)
-      ? snapshot.tip.height - inclusion.block_height + 1
-      : null;
+  const depth = snapshot?.depth ?? null;
   return (
     <section
       className="developer-panel transaction-tracker"
@@ -116,6 +120,12 @@ export function TransactionTracker({ hash }: { hash: string }) {
           {verdict === "Validity window ended"
             ? "The observed chain has reached this upper bound. It cannot be newly included now; indexing may still reveal earlier inclusion."
             : "The upper bound is exclusive."}
+        </p>
+      )}
+      {validUntil === undefined && (
+        <p className="developer-note">
+          Validity bound unavailable for this ID. Expiry can be checked when
+          this tab submits or observes the transaction's bytes.
         </p>
       )}
       {query.error && (

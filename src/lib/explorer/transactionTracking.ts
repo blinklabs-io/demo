@@ -11,6 +11,7 @@ export interface TrackedInclusion {
 }
 export interface TrackingSnapshot {
   inclusion: TrackedInclusion | null;
+  depth: number | null;
   tip: { height: number; slot: number; hash: string };
 }
 
@@ -56,11 +57,34 @@ export async function readTrackingSnapshot(
       typeof inclusion.valid_contract !== "boolean")
   )
     throw new Error("Dingo returned invalid inclusion evidence.");
-  return { inclusion, tip };
+  let depth: number | null = null;
+  if (inclusion) {
+    const canonical = await blockfrostFetch<{
+      height: number;
+      hash: string;
+      confirmations: number;
+    }>(`/api/v0/blocks/${inclusion.block_height}`, { signal });
+    if (
+      !canonical ||
+      canonical.height !== inclusion.block_height ||
+      canonical.hash !== inclusion.block
+    )
+      throw new Error(
+        "Transaction inclusion does not match the canonical block. Awaiting refreshed chain evidence.",
+      );
+    if (
+      !Number.isSafeInteger(canonical.confirmations) ||
+      canonical.confirmations < 0 ||
+      !Number.isSafeInteger(canonical.confirmations + 1)
+    )
+      throw new Error("Dingo returned invalid canonical confirmation depth.");
+    depth = canonical.confirmations + 1;
+  }
+  return { inclusion, tip, depth };
 }
 
 export function trackingVerdict(
-  snapshot: TrackingSnapshot | undefined,
+  snapshot: Pick<TrackingSnapshot, "tip" | "inclusion"> | undefined,
   pending: boolean,
   validUntil?: number,
 ) {

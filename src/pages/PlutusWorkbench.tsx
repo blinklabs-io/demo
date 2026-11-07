@@ -86,7 +86,7 @@ function WorkbenchBody() {
   const [hash, setHash] = useState(
     isTransactionHash(hashInput) ? hashInput.toLowerCase() : "",
   );
-  const [selected, setSelected] = useState<WorkbenchItem | null>(null);
+  const [selection, setSelected] = useState<WorkbenchItem | null>(null);
   const transaction = useQuery({
     queryKey: ["dingo", "tx", hash, "workbench"],
     enabled: !!hash,
@@ -131,18 +131,22 @@ function WorkbenchBody() {
     ...(transaction.isError ? [] : (transaction.data ?? [])),
     ...(utxos.isError ? [] : inputDataItems(utxos.data?.inputs ?? [])),
   ];
-  const spendingInput = selected?.id.startsWith("redeemer-")
-    ? utxos.data?.inputs.find(
-        (input) =>
-          !input.reference &&
-          !input.collateral &&
-          input.tx_hash === selected.sourceHash &&
-          input.output_index === selected.outputIndex,
+  const selected = selection
+    ? items.find(
+        (item) => item.id === selection.id && item.cbor === selection.cbor,
       )
     : undefined;
+  const selectedInput =
+    selected?.sourceHash !== undefined
+      ? (utxos.isError ? undefined : utxos.data)?.inputs.find(
+          (input) =>
+            input.tx_hash === selected.sourceHash &&
+            input.output_index === selected.outputIndex,
+        )
+      : undefined;
   const selectedScript =
     selected?.scriptHash ??
-    (spendingInput ? paymentScriptHash(spendingInput.address) : undefined);
+    (selectedInput ? paymentScriptHash(selectedInput.address) : undefined);
   return (
     <div className="developer-page">
       <PageIntro
@@ -314,6 +318,15 @@ function WorkbenchBody() {
                 Source transaction · output {selected.outputIndex} ↗
               </Link>
             )}
+            {selected.referenceScriptHash && (
+              <a
+                href={`${DINGO_CONFIG.blockfrostUrl}/api/v0/scripts/${selected.referenceScriptHash}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Reference script API ↗
+              </a>
+            )}
             {selectedScript && (
               <a
                 href={`${DINGO_CONFIG.blockfrostUrl}/api/v0/scripts/${selectedScript}`}
@@ -326,7 +339,9 @@ function WorkbenchBody() {
           </div>
         </section>
       )}
-      {decoded && <DataResult key={decoded} cbor={decoded} />}
+      {decoded && (!selection || selected) && (
+        <DataResult key={decoded} cbor={decoded} />
+      )}
       <BuildThis recipe="workbench" />
     </div>
   );

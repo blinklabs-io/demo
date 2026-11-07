@@ -14,9 +14,10 @@ Object.assign(globalThis, {
 const { act } = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { MemoryRouter } = await import("react-router");
-const { QueryClient, QueryClientProvider } =
+const { QueryClient, QueryClientProvider, notifyManager } =
   await import("@tanstack/react-query");
 const { default: PlutusWorkbench } = await import("./PlutusWorkbench");
+notifyManager.setScheduler(queueMicrotask);
 afterAll(() => dom.window.close());
 
 it("decodes the example, copies structured data and switches developer examples without a wallet", async () => {
@@ -123,5 +124,72 @@ it("decodes the example, copies structured data and switches developer examples 
     await act(async () => root.unmount());
     client.clear();
     host.remove();
+  }
+});
+
+it("keeps transaction data when input resolution fails and clears selected context after rollback", async () => {
+  const { Core } = await import("@blaze-cardano/sdk");
+  const cbor = "84a3008001800200a10581840000182a820102f5f6";
+  const hash = String(Core.Transaction.fromCbor(Core.TxCBOR(cbor)).getId());
+  let rolledBack = false;
+  vi.mocked(globalThis.fetch).mockImplementation(async (url) => {
+    if (!rolledBack && String(url).endsWith("/cbor"))
+      return new Response(JSON.stringify({ cbor }), { status: 200 });
+    return new Response(
+      JSON.stringify({ message: "Input context unavailable" }),
+      { status: rolledBack ? 404 : 503 },
+    );
+  });
+  const host = document.createElement("div"),
+    root = createRoot(host);
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: "/wallet/tools/data",
+              state: { transactionHash: hash },
+            },
+          ]}
+        >
+          <PlutusWorkbench />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    ),
+  );
+  try {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(host.textContent).toContain("Input context unavailable");
+    const choice = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Spend redeemer #0",
+    )!;
+    await act(async () => choice.click());
+    expect(
+      host.querySelector('[aria-label="Decoded Plutus data"]')?.textContent,
+    ).toContain('"int": "42"');
+    expect(
+      [...host.querySelectorAll("h2")].some(
+        (h) => h.textContent === "Spend redeemer #0",
+      ),
+    ).toBe(true);
+    rolledBack = true;
+    await act(async () => {
+      await client.resetQueries({ queryKey: ["dingo", "tx", hash] });
+    });
+    expect(
+      [...host.querySelectorAll("h2")].some(
+        (h) => h.textContent === "Spend redeemer #0",
+      ),
+    ).toBe(false);
+    expect(host.querySelector('[aria-label="Decoded Plutus data"]')).toBeNull();
+  } finally {
+    await act(async () => root.unmount());
+    client.clear();
   }
 });

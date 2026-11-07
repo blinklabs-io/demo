@@ -79,7 +79,7 @@ it("retains reference-input context separately from spent inputs", () => {
   ).toEqual([
     expect.objectContaining({
       sourceHash: "11".repeat(32),
-      scriptHash: "22".repeat(28),
+      referenceScriptHash: "22".repeat(28),
       context: "Read by the transaction; not spent.",
       cbor: "00",
     }),
@@ -93,4 +93,66 @@ it("preserves repeated map keys and their distinct encoded values", () => {
       { k: { int: "1" }, v: { int: "3" } },
     ],
   });
+});
+
+it("bounds deeply nested encoded data before recursive SDK decoding", () => {
+  expect(() => decodePlutusData("81".repeat(8000) + "00")).toThrow(/64-level/);
+});
+
+it("links inline output and input datums to their locking scripts", () => {
+  const scriptHash = "66".repeat(28);
+  const address = Core.addressFromCredential(
+    0,
+    Core.Credential.fromCore({
+      type: Core.CredentialType.ScriptHash,
+      hash: Core.Hash28ByteBase16(scriptHash),
+    }),
+  );
+  const tx = Core.Transaction.fromCbor(Core.TxCBOR("84a3008001800200a0f5f6"));
+  const output = new Core.TransactionOutput(address, new Core.Value(2000000n));
+  output.setDatum(Core.Datum.newInlineData(Core.PlutusData.newInteger(42n)));
+  const body = tx.body();
+  body.setOutputs([output]);
+  body.setCollateralReturn(output);
+  const changed = new Core.Transaction(body, tx.witnessSet());
+  expect(
+    transactionDataItems(changed.toCbor(), String(changed.getId()))[0]
+      .scriptHash,
+  ).toBe(scriptHash);
+  expect(
+    transactionDataItems(changed.toCbor(), String(changed.getId())),
+  ).toContainEqual(
+    expect.objectContaining({
+      id: "collateral-return",
+      label: "Collateral return · inline datum",
+      outputIndex: 1,
+      cbor: "182a",
+    }),
+  );
+  expect(
+    inputDataItems([
+      {
+        address: String(address.toBech32()),
+        output_index: 0,
+        amount: [],
+        collateral: false,
+        inline_datum: "182a",
+      },
+    ])[0].scriptHash,
+  ).toBe(scriptHash);
+});
+
+it("bounds transaction witness data before invoking the recursive SDK transaction parser", () => {
+  const cbor = "84a3008001800200a10481" + "81".repeat(8000) + "00f5f6";
+  expect(() => transactionDataItems(cbor, "11".repeat(32))).toThrow(/64-level/);
+});
+
+it("bounds inline datum bytes inside encoded-CBOR tags before transaction decoding", () => {
+  const cbor =
+    "84a300800181a300581d70" +
+    "66".repeat(28) +
+    "011a001e8480028201d818591f41" +
+    "81".repeat(8000) +
+    "000200a0f5f6";
+  expect(() => transactionDataItems(cbor, "11".repeat(32))).toThrow(/64-level/);
 });

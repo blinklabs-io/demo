@@ -83,11 +83,19 @@ it("tracks local submission through mempool and inclusion, then removes confirma
       ],
     ]),
   });
-  vi.mocked(readTrackingSnapshot).mockResolvedValue({ tip, inclusion: null });
+  vi.mocked(readTrackingSnapshot).mockResolvedValue({
+    tip,
+    inclusion: null,
+    depth: null,
+  });
   await render();
   expect(host.textContent).toContain("Observed in mempool");
   expect(host.textContent).toContain("Accepted by Dingo in this tab");
-  vi.mocked(readTrackingSnapshot).mockResolvedValue({ tip, inclusion });
+  vi.mocked(readTrackingSnapshot).mockResolvedValue({
+    tip,
+    inclusion,
+    depth: 4,
+  });
   await check();
   expect(host.textContent).toContain("4 including the containing block");
   expect(
@@ -96,6 +104,7 @@ it("tracks local submission through mempool and inclusion, then removes confirma
   vi.mocked(readTrackingSnapshot).mockResolvedValue({
     tip: { ...tip, height: 99 },
     inclusion: null,
+    depth: null,
   });
   await act(async () => {
     useMempoolStore.setState({ pendingTxs: new Map() });
@@ -109,7 +118,11 @@ it("tracks local submission through mempool and inclusion, then removes confirma
 });
 
 it("removes stale success when reads fail, retries the actual control and explains failed scripts", async () => {
-  vi.mocked(readTrackingSnapshot).mockResolvedValue({ tip, inclusion });
+  vi.mocked(readTrackingSnapshot).mockResolvedValue({
+    tip,
+    inclusion,
+    depth: 4,
+  });
   await render();
   vi.mocked(readTrackingSnapshot).mockRejectedValue(new Error("API offline"));
   await check();
@@ -118,8 +131,43 @@ it("removes stale success when reads fail, retries the actual control and explai
   vi.mocked(readTrackingSnapshot).mockResolvedValue({
     tip,
     inclusion: { ...inclusion, valid_contract: false },
+    depth: 4,
   });
   await check();
   expect(host.textContent).toContain("Script validation failed");
   expect(host.textContent).toContain("intended actions were not applied");
+});
+
+it("retains an observed validity bound after eviction and reports expiry without inferring rejection", async () => {
+  useMempoolStore.setState({
+    pendingTxs: new Map([
+      [
+        hash,
+        {
+          hash,
+          fee: 1n,
+          totalOutputLovelace: 1n,
+          inputCount: 1,
+          outputCount: 1,
+          seenAt: Date.now(),
+          validUntil: 1001,
+        },
+      ],
+    ]),
+  });
+  vi.mocked(readTrackingSnapshot).mockResolvedValue({
+    tip,
+    inclusion: null,
+    depth: null,
+  });
+  await render();
+  expect(host.textContent).toContain("Valid before slot 1,001");
+  await act(async () => useMempoolStore.setState({ pendingTxs: new Map() }));
+  vi.mocked(readTrackingSnapshot).mockResolvedValue({
+    tip: { ...tip, slot: 1001 },
+    inclusion: null,
+    depth: null,
+  });
+  await check();
+  expect(host.textContent).toContain("Validity window ended");
 });

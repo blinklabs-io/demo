@@ -473,7 +473,8 @@ Open `/explorer/track` to follow a transaction ID on the selected network.
 Transaction detail pages also show the tracker. It distinguishes submission
 receipts recorded in this tab, current mempool observations, indexed inclusion,
 script failure, and confirmation depth. Inclusion is re-read every ten seconds
-and reset when the chain stream rolls back or reconnects. Missing records do not
+and reset when the chain stream rolls back or reconnects. Confirmation depth
+comes from the canonical block at the inclusion height. Missing records do not
 prove rejection, and confirmation depth is not a finality guarantee. When a
 submitted or observed transaction's validity upper bound is known, the tracker
 explains expiry without excluding earlier inclusion that has yet to be indexed.

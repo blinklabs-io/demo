@@ -8,6 +8,7 @@ export const recipes = {
     context:
       "Poll indexed inclusion and the latest block. A 404 means no indexed inclusion; it does not prove rejection. Re-read inclusion after rollback.",
     extra: "/api/v0/blocks/latest",
+    canonical: "/api/v0/blocks/BLOCK_HEIGHT",
   },
   workbench: {
     title: "Decode datums and redeemers",
@@ -124,6 +125,7 @@ export function recipeExample(
   const definition = recipes[recipe];
   const paths: string[] = [definition.path];
   if ("extra" in definition) paths.push(definition.extra);
+  if ("canonical" in definition) paths.push(definition.canonical);
   if (language === "cURL")
     return paths
       .map(

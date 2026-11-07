@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { DINGO_CONFIG } from "./dingo/config";
 import { Core } from "@blaze-cardano/sdk";
 import { expect, it, vi } from "vitest";
 import { recipeExample, recipeSdkExample } from "./developerRecipes";
@@ -31,7 +32,19 @@ it("executes read examples and preserves HTTP failures", async () => {
     async () => new Response(JSON.stringify({ hash: "11".repeat(32) })),
   );
   await execute(fetch, { log: vi.fn() });
-  expect(fetch.mock.calls).toHaveLength(2);
+  expect(fetch.mock.calls).toHaveLength(3);
+  expect(fetch).toHaveBeenNthCalledWith(
+    1,
+    `${DINGO_CONFIG.blockfrostUrl}/api/v0/txs/TRANSACTION_ID`,
+  );
+  expect(fetch).toHaveBeenNthCalledWith(
+    2,
+    `${DINGO_CONFIG.blockfrostUrl}/api/v0/blocks/latest`,
+  );
+  expect(fetch).toHaveBeenNthCalledWith(
+    3,
+    `${DINGO_CONFIG.blockfrostUrl}/api/v0/blocks/BLOCK_HEIGHT`,
+  );
   fetch.mockResolvedValueOnce(new Response("Unavailable", { status: 503 }));
   await expect(execute(fetch, { log: vi.fn() })).rejects.toThrow(
     "HTTP 503: Unavailable",

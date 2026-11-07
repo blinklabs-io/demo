@@ -55,7 +55,7 @@ function BuildThisBody({ recipe }: { recipe: BuildRecipe }) {
       <p className="developer-note">
         {language === "SDK"
           ? "Use the imported package in an ES module project. "
-          : "Read-only requests to the selected node. Replace TRANSACTION_ID where shown. "}
+          : "Read-only requests to the selected node. Replace TRANSACTION_ID and BLOCK_HEIGHT where shown. "}
         Transaction construction and wallet signing are in the linked
         implementation.
       </p>
