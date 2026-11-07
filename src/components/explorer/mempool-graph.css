@@ -1,0 +1,51 @@
+.mempool-web {
+  padding: clamp(18px, 3vw, 32px);
+  border: 1px solid #314155;
+  border-radius: 24px;
+  background: radial-gradient(ellipse at 50% 0, #28304c88, transparent 60%), #0b1422;
+}
+.mempool-web > header, .mempool-web-detail > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.mempool-web h2 { font-size: clamp(24px, 3vw, 34px); color: #e4eefb; letter-spacing: -.04em; }
+.mempool-web > p { max-width: 680px; margin-top: 12px; color: #a5b5ca; font-size: 13px; }
+.mempool-web-legend { display: flex; flex-wrap: wrap; gap: 24px; margin: 24px 0 12px; font-size: 12px; }
+.mempool-web-legend span:nth-child(1) { color: #7dd3fc; }
+.mempool-web-legend span:nth-child(2) { color: #c4b5fd; }
+.mempool-web-legend span:nth-child(3) { color: #5eead4; }
+.mempool-web-canvas { max-height: 680px; overflow: auto; border-radius: 16px; background-image: radial-gradient(#53617c44 1px, transparent 1px); background-size: 24px 24px; }
+.mempool-web-canvas svg { width: 100%; display: block; }
+.mempool-input path, .mempool-output path { fill: none; stroke-width: 1.5; stroke-dasharray: 5 7; opacity: .55; animation: mempool-current 5s linear infinite; }
+.mempool-input path { stroke: #7dd3fc; }
+.mempool-output path { stroke: #5eead4; }
+.mempool-input circle { fill: #14384b; stroke: #7dd3fc; stroke-width: 2; }
+.mempool-output circle { fill: #123e3a; stroke: #5eead4; stroke-width: 2; }
+.mempool-dependency { fill: none; stroke: #b7a0ff; stroke-width: 2; stroke-dasharray: 3 5; opacity: .7; }
+.mempool-tx-hub { cursor: pointer; outline: none; }
+.mempool-tx-hub circle { fill: #25243e; stroke: #b7a0ff; stroke-width: 2; }
+.mempool-tx-hub .mempool-halo { fill: #a78bfa0d; stroke: #b7a0ff33; stroke-width: 1; }
+.mempool-tx-hub text { fill: #ede9fe; font-size: 17px; font-weight: 600; pointer-events: none; }
+.mempool-tx-hub .mempool-fee { font-size: 11px; fill: #d1c9ea; }
+.mempool-tx-hub:hover circle, .mempool-tx-hub:focus-visible circle, .selected .mempool-tx-hub circle { stroke: #f1eaff; fill: #443563; }
+.mempool-cluster.selected path { opacity: 1; stroke-width: 2.5; }
+.mempool-port-label { fill: #99adc7; font-size: 11px; }
+.mempool-hash-label { fill: #bdc7d7; font-size: 11px; }
+.mempool-web .mempool-web-scope { font-size: 11px; }
+.mempool-web-detail { margin-top: 24px; padding-top: 24px; border-top: 1px solid #354155; }
+.mempool-web-detail > header { font-size: 13px; }
+.mempool-web-detail > header > div { min-width: 0; display: grid; gap: 8px; }
+.mempool-web-io { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 24px; }
+.mempool-web-io h3 { color: #e1e9f4; margin-bottom: 10px; }
+.mempool-web-io ol { max-height: 300px; overflow-y: auto; }
+.mempool-web-io li { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid #2b3b52; font-size: 12px; min-width: 0; }
+.mempool-web-io li span { color: #a4b5ca; }
+.mempool-web-io li > div { display: grid; gap: 6px; }
+.mempool-web-empty { text-align: center; padding: 80px 16px; color: #a6b7ce; }
+.mempool-web-empty > span { font-size: 64px; color: #b6a4ec; }
+@keyframes mempool-current { to { stroke-dashoffset: -120; } }
+@media (prefers-reduced-motion: reduce) { .mempool-input path, .mempool-output path { animation: none; } }
+@media (max-width: 680px) { .mempool-web-io { grid-template-columns: 1fr; } }
