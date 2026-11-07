@@ -38,6 +38,7 @@ async function shell(path: string) {
     return found;
   }
   return {
+    host,
     router,
     link,
     close: async () => {
@@ -74,6 +75,15 @@ it("marks the default lending page current without claiming pool-detail ancestor
     );
     expect(page.link("Stake pools").className).toContain("selected");
     expect(page.link("Stake pools").getAttribute("aria-current")).toBeNull();
+  } finally {
+    await page.close();
+  }
+});
+
+it("does not show experience guides on unrelated path prefixes", async () => {
+  const page = await shell("/wallet/markets-invalid?network=preview");
+  try {
+    expect(page.host.querySelector(".build-this")).toBeNull();
   } finally {
     await page.close();
   }

@@ -1,3 +1,5 @@
+import { BuildThis } from "../developer/BuildThis";
+import type { BuildRecipe } from "../../lib/developerRecipes";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { networkSearch, urlDingoNetwork } from "../../lib/dingo/networks";
 import { reloadDingoPage } from "../../lib/dingo/networkSelection";
@@ -56,6 +58,23 @@ export function AppShell() {
   const pathname = normalizePath(rawPathname);
   const navigationType = useNavigationType();
   const section = sectionNavigation(pathname);
+  const recipe: BuildRecipe | null =
+    pathname === "/explorer"
+      ? "explorer"
+      : pathname === "/explorer/mempool"
+        ? "mempool"
+        : pathname === "/explorer/network"
+          ? "network"
+          : pathname === "/wallet/swap"
+            ? "swap"
+            : /^\/wallet\/markets(?:\/|$)/.test(pathname)
+              ? "markets"
+              : pathname === "/participate" ||
+                  /^\/explorer\/(governance|proposal|surveys|dreps?)(?:\/|$)/.test(
+                    pathname,
+                  )
+                ? "participation"
+                : null;
   const area =
     mainNavigation.find((item) => item.matches(pathname))?.area ?? "discover";
   useChainReconciliation();
@@ -109,6 +128,7 @@ export function AppShell() {
           </div>
         )}
         <Outlet />
+        {recipe && <BuildThis key={recipe} recipe={recipe} />}
       </main>
     </div>
   );

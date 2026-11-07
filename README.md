@@ -466,3 +466,33 @@ hour, keyed by the metadata URL, hash and image position. An image that cannot
 decode advances to the next candidate through the proxy. Static hosting without Pages Functions
 does not serve the image endpoint. To test the complete app locally, run
 `npm run build` and `npx wrangler pages dev dist`; Vite alone serves the UI.
+
+## Transaction tracking and Plutus data
+
+Open `/explorer/track` to follow a transaction ID on the selected network.
+Transaction detail pages also show the tracker. It distinguishes submission
+receipts recorded in this tab, current mempool observations, indexed inclusion,
+script failure, and confirmation depth. Inclusion is re-read every ten seconds
+and reset when the chain stream rolls back or reconnects. Confirmation depth
+comes from the canonical block at the inclusion height. Missing records do not
+prove rejection, and confirmation depth is not a finality guarantee. When a
+submitted or observed transaction's validity upper bound is known, the tracker
+explains expiry without excluding earlier inclusion that has yet to be indexed.
+Submission receipts retain at most fifty transaction IDs, timestamps, and
+validity bounds in memory; reloading clears them.
+
+Open `/wallet/tools/data` for the datum and redeemer workbench. Paste Plutus data
+CBOR for local decoding, or load a transaction ID to inspect inline datums,
+witness datums, redeemers, and resolved reference inputs. Spending redeemers link
+to inputs in ledger order. Script links expose the relevant script API record;
+reference-script availability does not establish which redeemer uses it. Unknown
+schema fields remain structural values rather than guessed contract labels.
+Integers use decimal strings, byte strings remain hex, and the original CBOR and
+data hash can be copied. Local decoding accepts up to 64 KiB and displays at most
+2,048 nodes with 64 levels of nesting. Invalid selected data reports its own
+error while other transaction data remains available.
+
+Experiences include expandable **Build this yourself** sections with selected
+network API examples in JavaScript and cURL, implementation links, and access to
+the API playground. Examples make read-only requests; transaction construction
+and signing remain explicit in the linked source.

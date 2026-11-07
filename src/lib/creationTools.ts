@@ -1,5 +1,13 @@
 const definitions = [
   {
+    id: "data",
+    icon: "⌘",
+    name: "Datum & redeemer workbench",
+    description:
+      "Decode Plutus CBOR and trace data to transaction inputs and scripts.",
+    color: "violet",
+  },
+  {
     id: "transactions",
     icon: "⌁",
     name: "Transaction studio",

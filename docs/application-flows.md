@@ -218,7 +218,7 @@ A response remains associated with the request that produced it.
 | Area             | Routes and contextual actions                                                                                                                                                                                                         |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Discover         | `/`; capability filters, current chain snapshot and a block mosaic                                                                                                                                                                    |
-| Explore          | `/explorer`, `/explorer/mempool`, `/explorer/epoch[/:epoch]`, `/explorer/network`, `/explorer/pools`; drill into blocks, transactions, pools and linked entities                                                                      |
+| Explore          | `/explorer`, `/explorer/track[/:hash]`, `/explorer/mempool`, `/explorer/epoch[/:epoch]`, `/explorer/network`, `/explorer/pools`; drill into blocks, transactions, pools and linked entities                                                                      |
 | Entity lookup    | `/explorer/lookup/:hash`, `/explorer/address/:address`, `/explorer/account/:stakeAddress`, `/explorer/asset/:assetId`, `/explorer/policy/:policyId`, `/explorer/handle/:handle`, `/explorer/metadata/:label`                          |
 | Participation    | `/participate`, `/explorer/governance`, `/explorer/proposal/:id`, `/explorer/dreps`, `/explorer/drep/:id`, `/explorer/surveys`, `/explorer/surveys/new`, `/explorer/surveys/:hash/:index`                                             |
 | Wallet           | `/wallet`, `/wallet/send`, `/wallet/delegate`; portfolio, rewards, transfers and delegation                                                                                                                                           |
@@ -240,3 +240,27 @@ the reviewed draft and guards outstanding asynchronous signing work. An accepted
 transaction hash survives form edits and position selection while confirmation
 is pending. Chain rollbacks invalidate affected market snapshots and reset opaque
 Kernel cursors before further discovery.
+
+## Transaction evidence and data inspection
+
+Transaction pages and `/explorer/track/:hash` show a shared tracker. Successful
+Dingo submissions record a bounded in-memory receipt after the returned ID is
+verified. Mempool snapshots supply current observation; indexed transaction
+records supply inclusion and script validity. Each poll re-reads inclusion, the
+tip, and the canonical block at the inclusion height before reporting confirmation
+depth. Rollbacks and reconnects reset tracker queries, and unavailable reads
+remove the displayed confirmation count. Switching networks returns a tracked
+transaction to the empty tracker while preserving the capability.
+
+The data workbench at `/wallet/tools/data` decodes pasted CBOR locally. Loading a
+transaction verifies its serialized ID before extracting data. Input resolution
+is a separate query, so its failure does not discard witness or output data.
+Data selections retain their original CBOR. Inline and input datums link to
+source outputs and their locking scripts; witness datums retain their witness-set
+context. Reference scripts are listed separately and are not assigned to
+redeemers. Structured JSON preserves integer precision and makes no
+contract-schema assumptions. Transaction and studio datum links prefill the
+workbench without a wallet prompt.
+
+Developer sections expose read-only requests using the selected network's API
+root, with copy controls and links to the source that builds each experience.

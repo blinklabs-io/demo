@@ -1,3 +1,6 @@
+import { isTransactionHash } from "../../lib/explorer/transactionTracking";
+import { TransactionTracker } from "../../components/explorer/TransactionTracker";
+import { BuildThis } from "../../components/developer/BuildThis";
 import {
   TransactionPassport,
   TransactionOutputs,
@@ -88,7 +91,11 @@ function JsonQueryPanel({
 }: JsonQueryPanelProps) {
   return (
     <Panel title={title}>
-      <QueryState hasData={data !== undefined} isLoading={isLoading} error={error}>
+      <QueryState
+        hasData={data !== undefined}
+        isLoading={isLoading}
+        error={error}
+      >
         {Array.isArray(data) && data.length === 0 ? (
           <p className="text-sm text-slate-500">
             No {title.toLowerCase()} recorded.
@@ -112,7 +119,9 @@ function JsonQueryPanel({
 
 export default function TxDetail() {
   const { hash } = useParams();
-  return <TxDetailBody key={hash} hash={hash} />;
+  const normalized =
+    hash && isTransactionHash(hash) ? hash.toLowerCase() : hash;
+  return <TxDetailBody key={normalized} hash={normalized} />;
 }
 function TxDetailBody({ hash }: { hash: string | undefined }) {
   const [technicalOpen, setTechnicalOpen] = useState(false);
@@ -121,6 +130,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
     queryKey: ["dingo", "tx", hash],
     queryFn: () => blockfrostFetch<TransactionResponse>(`/api/v0/txs/${hash}`),
     enabled: Boolean(hash),
+    refetchInterval: 10000,
     retry: (failureCount, error) =>
       error instanceof BlockfrostError && error.status === 404
         ? false
@@ -274,6 +284,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
   if (isPending && pendingTx) {
     return (
       <div className="transaction-explorer">
+        <TransactionTracker hash={hash!} />
         <section className="ti-passport">
           <div className="ti-passport-top">
             <span className="eyebrow">Live from Dingo’s mempool</span>
@@ -330,7 +341,10 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
 
   return (
     <div className="transaction-explorer" key={hash}>
-      <QueryState hasData={txQuery.data !== undefined}
+      {hash && <TransactionTracker hash={hash} />}
+      <BuildThis recipe="workbench" />
+      <QueryState
+        hasData={txQuery.data !== undefined}
         isLoading={txQuery.isLoading}
         error={txQuery.error}
         notFoundLabel="Transaction not found."
@@ -342,6 +356,9 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
               inspection={inspection?.data ?? undefined}
             />
             <div className="ti-context-actions">
+              <Link to="/wallet/tools/data" state={{ transactionHash: hash }}>
+                Inspect datums & redeemers →
+              </Link>
               <span>
                 Block header{" "}
                 <BlockHeaderVersion hash={tx.block} slot={tx.slot} />
@@ -363,7 +380,11 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
       </QueryState>
       {tx && (
         <>
-          <QueryState hasData={utxosQuery.data !== undefined} isLoading={utxosQuery.isLoading} error={utxosQuery.error}>
+          <QueryState
+            hasData={utxosQuery.data !== undefined}
+            isLoading={utxosQuery.isLoading}
+            error={utxosQuery.error}
+          >
             {utxosQuery.data && (
               <>
                 <TransactionFlow
@@ -382,7 +403,8 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
               </>
             )}
           </QueryState>
-          <QueryState hasData={transactionCborQuery.data !== undefined}
+          <QueryState
+            hasData={transactionCborQuery.data !== undefined}
             isLoading={transactionCborQuery.isLoading}
             error={transactionCborQuery.error}
           >

@@ -39,6 +39,11 @@ export function isExplorePath(path: string) {
 }
 export const exploreSections = [
   {
+    to: "/explorer/track",
+    label: "Transaction tracker",
+    matches: (path: string) => /^\/explorer\/track(\/|$)/.test(path),
+  },
+  {
     to: "/explorer",
     label: "Blocks",
     matches: (path: string) =>

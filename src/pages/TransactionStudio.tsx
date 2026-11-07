@@ -555,6 +555,7 @@ function StudioWorkspace({ imported }: { imported: string }) {
                   {output.datum() && (
                     <details>
                       <summary>Datum</summary>
+                      {output.datum()!.asInlineData() && <Link to="/wallet/tools/data" state={{ plutusCbor: String(output.datum()!.asInlineData()!.toCbor()) }}>Open datum workbench →</Link>}
                       <pre>{output.datum()!.toCbor()}</pre>
                     </details>
                   )}
