@@ -184,13 +184,13 @@ function MusashiPulse() {
         </div>
         <div>
           <strong>{totals.announcedBytes.toLocaleString()}</strong>
-          <span>Announced bytes · includes repeats</span>
+          <span>Announced manifest bytes · includes repeats</span>
         </div>
       </div>
       {rows.length > 0 && (
         <>
           <div className="leios-key">
-            <span className="leios-purple">● Announced payload size</span>
+            <span className="leios-purple">● Announced manifest size</span>
             <span className="leios-teal">◆ Certificate present</span>
             <span>Oldest → newest · select a block</span>
           </div>
@@ -242,7 +242,7 @@ function MusashiPulse() {
       )}
       <p className="leios-note">
         {recent.isError ? "Last successful sample of" : "Latest"} {blocks.length} indexed blocks · refreshes every 15 seconds.
-        Announcements describe proposed payloads, not executed bytes. A
+        Announcements size EB manifests, not full transaction bytes. A
         certificate refers to an earlier announcement; it is not linked to the
         announcement on the same card. Signatures are displayed as node-supplied
         chain data.

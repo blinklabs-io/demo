@@ -509,11 +509,18 @@ Swap integrations retain their Preview or Preprod contract boundaries.
 
 The Leios view samples the latest twelve indexed ranking blocks. It decodes
 native Dijkstra headers and bodies, verifies their header hashes and indexed
-positions, and shows two independent lanes: announced endorser-block payload
+positions, and shows two independent lanes: announced endorser-block manifest
 sizes and certificate presence. Select a block to inspect its announcement,
 ranking-body transaction count, certificate bitfield size, and aggregate
 signature size. Block detail pages expose the same data in an optional panel.
 Protocol-version displays and header history understand the Dijkstra envelope.
+
+Musashi block pages also list transactions with serialized sizes and fees. For
+certifying blocks, the certified EB identity and announced manifest size come
+from the previous ranking block. Transaction bytes are summed separately from
+the manifest and ranking-block bytes. Pages load in groups of 100; **Read all
+transaction sizes** loads the remaining pages. Totals stay marked as partial
+until all indexed transactions have decoded successfully.
 
 Announced bytes count announcements, including repetitions; they are not executed
 throughput. A certificate concerns an earlier announcement and is not paired

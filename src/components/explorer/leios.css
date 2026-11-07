@@ -153,6 +153,18 @@
   border-radius: 14px;
   background: #0a1221;
 }
+.leios-transaction-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.leios-transaction-list li > .address-identifier {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  flex: 1 1 220px;
+}
+.leios-transaction-list .address-identifier > a { white-space: normal; overflow-wrap: anywhere; }
 .leios-inspection h3 {
   font-size: 1.25rem;
   margin-top: 0.5rem;
