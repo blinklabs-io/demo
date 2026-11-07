@@ -27,3 +27,11 @@ Transaction review screenshots use synthetic Preview wallet data.
 - [Preprod explorer and network selection](network-preprod1500.jpg) and [mobile](network-preprod390.jpg)
 - [Automatic transaction mosaic](automatic-mosaic1500.jpg) and [mobile](automatic-mosaic390.jpg)
 - [Automatic weekly market chart](sundae-autochart1500.jpg) and [mobile](sundae-autochart390.jpg)
+
+## Transaction tracking and developer tools
+
+These views use synthetic transaction and input records and illustrative API endpoints.
+
+- [Transaction tracker](tracker1440.jpg) and [mobile](tracker390.jpg)
+- [Datum and redeemer workbench](plutus-workbench1440.jpg) and [mobile local decoder](plutus-workbench390.jpg)
+- [Copyable developer example](developer-example1440.jpg) and [mobile](developer-example390.jpg)

@@ -1,3 +1,4 @@
+import TransactionTracking from "./pages/explorer/TransactionTracking";
 import Experiences from "./pages/Experiences";
 import Participate from "./pages/Participate";
 import Markets from "./pages/Markets";
@@ -73,6 +74,8 @@ export const router = createBrowserRouter([
           { path: "explorer/tx/:hash", element: <TxDetail /> },
           { path: "explorer/lookup/:hash", element: <LookupResolver /> },
           { path: "explorer/mempool", element: <MempoolFeed /> },
+          { path: "explorer/track", element: <TransactionTracking /> },
+          { path: "explorer/track/:hash", element: <TransactionTracking /> },
           { path: "explorer/address/:address", element: <AddressDetail /> },
           {
             path: "explorer/account/:stakeAddress",

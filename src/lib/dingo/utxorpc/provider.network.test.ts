@@ -53,6 +53,8 @@ it("checks selected genesis before submitting any transaction bytes", async () =
   );
   await expect(provider.postTransactionToChain(tx)).resolves.toBe(tx.getId());
   expect(submit).toHaveBeenCalledOnce();
+  const { useSubmissionStore } = await import("../../../stores/submissionStore");
+  expect(useSubmissionStore.getState().receipts.get(tx.getId())).toMatchObject({ hash: tx.getId(), network: "preprod" });
 });
 it("does not submit if the draft is cancelled while selected genesis verification is pending", async () => {
   const { DingoProvider } = await import("./DingoProvider");

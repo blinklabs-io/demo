@@ -6,6 +6,7 @@ vi.mock("../explorer/epochSummary", () => ({ clearEpochSummaryCache: cleared }))
 
 describe("chain transition query ownership", () => {
   it.each([
+    ["dingo", "transaction-tracker", "preview", "hash"],
     ["dingo", "block", "hash"],
     ["dingo", "tx", "hash"],
     ["dingo", "tx", "hash", "utxos"],
@@ -34,6 +35,8 @@ describe("chain transition query ownership", () => {
 });
 
 it("reconciles mutable aggregates and census snapshots on rollback while preserving immutable bytes", () => {
+  expect(isMutableChainQuery(["dingo", "transaction-tracker", "preview", "hash"], true)).toBe(true);
+  expect(isMutableChainQuery(["dingo", "tx", "hash", "workbench"], true)).toBe(true);
   expect(isMutableChainQuery(["dingo", "epoch", 10], true)).toBe(true);
   expect(isMutableChainQuery(["dingo", "network"], true)).toBe(true);
   expect(isMutableChainQuery(["dingo", "tx", "hash", "cbor"], true)).toBe(false);

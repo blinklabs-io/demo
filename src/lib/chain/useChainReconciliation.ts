@@ -8,6 +8,7 @@ export function isMutableChainQuery(key: QueryKey, rollback = false): boolean {
     return rollback && key[1] === "confirmation";
   if (key[0] !== "dingo") return false;
   switch (key[1]) {
+    case "transaction-tracker":
     case "node-health":
     case "recent-blocks":
     case "epoch-clock-tip":
@@ -35,7 +36,7 @@ export function isMutableChainQuery(key: QueryKey, rollback = false): boolean {
     case "block":
       return key.length === 3;
     case "tx":
-      return key.length === 3 || key[3] === "utxos";
+      return key.length === 3 || key[3] === "utxos" || (rollback && key[3] === "workbench");
     case "address":
     case "account":
       return rollback || key[3] !== "journey";

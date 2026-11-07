@@ -1,3 +1,5 @@
+import PlutusWorkbench from "../PlutusWorkbench";
+import { BuildThis } from "../../components/developer/BuildThis";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { creationTools, type CreationToolId } from "../../lib/creationTools";
 import TransactionStudio from "../TransactionStudio";
@@ -875,6 +877,7 @@ function Treasury() {
 }
 const toolComponents: Record<CreationToolId, ComponentType> = {
   transactions: TransactionStudio,
+  data: PlutusWorkbench,
   batch: Batch,
   utxos: Utxos,
   proof: Proof,
@@ -889,7 +892,7 @@ export default function WalletTools() {
   const ToolBody = current ? toolComponents[current.id] : null;
   return (
     <div className="wallet-tools">
-      {tool !== "transactions" && (
+      {tool !== "transactions" && tool !== "data" && (
         <PageIntro
           eyebrow="Built on Cardano. Powered by Dingo."
           title={current?.name ?? (tool ? "Tool not found" : "Create & build")}
@@ -943,13 +946,14 @@ export default function WalletTools() {
               </NavLink>
             ))}
           </nav>
-          {!connected && tool !== "transactions" && tool !== "utxos" && (
+          {!connected && tool !== "transactions" && tool !== "data" && tool !== "utxos" && (
             <p className="tool-help">
               Explore the tools and edit your drafts without connecting. Wallet
               funds and transaction signing require a connected {DINGO_NETWORK.label} wallet.
             </p>
           )}
           {ToolBody && <ToolBody key={tool} />}
+          {tool !== "data" && <BuildThis recipe={tool === "transactions" ? "transactions" : tool === "proof" ? "proof" : "tools"} />}
         </>
       ) : (
         <EmptyState

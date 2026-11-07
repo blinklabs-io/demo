@@ -35,6 +35,18 @@ function creationExperience(
 
 const experiences = [
   creationExperience("transactions", "studio", "Compose · Inspect · Export"),
+  creationExperience("data", "studio", "Datums · Redeemers · CBOR"),
+  {
+    to: "/explorer/track",
+    title: "Transaction tracker",
+    category: "Explore",
+    symbol: "↗",
+    description:
+      "Follow submission, mempool presence, inclusion and confirmations with live chain evidence.",
+    tag: "From submission to inclusion",
+    art: "mempool",
+    action: "Track a transaction",
+  },
   {
     to: "/participate",
     title: "Participation",
@@ -288,7 +300,11 @@ export default function Experiences() {
           to inspect the transaction behind it.
         </p>
         {recent.data && (
-          <BlockActivityStrip blocks={recent.data.blocks} selectedHash={shownBlock?.hash} onSelect={setInspectedBlock} />
+          <BlockActivityStrip
+            blocks={recent.data.blocks}
+            selectedHash={shownBlock?.hash}
+            onSelect={setInspectedBlock}
+          />
         )}
         {recent.error && shownBlock && (
           <p role="status" className="text-amber-300">

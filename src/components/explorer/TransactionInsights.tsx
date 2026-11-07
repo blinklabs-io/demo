@@ -378,6 +378,7 @@ function DatumView({ cbor }: { cbor: string }) {
   return (
     <div>
       <Identifier value={cbor} label="datum CBOR" />
+      <Link to="/wallet/tools/data" state={{ plutusCbor: cbor }}>Open datum workbench →</Link>
       {decoded && <pre className="ti-datum">{decoded}</pre>}
     </div>
   );
@@ -573,6 +574,7 @@ function Execution({
             </div>
             <RawValue value={r.data} label="Redeemer data" />
             <Identifier value={r.cbor} label="redeemer data CBOR" />
+            <Link to="/wallet/tools/data" state={{ plutusCbor: r.cbor }}>Open redeemer workbench →</Link>
           </article>
         ))}
       </div>

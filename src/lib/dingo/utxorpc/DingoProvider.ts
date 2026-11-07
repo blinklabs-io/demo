@@ -1,3 +1,4 @@
+import { useSubmissionStore } from "../../../stores/submissionStore";
 import {
   Core,
   Provider,
@@ -183,6 +184,7 @@ export class DingoProvider extends Provider {
     );
     if (id !== tx.getId())
       throw new Error("Dingo returned a mismatched transaction hash.");
+    useSubmissionStore.getState().record(id, tx.body().ttl());
     return id;
   }
   async awaitTransactionConfirmation(id: Core.TransactionId, timeout = 60_000) {

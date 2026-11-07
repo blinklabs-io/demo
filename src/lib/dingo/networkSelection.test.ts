@@ -20,6 +20,9 @@ it("leaves the current chain intact when selecting it again", () => {
 });
 
 it.each([
+  ["/explorer/track", "/explorer/track"],
+  ["/explorer/track/old", "/explorer/track"],
+  ["/wallet/tools/data", "/wallet/tools/data"],
   ["/wallet/tools/transactions", "/wallet/tools/transactions"],
   ["/wallet/delegate?drep=old", "/wallet/delegate"],
   ["/explorer/proposal/old", "/explorer/governance"],

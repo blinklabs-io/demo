@@ -240,3 +240,24 @@ the reviewed draft and guards outstanding asynchronous signing work. An accepted
 transaction hash survives form edits and position selection while confirmation
 is pending. Chain rollbacks invalidate affected market snapshots and reset opaque
 Kernel cursors before further discovery.
+
+## Transaction evidence and data inspection
+
+Transaction pages and `/explorer/track/:hash` show a shared tracker. Successful
+Dingo submissions record a bounded in-memory receipt after the returned ID is
+verified. Mempool snapshots supply current observation; indexed transaction
+records supply inclusion and script validity. Each poll re-reads inclusion and
+the tip. Rollbacks and reconnects reset tracker queries, and unavailable reads
+remove the displayed confirmation count. Switching networks returns a tracked
+transaction to the empty tracker while preserving the capability.
+
+The data workbench at `/wallet/tools/data` decodes pasted CBOR locally. Loading a
+transaction verifies its serialized ID before extracting data. Input resolution
+is a separate query, so its failure does not discard witness or output data.
+Data selections retain their original CBOR and identify source outputs and
+reference scripts. Structured JSON preserves integer precision and makes no
+contract-schema assumptions. Transaction and studio datum links prefill the
+workbench without a wallet prompt.
+
+Developer sections expose read-only requests using the selected network's API
+root, with copy controls and links to the source that builds each experience.

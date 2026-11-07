@@ -28,6 +28,7 @@ export interface PendingTx {
   totalOutputLovelace: bigint;
   fee: bigint;
   seenAt: number;
+  validUntil?: number;
 }
 
 // Dingo's WatchMempool/ReadMempool only ever populate raw tx bytes, never
@@ -52,6 +53,7 @@ export function decodeMempoolTx(nativeBytes: Uint8Array): PendingTx | null {
       totalOutputLovelace,
       fee: body.fee(),
       seenAt: Date.now(),
+      validUntil: body.ttl(),
     };
   } catch {
     // A tx type this app's Blaze version doesn't understand (e.g. a very
