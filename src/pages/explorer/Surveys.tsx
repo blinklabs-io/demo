@@ -164,7 +164,7 @@ export default function Surveys() {
           <input type="checkbox" checked={showInactive} onChange={(event) => setShowInactive(event.target.checked)} />
           Show expired surveys or surveys with unknown deadlines
         </label>
-        {!showInactive && health.isError && <p role="alert">Unable to verify the current epoch. Active surveys cannot be determined.</p>}
+        {!showInactive && (health.isError || health.data?.isHealthy === false) && <p role="alert">Unable to verify the current epoch. Active surveys cannot be determined.</p>}
         <div className="survey-directory">
           {shown.map((c) => (
             <Link

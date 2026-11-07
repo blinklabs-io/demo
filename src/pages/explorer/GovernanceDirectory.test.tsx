@@ -6,14 +6,15 @@ import { expect, it, vi } from "vitest";
 import Governance from "./Governance";
 import Surveys from "./Surveys";
 
-const clock = vi.hoisted(() => ({ epoch: 10, failed: false }));
+const clock = vi.hoisted(() => ({ epoch: 10, failed: false, healthy: true }));
 vi.mock("../../lib/dingo/nodeHealth", () => ({
-  useNodeHealth: () => ({ data: { tipEpoch: clock.epoch, isHealthy: true }, isError: clock.failed }),
+  useNodeHealth: () => ({ data: { tipEpoch: clock.epoch, isHealthy: clock.healthy }, isError: clock.failed }),
 }));
 
 it.each(["proposals", "surveys"])("hides inactive %s until explicitly requested and rechecks the epoch", async (directory) => {
   clock.epoch = 10;
   clock.failed = false;
+  clock.healthy = true;
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
   const titles = ["Open now", "Ended", "Unknown deadline", "Enacted", "Ratified", "Dropped", "Expired"];
   if (directory === "proposals") {
@@ -52,9 +53,24 @@ it.each(["proposals", "surveys"])("hides inactive %s until explicitly requested 
     await act(async () => render());
     expect(container.textContent).not.toContain("Open now");
     expect(container.textContent).toContain("Unable to verify the current epoch");
+    clock.failed = false;
+    clock.healthy = false;
+    await act(async () => render());
+    expect(container.textContent).not.toContain("Open now");
+    expect(container.textContent).toContain("Unable to verify the current epoch");
+    clock.healthy = true;
+    vi.mocked(fetch).mockImplementation(async () => new Response('{"message":"Lifecycle unavailable"}', { status: 503 }));
+    await act(async () => { await client.refetchQueries({ queryKey: ["dingo", directory === "proposals" ? "proposals" : "surveys"] }); });
+    await act(async () => render());
+    expect(container.textContent).toContain("Open now");
+    expect(container.textContent).not.toContain("Ended");
+    if (directory === "proposals") expect(container.textContent).toContain("Showing previously loaded data");
+    await act(async () => checkbox.click());
+    expect(container.textContent).toContain("Open now");
   } finally {
     await act(async () => root.unmount());
     client.clear();
     clock.failed = false;
+    clock.healthy = true;
   }
 });

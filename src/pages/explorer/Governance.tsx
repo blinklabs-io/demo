@@ -109,7 +109,7 @@ export default function Governance() {
     },
     refetchInterval: 15_000,
   });
-  const rows = (proposals.isError ? [] : proposals.data ?? []).filter((row) =>
+  const rows = (proposals.data ?? []).filter((row) =>
     showInactive || (health.data?.isHealthy === true && !health.isError && Number.isSafeInteger(row.expiration) &&
       !votingClosed(row, health.data.tipEpoch)),
   );
@@ -136,7 +136,7 @@ export default function Governance() {
         </label>
         <QueryState hasData={proposals.data !== undefined} isLoading={proposals.isLoading} error={proposals.error}>
           {!showInactive && <p className="tool-help">Only proposals still open for voting are shown.</p>}
-          {!showInactive && health.isError && <p role="alert">Unable to verify the current epoch. Retry when the node is available.</p>}
+          {!showInactive && (health.isError || health.data?.isHealthy === false) && <p role="alert">Unable to verify the current epoch. Retry when the node is available.</p>}
           {rows.length > 0 && (
             <div className="governance-mix">
               <Distribution
@@ -169,6 +169,7 @@ export default function Governance() {
           )}
           <ul className="activity-list">{rows.map((row) => <li key={row.id}><ProposalCard row={row} /></li>)}</ul>
         </QueryState>
+        {proposals.isError && <button type="button" onClick={() => void proposals.refetch()} disabled={proposals.isFetching}>Retry proposal lifecycle</button>}
         <Pagination page={page} onPageChange={setPage} hasNextPage={proposals.data?.length === 20} />
       </Panel>
       <Panel title="Constitutional committee">
