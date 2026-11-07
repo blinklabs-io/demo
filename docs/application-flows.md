@@ -280,3 +280,11 @@ The detail panel retains these distinctions and reports encoded signer counts
 without inferring committee weight or quorum. Decoding one unsupported native
 record leaves the other records available. Immutable native-byte caches remain
 keyed by hash while chain reconciliation refreshes the sampled block list.
+
+On Musashi block pages, native Dijkstra envelopes identify whether transactions
+belong to the ranking body or its certified EB. A certificate resolves the EB
+announcement from the immediate parent, never from the certifying block's own
+announcement. Blockfrost transaction CBOR supplies individual serialized sizes
+and fees. Body hashes are checked before rows enter the view, and a malformed
+row leaves other rows visible. Paged byte totals remain partial until the full
+indexed count is decoded; announced manifest size is a separate measurement.
