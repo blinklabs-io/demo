@@ -18,13 +18,12 @@ export function reconcileMempoolSlots(transactions: PendingTx[], previous: Map<s
 }
 
 export function mempoolOverview(transactions: PendingTx[], slots: Map<string, number>) {
-  const capacity = Math.max(64, 2 ** Math.ceil(Math.log2(Math.max(1, ...slots.values()) + 1)));
   const maximumFee = transactions.reduce((max, tx) => tx.fee > max ? tx.fee : max, 0n);
   const nodes = transactions.map((tx) => {
     const slot = slots.get(tx.hash);
     if (slot === undefined) throw new Error("Missing mempool layout slot.");
     const angle = slot * Math.PI * (3 - Math.sqrt(5));
-    const radius = Math.sqrt((slot + 0.5) / capacity);
+    const radius = Math.sqrt((slot + 0.5) / (slot + 256));
     const weight = maximumFee > 0n ? Number(tx.fee * 1000n / maximumFee) / 1000 : 0;
     return { tx, x: 500 + Math.cos(angle) * radius * 465, y: 300 + Math.sin(angle) * radius * 265, radius: 4 + Math.sqrt(weight) * 3 };
   });

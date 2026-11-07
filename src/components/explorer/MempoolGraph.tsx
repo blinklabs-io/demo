@@ -38,7 +38,7 @@ export function MempoolGraph({ transactions, status }: { transactions: PendingTx
         <button type="button" aria-pressed={overview} onClick={() => setMode("overview")}>Whole mempool</button>
         <button type="button" aria-pressed={!overview} onClick={() => setMode("transactions")}>Transaction view</button>
       </nav>}
-      {overview && <MempoolOverview transactions={transactions} active={active} onSelect={setActive} />}
+      {transactions.length > MEMPOOL_GRAPH_PAGE_SIZE && <div hidden={!overview}><MempoolOverview transactions={transactions} active={active} onSelect={setActive} /></div>}
       <div className="mempool-web-legend"><span>● Inputs</span><span>● Transaction & fee</span><span>● Outputs</span></div>
       {shown.length > 0 ? <>
         <div className="mempool-web-canvas">

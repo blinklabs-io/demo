@@ -56,7 +56,7 @@
 .mempool-overview-tools { justify-content: space-between; margin-bottom: 16px; }
 .mempool-overview-tools input { min-width: 0; flex: 1; border: 1px solid #46516d; padding: 8px 12px; border-radius: 8px; background: #0b1422; color: #dbeafe; }
 .mempool-overview-tools form { flex: 1 1 270px; }
-.mempool-overview-canvas { width: 100%; display: block; min-height: 320px; max-height: 650px; background: radial-gradient(ellipse, #20223a55, #0a132088); border-radius: 18px; touch-action: none; cursor: grab; }
+.mempool-overview-canvas { width: 100%; display: block; min-height: 320px; max-height: 650px; background: radial-gradient(ellipse, #20223a55, #0a132088); border-radius: 18px; touch-action: pan-y pinch-zoom; cursor: grab; }
 .mempool-overview-canvas:active { cursor: grabbing; }
 .mempool-overview-edge { stroke: #b49af7; stroke-width: 0.8; }
 .mempool-overview-node { cursor: pointer; outline: none; }
@@ -64,3 +64,5 @@
 .mempool-overview-node:hover circle, .mempool-overview-node:focus-visible circle, .mempool-overview-node[aria-pressed="true"] circle { fill: #e7ddff; stroke: #fff; stroke-width: 3; }
 .mempool-overview-selected circle { fill: none; stroke: #c4b5fd; stroke-width: 1.5; }
 .mempool-overview-selected text { fill: #f0eaff; font-size: 12px; paint-order: stroke; stroke: #0b1422; stroke-width: 3px; }
+
+.mempool-overview-tools button:disabled { opacity: .45; cursor: not-allowed; }

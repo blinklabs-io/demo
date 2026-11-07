@@ -43,11 +43,22 @@ it("shows all 320 pending transactions, retains positions on arrivals, and inspe
   try {
     await act(async () => render(transactions));
     expect(container.querySelectorAll(".mempool-overview-node")).toHaveLength(320);
+    expect(container.querySelectorAll('.mempool-overview-node[tabindex="0"]')).toHaveLength(1);
+    const first = container.querySelector('.mempool-overview-node')!;
+    await act(async () => first.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true })));
+    expect(container.querySelector('.mempool-overview-node[tabindex="0"]')?.getAttribute("data-hash")).toBe(transactions[319].hash);
     const node = container.querySelectorAll(".mempool-overview-node")[319];
     const position = [node.getAttribute("data-x"), node.getAttribute("data-y")];
     await act(async () => node.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
     expect(container.querySelector('[aria-label="Selected pending transaction"]')?.textContent).toContain(transactions[319].hash);
+    const zoom = container.querySelector<HTMLButtonElement>('[aria-label="Zoom in"]')!;
+    await act(async () => zoom.click());
+    const transform = container.querySelector('.mempool-overview-canvas > g')?.getAttribute("transform");
+    const button = (name: string) => Array.from(container.querySelectorAll("button")).find((item) => item.textContent === name)!;
+    await act(async () => button("Transaction view").click());
     await act(async () => render([{ ...transactions[0], hash: "ff".repeat(32) }, ...transactions]));
+    await act(async () => button("Whole mempool").click());
+    expect(container.querySelector('.mempool-overview-canvas > g')?.getAttribute("transform")).toBe(transform);
     const retained = container.querySelector(`[data-hash="${transactions[319].hash}"]`)!;
     expect([retained.getAttribute("data-x"), retained.getAttribute("data-y")]).toEqual(position);
     expect(container.querySelectorAll(".mempool-overview-node")).toHaveLength(321);
