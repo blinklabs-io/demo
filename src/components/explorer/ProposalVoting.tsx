@@ -20,7 +20,7 @@ import {
   type VoteChoice,
   type VotingProposal,
 } from "../../lib/dingo/governanceVote";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 import { WalletConnectSummary } from "../layout/WalletConnectSummary";
 import { Panel } from "./Panel";
 import { HashLink } from "./HashLink";
@@ -261,7 +261,7 @@ function VotingForm({
                   </div>
                   <div>
                     <dt>Network fee</dt>
-                    <dd>{formatAda(prepared.tx.body().fee())}</dd>
+                    <dd>{formatNativeCoin(prepared.tx.body().fee())}</dd>
                   </div>
                   <div>
                     <dt>Network</dt>

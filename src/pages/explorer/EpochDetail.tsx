@@ -16,7 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 
 interface ProtocolParamsResponse {
   epoch: number;
@@ -262,17 +262,17 @@ export default function EpochDetail() {
                   />
                   <Metric
                     label="Fees"
-                    value={formatAda(BigInt(epochQuery.data.fees))}
+                    value={formatNativeCoin(BigInt(epochQuery.data.fees))}
                   />
                 </div>
                 <Field
                   label="Output"
-                  value={formatAda(BigInt(epochQuery.data.output))}
+                  value={formatNativeCoin(BigInt(epochQuery.data.output))}
                 />
                 {epochQuery.data.active_stake && (
                   <Field
                     label="Active stake"
-                    value={formatAda(BigInt(epochQuery.data.active_stake))}
+                    value={formatNativeCoin(BigInt(epochQuery.data.active_stake))}
                   />
                 )}
               </div>
@@ -316,15 +316,15 @@ export default function EpochDetail() {
               />
               <Field
                 label="Key deposit"
-                value={formatAda(BigInt(paramsQuery.data.key_deposit))}
+                value={formatNativeCoin(BigInt(paramsQuery.data.key_deposit))}
               />
               <Field
                 label="Pool deposit"
-                value={formatAda(BigInt(paramsQuery.data.pool_deposit))}
+                value={formatNativeCoin(BigInt(paramsQuery.data.pool_deposit))}
               />
               <Field
                 label="Min pool cost"
-                value={formatAda(BigInt(paramsQuery.data.min_pool_cost))}
+                value={formatNativeCoin(BigInt(paramsQuery.data.min_pool_cost))}
               />
               <Field
                 label="a0 / rho / tau"

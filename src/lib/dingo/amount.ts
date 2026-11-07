@@ -1,3 +1,5 @@
+import { nativeTicker } from "../format";
+
 export function parseAssetAmount(
   value: string,
   decimals: number,
@@ -27,6 +29,6 @@ export function parseAssetAmount(
   );
 }
 
-export function parseAdaToLovelace(value: string): bigint {
-  return parseAssetAmount(value, 6, "ADA");
+export function parseNativeToLovelace(value: string): bigint {
+  return parseAssetAmount(value, 6, nativeTicker());
 }

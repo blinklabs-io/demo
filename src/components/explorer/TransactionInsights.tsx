@@ -5,7 +5,7 @@ import { Panel } from "./Panel";
 import { CopyButton } from "./CopyButton";
 import { HashLink } from "./HashLink";
 import { AssetIcon } from "../wallet/AssetChooser";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin, nativeTicker } from "../../lib/format";
 import { assetName } from "../../lib/tools/transactions";
 import { fraction } from "../../lib/chain/geometry";
 import {
@@ -120,7 +120,7 @@ export function TransactionPassport({
       <Identifier value={record.hash} label="transaction ID" />
       <div className="ti-passport-metrics">
         <div>
-          <strong>{formatAda(BigInt(record.fees))}</strong>
+          <strong>{formatNativeCoin(BigInt(record.fees))}</strong>
           <span>
             {record.valid_contract
               ? "Transaction fee"
@@ -263,7 +263,7 @@ export function TransactionOutputs({
                   <AddressKind address={row.address} />
                 </header>
                 <strong className="ti-io-value">
-                  {coin ? formatAda(BigInt(coin.quantity)) : "0.00 ADA"}
+                  {coin ? formatNativeCoin(BigInt(coin.quantity)) : `0.00 ${nativeTicker()}`}
                 </strong>
                 <div className="ti-edge-status">
                   <span>{applied}</span>
@@ -715,7 +715,7 @@ function LedgerActions({
                 {scriptHook ? "Staking script execution" : "Reward withdrawal"}
               </h3>
               <strong>
-                {scriptHook ? "No ADA withdrawn" : formatAda(value)}
+                {scriptHook ? `No ${nativeTicker()} withdrawn` : formatNativeCoin(value)}
               </strong>
               <HashLink kind="account" id={address} full />
               {scriptHook && (
@@ -730,7 +730,7 @@ function LedgerActions({
           <article>
             <span className="ti-action-icon">◎</span>
             <h3>Treasury donation</h3>
-            <strong>{formatAda(donation)}</strong>
+            <strong>{formatNativeCoin(donation)}</strong>
             <span>To the Cardano treasury</span>
           </article>
         )}
@@ -759,7 +759,7 @@ function LedgerActions({
           <article key={i}>
             <span className="ti-action-icon">§</span>
             <h3>Governance proposal</h3>
-            <strong>{formatAda(p.deposit())} deposit</strong>
+            <strong>{formatNativeCoin(p.deposit())} deposit</strong>
             <HashLink kind="account" id={p.rewardAccount()} full />
             <RawValue value={p.toCore()} label="Proposal & anchor" />
           </article>

@@ -207,6 +207,7 @@ export async function loadHeaderHistory({
   const genesis = await blockfrostFetch<{
     network_magic: number;
     system_start: number;
+    slot_length: number;
   }>("/api/v0/genesis", { signal });
   if (
     genesis.network_magic !== DINGO_NETWORK.networkMagic ||
@@ -215,7 +216,10 @@ export async function loadHeaderHistory({
     throw new Error(
       "Header history requires genesis data for the selected network.",
     );
-  const eras = await blockfrostFetch<Era[]>("/api/v0/network/eras", { signal });
+  // Musashi activates all eras at genesis, so its genesis defines the slot clock.
+  const eras: Era[] = DINGO_NETWORK.id === "musashi"
+    ? [{ start: { slot: 0, time: genesis.system_start }, parameters: { slot_length: genesis.slot_length } }]
+    : await blockfrostFetch<Era[]>("/api/v0/network/eras", { signal });
   // Blockfrost reports era start times in seconds since system start, while
   // Dingo reports UNIX timestamps; a value below system_start can only be relative.
   const startTime = (era: Era) =>

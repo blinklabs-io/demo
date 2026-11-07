@@ -1,3 +1,4 @@
+import { nativeTicker } from "../../lib/format";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { Link } from "../NetworkLink";
 import { useQuery } from "@tanstack/react-query";
@@ -70,7 +71,7 @@ export function ChainSnapshot() {
           </QueryState>
         </Panel>
         <Panel
-          title="ADA supply"
+          title={`${nativeTicker()} supply`}
           action={
             <Link className="text-xs text-sky-400" to="/explorer/network">
               Network ↗
@@ -80,7 +81,7 @@ export function ChainSnapshot() {
           <QueryState hasData={network.data !== undefined} isLoading={network.isLoading} error={network.error}>
             {network.data && (
               <Distribution
-                title="ADA supply"
+                title={`${nativeTicker()} supply`}
                 unit={compactAda(network.data.supply.max)}
                 items={(
                   [

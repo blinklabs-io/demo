@@ -1,3 +1,5 @@
+import { nativeTicker } from "./format";
+
 const definitions = [
   {
     id: "data",
@@ -54,7 +56,7 @@ const definitions = [
     id: "treasury",
     icon: "◎",
     name: "Treasury donation",
-    description: "Donate test ADA directly to the treasury.",
+    description: `Donate test ${nativeTicker()} directly to the treasury.`,
     color: "amber",
   },
 ] as const;

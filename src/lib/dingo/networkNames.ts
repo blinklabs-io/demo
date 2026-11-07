@@ -6,6 +6,10 @@ export function networkName(magic: number): string {
       return "Preprod";
     case 164:
       return "Musashi";
+    case 6:
+      return "Dijkstra";
+    case 3311:
+      return "Prime Testnet";
     case 2:
       return "Preview";
     default:

@@ -18,7 +18,7 @@ import {
   type PreparedTool,
   type ToolAction,
 } from "../../lib/tools/transactions";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin } from "../../lib/format";
 
 export function ToolTransaction({
   action,
@@ -172,7 +172,7 @@ export function ToolTransaction({
               <h3>Check the actual transaction.</h3>
             </div>
             <strong>
-              {formatAda(draft.tx.body().fee())}
+              {formatNativeCoin(draft.tx.body().fee())}
               <small>Network fee</small>
             </strong>
           </div>

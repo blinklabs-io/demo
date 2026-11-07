@@ -18,7 +18,7 @@ import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { Panel } from "../../components/explorer/Panel";
 import { type AmountEntry } from "../../components/explorer/AdaAmount";
 import { QueryState } from "../../components/explorer/QueryState";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin, nativeTicker } from "../../lib/format";
 import { useMempoolStore } from "../../stores/mempoolStore";
 
 interface TransactionResponse {
@@ -323,12 +323,12 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
           </div>
           <div className="ti-passport-metrics">
             <div>
-              <strong>{formatAda(pendingTx.fee)}</strong>
+              <strong>{formatNativeCoin(pendingTx.fee)}</strong>
               <span>Declared fee</span>
             </div>
             <div>
-              <strong>{formatAda(pendingTx.totalOutputLovelace)}</strong>
-              <span>Planned output ADA</span>
+              <strong>{formatNativeCoin(pendingTx.totalOutputLovelace)}</strong>
+              <span>Planned output {nativeTicker()}</span>
             </div>
           </div>
           <Link to="/explorer/mempool" className="experience-primary">

@@ -15,7 +15,7 @@ import {
   type PreparedWithdrawal,
 } from "../../lib/dingo/rewardWithdrawal";
 import { governanceError } from "../../lib/dingo/governanceVote";
-import { formatAda } from "../../lib/format";
+import { formatNativeCoin, nativeTicker } from "../../lib/format";
 import { Panel } from "./Panel";
 import { HashLink } from "./HashLink";
 
@@ -134,7 +134,7 @@ function RewardsForm({
       <div className="wallet-rewards">
         <div className="wallet-rewards-balance">
           <span className="eyebrow">Available to withdraw</span>
-          <strong>{available === null ? "—" : formatAda(available)}</strong>
+          <strong>{available === null ? "—" : formatNativeCoin(available)}</strong>
           <p>
             {!address
               ? "This wallet has no reward address."
@@ -177,15 +177,15 @@ function RewardsForm({
           <dl>
             <div>
               <dt>Rewards</dt>
-              <dd>{formatAda(prepared.amount)}</dd>
+              <dd>{formatNativeCoin(prepared.amount)}</dd>
             </div>
             <div>
               <dt>Transaction fee</dt>
-              <dd>{formatAda(prepared.tx.body().fee())}</dd>
+              <dd>{formatNativeCoin(prepared.tx.body().fee())}</dd>
             </div>
             <div>
-              <dt>Spendable ADA added after fee</dt>
-              <dd>{formatAda(prepared.amount - prepared.tx.body().fee())}</dd>
+              <dt>Spendable {nativeTicker()} added after fee</dt>
+              <dd>{formatNativeCoin(prepared.amount - prepared.tx.body().fee())}</dd>
             </div>
           </dl>
           <p>

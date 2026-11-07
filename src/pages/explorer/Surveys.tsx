@@ -1,3 +1,4 @@
+import { nativeTicker } from "../../lib/format";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useState } from "react";
 import { BlockfrostError } from "../../lib/dingo/blockfrost";
@@ -471,7 +472,7 @@ export function SurveyCreate() {
           </ol>
           <p>
             Public responses. One latest valid response per payment credential.
-            No ADA weighting.
+            No {nativeTicker()} weighting.
           </p>
         </aside>
       </div>
@@ -941,7 +942,7 @@ function SurveyDetailContent() {
             <p className="survey-note">
               One response per payment credential, with the latest valid
               response replacing earlier answers. These counts do not represent
-              unique people or ADA-weighted votes.
+              unique people or {nativeTicker()}-weighted votes.
             </p>
           </div>
         </Panel>
