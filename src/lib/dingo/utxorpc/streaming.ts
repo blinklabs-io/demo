@@ -3,6 +3,7 @@ import type { CardanoTipEvent } from "@utxorpc/sdk";
 import { Core } from "@blaze-cardano/sdk";
 import { DINGO_CONFIG } from "../config";
 import { bytesToHex } from "./bytes";
+import { formatAddress } from "../../format";
 
 let submitClient: CardanoSubmitClient | null = null;
 let syncClient: CardanoSyncClient | null = null;
@@ -29,6 +30,8 @@ export interface PendingTx {
   fee: bigint;
   seenAt: number;
   validUntil?: number;
+  inputs: { hash: string; index: number }[];
+  outputs: { address: string; lovelace: bigint; assets: { unit: string; quantity: bigint }[] }[];
 }
 
 // Dingo's WatchMempool/ReadMempool only ever populate raw tx bytes, never
@@ -54,6 +57,12 @@ export function decodeMempoolTx(nativeBytes: Uint8Array): PendingTx | null {
       fee: body.fee(),
       seenAt: Date.now(),
       validUntil: body.ttl(),
+      inputs: body.inputs().values().map((input) => ({ hash: String(input.transactionId()), index: Number(input.index()) })),
+      outputs: body.outputs().map((output) => ({
+        address: formatAddress(output.address()),
+        lovelace: output.amount().coin(),
+        assets: [...(output.amount().multiasset() ?? [])].map(([unit, quantity]) => ({ unit: String(unit), quantity })),
+      })),
     };
   } catch {
     // A tx type this app's Blaze version doesn't understand (e.g. a very
