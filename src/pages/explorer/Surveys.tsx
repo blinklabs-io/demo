@@ -52,6 +52,7 @@ function InlineError({ error }: { error: Error | null }) {
 export default function Surveys() {
   const [search, setSearch] = useState("");
   const [showAll, setShowAll] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
   const health = useNodeHealth();
   const query = useInfiniteQuery({
     queryKey: ["dingo", "surveys", "directory"],
@@ -91,6 +92,8 @@ export default function Surveys() {
     ...new Map(cards.map((c) => [`${c.hash}:${c.index}`, c])).values(),
   ];
   const shown = unique
+    .filter((c) => showInactive || (health.data?.isHealthy === true && !health.isError &&
+      c.end !== null && Number.isSafeInteger(c.end) && c.end >= health.data.tipEpoch))
     .filter((c) => showAll || (c.keyholders && c.version === 5))
     .filter((c) => c.title.toLowerCase().includes(search.toLowerCase()));
   return (
@@ -157,6 +160,11 @@ export default function Surveys() {
           />
           Include surveys requiring other roles or versions
         </label>
+        <label className="survey-check survey-note">
+          <input type="checkbox" checked={showInactive} onChange={(event) => setShowInactive(event.target.checked)} />
+          Show expired surveys or surveys with unknown deadlines
+        </label>
+        {!showInactive && health.isError && <p role="alert">Unable to verify the current epoch. Active surveys cannot be determined.</p>}
         <div className="survey-directory">
           {shown.map((c) => (
             <Link
