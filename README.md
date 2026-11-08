@@ -288,7 +288,7 @@ detect a rollback during the recount.
 Expensive REST reads share bounded queues matching Dingo v0.90.5's per-client
 admission limits. GET requests honor bounded `Retry-After` responses; mutations
 are never automatically retried. Swap flows use SundaeSwap core 3.4.0 with the
-Dingo query provider and verified Preview V4 deployment configuration.
+Dingo query provider and verified Mainnet and Preview V3/V4 deployment configurations.
 
 ## Sending asset bundles
 

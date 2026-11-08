@@ -490,7 +490,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           : usingDiscovered
           ? "Pools discovered live from Dingo."
           : discoveredQuery.isError
-            ? "Pool discovery failed. Retry the Dingo query."
+            ? "Pool discovery failed; select from the known Preview pools below."
             : discoveredQuery.isFetching
               ? "Discovering pools from Dingo…"
               : !networkCheck.isSuccess
