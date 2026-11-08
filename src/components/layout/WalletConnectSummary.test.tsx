@@ -25,7 +25,7 @@ it.each(["mainnet", "preview", "preprod", "musashi", "dijkstra", "prime-testnet"
       if (network === "mainnet") {
         expect(notice?.textContent).toContain("Mainnet uses real ADA and tokens");
         expect(notice?.textContent).toContain("loss of funds");
-        expect(notice?.textContent).toContain("not endorsements");
+        expect(notice?.textContent).toContain("do not imply endorsement by Blink Labs or by the protocol’s developers");
         expect(notice?.textContent).toContain("does not provide financial advice");
         expect(wallet.getAttribute("aria-describedby")).toBe(notice?.id);
       } else {
