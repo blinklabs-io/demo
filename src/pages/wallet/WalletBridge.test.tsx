@@ -82,11 +82,24 @@ it("continues polling an unfinished refund and stops when it is delivered", asyn
   vi.useFakeTimers();
   vi.mocked(readBridgeTransfer).mockResolvedValue({ hash, destination: "nexus", status: "SubmittedToDestination", destinationHash: null, isRefund: true });
   await render("&hash=" + hash);
+  expect(host.textContent).toContain("Refund recorded by Reactor · Sent to destination");
+  expect(host.querySelectorAll(".bridge-stages .complete")).toHaveLength(4);
   await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
   expect(readBridgeTransfer).toHaveBeenCalledTimes(2);
   vi.mocked(readBridgeTransfer).mockResolvedValue({ hash, destination: "nexus", status: "ExecutedOnDestination", destinationHash: "0x" + second, isRefund: true });
   await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
   expect(readBridgeTransfer).toHaveBeenCalledTimes(3);
+  expect(host.textContent).toContain("Refund recorded by Reactor · Delivered");
+  expect(host.querySelectorAll(".bridge-stages .complete")).toHaveLength(5);
   await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
   expect(readBridgeTransfer).toHaveBeenCalledTimes(3);
+});
+
+it("clears a lookup error when navigation selects a valid transfer", async () => {
+  const router = await render();
+  await input("Prime transaction hash", "invalid");
+  await act(async () => { host.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
+  expect(host.textContent).toContain("Enter a 64-character Prime transaction hash.");
+  await act(async () => { await router.navigate("?network=prime-testnet&hash=" + hash); });
+  expect(host.textContent).not.toContain("Enter a 64-character Prime transaction hash.");
 });
