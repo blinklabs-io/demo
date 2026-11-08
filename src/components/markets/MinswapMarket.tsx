@@ -550,6 +550,9 @@ export function MinswapMarket({
                 </button>
               </div>
             </section>
+            {chosen && !pool && !selectedPool.error && (
+              <MarketLoading retry={() => void selectedPool.refetch()} />
+            )}
             {pool && (
               <section className="market-form">
                 <h2>
