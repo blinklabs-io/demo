@@ -518,7 +518,7 @@ Experiences include expandable **Build this yourself** sections with setup
 steps for your own Dingo instance and JavaScript, cURL, and SDK examples.
 Sync your node to the selected network, enable API storage and the relevant
 listeners, then replace the local endpoint constants with your own URLs.
-Browser clients need reachable HTTPS APIs and their exact origin allowed by
+Hosted browser clients need reachable HTTPS APIs and their exact origin allowed by
 your node’s CORS configuration. The examples use local listeners rather than
 the demo’s hosted APIs. See the [Dingo quick start](https://docs.blinklabs.io/guides/dingo/002-quick-start-overview/)
 and [API configuration](https://docs.blinklabs.io/guides/dingo/006-apis-and-archive/).
