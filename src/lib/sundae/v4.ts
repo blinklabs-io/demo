@@ -1,5 +1,8 @@
+import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
+import { DINGO_NETWORK } from "../dingo/config";
+import { MAINNET_SUNDAE_V4_DEPLOYMENT, MAINNET_SUNDAE_V4_REFERENCES } from "./mainnet";
 import { assertTransactionNetwork } from "../dingo/walletSession";
-import { assertPreviewSundae } from "./protocol";
+import { assertSundaeNetwork } from "./protocol";
 import { Blaze, Core, type Wallet } from "@blaze-cardano/sdk";
 import { AssetAmount } from "@sundaeswap/asset";
 import {
@@ -24,7 +27,7 @@ import { metadataFor, unitFromAssetId } from "./assets";
 import { DingoSundaeQueryProvider } from "./dingoQueryProvider";
 
 // Canonical Preview deployment: SundaeSwap-finance/scooper-v2/config/preview-v4.json.
-export const V4_DEPLOYMENT = {
+const PREVIEW_V4_DEPLOYMENT = {
   pool: "f577d24cfa393efdb85482554acbdd5082f99acba9c17eab916cf87a",
   order: "8a7ecdafb3605ddf761751b391c20482b7ef42ca01575d135d484c2b",
   settings: "43f2ee25b54dcd8150df9e9908ae890638844cd3a748ef05d8a09d09",
@@ -36,7 +39,9 @@ export const V4_DEPLOYMENT = {
   constantSum: "fa7f4860b25488fd63f2a7f5be4e8711520d288074b01286c9f14344",
   stableswap: "9db7ce54fb25f4390a89bb715a022fe79a86b9a043aa22c31c27380a",
 } as const;
-const REFERENCES = [
+export const V4_DEPLOYMENT = DINGO_NETWORK.id === "mainnet"
+  ? MAINNET_SUNDAE_V4_DEPLOYMENT : PREVIEW_V4_DEPLOYMENT;
+const PREVIEW_REFERENCES = [
   [
     "order.spend",
     V4_DEPLOYMENT.order,
@@ -53,6 +58,8 @@ const REFERENCES = [
     "04a51c07ad31edf2e8af96aa18b69afd4dabcbbcd5eb8a00a95dd4a320a242e5",
   ],
 ] as const;
+const REFERENCES = DINGO_NETWORK.id === "mainnet"
+  ? MAINNET_SUNDAE_V4_REFERENCES : PREVIEW_REFERENCES;
 interface Output {
   address: string;
   tx_hash: string;
@@ -60,14 +67,11 @@ interface Output {
   amount: { unit: string; quantity: string }[];
   inline_datum: string | null;
 }
-function scriptAddress(hash: string) {
-  return Core.addressFromCredential(
-    0,
-    Core.Credential.fromCore({
-      hash: Core.Hash28ByteBase16(hash),
-      type: Core.CredentialType.ScriptHash,
-    }),
-  ).toBech32();
+function matchesScriptAddress(address: Core.Address, hash: string): boolean {
+  const credential = address.getProps().paymentPart;
+  return address.getNetworkId() === CARDANO_NETWORK_ID
+    && credential?.type === Core.CredentialType.ScriptHash
+    && credential.hash === hash;
 }
 function list(data: Core.PlutusData): Core.PlutusData[] {
   const value = data.asList();
@@ -100,14 +104,13 @@ function plutus(cbor: string) {
   return Core.PlutusData.fromCbor(Core.HexBlob(cbor));
 }
 async function addressOutputs(hash: string, signal?: AbortSignal) {
-  const address = Core.Address.fromBech32(scriptAddress(hash));
   const response = await getDingoProvider().queryClient.inner.searchUtxos(
     {
       predicate: {
         match: {
           utxoPattern: {
             case: "cardano",
-            value: { address: { exactAddress: hexToBytes(address.toBytes()) } },
+            value: { address: { paymentPart: hexToBytes(hash) } },
           },
         },
       },
@@ -120,7 +123,7 @@ async function addressOutputs(hash: string, signal?: AbortSignal) {
       "V4 address exceeds the bounded 400-output discovery snapshot.",
     );
   const seen = new Set<string>();
-  return response.items.map((item) => {
+  return response.items.flatMap<Output>((item) => {
     if (
       !item.txoRef ||
       item.txoRef.hash.length !== 32 ||
@@ -132,15 +135,17 @@ async function addressOutputs(hash: string, signal?: AbortSignal) {
     const output = Core.TransactionOutput.fromCbor(
       Core.HexBlob.fromBytes(item.nativeBytes),
     );
-    if (output.address().toBytes() !== address.toBytes())
-      throw new Error("Dingo returned a V4 UTxO from another address.");
+    if (!matchesScriptAddress(output.address(), hash)) {
+      console.warn("Ignoring an unrelated output in V4 payment-credential discovery.");
+      return [];
+    }
     const tx_hash = Core.toHex(item.txoRef.hash),
       output_index = item.txoRef.index,
       key = `${tx_hash}#${output_index}`;
     if (seen.has(key)) throw new Error("Dingo returned duplicate V4 UTxOs.");
     seen.add(key);
     return {
-      address: address.toBech32(),
+      address: output.address().toBech32(),
       tx_hash,
       output_index,
       inline_datum: output.datum()?.asInlineData()?.toCbor() ?? null,
@@ -571,7 +576,7 @@ export async function buildV4Swap(
   budget: bigint,
   assertConnection: () => void,
 ) {
-  assertPreviewSundae();
+  assertSundaeNetwork();
   assertConnection();
   if ((offeredIndex !== 0 && offeredIndex !== 1) || amount <= 0n || budget < 0n)
     throw new Error("Invalid V4 offered amount or fee cap.");
@@ -687,9 +692,9 @@ export async function buildV4Swap(
       assertConnection();
       const networkBeforeSigning = await blaze.wallet.getNetworkId();
       assertConnection();
-      if (networkBeforeSigning !== Core.NetworkId.Testnet)
+      if (networkBeforeSigning !== CARDANO_NETWORK_ID)
         throw new Error(
-          "Connect a testnet wallet before signing this V4 intent.",
+          "Connect a wallet on the selected network before signing this V4 intent.",
         );
       await checkAda(requiredAda);
       assertConnection();
@@ -702,9 +707,9 @@ export async function buildV4Swap(
       assertConnection();
       const networkAfterSigning = await blaze.wallet.getNetworkId();
       assertConnection();
-      if (networkAfterSigning !== Core.NetworkId.Testnet)
+      if (networkAfterSigning !== CARDANO_NETWORK_ID)
         throw new Error(
-          "Wallet network changed while signing. Review the V4 intent again on testnet.",
+          "Wallet network changed while signing. Review the V4 intent again on the selected network.",
         );
       await assertTransactionNetwork(
         Core.Transaction.fromCbor(Core.TxCBOR(signed.cbor)),
@@ -776,14 +781,11 @@ export async function readWeeklyV4Prices(pool: V4Pool, signal?: AbortSignal) {
           throw new Error(
             "Dingo returned a different V4 historical transaction.",
           );
-        const poolAddress = Core.Address.fromBech32(
-          scriptAddress(V4_DEPLOYMENT.pool),
-        ).toBytes();
         const outputs = tx
           .body()
           .outputs()
           .map((o, index) => ({ o, index }))
-          .filter(({ o }) => o.address().toBytes() === poolAddress)
+          .filter(({ o }) => matchesScriptAddress(o.address(), V4_DEPLOYMENT.pool))
           .map(({ o, index }) => ({
             address: o.address().toBech32(),
             tx_hash: hash,
@@ -801,7 +803,6 @@ export async function readWeeklyV4Prices(pool: V4Pool, signal?: AbortSignal) {
           }));
         const output = outputs.find(
           (o) =>
-            o.address === scriptAddress(V4_DEPLOYMENT.pool) &&
             o.amount.some((a) => a.unit === nft && a.quantity === "1"),
         );
         const historical = output && decodePool(output);

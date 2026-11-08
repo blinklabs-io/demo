@@ -1,4 +1,4 @@
-import { assertPreviewSundae } from "./protocol";
+import { assertSundaeNetwork } from "./protocol";
 import { governanceError } from "../dingo/governanceVote";
 import {
   assertTransactionNetwork,
@@ -51,7 +51,7 @@ export async function buildSwapOrder({
   slippagePercent,
   assertConnection,
 }: BuildSwapArgs): Promise<BuiltSwap> {
-  assertPreviewSundae();
+  assertSundaeNetwork();
   try {
     await assertWalletSession(blaze.wallet, assertConnection);
     const changeAddress = (await blaze.wallet.getChangeAddress()).toBech32();
