@@ -16,7 +16,10 @@ it("ranks by actual volume and excludes unverified, inactive, unknown-volume and
   ]);
 });
 it("requests a bounded global ranking and returns only normalized public metrics", async () => {
-  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ pool_metrics: [{ ...metric(), secret: "discard" }] }, { headers: { "Set-Cookie": "tracking=yes" } }));
+  const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, options) => {
+    if (options?.redirect === "error") throw new TypeError("Workers does not implement redirect:error.");
+    return Response.json({ pool_metrics: [{ ...metric(), secret: "discard" }] }, { headers: { "Set-Cookie": "tracking=yes" } });
+  });
   const response = await marketPools(new Request("https://demo.pages.dev/market-pools"));
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ pools: parsePopularPools({ pool_metrics: [metric()] }) });
@@ -24,14 +27,14 @@ it("requests a bounded global ranking and returns only normalized public metrics
   expect(response.headers.get("cache-control")).toBe("public, max-age=60");
   const [url, options] = fetch.mock.calls[0];
   expect(url).toBe("https://api-mainnet-prod.minswap.org/v1/pools/metrics");
-  expect(options).toMatchObject({ method: "POST", redirect: "error", credentials: "omit" });
+  expect(options).toMatchObject({ method: "POST", redirect: "manual", credentials: "omit" });
   expect(JSON.parse(String(options?.body))).toEqual({ limit: 12, only_verified: true, sort_field: "volume_24h", sort_direction: "desc", protocols: ["MinswapV2"], currency: "ada" });
 });
 it("does not fetch arbitrary URLs and reports failed or oversized analytics without caching", async () => {
   const fetch = vi.spyOn(globalThis, "fetch");
   expect((await marketPools(new Request("https://demo.pages.dev/market-pools?url=https://elsewhere.org"))).status).toBe(400);
   expect(fetch).not.toHaveBeenCalled();
-  for (const upstream of [new Response("Error", { status: 503 }), new Response("x".repeat(262145)), Response.json({ pool_metrics: Array.from({ length: 13 }, () => metric()) })]) {
+  for (const upstream of [new Response("Error", { status: 503 }), new Response(null, { status: 302, headers: { Location: "https://elsewhere.org" } }), new Response("x".repeat(262145)), Response.json({ pool_metrics: Array.from({ length: 13 }, () => metric()) })]) {
     fetch.mockResolvedValueOnce(upstream);
     const response = await marketPools(new Request("https://demo.pages.dev/market-pools"));
     expect(response.status).toBe(502);
