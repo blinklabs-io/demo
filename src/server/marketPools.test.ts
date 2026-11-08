@@ -41,3 +41,10 @@ it("does not fetch arbitrary URLs and reports failed or oversized analytics with
     expect(response.headers.get("cache-control")).toBe("no-store");
   }
 });
+
+it("identifies upstream HTTP failures without exposing the provider response body", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("provider diagnostic data", { status: 403 }));
+  const response = await marketPools(new Request("https://demo.pages.dev/market-pools"));
+  expect(response.status).toBe(502);
+  expect(await response.json()).toEqual({ error: "Market volumes are unavailable. Retry or browse all pools.", code: "upstream_http_403" });
+});
