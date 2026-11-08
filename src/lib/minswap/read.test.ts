@@ -163,3 +163,16 @@ it("rejects an oversized staking-address scope before making any order API reque
   await expect(readMinswapOrders(senders)).rejects.toThrow("at most 20");
   expect(blockfrostFetch).not.toHaveBeenCalled();
 });
+
+it("ignores another authenticated pool that holds the requested LP token", async () => {
+  const pool = authenticatePool(poolFixtures[0]);
+  const other = {
+    ...poolFixtures[1],
+    amount: [...poolFixtures[1].amount, { unit: pool.lpAsset, quantity: "1" }],
+  };
+  expect(authenticatePool(other).lpAsset).not.toBe(pool.lpAsset);
+  vi.mocked(blockfrostFetch)
+    .mockResolvedValueOnce({ network_magic: 1 })
+    .mockResolvedValueOnce([other, poolFixtures[0]]);
+  await expect(readMinswapPool(pool)).resolves.toMatchObject({ lpAsset: pool.lpAsset });
+});

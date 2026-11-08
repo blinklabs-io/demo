@@ -15,6 +15,7 @@ const data = vi.hoisted(() => ({
   poolError: false,
   positionReads: 0,
   poolReads: 0,
+  popularRows: [] as unknown[],
   selectedReads: 0,
   positionRows: [] as unknown[],
   orderSenders: [] as string[],
@@ -86,6 +87,11 @@ vi.mock("../../lib/minswap/orders", () => ({
   },
 }));
 vi.mock("../../lib/minswap/read", () => ({
+  readPopularMinswapPools: async () => ({ pools: data.popularRows, errors: [], partial: false }),
+  readPopularMinswapPool: async (metric: object) => {
+    data.selectedReads++;
+    return { ...metric, reserveA: 1000000000n, reserveB: 1000000n, totalLiquidity: 1000000n, feeA: 30n, feeB: 30n, dynamicFee: false, txHash: "11".repeat(32), outputIndex: 0 };
+  },
   readMinswapPools: async () => {
     data.poolReads++;
     if (data.poolError) throw new Error("Refresh unavailable");
@@ -139,6 +145,7 @@ beforeEach(() => {
   data.poolError = false;
   data.positionReads = 0;
   data.poolReads = 0;
+  data.popularRows = [];
   data.selectedReads = 0;
   data.positionRows = [];
   data.orderSenders = [];
@@ -295,7 +302,7 @@ it("retains cached pools and the selected action when a background refresh fails
   data.poolError = true;
   await act(async () => {
     await client.refetchQueries({
-      queryKey: ["dingo", "markets", "minswap", "pools", 1, ""],
+      queryKey: ["dingo", "markets", "minswap", "pools", "all", 1, ""],
     });
   });
   expect(host.querySelectorAll(".market-card")).toHaveLength(1);
@@ -544,4 +551,19 @@ it("refreshes mainnet positions when mainnet LP balances change", async () => {
   data.wallet.tokens = [{ assetId, quantity: 2n }];
   await render(<MinswapMarket />);
   expect(data.positionReads).toBeGreaterThan(before);
+});
+
+it("opens Mainnet on the volume catalog and only scans all pools after an explicit selection", async () => {
+  Object.assign(data.network, { id: "mainnet", label: "Mainnet", networkMagic: 764824073 });
+  data.popularRows = [{ id: "popular", lpAsset: "44".repeat(28) + "01", assetA: "lovelace", assetB: "33".repeat(28) + "01", volumeAda: 30 }];
+  await render(<MinswapMarket initialAction="swap" />);
+  expect(host.querySelector(".market-card")?.textContent).toContain("30 ADA · 24h volume");
+  expect(data.selectedReads).toBe(1);
+  expect(button("Top volume").getAttribute("aria-pressed")).toBe("true");
+  expect(data.poolReads).toBe(0);
+  await act(async () => button("All pools").click());
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 20)); });
+  expect(button("All pools").getAttribute("aria-pressed")).toBe("true");
+  expect(data.poolReads).toBe(1);
+  expect(host.querySelectorAll(".market-card")).toHaveLength(1);
 });
