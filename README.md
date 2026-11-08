@@ -524,10 +524,16 @@ data hash can be copied. Local decoding accepts up to 64 KiB and displays at mos
 2,048 nodes with 64 levels of nesting. Invalid selected data reports its own
 error while other transaction data remains available.
 
-Experiences include expandable **Build this yourself** sections with selected
-network API examples in JavaScript and cURL, implementation links, and access to
-the API playground. Examples make read-only requests; transaction construction
-and signing remain explicit in the linked source.
+Experiences include expandable **Build this yourself** sections with setup
+steps for your own Dingo instance and JavaScript, cURL, and SDK examples.
+Sync your node to the selected network, enable API storage and the relevant
+listeners, then replace the local endpoint constants with your own URLs.
+Hosted browser clients need reachable HTTPS APIs and their exact origin allowed by
+your node’s CORS configuration. The examples use local listeners rather than
+the demo’s hosted APIs. See the [Dingo quick start](https://docs.blinklabs.io/guides/dingo/002-quick-start-overview/)
+and [API configuration](https://docs.blinklabs.io/guides/dingo/006-apis-and-archive/).
+Examples make read-only requests; transaction construction and signing remain
+explicit in the linked implementation.
 
 ## Musashi and Leios
 
