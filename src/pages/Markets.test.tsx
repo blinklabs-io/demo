@@ -1,10 +1,12 @@
 import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createMemoryRouter, RouterProvider } from "react-router";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import Markets from "./Markets";
 import type { MarketTracking } from "../components/markets/MarketTransaction";
-vi.mock("../lib/dingo/config", () => ({ DINGO_NETWORK: { id: "preprod" } }));
+const network = vi.hoisted(() => ({ id: "preprod" }));
+vi.mock("../lib/dingo/config", () => ({ DINGO_NETWORK: network }));
+beforeEach(() => { network.id = "preprod"; });
 vi.mock("../components/markets/GravityMarket", () => ({
   GravityMarket: () => <p>Gravity monitor</p>,
 }));
@@ -59,4 +61,15 @@ it("keeps accepted Minswap tracking through switching to Gravity and back", asyn
     await act(async () => root.unmount());
     router.dispose();
   }
+});
+
+it.each(["liquidity", "lending", "options", "orders", "marketplace"])("routes mainnet %s to its supported workspace", async (tab) => {
+  network.id = "mainnet";
+  const host = document.createElement("div"), root = createRoot(host);
+  const router = createMemoryRouter([{ path: "/wallet/markets/:tab", element: <Markets /> }], { initialEntries: [`/wallet/markets/${tab}`] });
+  try {
+    await act(async () => root.render(<RouterProvider router={router} />));
+    expect(host.textContent).toContain(tab === "liquidity" ? "Submit fixture order" : "Apps on the live chain.");
+    expect(host.textContent).not.toContain("Open Preprod markets");
+  } finally { await act(async () => root.unmount()); router.dispose(); }
 });

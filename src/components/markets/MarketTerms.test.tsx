@@ -10,6 +10,7 @@ import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import { MinswapMarket } from "./MinswapMarket";
 import { KernelMarket } from "./KernelMarket";
 const data = vi.hoisted(() => ({
+  network: { id: "preprod", label: "Preprod", networkMagic: 1 },
   family: "options",
   poolError: false,
   positionReads: 0,
@@ -27,9 +28,10 @@ const data = vi.hoisted(() => ({
     changeAddress: null as string | null,
     usedAddresses: [] as string[],
     rewardAddress: null,
-    tokens: [],
+    tokens: [] as { assetId: string; quantity: bigint }[],
   },
 }));
+vi.mock("../../lib/dingo/config", () => ({ DINGO_NETWORK: data.network, DINGO_CONFIG: {} }));
 vi.mock("../../stores/walletStore", () => ({
   useWalletStore: () => data.wallet,
 }));
@@ -126,6 +128,8 @@ beforeEach(() => {
   (
     globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
   ).IS_REACT_ACT_ENVIRONMENT = true;
+  Object.assign(data.network, { id: "preprod", label: "Preprod", networkMagic: 1 });
+  data.wallet.tokens = [];
   notifyManager.setScheduler(queueMicrotask);
   host = document.createElement("div");
   document.body.append(host);
@@ -528,3 +532,16 @@ it("uses Dingo chain time for lifecycle minimum-ADA preview despite a different 
 vi.mock("../../lib/dingo/chainTime", () => ({
   readDingoChainTime: async () => 1800000000000,
 }));
+
+it("refreshes mainnet positions when mainnet LP balances change", async () => {
+  Object.assign(data.network, { id: "mainnet", label: "Mainnet", networkMagic: 764824073 });
+  data.wallet.status = "connected";
+  const assetId = "f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c" + "11".repeat(32);
+  data.wallet.tokens = [{ assetId, quantity: 1n }];
+  await render(<MinswapMarket />);
+  const before = data.positionReads;
+  expect(before).toBeGreaterThan(0);
+  data.wallet.tokens = [{ assetId, quantity: 2n }];
+  await render(<MinswapMarket />);
+  expect(data.positionReads).toBeGreaterThan(before);
+});

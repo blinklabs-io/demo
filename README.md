@@ -357,9 +357,10 @@ network checks run again after signing; testnet addresses and funding are reject
 
 Mainnet Markets supports Minswap V2 pool discovery, swap orders, liquidity
 orders, wallet positions, and cancellation using its mainnet scripts and
-reference outputs. Pool discovery and LP lookup use bounded asset-only UTxO
-RPC pages with opaque cursors, authenticating output addresses, pool tokens,
-and datums from the returned CBOR. This avoids address-wide pool scans.
+reference outputs. Pool discovery uses bounded asset-only UTxO RPC pages with
+opaque cursors. LP lookups filter by both token and pool payment credential, so
+wallet-held LP tokens do not consume the lookup bound. Both paths authenticate
+output credentials, pool tokens, and datums from the returned CBOR.
 
 Discover also links to the official [SundaeSwap](https://app.sundae.fi/) and
 [Liqwid](https://app.liqwid.finance/) mainnet applications. Those links open the

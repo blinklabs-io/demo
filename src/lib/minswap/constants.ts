@@ -29,17 +29,14 @@ export const MAINNET_MINSWAP_V2 = {
   poolCreationAddress: "addr1z84q0denmyep98ph3tmzwsmw0j7zau9ljmsqx6a4rvaau66j2c79gy9l76sdg0xwhd7r0c0kna0tycz4y5s6mlenh8pq777e2a",
 } as const;
 
-export function minswapDeployment() {
-  if (DINGO_NETWORK.id === "mainnet") return MAINNET_MINSWAP_V2;
-  if (DINGO_NETWORK.id === "preprod") return PREPROD_MINSWAP_V2;
-  throw new Error("Minswap V2 requires Mainnet or Preprod.");
+const deployments = {
+  mainnet: { contracts: MAINNET_MINSWAP_V2, orderReference: { txHash: "cf4ecddde0d81f9ce8fcc881a85eb1f8ccdaf6807f03fea4cd02da896a621776", index: 0n } },
+  preprod: { contracts: PREPROD_MINSWAP_V2, orderReference: { txHash: "8c98f0530cba144d264fbd2731488af25257d7ce6a0cd1586fc7209363724f03", index: 0n } },
+} as const;
+function deployment() {
+  if (DINGO_NETWORK.id !== "mainnet" && DINGO_NETWORK.id !== "preprod")
+    throw new Error("Minswap V2 requires Mainnet or Preprod.");
+  return deployments[DINGO_NETWORK.id];
 }
-export function minswapOrderReference() {
-  minswapDeployment();
-  return {
-    txHash: DINGO_NETWORK.id === "mainnet"
-      ? "cf4ecddde0d81f9ce8fcc881a85eb1f8ccdaf6807f03fea4cd02da896a621776"
-      : "8c98f0530cba144d264fbd2731488af25257d7ce6a0cd1586fc7209363724f03",
-    index: 0n,
-  };
-}
+export function minswapDeployment() { return deployment().contracts; }
+export function minswapOrderReference() { return deployment().orderReference; }

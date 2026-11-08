@@ -1,12 +1,12 @@
 // @vitest-environment node
 import { Core } from "@blaze-cardano/sdk";
-import { beforeAll, beforeEach, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Cip30WalletApi } from "../dingo/cip30";
 import { getBlaze } from "../dingo/blaze";
 import { blockfrostFetch } from "../dingo/blockfrost";
 import { authenticatePool } from "./data";
-import { poolFixtures } from "./fixtures";
-import { PREPROD_MINSWAP_V2 } from "./constants";
+import { poolFixtures as preprodPoolFixtures } from "./fixtures";
+import { PREPROD_MINSWAP_V2, minswapDeployment, minswapOrderReference } from "./constants";
 import {
   prepareMinswapAction,
   prepareMinswapCancel,
@@ -19,14 +19,18 @@ import {
   orderDatum,
   type MinswapAction,
 } from "./orders";
-import { orderScriptCbor } from "./script.fixture";
-vi.mock("../dingo/config", () => ({
-  DINGO_NETWORK: { id: "preprod", label: "Preprod", networkMagic: 1 },
-  DINGO_CONFIG: {
-    utxorpcUrl: "http://127.0.0.1:9090",
-    blockfrostUrl: "http://127.0.0.1:3000",
-  },
-}));
+import { orderScriptCbor, mainnetOrderScriptCbor } from "./script.fixture";
+const network = vi.hoisted(() => ({ id: "preprod", label: "Preprod", networkMagic: 1, cardanoId: 0 }));
+const rpcPage = vi.hoisted(() => vi.fn());
+vi.mock("../dingo/config", () => ({ DINGO_NETWORK: network, DINGO_CONFIG: { utxorpcUrl: "http://127.0.0.1:9090", blockfrostUrl: "http://127.0.0.1:3000" } }));
+vi.mock("../dingo/networkIdentity", () => ({ get CARDANO_NETWORK_ID() { return network.cardanoId; } }));
+vi.mock("./rpc", () => ({ minswapAssetReader: async () => rpcPage, readMinswapAssetPage: (...args: unknown[]) => rpcPage(...args) }));
+function poolFixtures() {
+  return preprodPoolFixtures.map((row) => network.id === "preprod" ? structuredClone(row) : ({
+    ...structuredClone(row), address: minswapDeployment().poolCreationAddress,
+    amount: row.amount.map((asset) => ({ ...asset, unit: asset.unit.replace(PREPROD_MINSWAP_V2.lpPolicyId, minswapDeployment().lpPolicyId) })),
+  }));
+}
 vi.mock("../dingo/blaze", async (original) => ({
   ...(await original<typeof import("../dingo/blaze")>()),
   getBlaze: vi.fn(),
@@ -39,21 +43,24 @@ const fundingResolver = vi.hoisted(() => vi.fn());
 vi.mock("../dingo/utxorpc/provider", async (original) => ({
   ...(await original<typeof import("../dingo/utxorpc/provider")>()),
   getDingoProvider: () => ({
-    queryClient: { readGenesis: async () => ({ networkMagic: 1 }) },
+    queryClient: { readGenesis: async () => ({ networkMagic: network.networkMagic }) },
     resolveUnspentOutputs: fundingResolver,
   }),
 }));
 beforeAll(async () => {
   await Core.initCrypto();
 });
-beforeEach(() => vi.clearAllMocks());
+describe.each([
+  ["preprod", "Preprod", 1, 0], ["mainnet", "Mainnet", 764824073, 1],
+] as const)("%s Minswap transactions", (id, label, magic, cardanoId) => {
+  beforeEach(() => { Object.assign(network, { id, label, networkMagic: magic, cardanoId }); vi.clearAllMocks(); rpcPage.mockImplementation(async () => ({ rows: [poolFixtures()[1]], nextToken: "" })); });
 function fixture() {
-  const pool = authenticatePool(poolFixtures[1]);
+  const pool = authenticatePool(poolFixtures()[1]);
   const key = Core.Ed25519PrivateKey.fromNormalHex(
     Core.Ed25519PrivateNormalKeyHex("11".repeat(32)),
   );
   let change = Core.addressFromCredential(
-    0,
+    network.cardanoId,
     Core.Credential.fromCore({
       type: Core.CredentialType.KeyHash,
       hash: key.toPublic().hash().hex(),
@@ -75,12 +82,12 @@ function fixture() {
     required: Core.Ed25519KeyHashHex | undefined,
     active = true,
     slot = 100,
-    magic = 1,
+    magic = network.networkMagic,
     corrupt = false,
     used: string[] = [],
     ttl: Core.Slot | undefined;
   const api = {
-    getNetworkId: async () => 0,
+    getNetworkId: async () => network.cardanoId,
     getChangeAddress: async () => change.toBytes(),
     getUsedAddresses: async () => used,
     getUtxos: async () => [funding.toCbor()],
@@ -184,7 +191,7 @@ function fixture() {
     if (path === "/api/v0/blocks/latest") return { slot };
     if (path.includes("/scripts/"))
       return { script_hash: path.split("/").at(-1), type: "plutusV2" };
-    if (path.includes("/utxos/")) return [poolFixtures[1]];
+    if (path.includes("/utxos/")) return [poolFixtures()[1]];
     throw new Error(`Unexpected read ${path}`);
   });
   return {
@@ -214,7 +221,7 @@ function fixture() {
     },
     changeAccount: () => {
       change = Core.addressFromCredential(
-        0,
+        network.cardanoId,
         Core.Credential.fromCore({
           type: Core.CredentialType.KeyHash,
           hash: Core.Hash28ByteBase16("22".repeat(28)),
@@ -235,11 +242,11 @@ it.each<MinswapAction>([
     const draft = await prepareMinswapAction(f.api, f.pool, action, f.assert);
     const output = draft.tx.body().outputs()[0];
     expect(output.address().getProps().paymentPart?.hash).toBe(
-      PREPROD_MINSWAP_V2.orderScriptHash,
+      minswapDeployment().orderScriptHash,
     );
     expect(
       decodeOrder({
-        ...poolFixtures[0],
+        ...poolFixtures()[0],
         address: output.address().toBech32(),
         inline_datum: output.datum()!.asInlineData()!.toCbor(),
       }).kind,
@@ -298,8 +305,8 @@ it("rejects wrong genesis and altered output before requesting a signature", asy
   f.setMagic(2);
   await expect(
     prepareMinswapAction(f.api, f.pool, action, f.assert),
-  ).rejects.toThrow("verified Preprod");
-  f.setMagic(1);
+  ).rejects.toThrow(`verified ${network.label}`);
+  f.setMagic(network.networkMagic);
   f.corrupt();
   await expect(
     prepareMinswapAction(f.api, f.pool, action, f.assert),
@@ -363,7 +370,7 @@ it("cancels only the owner's current order with the canonical reference script a
   f.unspent.set(`${input.transactionId()}#0`, orderUtxo);
   const reference = new Core.TransactionInput(
       Core.TransactionId(
-        "8c98f0530cba144d264fbd2731488af25257d7ce6a0cd1586fc7209363724f03",
+        minswapOrderReference().txHash,
       ),
       0n,
     ),
@@ -372,16 +379,16 @@ it("cancels only the owner's current order with the canonical reference script a
       new Core.Value(12000000n),
     );
   const script = Core.Script.newPlutusV2Script(
-    new Core.PlutusV2Script(Core.HexBlob(orderScriptCbor)),
+    new Core.PlutusV2Script(Core.HexBlob(network.id === "mainnet" ? mainnetOrderScriptCbor : orderScriptCbor)),
   );
-  expect(script.hash()).toBe(PREPROD_MINSWAP_V2.orderScriptHash);
+  expect(script.hash()).toBe(minswapDeployment().orderScriptHash);
   refOutput.setScriptRef(script);
   f.unspent.set(
     `${reference.transactionId()}#0`,
     new Core.TransactionUnspentOutput(reference, refOutput),
   );
   const order = decodeOrder({
-    ...poolFixtures[0],
+    ...poolFixtures()[0],
     address: output.address().toBech32(),
     tx_hash: input.transactionId(),
     output_index: 0,
@@ -471,7 +478,7 @@ it("does not broadcast a transaction that expires during the wallet prompt", asy
 
 it("preserves the displayed minimum rather than silently repricing during build", async () => {
   const f = fixture(),
-    row = structuredClone(poolFixtures[1]);
+    row = structuredClone(poolFixtures()[1]);
   const fields = Core.PlutusData.fromCbor(Core.HexBlob(row.inline_datum!))
     .asConstrPlutusData()!
     .getData();
@@ -559,4 +566,6 @@ it("does not post after session loss during actual wallet signing", async () => 
   ).rejects.toThrow("Session changed");
   expect(f.sign).toHaveBeenCalledOnce();
   expect(f.post).not.toHaveBeenCalled();
+});
+
 });

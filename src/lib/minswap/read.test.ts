@@ -66,7 +66,7 @@ it("does not replace an unexpected response address with the requested pool addr
     ]);
   const result = await readMinswapPools();
   expect(result.pools).toEqual([]);
-  expect(result.errors[0]).toContain("another address");
+  expect(result.errors[0]).toContain("Unrecognized Minswap pool address");
 });
 
 it("ignores LP-only pollution across bounded pages before counting authenticated pool states", async () => {

@@ -41,3 +41,42 @@ it("rejects wrong-chain, incomplete, unrelated, duplicate and repeating RPC page
   mocks.search.mockResolvedValue({ items: [item(0), item(0)], nextToken: "" }); await expect(readMinswapAssetPage(asset)).rejects.toThrow("repeated");
   mocks.search.mockResolvedValue({ items: [item(0)], nextToken: "same" }); await expect(readMinswapAssetPage(asset, "same")).rejects.toThrow("repeated");
 });
+
+it("accepts canonical native CBOR without a parsed RPC projection and rejects oversized bytes", async () => {
+  const { parsedState: _, ...nativeOnly } = item(0); void _;
+  mocks.search.mockResolvedValue({ items: [nativeOnly], nextToken: "" });
+  expect((await readMinswapPools()).pools).toHaveLength(1);
+  mocks.search.mockResolvedValue({ items: [{ ...nativeOnly, nativeBytes: new Uint8Array(65537) }], nextToken: "" });
+  await expect(readMinswapPools()).rejects.toThrow("incomplete Cardano");
+});
+it("scopes LP queries to the pool address so wallet-held tokens do not consume the lookup bound", async () => {
+  const pool = (await readMinswapPools()).pools[0];
+  mocks.search.mockImplementation(async (request) => {
+    const address = request.predicate.match.utxoPattern.value.address?.paymentPart;
+    return address ? { items: [item(0)], nextToken: "" } : { items: [], nextToken: request.startToken + "next" };
+  });
+  expect((await readMinswapPool(pool)).lpAsset).toBe(pool.lpAsset);
+  expect(mocks.search.mock.lastCall![0].predicate.match.utxoPattern.value.address.paymentPart).toEqual(Core.fromHex(minswapDeployment().poolScriptHash));
+});
+it("carries LP cursors across pages, verifies genesis once and enforces the five-page bound", async () => {
+  const pool = (await readMinswapPools()).pools[0];
+  mocks.search.mockReset().mockResolvedValueOnce({ items: [], nextToken: "second" }).mockResolvedValueOnce({ items: [item(0)], nextToken: "" });
+  const before = mocks.genesis.mock.calls.length;
+  expect((await readMinswapPool(pool)).lpAsset).toBe(pool.lpAsset);
+  expect(mocks.search.mock.lastCall![0].startToken).toBe("second");
+  expect(mocks.genesis.mock.calls.length - before).toBe(1);
+  mocks.search.mockReset().mockImplementation(async (request) => ({ items: [], nextToken: request.startToken + "next" }));
+  await expect(readMinswapPool(pool)).rejects.toThrow("bounded 100-output scan");
+  expect(mocks.search).toHaveBeenCalledTimes(5);
+});
+
+it("authenticates pool state with a changed staking credential", async () => {
+  const output = Core.TransactionOutput.fromCbor(Core.HexBlob.fromBytes(item(0).nativeBytes));
+  const address = Core.Cardano.BaseAddress.fromCredentials(1, { type: Core.CredentialType.ScriptHash, hash: Core.Hash28ByteBase16(minswapDeployment().poolScriptHash) }, { type: Core.CredentialType.KeyHash, hash: Core.Hash28ByteBase16("11".repeat(28)) }).toAddress();
+  const moved = new Core.TransactionOutput(address, output.amount());
+  moved.setDatum(output.datum()!);
+  mocks.search.mockResolvedValue({ items: [{ ...item(0), nativeBytes: Core.fromHex(moved.toCbor()) }], nextToken: "" });
+  const pool = (await readMinswapPools()).pools[0];
+  expect(pool.address).toBe(address.toBech32());
+  expect((await readMinswapPool(pool)).address).toBe(address.toBech32());
+});

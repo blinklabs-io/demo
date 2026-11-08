@@ -6,7 +6,7 @@ import { Link } from "../NetworkLink";
 import { Gauge } from "../explorer/Visuals";
 import { MarketChart } from "../explorer/MarketChart";
 import { readMinswapHistory } from "../../lib/minswap/history";
-import { PREPROD_MINSWAP_V2 } from "../../lib/minswap/constants";
+import { minswapDeployment } from "../../lib/minswap/constants";
 import { useWalletStore } from "../../stores/walletStore";
 import {
   readLiquidityPositions,
@@ -164,7 +164,7 @@ export function MinswapMarket({
   const balanceKey = wallet.tokens
     .filter(
       (t) =>
-        t.assetId.startsWith(PREPROD_MINSWAP_V2.lpPolicyId) &&
+        t.assetId.startsWith(minswapDeployment().lpPolicyId) &&
         t.assetId.length === 120,
     )
     .map((t) => `${t.assetId}:${t.quantity}`)

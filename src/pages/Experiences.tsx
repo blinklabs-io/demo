@@ -81,8 +81,9 @@ const experiences = [
     title: "DeFi markets",
     category: "Use",
     symbol: "⇄",
-    description:
-      "Explore lending, covered options, liquidity positions and direct on-chain markets through Dingo.",
+    description: DINGO_NETWORK.id === "mainnet"
+      ? "Swap Cardano assets, manage liquidity positions and follow Minswap orders through Dingo."
+      : "Explore lending, covered options, liquidity positions and direct on-chain markets through Dingo.",
     tag: DINGO_NETWORK.id === "mainnet" ? "Minswap · Mainnet" : "DeFi Kernel + Minswap · Preprod",
     art: "swap",
     action: "Explore markets",

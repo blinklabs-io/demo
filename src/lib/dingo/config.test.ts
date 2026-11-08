@@ -122,6 +122,9 @@ it.each([
   window.history.replaceState(null, "", `/explorer?network=${id}`);
   vi.stubEnv("VITE_DINGO_BLOCKFROST_URL", "https://preview.invalid");
   vi.stubEnv("VITE_DINGO_MUSASHI_BLOCKFROST_URL", "https://musashi.invalid");
+  vi.stubEnv("VITE_DINGO_PREPROD_BLOCKFROST_URL", "https://preprod-rest.invalid");
+  vi.stubEnv("VITE_DINGO_PREPROD_UTXORPC_URL", "https://preprod-rpc.invalid");
+  vi.stubEnv("VITE_DINGO_PREPROD_MESH_URL", "https://preprod-mesh.invalid");
   const config = await import("./config");
   expect(config.DINGO_NETWORK.networkMagic).toBe(magic);
   expect(config.DINGO_CONFIG).toEqual({ blockfrostUrl: `https://dingo.${id}.blinklabs.cloud`, utxorpcUrl: `https://dingo.${id}.blinklabs.cloud:9090`, meshUrl: `https://dingo.${id}.blinklabs.cloud:8080` });
