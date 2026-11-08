@@ -4,8 +4,7 @@ A Cardano development and operations workspace powered by Dingo. Explore live
 chain state, create and inspect transactions, swap assets and participate in
 governance. Shared navigation connects these capabilities, with source you can
 reuse and an API playground to inspect their data. Chain data and transaction
-services come from Dingo. Mainnet featured pools use Minswap volume analytics;
-the full pool catalog reads directly from Dingo.
+services come from Dingo; no external indexer is required.
 
 ## Run it
 
@@ -358,16 +357,7 @@ network checks run again after signing; testnet addresses and funding are reject
 
 Mainnet Markets supports Minswap V2 pool discovery, swap orders, liquidity
 orders, wallet positions, and cancellation using its mainnet scripts and
-reference outputs. The default catalog features up to twelve active pools with
-verified tokens, ranked by actual 24-hour traded volume in ADA from
-[Minswap analytics](https://docs.minswap.org/developer/minswap-apis). A fixed
-Pages Function retrieves and normalizes the ranking, caches it for one minute,
-and bounds its response size and duration. Selecting a featured pool resolves and authenticates its current state through
-Dingo before quoting or trading; analytics never supply transaction state or
-quotes. The catalog loads without scanning pool states. Failed volume requests show an error with retry and an explicit
-All pools action. Static hosting without Pages Functions can use All pools.
-
-The All pools catalog uses bounded asset-only UTxO RPC pages with
+reference outputs. Pool discovery uses bounded asset-only UTxO RPC pages with
 opaque cursors. LP lookups filter by both token and pool payment credential, so
 wallet-held LP tokens do not consume the lookup bound. Both paths authenticate
 output credentials, pool tokens, and datums from the returned CBOR.

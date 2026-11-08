@@ -26,7 +26,7 @@ export function MarketLoading({
             <h2>Market data unavailable</h2>
             <p>{error.message}</p>
           </div>
-          <button onClick={retry}>Retry market data</button>
+          <button onClick={retry}>Retry Dingo query</button>
         </>
       ) : (
         <div role="status">
