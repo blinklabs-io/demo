@@ -4,12 +4,12 @@ import { marketPools } from "./marketPools";
 import { parsePopularPools } from "../lib/minswap/popular";
 import { MAINNET_MINSWAP_V2 } from "../lib/minswap/mainnet";
 const asset = (name: string, verified = true) => ({ currency_symbol: name ? "11".repeat(28) : "", token_name: name, is_verified: verified });
-function metric(volume = 10, id = "22", verified = true) {
-  return { type: "MinswapV2", lp_asset: { currency_symbol: MAINNET_MINSWAP_V2.lpPolicyId, token_name: id.repeat(32) }, asset_a: asset(""), asset_b: asset("01", verified), volume_24h: volume };
+function metric(volume = 10, id = "22", verified = true, verifiedA = true) {
+  return { type: "MinswapV2", lp_asset: { currency_symbol: MAINNET_MINSWAP_V2.lpPolicyId, token_name: id.repeat(32) }, asset_a: asset("", verifiedA), asset_b: asset("01", verified), volume_24h: volume };
 }
 afterEach(() => vi.restoreAllMocks());
 it("ranks by actual volume and excludes unverified, inactive, unknown-volume and unsupported pools", () => {
-  const rows = [metric(1), metric(100, "33"), metric(0, "44"), metric(500, "55", false), { ...metric(900, "66"), type: "Minswap" }, { ...metric(999, "77"), volume_24h: null }, metric(100, "33")];
+  const rows = [metric(1), metric(100, "33"), metric(0, "44"), metric(500, "55", false), metric(800, "88", true, false), { ...metric(900, "66"), type: "Minswap" }, { ...metric(999, "77"), volume_24h: null }, metric(100, "33")];
   expect(parsePopularPools({ pool_metrics: rows })).toEqual([
     { lpAsset: MAINNET_MINSWAP_V2.lpPolicyId + "33".repeat(32), assetA: "lovelace", assetB: "11".repeat(28) + "01", volumeAda: 100 },
     { lpAsset: MAINNET_MINSWAP_V2.lpPolicyId + "22".repeat(32), assetA: "lovelace", assetB: "11".repeat(28) + "01", volumeAda: 1 },

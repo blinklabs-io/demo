@@ -88,7 +88,7 @@ it("loads volume discovery without Dingo scans and authenticates only the select
   mocks.search.mockClear();
   try {
     const result = await readPopularMinswapPools();
-    expect(result.pools.map((p) => p.lpAsset)).toEqual(known.map((p) => p.lpAsset));
+    expect(result.pools).toEqual(metrics.map((metric) => ({ ...metric, id: metric.lpAsset })));
     expect(mocks.search).not.toHaveBeenCalled();
     mocks.search.mockResolvedValue({ items: [item(0)], nextToken: "" });
     expect((await readPopularMinswapPool(result.pools[0])).lpAsset).toBe(known[0].lpAsset);

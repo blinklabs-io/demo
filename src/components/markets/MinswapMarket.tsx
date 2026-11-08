@@ -529,7 +529,7 @@ export function MinswapMarket({
                       </span>
                     </span>
                     </>}
-                    {"volumeAda" in p && <strong>{Number(p.volumeAda).toLocaleString(undefined, { maximumFractionDigits: 0 })} ADA · 24h volume</strong>}
+                    {"volumeAda" in p && <strong>{p.volumeAda < 1 ? "<1" : p.volumeAda.toLocaleString(undefined, { maximumFractionDigits: 0 })} ADA · 24h volume</strong>}
                     <small>Pool {p.id.slice(-12)}</small>
                   </button>
                 ))}

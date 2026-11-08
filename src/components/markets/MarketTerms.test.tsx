@@ -555,9 +555,9 @@ it("refreshes mainnet positions when mainnet LP balances change", async () => {
 
 it("opens Mainnet on the volume catalog and only scans all pools after an explicit selection", async () => {
   Object.assign(data.network, { id: "mainnet", label: "Mainnet", networkMagic: 764824073 });
-  data.popularRows = [{ id: "popular", lpAsset: "44".repeat(28) + "01", assetA: "lovelace", assetB: "33".repeat(28) + "01", volumeAda: 30 }];
+  data.popularRows = [{ id: "popular", lpAsset: "44".repeat(28) + "01", assetA: "lovelace", assetB: "33".repeat(28) + "01", volumeAda: 0.25 }];
   await render(<MinswapMarket initialAction="swap" />);
-  expect(host.querySelector(".market-card")?.textContent).toContain("30 ADA · 24h volume");
+  expect(host.querySelector(".market-card")?.textContent).toContain("<1 ADA · 24h volume");
   expect(data.selectedReads).toBe(1);
   expect(button("Top volume").getAttribute("aria-pressed")).toBe("true");
   expect(data.poolReads).toBe(0);
