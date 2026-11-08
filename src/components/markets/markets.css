@@ -623,3 +623,6 @@
     width: 100%;
   }
 }
+
+.mainnet-apps .experience-card { display: flex; }
+.mainnet-apps .experience-card h2 { font-size: 1.5rem; font-weight: 650; margin: 0.7rem 0; }

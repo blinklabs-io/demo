@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useTipStore } from "../../stores/tipStore";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -5,7 +6,7 @@ import { Link } from "../NetworkLink";
 import { Gauge } from "../explorer/Visuals";
 import { MarketChart } from "../explorer/MarketChart";
 import { readMinswapHistory } from "../../lib/minswap/history";
-import { PREPROD_MINSWAP_V2 } from "../../lib/minswap/constants";
+import { minswapDeployment } from "../../lib/minswap/constants";
 import { useWalletStore } from "../../stores/walletStore";
 import {
   readLiquidityPositions,
@@ -87,6 +88,7 @@ export function MinswapMarket({
   const tracking = parentTracking ?? { hash, submitted: setHash };
   const [page, setPage] = useState(1),
     [search, setSearch] = useState("");
+  const [cursors, setCursors] = useState<Record<number, string>>({ 1: "" });
   const [chosen, setChosen] = useState<MinswapPool | null>(null);
   const [mode, setMode] = useState<"swap" | "deposit" | "withdraw">(
     initialAction,
@@ -116,6 +118,7 @@ export function MinswapMarket({
           next.lastAction !== "apply"
         ) {
           setPage(1);
+          setCursors({ 1: "" });
           setChosen(null);
           setOrderPage(1);
         }
@@ -123,8 +126,8 @@ export function MinswapMarket({
     [],
   );
   const pools = useQuery({
-    queryKey: ["dingo", "markets", "minswap", "pools", page],
-    queryFn: ({ signal }) => readMinswapPools(page, signal),
+    queryKey: ["dingo", "markets", "minswap", "pools", page, cursors[page]],
+    queryFn: ({ signal }) => readMinswapPools(page, signal, cursors[page]),
     staleTime: 30000,
     refetchInterval: 30000,
   });
@@ -161,7 +164,7 @@ export function MinswapMarket({
   const balanceKey = wallet.tokens
     .filter(
       (t) =>
-        t.assetId.startsWith(PREPROD_MINSWAP_V2.lpPolicyId) &&
+        t.assetId.startsWith(minswapDeployment().lpPolicyId) &&
         t.assetId.length === 120,
     )
     .map((t) => `${t.assetId}:${t.quantity}`)
@@ -318,7 +321,7 @@ export function MinswapMarket({
       <section className="market-hero">
         <div>
           <span className="eyebrow">
-            Minswap V2 · Preprod · powered by Dingo
+            Minswap V2 · {DINGO_NETWORK.label} · powered by Dingo
           </span>
           <h1>
             {initialAction === "swap" ? (
@@ -538,6 +541,7 @@ export function MinswapMarket({
                 <button
                   disabled={!pools.data?.partial}
                   onClick={() => {
+                    setCursors((current) => ({ ...current, [page + 1]: pools.data?.nextToken ?? "" }));
                     setPage((p) => p + 1);
                     setChosen(null);
                   }}

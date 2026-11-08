@@ -1,3 +1,4 @@
+import { MainnetApps } from "../components/markets/MainnetApps";
 import { nativeTicker } from "../lib/format";
 import { ExperienceDiagram } from "../components/illustrations/ExperienceDiagram";
 import { DINGO_NETWORK } from "../lib/dingo/config";
@@ -76,13 +77,14 @@ const experiences = [
   },
   creationExperience("mint", "mint", "CIP-25 · Native assets"),
   {
-    to: "/wallet/markets/liquidity?network=preprod",
+    to: DINGO_NETWORK.id === "mainnet" ? "/wallet/markets/liquidity" : "/wallet/markets/liquidity?network=preprod",
     title: "DeFi markets",
     category: "Use",
     symbol: "⇄",
-    description:
-      "Explore lending, covered options, liquidity positions and direct on-chain markets through Dingo.",
-    tag: "DeFi Kernel + Minswap · Preprod",
+    description: DINGO_NETWORK.id === "mainnet"
+      ? "Swap Cardano assets, manage liquidity positions and follow Minswap orders through Dingo."
+      : "Explore lending, covered options, liquidity positions and direct on-chain markets through Dingo.",
+    tag: DINGO_NETWORK.id === "mainnet" ? "Minswap · Mainnet" : "DeFi Kernel + Minswap · Preprod",
     art: "swap",
     action: "Explore markets",
   },
@@ -211,9 +213,9 @@ export default function Experiences() {
           <div className="experience-actions">
             <Link
               className="experience-primary"
-              to="/wallet/markets/liquidity?network=preprod"
+              to={DINGO_NETWORK.id === "mainnet" ? "/wallet/markets/liquidity" : "/wallet/markets/liquidity?network=preprod"}
             >
-              Explore Preprod DeFi →
+              Explore {DINGO_NETWORK.id === "mainnet" ? "Mainnet" : "Preprod"} DeFi →
             </Link>
             <a href="#live-block">See a block come alive ↓</a>
           </div>
@@ -272,6 +274,7 @@ export default function Experiences() {
           </Link>
         </div>
       </section>
+      {DINGO_NETWORK.id === "mainnet" && <MainnetApps />}
       <ChainSnapshot />
       <section id="live-block" className="experience-live">
         <header className="experience-section-heading">
@@ -402,8 +405,7 @@ export default function Experiences() {
       <footer className="experience-footnote">
         <strong>Built with Dingo. From development to operation.</strong>
         <p>
-          {DINGO_NETWORK.label} is a public test network. Transactions use test{" "}
-          {nativeTicker()}. Your wallet signs; Dingo provides chain data and submits
+          {DINGO_NETWORK.id === "mainnet" ? "Cardano Mainnet transactions use ADA." : `${DINGO_NETWORK.label} is a public test network. Transactions use test ${nativeTicker()}.`} Your wallet signs; Dingo provides chain data and submits
           transactions.
         </p>
         <Link to="/api">See the APIs powering these experiences →</Link>

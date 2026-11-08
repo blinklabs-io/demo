@@ -89,17 +89,18 @@ function createQueryProvider(): DingoSundaeQueryProvider {
 export default function WalletSwap() {
   const [version, setVersion] = useState<"V3" | "V4">("V4");
   const [busy, setBusy] = useState(false);
-  if (DINGO_NETWORK.id !== "preview" && DINGO_NETWORK.id !== "preprod")
+  if (DINGO_NETWORK.id !== "preview" && DINGO_NETWORK.id !== "preprod" && DINGO_NETWORK.id !== "mainnet")
     return (
       <section className="market-hero">
         <div>
           <span className="eyebrow">Choose a deployed market</span>
-          <h1>Explore markets on Preview or Preprod.</h1>
+          <h1>Explore markets on Mainnet, Preview or Preprod.</h1>
           <p>
             The swap integrations use network-specific contracts. Choose their
             network to open a fresh workspace.
           </p>
           <div className="market-actions">
+            <Link to="/wallet/swap?network=mainnet">Open Mainnet swaps →</Link>
             <Link to="/wallet/swap?network=preview">Open Preview swaps →</Link>
             <Link to="/wallet/swap?network=preprod">Open Preprod swaps →</Link>
             <Link to="/explorer/leios?network=musashi">Explore Leios on Musashi →</Link>
@@ -107,7 +108,7 @@ export default function WalletSwap() {
         </div>
       </section>
     );
-  if (DINGO_NETWORK.id === "preprod")
+  if (DINGO_NETWORK.id === "preprod" || DINGO_NETWORK.id === "mainnet")
     return <MinswapMarket initialAction="swap" />;
 
   return (

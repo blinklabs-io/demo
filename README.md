@@ -38,11 +38,11 @@ The URLs must point to the API roots (without a trailing slash). Configure
 Dingo’s CORS allowlist for the exact browser origin when the site and node use
 different origins. The explorer’s index-dependent pages need Dingo `api`
 storage mode. Wallet send and swap pages submit transactions to the selected
-node, so use a test network and connect a test wallet.
+node. Connect a wallet configured for the selected network before signing.
 
 ## Network selection
 
-Choose Preview, Preprod, Musashi, Dijkstra, or Prime Testnet in the header. Shared links include the network
+Choose Mainnet, Preview, Preprod, Musashi, Dijkstra, or Prime Testnet in the header. Shared links include the network
 (for example, `?network=dijkstra` or `?network=prime-testnet`), which takes precedence over a saved
 choice. Explicit network links work when browser storage is blocked. Switching disconnects the wallet,
 clears drafts and transient chain data, and reloads the current tool or a safe
@@ -51,7 +51,9 @@ old-network delegation and entity prefills are discarded. Wallet connections are
 
 The existing `VITE_DINGO_*_URL` settings configure Preview. Preprod has separate
 `VITE_DINGO_PREPROD_BLOCKFROST_URL`, `VITE_DINGO_PREPROD_MESH_URL` and
-`VITE_DINGO_PREPROD_UTXORPC_URL` overrides. Each API must serve the selected
+`VITE_DINGO_PREPROD_UTXORPC_URL` overrides. Mainnet uses independent
+`VITE_DINGO_MAINNET_BLOCKFROST_URL`, `VITE_DINGO_MAINNET_MESH_URL`, and
+`VITE_DINGO_MAINNET_UTXORPC_URL` overrides. Each API must serve the selected
 network. SundaeSwap markets remain tied to the verified Preview deployments;
 other creation and participation tools use the selected network. CIP-30 reports
 only mainnet versus testnet, so transaction review and signing additionally
@@ -62,7 +64,7 @@ Dingo chain.
 
 Browse the explorer, governance and survey results; preview SundaeSwap markets,
 weekly charts, amounts and slippage quotes; edit Send recipients, token metadata
-and survey drafts. Connect a wallet on the selected testnet when you want to sign or submit.
+and survey drafts. Connect a wallet on the selected network when you want to sign or submit.
 Wallet balances and wallet-owned assets are available only after connecting.
 Send keeps asset choices when reconnecting the same payment address and filters
 them against that wallet’s current assets; another address starts a separate bundle.
@@ -72,7 +74,7 @@ workflow needs keys, and manage or disconnect the connection from Wallet.
 ### Transaction studio
 
 Open **Create & build → Transaction studio** (`/wallet/tools/transactions`) to build an
-unsigned ADA payment from a payment-key address on the selected testnet, without a wallet extension. Dingo supplies that
+unsigned ADA payment from a payment-key address on the selected network, without a wallet extension. Dingo supplies that
 address’s UTxOs, current protocol parameters and the current slot. Change returns
 to the funding address; outputs carrying datums or reference scripts are excluded
 from automatic funding. You can add up to 20 recipients.
@@ -230,7 +232,7 @@ disclosure is opened.
 ## On-chain surveys
 
 The Surveys section creates, discovers, answers, and cancels public CIP-179
-version 5 surveys on the selected testnet. It supports the six built-in question types and
+version 5 surveys on the selected network. It supports the six built-in question types and
 keyholder credentials, with required-signer proof verified from transaction
 CBOR. Results validate question constraints and the inclusive epoch cutoff,
 keep the latest valid response per credential in chain order, and exclude all
@@ -344,6 +346,26 @@ Illustrative data, captured at desktop and mobile widths.
 | Epoch fingerprints      | [Desktop](docs/screenshots/epoch1500.jpg)            | [Mobile](docs/screenshots/epoch390.jpg)            |
 | Pool logos & saturation | [Desktop](docs/screenshots/poollogos1500.jpg)        | [Mobile](docs/screenshots/poollogos390.jpg)        |
 | Wallet pool saturation  | [Desktop](docs/screenshots/walletsaturation1500.jpg) | [Mobile](docs/screenshots/walletsaturation390.jpg) |
+
+## Cardano mainnet
+
+Select Mainnet or open `?network=mainnet` for live Cardano explorer, wallet,
+creation, staking, rewards, governance, and survey workflows. Mainnet uses
+Cardano address/network ID 1 and verifies network magic 764824073 through both
+Dingo REST and UTxO RPC before transaction construction and submission. Wallet
+network checks run again after signing; testnet addresses and funding are rejected.
+
+Mainnet Markets supports Minswap V2 pool discovery, swap orders, liquidity
+orders, wallet positions, and cancellation using its mainnet scripts and
+reference outputs. Pool discovery uses bounded asset-only UTxO RPC pages with
+opaque cursors. LP lookups filter by both token and pool payment credential, so
+wallet-held LP tokens do not consume the lookup bound. Both paths authenticate
+output credentials, pool tokens, and datums from the returned CBOR.
+
+Discover also links to the official [SundaeSwap](https://app.sundae.fi/) and
+[Liqwid](https://app.liqwid.finance/) mainnet applications. Those links open the
+protocol’s own workspace. Deployment identifiers follow the canonical
+[Minswap SDK](https://github.com/minswap/sdk/blob/main/src/types/constants.ts).
 
 ## Preprod markets
 

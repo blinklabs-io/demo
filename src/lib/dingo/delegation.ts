@@ -1,3 +1,4 @@
+import { CARDANO_NETWORK_ID } from "./networkIdentity";
 import { DINGO_NETWORK } from "./config";
 import { assertSignedWithKey } from "./signatureWitness";
 import { Core } from "@blaze-cardano/sdk";
@@ -47,7 +48,7 @@ async function identity(
   assertCurrent();
   const reward = Core.Address.fromBech32(address);
   if (
-    reward.getNetworkId() !== 0 ||
+    reward.getNetworkId() !== CARDANO_NETWORK_ID ||
     !rewards.some(
       (raw) => Core.Address.fromBytes(Core.HexBlob(raw)).toBech32() === address,
     )
@@ -57,8 +58,8 @@ async function identity(
   if (credential?.type !== Core.CredentialType.KeyHash)
     throw new Error("Delegation requires a wallet stake signing key.");
   const changeAddress = Core.Address.fromBytes(Core.HexBlob(change));
-  if (changeAddress.getNetworkId() !== 0)
-    throw new Error("Connect a testnet wallet.");
+  if (changeAddress.getNetworkId() !== CARDANO_NETWORK_ID)
+    throw new Error(`Connect a ${CARDANO_NETWORK_ID === 1 ? "mainnet" : "testnet"} wallet.`);
   return { stakeHash: credential.hash, change };
 }
 async function validateTarget(

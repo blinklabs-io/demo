@@ -1,5 +1,6 @@
 export const NETWORK_STORAGE_KEY = "dingo.network";
 export const DINGO_NETWORKS = {
+  mainnet: { id: "mainnet", label: "Mainnet", networkMagic: 764824073 },
   preview: { id: "preview", label: "Preview", networkMagic: 2 },
   preprod: { id: "preprod", label: "Preprod", networkMagic: 1 },
   musashi: { id: "musashi", label: "Musashi", networkMagic: 164 },
@@ -15,7 +16,7 @@ export function urlDingoNetwork(search: string): DingoNetworkId | null {
   if (!values.length) return null;
   if (values.length !== 1 || !isDingoNetworkId(values[0]))
     throw new Error(
-      "Choose a valid network in the URL: preview, preprod, musashi, dijkstra, or prime-testnet.",
+      "Choose a valid network in the URL: mainnet, preview, preprod, musashi, dijkstra, or prime-testnet.",
     );
   return values[0];
 }
