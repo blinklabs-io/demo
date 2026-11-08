@@ -151,9 +151,20 @@ export async function readLiquidityPositions(
   };
 }
 
+export class MarketVolumeRateLimitError extends Error {
+  readonly retryAfterSeconds: number;
+  constructor(seconds: number) {
+    super(`The volume provider is rate limiting requests. Retry in ${seconds} seconds or browse all pools.`);
+    this.retryAfterSeconds = seconds;
+  }
+}
 export async function readPopularMinswapPools(signal?: AbortSignal) {
   if (DINGO_NETWORK.id !== "mainnet") throw new Error("Mainnet market volumes require Mainnet.");
   const response = await fetch("/market-pools", { signal, credentials: "omit", headers: { Accept: "application/json" } });
+  if (response.status === 429) {
+    const seconds = Number(response.headers.get("Retry-After"));
+    throw new MarketVolumeRateLimitError(Number.isSafeInteger(seconds) && seconds > 0 ? seconds : 60);
+  }
   if (!response.ok) throw new Error("Market volumes are unavailable. Retry or browse all pools.");
   const data: { pools: PopularPool[] } = await response.json();
   if (!Array.isArray(data.pools) || data.pools.length > POPULAR_POOL_LIMIT || new Set(data.pools.map((p) => p.lpAsset)).size !== data.pools.length || data.pools.some((p) => typeof p.volumeAda !== "number" || !Number.isFinite(p.volumeAda) || p.volumeAda <= 0))

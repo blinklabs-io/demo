@@ -13,6 +13,7 @@ import {
   readMinswapPools,
   readPopularMinswapPools,
   readPopularMinswapPool,
+  MarketVolumeRateLimitError,
   readMinswapPool,
 } from "../../lib/minswap/read";
 import type { MinswapPool } from "../../lib/minswap/data";
@@ -132,7 +133,11 @@ export function MinswapMarket({
     queryKey: ["dingo", "markets", "minswap", "pools", catalog, page, cursors[page]],
     queryFn: async ({ signal }) => catalog === "popular" ? { ...await readPopularMinswapPools(signal), kind: "popular" as const } : { ...await readMinswapPools(page, signal, cursors[page]), kind: "all" as const },
     staleTime: 30000,
-    refetchInterval: 30000,
+    ...(catalog === "popular" ? { retry: (count: number, error: Error) => !(error instanceof MarketVolumeRateLimitError) && count < 3 } : {}),
+    refetchInterval: (query) => {
+      const error = query.state.error;
+      return catalog === "popular" && error && error instanceof MarketVolumeRateLimitError ? Math.min(error.retryAfterSeconds * 1000, 2_147_483_647) : 30000;
+    },
   });
   const ranked = pools.data?.kind === "popular" ? pools.data.pools : (pools.data?.pools ?? []).toSorted((a, b) =>
     a.assetA === "lovelace" && b.assetA !== "lovelace"

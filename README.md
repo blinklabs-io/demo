@@ -365,7 +365,12 @@ Pages Function retrieves and normalizes the ranking, caches it for one minute,
 and bounds its response size and duration. Selecting a featured pool resolves and authenticates its current state through
 Dingo before quoting or trading; analytics never supply transaction state or
 quotes. The catalog loads without scanning pool states. Failed volume requests show an error with retry and an explicit
-All pools action. Static hosting without Pages Functions can use All pools.
+All pools action. Static hosting without Pages Functions can use All pools. Rate-limit
+responses share a cached backoff window based on the provider’s Retry-After
+header. The trading view displays that window and waits before retrying.
+
+[Volume retry state: desktop](docs/screenshots/volume4291440.jpg) ·
+[Mobile](docs/screenshots/volume429390.jpg)
 
 The All pools catalog uses bounded asset-only UTxO RPC pages with
 opaque cursors. LP lookups filter by both token and pool payment credential, so

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { Core } from "@blaze-cardano/sdk";
 import { beforeAll, beforeEach, expect, it, vi } from "vitest";
-import { readMinswapPools, readMinswapPool, readPopularMinswapPools, readPopularMinswapPool } from "./read";
+import { readMinswapPools, readMinswapPool, readPopularMinswapPools, readPopularMinswapPool, MarketVolumeRateLimitError } from "./read";
 import { readMinswapAssetPage } from "./rpc";
 import { blockfrostFetch } from "../dingo/blockfrost";
 import { orderAddress, orderDatum } from "./orders";
@@ -93,5 +93,14 @@ it("loads volume discovery without Dingo scans and authenticates only the select
     mocks.search.mockResolvedValue({ items: [item(0)], nextToken: "" });
     expect((await readPopularMinswapPool(result.pools[0])).lpAsset).toBe(known[0].lpAsset);
     await expect(readPopularMinswapPool({ ...metrics[0], assetB: "ff".repeat(28) })).rejects.toThrow("asset pair");
+  } finally { fetch.mockRestore(); }
+});
+
+it("reports the provider retry window without querying Dingo for rate-limited discovery", async () => {
+  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("rate limited", { status: 429, headers: { "Retry-After": "120" } }));
+  try {
+    await expect(readPopularMinswapPools()).rejects.toBeInstanceOf(MarketVolumeRateLimitError);
+    await expect(readPopularMinswapPools()).rejects.toMatchObject({ retryAfterSeconds: 120 });
+    expect(mocks.search).not.toHaveBeenCalled();
   } finally { fetch.mockRestore(); }
 });

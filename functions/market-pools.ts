@@ -6,6 +6,6 @@ export async function onRequestGet({ request, waitUntil }: { request: Request; w
   const cached = await cache.match(request);
   if (cached) return cached;
   const response = await marketPools(request);
-  if (response.ok) waitUntil(cache.put(request, response.clone()));
+  if (response.ok || response.status === 429) waitUntil(cache.put(request, response.clone()));
   return response;
 }

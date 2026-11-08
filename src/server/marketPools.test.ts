@@ -48,3 +48,27 @@ it("identifies upstream HTTP failures without exposing the provider response bod
   expect(response.status).toBe(502);
   expect(await response.json()).toEqual({ error: "Market volumes are unavailable. Retry or browse all pools.", code: "upstream_http_403" });
 });
+
+it("honors rate-limit retry dates and shares the backoff through the Pages cache", async () => {
+  const { onRequestGet } = await import("../../functions/market-pools");
+  const now = Date.parse("2026-11-08T12:00:00Z");
+  vi.spyOn(Date, "now").mockReturnValue(now);
+  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("rate limited", { status: 429, headers: { "Retry-After": new Date(now + 120000).toUTCString() } }));
+  let cached: Response | undefined;
+  const put = vi.fn(async (_request: Request, value: Response) => { cached = value; });
+  vi.stubGlobal("caches", { open: async () => ({ match: async () => cached?.clone(), put }) });
+  try {
+    const pending: Promise<unknown>[] = [];
+    const context = () => ({ request: new Request("https://demo.pages.dev/market-pools"), waitUntil: (promise: Promise<unknown>) => { pending.push(promise); } });
+    const first = await onRequestGet(context());
+    await Promise.all(pending);
+    expect(first.status).toBe(429);
+    expect(first.headers.get("Retry-After")).toBe("120");
+    expect(first.headers.get("Cache-Control")).toBe("public, max-age=120");
+    const next = await onRequestGet(context());
+    expect(next.status).toBe(429);
+    expect((await next.json()).code).toBe("upstream_http_429");
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(put).toHaveBeenCalledOnce();
+  } finally { vi.unstubAllGlobals(); }
+});
