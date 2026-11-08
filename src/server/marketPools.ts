@@ -9,7 +9,7 @@ export async function marketPools(request: Request): Promise<Response> {
     const response = await fetch("https://api-mainnet-prod.minswap.org/v1/pools/metrics", {
       method: "POST", redirect: "manual", credentials: "omit",
       signal,
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "BlinkLabsDingoDemo (+https://github.com/blinklabs-io/demo)" },
       body: JSON.stringify({ limit: POPULAR_POOL_LIMIT, only_verified: true, sort_field: "volume_24h", sort_direction: "desc", protocols: ["MinswapV2"], currency: "ada" }),
     });
     failure = response.ok ? "empty_response" : `upstream_http_${response.status}`;
