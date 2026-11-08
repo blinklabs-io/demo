@@ -24,7 +24,7 @@ export function bridgePlan(action: BridgeAction, sender: string, settings: Bridg
     let parsed: Core.Address;
     try { parsed = Core.Address.fromBech32(address); } catch { throw new Error("Enter a Vector Testnet payment address beginning with addr1."); }
     // Vector Testnet uses Cardano network ID 1; Prime Testnet uses ID 0.
-    if (!address.startsWith("addr1") || parsed.getNetworkId() !== 1 || parsed.getProps().paymentPart?.type !== Core.CredentialType.KeyHash)
+    if (!parsed.toBech32().startsWith("addr1") || parsed.getNetworkId() !== 1 || parsed.getProps().paymentPart?.type !== Core.CredentialType.KeyHash)
       throw new Error("Enter a Vector Testnet payment address beginning with addr1.");
     address = parsed.toBech32();
   }

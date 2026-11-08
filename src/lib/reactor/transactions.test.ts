@@ -50,7 +50,7 @@ function fixture() {
   vi.mocked(readBridgeSettings).mockImplementation(async () => ({ ...settings }));
   const guard = () => { if (!connected) throw new Error("Session changed"); };
   const action = { destination: "nexus" as const, address: "0x" + "22".repeat(20), amount: "10" };
-  return { api, action, guard, post, address, asset, settings, setSlot: (value: number) => { slot = value; }, setMagic: (value: number) => { magic = value; }, spend: () => { unspent = false; }, disconnect: () => { connected = false; }, changeWallet: () => { changed = true; }, onSign: (fn: () => void) => { signing = fn; } };
+  return { api, action, guard, post, address, asset, settings, funding, setSlot: (value: number) => { slot = value; }, setMagic: (value: number) => { magic = value; }, spend: () => { unspent = false; }, disconnect: () => { connected = false; }, changeWallet: () => { changed = true; }, onSign: (fn: () => void) => { signing = fn; } };
 }
 it("balances a native bridge transaction, preserves tokens in wallet change, signs and submits through Dingo", async () => {
   const f = fixture();
@@ -65,7 +65,10 @@ it("balances a native bridge transaction, preserves tokens in wallet change, sig
   expect(f.api.signTx).toHaveBeenCalledTimes(1);
   expect(f.post).toHaveBeenCalledTimes(1);
 });
-it.each(["network", "fee", "pause", "expired", "spent", "wallet", "session"])("rejects %s changes while signing without submitting", async (change) => {
+it.each([
+  ["network", "requires Prime Testnet"], ["fee", "bridge fee changed"], ["pause", "route is not available"],
+  ["expired", "expired or wallet changed"], ["spent", "funding is not available"], ["wallet", "expired or wallet changed"], ["session", "Session changed"],
+])("rejects %s changes while signing without submitting", async (change, reason) => {
   const f = fixture();
   const draft = await prepareBridgeTransaction(f.api, f.action, f.guard);
   f.onSign(() => {
@@ -77,7 +80,7 @@ it.each(["network", "fee", "pause", "expired", "spent", "wallet", "session"])("r
     if (change === "wallet") f.changeWallet();
     if (change === "session") f.disconnect();
   });
-  await expect(submitBridgeTransaction(draft, f.api, f.guard)).rejects.toThrow();
+  await expect(submitBridgeTransaction(draft, f.api, f.guard)).rejects.toThrow(reason);
   expect(f.post).not.toHaveBeenCalled();
 });
 it("refuses a mutated draft before asking the wallet to sign", async () => {
@@ -107,4 +110,45 @@ it("rejects witnesses from an unrelated signing key", async () => {
   });
   await expect(submitBridgeTransaction(draft, f.api, f.guard)).rejects.toThrow("every bridge funding input");
   expect(f.post).not.toHaveBeenCalled();
+});
+
+it("builds the Vector route with its canonical destination in metadata", async () => {
+  const f = fixture();
+  const address = Core.addressFromCredential(1, Core.Credential.fromCore({ type: Core.CredentialType.KeyHash, hash: Core.Hash28ByteBase16("22".repeat(28)) })).toBech32();
+  const draft = await prepareBridgeTransaction(f.api, { ...f.action, destination: "vector", address }, f.guard);
+  expect(draft.action.destination).toBe("vector");
+  const payload = draft.tx.auxiliaryData()!.metadata()!.toCore().get(1n) as Map<string, Core.Cardano.Metadatum>;
+  expect(payload.get("d")).toBe("vector");
+  expect(await submitBridgeTransaction(draft, f.api, f.guard)).toBe(draft.hash);
+});
+it.each(["unavailable", "paused", "limit"])("refuses %s conditions before review", async (condition) => {
+  const f = fixture();
+  const reason = condition === "unavailable" ? "Reactor unavailable" : condition === "paused" ? "route is not available" : "current transfer limits";
+  if (condition === "unavailable") vi.mocked(readBridgeSettings).mockRejectedValue(new Error(reason));
+  if (condition === "paused") f.settings.paused = true;
+  if (condition === "limit") f.settings.maximum = 1n;
+  await expect(prepareBridgeTransaction(f.api, f.action, f.guard)).rejects.toThrow(reason);
+  expect(f.api.signTx).not.toHaveBeenCalled();
+  expect(f.post).not.toHaveBeenCalled();
+});
+it.each(["datum", "native script", "Plutus script"])("refuses a funding output with a %s attached", async (kind) => {
+  const f = fixture();
+  const output = f.funding.output();
+  if (kind === "datum") output.setDatum(Core.Datum.newInlineData(Core.PlutusData.newInteger(1n)));
+  else if (kind === "native script") output.setScriptRef(Core.Script.newNativeScript(Core.NativeScript.fromCore({ __type: Core.Cardano.ScriptType.Native, kind: Core.Cardano.NativeScriptKind.RequireSignature, keyHash: Core.Ed25519KeyHashHex("11".repeat(28)) })));
+  else output.setScriptRef(Core.Script.newPlutusV2Script(new Core.PlutusV2Script(Core.HexBlob("49480100002221200101"))));
+  await expect(prepareBridgeTransaction(f.api, f.action, f.guard)).rejects.toThrow("plain outputs");
+  expect(f.api.signTx).not.toHaveBeenCalled();
+  expect(f.post).not.toHaveBeenCalled();
+});
+
+it("selects plain funding while leaving a native-script reference output untouched", async () => {
+  const f = fixture();
+  const output = new Core.TransactionOutput(f.address, new Core.Value(10000000000n));
+  output.setScriptRef(Core.Script.newNativeScript(Core.NativeScript.fromCore({ __type: Core.Cardano.ScriptType.Native, kind: Core.Cardano.NativeScriptKind.RequireSignature, keyHash: Core.Ed25519KeyHashHex("11".repeat(28)) })));
+  const reference = new Core.TransactionUnspentOutput(new Core.TransactionInput(Core.TransactionId("66".repeat(32)), 0n), output);
+  vi.spyOn(f.api, "getUtxos").mockResolvedValue([reference.toCbor(), f.funding.toCbor()]);
+  const draft = await prepareBridgeTransaction(f.api, f.action, f.guard);
+  expect(draft.tx.body().inputs().toCore()).toEqual([f.funding.input().toCore()]);
+  expect(await submitBridgeTransaction(draft, f.api, f.guard)).toBe(draft.hash);
 });

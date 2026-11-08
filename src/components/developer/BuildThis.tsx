@@ -35,7 +35,7 @@ function BuildThisBody({ recipe }: { recipe: BuildRecipe }) {
   const code = language === "SDK" ? sdk! : recipeExample(recipe, language);
   return (
     <div className="build-this-body">
-      <span className="eyebrow">{DINGO_NETWORK.label} · Dingo APIs</span>
+      <span className="eyebrow">{DINGO_NETWORK.label} · {recipe === "bridge" ? "Reactor + Dingo APIs" : "Dingo APIs"}</span>
       <h2>{definition.title}</h2>
       <p>{definition.context}</p>
       <div className="developer-actions">
@@ -55,7 +55,7 @@ function BuildThisBody({ recipe }: { recipe: BuildRecipe }) {
       <p className="developer-note">
         {language === "SDK"
           ? "Use the imported package in an ES module project. "
-          : "Read-only requests to the selected node. Replace TRANSACTION_ID and BLOCK_HEIGHT where shown. "}
+          : recipe === "bridge" ? "Read-only requests to this workspace’s Reactor relay. " : "Read-only requests to the selected node. Replace TRANSACTION_ID and BLOCK_HEIGHT where shown. "}
         Transaction construction and wallet signing are in the linked
         implementation.
       </p>

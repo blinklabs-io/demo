@@ -50,3 +50,14 @@ it("executes read examples and preserves HTTP failures", async () => {
     "HTTP 503: Unavailable",
   );
 });
+
+it("executes bridge examples against the workspace relay", async () => {
+  vi.stubGlobal("window", { location: { origin: "https://demo.example" } });
+  try {
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+    const fetch = vi.fn(async (url: string) => Response.json({ url }));
+    await new AsyncFunction("fetch", "console", recipeExample("bridge", "JavaScript"))(fetch, { log: vi.fn() });
+    expect(fetch.mock.calls.map((call) => call[0])).toEqual(["https://demo.example/reactor?resource=settings", "https://demo.example/reactor?resource=validators"]);
+    expect(recipeExample("bridge", "cURL")).toContain("https://demo.example/reactor?resource=settings");
+  } finally { vi.unstubAllGlobals(); }
+});

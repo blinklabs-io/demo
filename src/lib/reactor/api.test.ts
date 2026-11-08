@@ -32,3 +32,30 @@ it("does not treat unsafe numeric limits as usable bridge settings", async () =>
   vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => Response.json(String(url).includes("validators") ? { inProgress: false } : { ...raw, bridgingSettings: { ...raw.bridgingSettings, minValueToBridge: Number.MAX_SAFE_INTEGER + 1 } }));
   await expect(readBridgeSettings()).rejects.toThrow("invalid AP3X");
 });
+
+it.each(["settings", "validators"])("rejects an unavailable %s read", async (resource) => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => String(url).includes(resource) ? new Response("", { status: 503 }) : Response.json(String(url).includes("validators") ? { inProgress: false } : raw));
+  await expect(readBridgeSettings()).rejects.toThrow("Could not read Reactor");
+});
+it("filters disabled chains and rejects invalid limits", async () => {
+  const value = structuredClone(raw);
+  const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => Response.json(String(url).includes("validators") ? { inProgress: false } : value));
+  value.enabledChains = ["prime", "nexus"];
+  expect((await readBridgeSettings()).destinations).toEqual(["nexus"]);
+  value.enabledChains = ["vector", "nexus"];
+  expect((await readBridgeSettings()).destinations).toEqual([]);
+  value.bridgingSettings.minValueToBridge = 0;
+  await expect(readBridgeSettings()).rejects.toThrow("invalid transfer limits");
+  value.bridgingSettings.minValueToBridge = 1000001;
+  value.bridgingSettings.maxAmountAllowedToBridge = 1000000;
+  await expect(readBridgeSettings()).rejects.toThrow("invalid transfer limits");
+  expect(fetch).toHaveBeenCalled();
+});
+it("omits malformed destination hashes without discarding valid progress", async () => {
+  const hash = "ab".repeat(32);
+  const value = { originChain: "prime", sourceTxHash: hash, destinationChain: "nexus", status: "ExecutedOnDestination", destinationTxHash: "not a hash" };
+  vi.spyOn(globalThis, "fetch").mockImplementation(async () => Response.json(value));
+  expect((await readBridgeTransfer(hash))?.destinationHash).toBeNull();
+  value.destinationTxHash = "0x" + "cd".repeat(32);
+  expect((await readBridgeTransfer(hash))?.destinationHash).toBe(value.destinationTxHash);
+});

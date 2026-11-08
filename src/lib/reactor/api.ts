@@ -42,5 +42,6 @@ export async function readBridgeTransfer(hash: string, signal?: AbortSignal) {
   if (!raw) return null;
   if (raw.originChain !== "prime" || raw.sourceTxHash !== normalized || !["vector", "nexus"].includes(String(raw.destinationChain)) || typeof raw.status !== "string" || !raw.status)
     throw new Error("Reactor returned a transfer that does not match this Prime transaction.");
-  return { hash: normalized, destination: raw.destinationChain as Destination, status: raw.status, destinationHash: typeof raw.destinationTxHash === "string" ? raw.destinationTxHash : null, isRefund: raw.isRefund === true };
+  const destinationHash = typeof raw.destinationTxHash === "string" && (raw.destinationChain === "nexus" ? /^(?:0x)?[a-f0-9]{64}$/i : /^[a-f0-9]{64}$/i).test(raw.destinationTxHash) ? raw.destinationTxHash : null;
+  return { hash: normalized, destination: raw.destinationChain as Destination, status: raw.status, destinationHash, isRefund: raw.isRefund === true };
 }

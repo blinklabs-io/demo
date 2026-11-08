@@ -29,6 +29,11 @@ it("enforces live availability, amount limits and six decimal precision", () => 
   const action = { destination: "vector" as const, address: address(1), amount: "10" };
   expect(() => bridgePlan(action, address(0), { ...settings, paused: true })).toThrow(/not available/);
   expect(() => bridgePlan(action, address(0), { ...settings, destinations: [] })).toThrow(/not available/);
-  for (const amount of ["0", "0.999999", "1000000.000001", "1.0000001", "-1"])
-    expect(() => bridgePlan({ ...action, amount }, address(0), settings)).toThrow();
+  for (const [amount, reason] of [["0", "current transfer limits"], ["0.999999", "current transfer limits"], ["1000000.000001", "current transfer limits"], ["1.0000001", "up to 6 decimal"], ["-1", "up to 6 decimal"]])
+    expect(() => bridgePlan({ ...action, amount }, address(0), settings)).toThrow(reason);
+});
+
+it("canonicalizes an uppercase Vector Bech32 destination", () => {
+  const plan = bridgePlan({ destination: "vector", address: address(1).toUpperCase(), amount: "10" }, address(0), settings);
+  expect(plan.address).toBe(address(1));
 });

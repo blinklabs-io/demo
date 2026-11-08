@@ -1,8 +1,8 @@
 const upstream = "https://web-api-bridge.ethernal.tech";
 
 export async function reactor(request: Request): Promise<Response> {
-  const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
-  if (request.method !== "GET") return json({ error: "Method not allowed." }, 405);
+  const json = (body: unknown, status = 200, extra: Record<string, string> = {}) => Response.json(body, { status, headers: { "Cache-Control": "no-store", ...extra } });
+  if (request.method !== "GET") return json({ error: "Method not allowed." }, 405, { Allow: "GET" });
   const params = new URL(request.url).searchParams;
   const resource = params.get("resource");
   const hash = params.get("hash");
@@ -15,7 +15,7 @@ export async function reactor(request: Request): Promise<Response> {
   try {
     const response = await fetch(upstream + path, {
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(10_000)]),
-      redirect: "error", credentials: "omit", headers: { Accept: "application/json" },
+      redirect: "manual", credentials: "omit", headers: { Accept: "application/json" },
     });
     if (!response.ok) {
       await response.body?.cancel();

@@ -1,10 +1,10 @@
-import { Core, calculateMinAda } from "@blaze-cardano/sdk";
+import { Core, TxBuilder, calculateMinAda } from "@blaze-cardano/sdk";
 import type { Cip30WalletApi } from "../dingo/cip30";
 import { getBlaze } from "../dingo/blaze";
 import { blockfrostFetch } from "../dingo/blockfrost";
 import { assertDingoTransactionBackends, assertTransactionNetwork, assertWalletSession } from "../dingo/walletSession";
 import { assertSignedWithKey } from "../dingo/signatureWitness";
-import { inputId, walletOutputs } from "../tools/transactions";
+import { inputId, plainWalletOutputs, walletOutputs } from "../tools/transactions";
 import { assertPrime, readBridgeSettings } from "./api";
 import { bridgePlan, type BridgeAction } from "./plan";
 
@@ -33,8 +33,14 @@ export async function prepareBridgeTransaction(api: Cip30WalletApi, action: Brid
   const { blaze } = await getBlaze(api);
   assertCurrent();
   if (plan.output.amount().coin() < calculateMinAda(plan.output, blaze.params.coinsPerUtxoByte)) throw new Error("Bridge output is below Prime’s minimum output value.");
+  const candidates = plainWalletOutputs(await walletOutputs(api));
+  assertCurrent();
+  if (!candidates.length) throw new Error("Bridge funding requires plain outputs from the connected wallet.");
   const validUntil = await tip(assertCurrent) + 600;
-  const tx = await blaze.newTransaction()
+  const tx = await new TxBuilder(blaze.params)
+    .setNetworkId(Core.NetworkId.Testnet)
+    .setChangeAddress(Core.Address.fromBech32(who.address), false)
+    .addUnspentOutputs(candidates)
     .addOutput(Core.TransactionOutput.fromCbor(plan.output.toCbor()))
     .setMetadata(plan.metadata)
     .addRequiredSigner(Core.Ed25519KeyHashHex(who.key))
@@ -59,6 +65,7 @@ export async function prepareBridgeTransaction(api: Cip30WalletApi, action: Brid
     keys.add(String(key.hash));
   }
   await assertTransactionNetwork(tx, assertCurrent, blaze.provider);
+  if ((await identity(api, assertCurrent)).address !== who.address) throw new Error("Wallet account changed during bridge construction.");
   return { tx, blaze, action: { ...action, address: plan.address }, address: who.address, amount: plan.amount, bridgeFee: plan.fee, keys: [...keys], validUntil, bodyCbor: tx.body().toCbor(), hash: String(tx.getId()), auxiliaryCbor: tx.auxiliaryData()!.toCbor() };
 }
 export type BridgeDraft = Awaited<ReturnType<typeof prepareBridgeTransaction>>;

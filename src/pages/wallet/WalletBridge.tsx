@@ -32,10 +32,13 @@ function BridgeWorkspace() {
   const [params, setParams] = useSearchParams();
   const hash = (params.get("hash") ?? "").trim().toLowerCase();
   const [lookup, setLookup] = useState(hash);
+  const [lookupHash, setLookupHash] = useState(hash);
+  if (lookupHash !== hash) { setLookupHash(hash); setLookup(hash); }
   const [lookupError, setLookupError] = useState("");
-  const tracking = { hash, submitted: (value: string) => { setLookup(value); setParams({ network: "prime-testnet", hash: value }); } };
   const validHash = /^[a-f0-9]{64}$/.test(hash);
+  const tracking = { hash: validHash ? hash : "", submitted: (value: string) => { setLookup(value); setParams({ network: "prime-testnet", hash: value }); } };
   const transfer = useQuery({ queryKey: ["reactor", "prime-testnet", "transfer", hash], enabled: validHash, queryFn: ({ signal }) => readBridgeTransfer(hash, signal), retry: false,
+    // A refund can still await delivery; its status determines completion.
     refetchInterval: (query) => query.state.error || query.state.data?.status === "ExecutedOnDestination" || query.state.data?.status === "InvalidRequest" ? false : 10_000,
   });
   const available = !!settings.data && !settings.isError && !settings.data.paused && settings.data.destinations.includes(destination);
@@ -80,7 +83,7 @@ function BridgeWorkspace() {
       {validHash && <>
         <MarketConfirmation tracking={tracking} resetLabel="New transfer" />
         {transfer.isPending ? <p role="status">Reading Reactor transfer progress…</p> : transfer.isError ? <p role="alert">Could not read Reactor transfer progress.</p> : transfer.data === null ? <p role="status">Reactor has not indexed this Prime transaction yet. Prime confirmation and bridge delivery are separate steps.</p> : transfer.data && <>
-          <p role="status">{transfer.data.isRefund ? "Refund · " : ""}{transfer.data.isRefund ? "Refund recorded by Reactor" : transfer.data.status === "ExecutedOnDestination" ? `Delivered on ${chainName(transfer.data.destination)} Testnet` : transfer.data.status === "InvalidRequest" ? "Reactor rejected this bridge request" : transfer.data.status === "FailedToExecuteOnDestination" ? "Destination execution failed" : stages.find(([status]) => status === transfer.data?.status)?.[1] ?? transfer.data.status}</p>
+          <p role="status">{transfer.data.isRefund ? "Refund recorded by Reactor" : transfer.data.status === "ExecutedOnDestination" ? `Delivered on ${chainName(transfer.data.destination)} Testnet` : transfer.data.status === "InvalidRequest" ? "Reactor rejected this bridge request" : transfer.data.status === "FailedToExecuteOnDestination" ? "Destination execution failed" : stages.find(([status]) => status === transfer.data?.status)?.[1] ?? transfer.data.status}</p>
           {!transfer.data.isRefund && <ol className="bridge-stages">{stages.map(([status, label], index) => <li key={status} className={progress >= index ? "complete" : ""} aria-current={progress === index ? "step" : undefined}>{label}</li>)}</ol>}
           {transfer.data.destinationHash && <p>Destination transaction <code className="bridge-hash">{transfer.data.destinationHash}</code></p>}
         </>}
