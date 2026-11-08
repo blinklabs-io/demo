@@ -365,6 +365,24 @@ opaque cursors. LP lookups filter by both token and pool payment credential, so
 wallet-held LP tokens do not consume the lookup bound. Both paths authenticate
 output credentials, pool tokens, and datums from the returned CBOR.
 
+Mainnet liquidity also offers SundaeSwap V3 deposits and withdrawals for the
+selected ADA/USDCx and ADA/NIGHT pools. Open
+`/wallet/markets/liquidity?network=mainnet&venue=sundae`. Token and LP quantities
+use base units; ADA uses six decimal places. The deposit form can match the
+current reserve ratio. Estimates use integer arithmetic and are refreshed before
+building. V3 liquidity datums specify supplied assets rather than minimum
+returns, so execution uses the pool ratio at scooping time. Review shows the
+refundable order deposit, scooper fee, network fee, and order reference.
+[Deposit desktop](docs/screenshots/sundaeliquiditymainnet-deposit-1440.png) ·
+[Deposit mobile](docs/screenshots/sundaeliquiditymainnet-deposit-390.png) ·
+[Withdrawal desktop](docs/screenshots/sundaeliquiditymainnet-withdraw-1440.png) ·
+[Withdrawal mobile](docs/screenshots/sundaeliquiditymainnet-withdraw-390.png).
+
+An unexecuted V3 order can be cancelled by its transaction hash and output index
+with the account that owns its cancellation key. Wallet and backend network
+identity, draft expiry, required witnesses, and the reviewed transaction body
+are checked again around signing. No protocol API is used.
+
 Discover offers native SundaeSwap V3/V4 swaps through Dingo and also links to the official [SundaeSwap](https://app.sundae.fi/) and
 [Liqwid](https://app.liqwid.finance/) mainnet applications. Those links open the
 protocol’s own workspace. Deployment identifiers follow the canonical

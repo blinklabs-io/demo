@@ -1,6 +1,7 @@
 // Ported from dingo-sundae-preview/src/sundae/dingoQueryProvider.ts, with
 // import paths adjusted for this app's layout (dingo/bytes -> dingo/utxorpc/bytes,
 // dingo/utxorpcTypes -> dingo/utxorpc/utxorpcTypes).
+import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
 import { Core } from "@blaze-cardano/sdk";
 import {
   DatumBuilderV3,
@@ -227,6 +228,16 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
     poolUtxo: Core.TransactionUnspentOutput,
   ): Promise<IPoolData> {
     const poolPolicy = this.validatorHash("pool.mint");
+    const address = poolUtxo.output().address();
+    const payment = address.getProps().paymentPart;
+    const nft = Core.AssetId(poolPolicy + DatumBuilderV3.computePoolNftName(ident));
+    if (
+      address.getNetworkId() !== CARDANO_NETWORK_ID ||
+      payment?.type !== Core.CredentialType.ScriptHash ||
+      payment.hash !== this.validatorHash("pool.spend") ||
+      poolUtxo.output().amount().multiasset()?.get(nft) !== 1n
+    )
+      throw new Error("Not an authenticated SundaeSwap V3 pool output.");
     const datum = this.datumBuilder.decodeDatum(
       await this.poolDatum(poolUtxo, ident),
     );
@@ -419,6 +430,7 @@ function identFromPoolNftName(assetName: string): string | undefined {
 function isNonPoolDecodeError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return (
+    message === "Not an authenticated SundaeSwap V3 pool output." ||
     /^Invalid (type|literal|map|tuple|constr) at /.test(message) ||
     /^Pool datum identifier .+ did not match requested /.test(message) ||
     /^Pool .+ was found but has no datum\.$/.test(message) ||

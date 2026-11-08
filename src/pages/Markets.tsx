@@ -7,6 +7,8 @@ import { Link } from "../components/NetworkLink";
 import { MinswapMarket } from "../components/markets/MinswapMarket";
 import { KernelMarket } from "../components/markets/KernelMarket";
 import { MainnetApps } from "../components/markets/MainnetApps";
+import { SundaeLiquidity } from "../components/markets/SundaeLiquidity";
+import { useSearchParams } from "react-router";
 import NotFound from "./NotFound";
 
 export default function Markets() {
@@ -15,7 +17,8 @@ export default function Markets() {
     !["liquidity", "lending", "options", "orders", "marketplace"].includes(tab)
   )
     return <NotFound />;
-  if (DINGO_NETWORK.id === "mainnet") return tab === "liquidity" ? <MinswapMarket /> : <MainnetApps />;
+  if (DINGO_NETWORK.id === "mainnet")
+    return tab === "liquidity" ? <MainnetLiquidity /> : <MainnetApps />;
   if (DINGO_NETWORK.id !== "preprod")
     return (
       <section className="market-hero">
@@ -79,6 +82,40 @@ function LiquidityVenues() {
         <MinswapMarket tracking={tracking} />
       ) : (
         <GravityMarket />
+      )}
+    </div>
+  );
+}
+
+function MainnetLiquidity() {
+  const [params, setParams] = useSearchParams();
+  const venue = params.get("venue") === "sundae" ? "sundae" : "minswap";
+  const [hash, submitted] = useState("");
+  const tracking = { hash, submitted };
+  return (
+    <div className="markets-page">
+      <MarketConfirmation tracking={tracking} />
+      <nav className="market-mode" aria-label="Liquidity venue">
+        {(["minswap", "sundae"] as const).map((value) => (
+          <button
+            key={value}
+            aria-pressed={venue === value}
+            onClick={() =>
+              setParams((previous) => {
+                const next = new URLSearchParams(previous);
+                next.set("venue", value);
+                return next;
+              })
+            }
+          >
+            {value === "minswap" ? "Minswap V2" : "SundaeSwap V3"}
+          </button>
+        ))}
+      </nav>
+      {venue === "sundae" ? (
+        <SundaeLiquidity tracking={tracking} />
+      ) : (
+        <MinswapMarket tracking={tracking} />
       )}
     </div>
   );
