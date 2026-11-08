@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { TransactionOutputs } from "../wallet/TransactionOutputs";
 import { useRef, useState } from "react";
 import type { Core } from "@blaze-cardano/sdk";
@@ -30,12 +31,14 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
   submit,
   title,
   children,
+  reviewDetails,
   tracking,
 }: {
   draftKey: string;
   ready: boolean;
   title: string;
   children?: React.ReactNode;
+  reviewDetails?: (draft: T) => React.ReactNode;
   tracking: MarketTracking;
   prepare: (api: Cip30WalletApi, assertCurrent: () => void) => Promise<T>;
   submit: (
@@ -183,14 +186,15 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
       {!connected && <WalletConnectSummary />}
       {draft && !tracking.hash ? (
         <>
+          {reviewDetails?.(draft)}
           <div className="market-review">
             <span>Network fee</span>
             <strong>{formatNativeCoin(draft.tx.body().fee())}</strong>
           </div>
           <TransactionOutputs tx={draft.tx} />
           <p>
-            Review the amounts above. Your wallet signs; Dingo submits to
-            Preprod.
+            Review the amounts above. Your wallet signs; Dingo submits to{" "}
+            {DINGO_NETWORK.label}.
           </p>
           <div className="market-actions">
             <button
@@ -237,13 +241,13 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
         </p>
       )}
       {tracking.hash && (
-        <p role="status">Your submitted transaction is tracked above.</p>
+        <p role="status">Follow your submitted transaction’s progress.</p>
       )}
     </section>
   );
 }
 
-export function MarketConfirmation({ tracking }: { tracking: MarketTracking }) {
+export function MarketConfirmation({ tracking, resetLabel = "Start a new transaction" }: { tracking: MarketTracking; resetLabel?: string }) {
   const client = useQueryClient();
   const confirmation = useQuery({
     queryKey: ["dingo", "markets", "confirmation", tracking.hash],
@@ -282,7 +286,7 @@ export function MarketConfirmation({ tracking }: { tracking: MarketTracking }) {
     >
       <strong>
         {confirmation.data
-          ? "Confirmed on Preprod"
+          ? `Confirmed on ${DINGO_NETWORK.label}`
           : failed
             ? "Transaction failed on chain"
             : confirmation.error
@@ -309,7 +313,7 @@ export function MarketConfirmation({ tracking }: { tracking: MarketTracking }) {
       )}
       {(confirmation.data || failed) && (
         <button onClick={() => tracking.submitted("")}>
-          Start a new transaction
+          {resetLabel}
         </button>
       )}
     </div>

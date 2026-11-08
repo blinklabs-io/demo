@@ -1,0 +1,27 @@
+.bridge-page { max-width: 1100px; margin: auto; }
+.bridge-flow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 28px 18px; border: 1px solid #374259; border-radius: 20px; background: radial-gradient(ellipse at 50% 20%, #45356688, #0c1724); }
+.bridge-flow > div { display: flex; flex: 1; min-width: 0; align-items: center; flex-direction: column; gap: 8px; text-align: center; }
+.bridge-flow span { display: grid; place-items: center; width: 60px; height: 60px; border: 1px solid #9e87d6; border-radius: 50%; color: #b1fff1; background: #223044; font-size: 25px; }
+.bridge-flow small { color: #a6b3c8; font-size: 11px; }
+.bridge-flow i { color: #bc9ef1; font-size: 22px; }
+.bridge-settings, .bridge-compose, .bridge-tracking { margin-top: 20px; padding: 24px; border: 1px solid #374259; border-radius: 18px; background: #0d1726; }
+.bridge-page h2 { font-size: 22px; margin-bottom: 16px; }
+.bridge-page p { color: #b4c2d5; line-height: 1.6; margin: 14px 0; }
+.bridge-settings dl, .bridge-review dl, .bridge-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 18px; }
+.bridge-settings dt, .bridge-review dt { color: #9dadc6; font-size: 12px; margin-bottom: 6px; }
+.bridge-settings dd, .bridge-review dd { color: #9cf0de; font-size: 19px; }
+.bridge-page label { display: flex; flex-direction: column; gap: 8px; color: #bfd0e3; font-size: 13px; margin: 14px 0; }
+.bridge-page input, .bridge-page select { width: 100%; min-width: 0; padding: 12px; border: 1px solid #445570; border-radius: 8px; background: #101e30; color: #e1efff; }
+.bridge-page button { padding: 9px 14px; margin: 6px 8px 6px 0; border: 1px solid #667898; border-radius: 8px; color: #dceaff; background: #22334d; }
+.bridge-page button:disabled { opacity: .45; cursor: not-allowed; }
+.bridge-stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; list-style: none; padding: 0; margin: 18px 0; }
+.bridge-stages li { border-top: 3px solid #374259; padding-top: 10px; font-size: 12px; color: #a0acc0; }
+.bridge-stages .complete { border-color: #81dfc7; color: #b3ffe9; }
+.bridge-hash { display: block; overflow-wrap: anywhere; font-size: 12px; }
+@media (max-width: 600px) { .bridge-settings, .bridge-compose, .bridge-tracking { padding: 18px; } .bridge-flow { padding: 22px 10px; gap: 5px; } .bridge-flow span { width: 46px; height: 46px; } }
+
+.bridge-review { padding: 18px; border: 1px solid #6e5a8d; border-radius: 12px; margin: 16px 0; }
+.bridge-review dl { margin-top: 16px; }
+.bridge-review h4 { margin-bottom: 10px; }
+
+.bridge-page button.experience-primary { background: #9be5d6; color: #092125; border-color: #a7f3d0; }

@@ -18,6 +18,7 @@ vi.mock("../../lib/dingo/blockfrost", async (original) => ({
   ...(await original<typeof import("../../lib/dingo/blockfrost")>()),
   blockfrostFetch: vi.fn(),
 }));
+vi.mock("../../lib/dingo/config", () => ({ DINGO_NETWORK: { id: "preprod", label: "Preprod", networkMagic: 1 }, DINGO_CONFIG: {} }));
 const hash = "11".repeat(32),
   block = "22".repeat(32);
 let root: Root,

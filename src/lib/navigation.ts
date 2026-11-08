@@ -81,10 +81,11 @@ export function isWalletPath(path: string) {
 }
 
 export function isMarketsPath(path: string) {
-  return /^\/wallet\/(swap|markets)(\/|$)/.test(normalizePath(path));
+  return /^\/wallet\/(swap|markets|bridge)(\/|$)/.test(normalizePath(path));
 }
 
 export const marketSections = [
+  { to: "/wallet/bridge", label: "Bridge", matches: (path: string) => path === "/wallet/bridge" },
   {
     to: "/wallet/swap",
     label: "Swap",

@@ -1,6 +1,13 @@
 import { DINGO_CONFIG, DINGO_NETWORK } from "./dingo/config";
 
 export const recipes = {
+  bridge: {
+    title: "Bridge AP3X through Reactor",
+    path: "/api/v0/epochs/latest/parameters",
+    source: "src/lib/reactor/transactions.ts",
+    context: "Read Reactor’s live routes and fees. Build the Prime lock output and routing metadata locally with Blaze, verify funding through Dingo, collect CIP-30 witnesses, and submit over UTxO RPC. Track Prime inclusion separately from Reactor delivery.",
+    extra: "/api/v0/blocks/latest",
+  },
   leios: {
     title: "Read Leios ranking blocks",
     path: "/api/v0/blocks/latest",

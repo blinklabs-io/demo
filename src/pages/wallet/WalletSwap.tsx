@@ -100,6 +100,7 @@ export default function WalletSwap() {
             network to open a fresh workspace.
           </p>
           <div className="market-actions">
+            <Link to="/wallet/bridge?network=prime-testnet">Bridge AP3X on Prime →</Link>
             <Link to="/wallet/swap?network=preview">Open Preview swaps →</Link>
             <Link to="/wallet/swap?network=preprod">Open Preprod swaps →</Link>
             <Link to="/explorer/leios?network=musashi">Explore Leios on Musashi →</Link>
