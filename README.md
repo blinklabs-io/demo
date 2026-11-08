@@ -4,7 +4,8 @@ A Cardano development and operations workspace powered by Dingo. Explore live
 chain state, create and inspect transactions, swap assets and participate in
 governance. Shared navigation connects these capabilities, with source you can
 reuse and an API playground to inspect their data. Chain data and transaction
-services come from Dingo; no external indexer is required.
+services come from Dingo. Mainnet featured pools use Minswap volume analytics;
+the full pool catalog reads directly from Dingo.
 
 ## Run it
 
@@ -38,11 +39,11 @@ The URLs must point to the API roots (without a trailing slash). Configure
 Dingo’s CORS allowlist for the exact browser origin when the site and node use
 different origins. The explorer’s index-dependent pages need Dingo `api`
 storage mode. Wallet send and swap pages submit transactions to the selected
-node, so use a test network and connect a test wallet.
+node. Connect a wallet configured for the selected network before signing.
 
 ## Network selection
 
-Choose Preview, Preprod, Musashi, Dijkstra, or Prime Testnet in the header. Shared links include the network
+Choose Mainnet, Preview, Preprod, Musashi, Dijkstra, or Prime Testnet in the header. Shared links include the network
 (for example, `?network=dijkstra` or `?network=prime-testnet`), which takes precedence over a saved
 choice. Explicit network links work when browser storage is blocked. Switching disconnects the wallet,
 clears drafts and transient chain data, and reloads the current tool or a safe
@@ -51,7 +52,9 @@ old-network delegation and entity prefills are discarded. Wallet connections are
 
 The existing `VITE_DINGO_*_URL` settings configure Preview. Preprod has separate
 `VITE_DINGO_PREPROD_BLOCKFROST_URL`, `VITE_DINGO_PREPROD_MESH_URL` and
-`VITE_DINGO_PREPROD_UTXORPC_URL` overrides. Each API must serve the selected
+`VITE_DINGO_PREPROD_UTXORPC_URL` overrides. Mainnet uses independent
+`VITE_DINGO_MAINNET_BLOCKFROST_URL`, `VITE_DINGO_MAINNET_MESH_URL`, and
+`VITE_DINGO_MAINNET_UTXORPC_URL` overrides. Each API must serve the selected
 network. SundaeSwap markets remain tied to the verified Preview deployments;
 other creation and participation tools use the selected network. CIP-30 reports
 only mainnet versus testnet, so transaction review and signing additionally
@@ -62,7 +65,7 @@ Dingo chain.
 
 Browse the explorer, governance and survey results; preview SundaeSwap markets,
 weekly charts, amounts and slippage quotes; edit Send recipients, token metadata
-and survey drafts. Connect a wallet on the selected testnet when you want to sign or submit.
+and survey drafts. Connect a wallet on the selected network when you want to sign or submit.
 Wallet balances and wallet-owned assets are available only after connecting.
 Send keeps asset choices when reconnecting the same payment address and filters
 them against that wallet’s current assets; another address starts a separate bundle.
@@ -72,7 +75,7 @@ workflow needs keys, and manage or disconnect the connection from Wallet.
 ### Transaction studio
 
 Open **Create & build → Transaction studio** (`/wallet/tools/transactions`) to build an
-unsigned ADA payment from a payment-key address on the selected testnet, without a wallet extension. Dingo supplies that
+unsigned ADA payment from a payment-key address on the selected network, without a wallet extension. Dingo supplies that
 address’s UTxOs, current protocol parameters and the current slot. Change returns
 to the funding address; outputs carrying datums or reference scripts are excluded
 from automatic funding. You can add up to 20 recipients.
@@ -230,7 +233,7 @@ disclosure is opened.
 ## On-chain surveys
 
 The Surveys section creates, discovers, answers, and cancels public CIP-179
-version 5 surveys on the selected testnet. It supports the six built-in question types and
+version 5 surveys on the selected network. It supports the six built-in question types and
 keyholder credentials, with required-signer proof verified from transaction
 CBOR. Results validate question constraints and the inclusive epoch cutoff,
 keep the latest valid response per credential in chain order, and exclude all
@@ -344,6 +347,35 @@ Illustrative data, captured at desktop and mobile widths.
 | Epoch fingerprints      | [Desktop](docs/screenshots/epoch1500.jpg)            | [Mobile](docs/screenshots/epoch390.jpg)            |
 | Pool logos & saturation | [Desktop](docs/screenshots/poollogos1500.jpg)        | [Mobile](docs/screenshots/poollogos390.jpg)        |
 | Wallet pool saturation  | [Desktop](docs/screenshots/walletsaturation1500.jpg) | [Mobile](docs/screenshots/walletsaturation390.jpg) |
+
+## Cardano mainnet
+
+Select Mainnet or open `?network=mainnet` for live Cardano explorer, wallet,
+creation, staking, rewards, governance, and survey workflows. Mainnet uses
+Cardano address/network ID 1 and verifies network magic 764824073 through both
+Dingo REST and UTxO RPC before transaction construction and submission. Wallet
+network checks run again after signing; testnet addresses and funding are rejected.
+
+Mainnet Markets supports Minswap V2 pool discovery, swap orders, liquidity
+orders, wallet positions, and cancellation using its mainnet scripts and
+reference outputs. The default catalog features up to twelve active pools with
+verified tokens, ranked by actual 24-hour traded volume in ADA from
+[Minswap analytics](https://docs.minswap.org/developer/minswap-apis). A fixed
+Pages Function retrieves and normalizes the ranking, caches it for one minute,
+and bounds its response size and duration. Selecting a featured pool resolves and authenticates its current state through
+Dingo before quoting or trading; analytics never supply transaction state or
+quotes. The catalog loads without scanning pool states. Failed volume requests show an error with retry and an explicit
+All pools action. Static hosting without Pages Functions can use All pools.
+
+The All pools catalog uses bounded asset-only UTxO RPC pages with
+opaque cursors. LP lookups filter by both token and pool payment credential, so
+wallet-held LP tokens do not consume the lookup bound. Both paths authenticate
+output credentials, pool tokens, and datums from the returned CBOR.
+
+Discover also links to the official [SundaeSwap](https://app.sundae.fi/) and
+[Liqwid](https://app.liqwid.finance/) mainnet applications. Those links open the
+protocol’s own workspace. Deployment identifiers follow the canonical
+[Minswap SDK](https://github.com/minswap/sdk/blob/main/src/types/constants.ts).
 
 ## Preprod markets
 
@@ -492,10 +524,16 @@ data hash can be copied. Local decoding accepts up to 64 KiB and displays at mos
 2,048 nodes with 64 levels of nesting. Invalid selected data reports its own
 error while other transaction data remains available.
 
-Experiences include expandable **Build this yourself** sections with selected
-network API examples in JavaScript and cURL, implementation links, and access to
-the API playground. Examples make read-only requests; transaction construction
-and signing remain explicit in the linked source.
+Experiences include expandable **Build this yourself** sections with setup
+steps for your own Dingo instance and JavaScript, cURL, and SDK examples.
+Sync your node to the selected network, enable API storage and the relevant
+listeners, then replace the local endpoint constants with your own URLs.
+Hosted browser clients need reachable HTTPS APIs and their exact origin allowed by
+your node’s CORS configuration. The examples use local listeners rather than
+the demo’s hosted APIs. See the [Dingo quick start](https://docs.blinklabs.io/guides/dingo/002-quick-start-overview/)
+and [API configuration](https://docs.blinklabs.io/guides/dingo/006-apis-and-archive/).
+Examples make read-only requests; transaction construction and signing remain
+explicit in the linked implementation.
 
 ## Musashi and Leios
 

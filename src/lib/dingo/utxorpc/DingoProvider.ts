@@ -1,3 +1,4 @@
+import { CARDANO_NETWORK_ID } from "../networkIdentity";
 import { useSubmissionStore } from "../../../stores/submissionStore";
 import {
   Core,
@@ -23,8 +24,10 @@ export class DingoProvider extends Provider {
 
   constructor() {
     super(
-      Core.NetworkId.Testnet,
-      DINGO_NETWORK.id === "preview"
+      CARDANO_NETWORK_ID,
+      DINGO_NETWORK.id === "mainnet"
+        ? "cardano-mainnet"
+        : DINGO_NETWORK.id === "preview"
         ? "cardano-preview"
         : DINGO_NETWORK.id === "preprod"
           ? "cardano-preprod"

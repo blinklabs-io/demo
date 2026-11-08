@@ -18,7 +18,6 @@ vi.mock("../../lib/dingo/blockfrost", async (original) => ({
   ...(await original<typeof import("../../lib/dingo/blockfrost")>()),
   blockfrostFetch: vi.fn(),
 }));
-vi.mock("../../lib/dingo/config", () => ({ DINGO_NETWORK: { id: "preprod", label: "Preprod", networkMagic: 1 }, DINGO_CONFIG: {} }));
 const hash = "11".repeat(32),
   block = "22".repeat(32);
 let root: Root,
@@ -81,7 +80,7 @@ it("polls a real 404 as pending and then confirms only a valid-contract inclusio
   await act(async () => {
     await vi.advanceTimersByTimeAsync(10000);
   });
-  expect(host.textContent).toContain("Confirmed on Preprod");
+  expect(host.textContent).toContain("Confirmed on Preview");
   expect(refresh).toHaveBeenCalledTimes(1);
   expect(blockfrostFetch).toHaveBeenCalledTimes(2);
   await act(async () => {
@@ -97,7 +96,7 @@ it("reports invalid-contract inclusion as failure and refreshes collateral balan
   });
   await render();
   expect(host.textContent).toContain("Transaction failed on chain");
-  expect(host.textContent).not.toContain("Confirmed on Preprod");
+  expect(host.textContent).not.toContain("Confirmed on Preview");
   expect(refresh).toHaveBeenCalledTimes(1);
 });
 it("retries a transport failure without claiming confirmation", async () => {
@@ -108,7 +107,7 @@ it("retries a transport failure without claiming confirmation", async () => {
   expect(host.textContent).toContain("Confirmation unavailable");
   expect(refresh).not.toHaveBeenCalled();
   await click("Retry confirmation");
-  expect(host.textContent).toContain("Confirmed on Preprod");
+  expect(host.textContent).toContain("Confirmed on Preview");
 });
 it("lets a pending transaction stop tracking while explaining it can still confirm", async () => {
   vi.mocked(blockfrostFetch).mockRejectedValue(

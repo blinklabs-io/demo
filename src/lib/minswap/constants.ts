@@ -1,3 +1,6 @@
+import { MAINNET_MINSWAP_V2 } from "./mainnet";
+export { MAINNET_MINSWAP_V2 } from "./mainnet";
+import { DINGO_NETWORK } from "../dingo/config";
 // Deployment identifiers from canonical @minswap/sdk DexV2Constant TESTNET configuration.
 export const PREPROD_MINSWAP_V2 = {
   poolAuthenAsset:
@@ -17,3 +20,17 @@ export const ORDER_DEPOSIT_ADA = 2_000_000n;
 export const BATCHER_FEE = 2_000_000n;
 export const MAX_LIQUIDITY = 9_223_372_036_854_775_807n;
 export const BURNED_LIQUIDITY = 10n;
+
+
+
+const deployments = {
+  mainnet: { contracts: MAINNET_MINSWAP_V2, orderReference: { txHash: "cf4ecddde0d81f9ce8fcc881a85eb1f8ccdaf6807f03fea4cd02da896a621776", index: 0n } },
+  preprod: { contracts: PREPROD_MINSWAP_V2, orderReference: { txHash: "8c98f0530cba144d264fbd2731488af25257d7ce6a0cd1586fc7209363724f03", index: 0n } },
+} as const;
+function deployment() {
+  if (DINGO_NETWORK.id !== "mainnet" && DINGO_NETWORK.id !== "preprod")
+    throw new Error("Minswap V2 requires Mainnet or Preprod.");
+  return deployments[DINGO_NETWORK.id];
+}
+export function minswapDeployment() { return deployment().contracts; }
+export function minswapOrderReference() { return deployment().orderReference; }

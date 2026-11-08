@@ -1,3 +1,4 @@
+import { CARDANO_NETWORK_ID } from "./networkIdentity";
 import { DINGO_NETWORK } from "./config";
 import { assertSignedWithKey } from "./signatureWitness";
 import {
@@ -73,7 +74,7 @@ async function validateVote(
   expectedDRep?: string,
 ) {
   assertConnection();
-  if ((await api.getNetworkId()) !== Core.NetworkId.Testnet)
+  if ((await api.getNetworkId()) !== CARDANO_NETWORK_ID)
     throw new Error(
       `Switch your wallet to ${DINGO_NETWORK.label} and reconnect.`,
     );

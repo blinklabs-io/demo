@@ -1,4 +1,10 @@
-import { DINGO_CONFIG, DINGO_NETWORK } from "./dingo/config";
+import { DINGO_NETWORK } from "./dingo/config";
+
+export const OWN_DINGO_ENDPOINTS = {
+  blockfrostUrl: "http://127.0.0.1:3000",
+  utxorpcUrl: "http://127.0.0.1:9090",
+  meshUrl: "http://127.0.0.1:8080",
+} as const;
 
 export const recipes = {
   bridge: {
@@ -105,10 +111,13 @@ export type BuildRecipe = keyof typeof recipes;
 export function recipeSdkExample(recipe: BuildRecipe): string | null {
   if (recipe === "leios")
     return `import { CardanoSyncClient } from "@utxorpc/sdk";
-const response = await fetch(${JSON.stringify(DINGO_CONFIG.blockfrostUrl + "/api/v0/blocks/latest")});
+// Your Dingo instance, synced to ${DINGO_NETWORK.label}.
+const DINGO_REST_URL = ${JSON.stringify(OWN_DINGO_ENDPOINTS.blockfrostUrl)};
+const DINGO_RPC_URL = ${JSON.stringify(OWN_DINGO_ENDPOINTS.utxorpcUrl)};
+const response = await fetch(DINGO_REST_URL + "/api/v0/blocks/latest");
 if (!response.ok) throw new Error(\`HTTP \${response.status}\`);
 const point = await response.json();
-const client = new CardanoSyncClient({ uri: ${JSON.stringify(DINGO_CONFIG.utxorpcUrl)} });
+const client = new CardanoSyncClient({ uri: DINGO_RPC_URL });
 const block = await client.fetchBlock({ hash: point.hash, slot: point.slot });
 console.log(block.nativeBytes);
 // See the linked decoder for header identity checks and Leios fields.`;
@@ -128,9 +137,9 @@ console.dir(data.toCore(), { depth: null });
   if (recipe === "mempool")
     return `import { CardanoSubmitClient } from "@utxorpc/sdk";
 
-const client = new CardanoSubmitClient({
-  uri: ${JSON.stringify(DINGO_CONFIG.utxorpcUrl)}
-});
+// Your Dingo instance, synced to ${DINGO_NETWORK.label}.
+const DINGO_RPC_URL = ${JSON.stringify(OWN_DINGO_ENDPOINTS.utxorpcUrl)};
+const client = new CardanoSubmitClient({ uri: DINGO_RPC_URL });
 const snapshot = await client.inner.readMempool({});
 console.log(snapshot.items);
 for await (const arrival of client.watchMempool()) {
@@ -146,19 +155,40 @@ export function recipeExample(
   language: "JavaScript" | "cURL",
 ) {
   const definition = recipes[recipe];
-  const base = recipe === "bridge" ? window.location.origin : DINGO_CONFIG.blockfrostUrl;
   const paths: string[] = [definition.path];
   if ("extra" in definition) paths.push(definition.extra);
   if ("canonical" in definition) paths.push(definition.canonical);
+  if (recipe === "bridge") {
+    const urls = paths.map((path) => window.location.origin + path);
+    if (language === "cURL")
+      return urls.map((url) => `curl --fail-with-body '${url.replaceAll("'", "'\\''")}'`).join("\n\n");
+    return `// ${DINGO_NETWORK.label}\nconst urls = [\n  ${urls.map((url) => JSON.stringify(url)).join(",\n  ")}\n];\nfor (const url of urls) {\n  const response = await fetch(url);\n  if (!response.ok) throw new Error(\`HTTP \${response.status}: \${await response.text()}\`);\n  console.log(await response.json());\n}`;
+  }
   if (language === "cURL")
-    return paths
-      .map(
-        (path) =>
-          `curl --fail-with-body '${(base + path).replaceAll("'", "'\\''")}'`,
-      )
+    return `# Your Dingo instance, synced to ${DINGO_NETWORK.label}.\nDINGO_REST_URL='${OWN_DINGO_ENDPOINTS.blockfrostUrl}'\n\n` + paths
+      .map((path) => `curl --fail-with-body "$DINGO_REST_URL${path}"`)
       .join("\n\n");
-  const urls = paths
-    .map((path) => JSON.stringify(`${base}${path}`))
-    .join(",\n  ");
-  return `// ${DINGO_NETWORK.label}${paths.some((p) => p.includes("TRANSACTION_ID")) ? " · replace TRANSACTION_ID with a transaction hash" : ""}\nconst urls = [\n  ${urls}\n];\nfor (const url of urls) {\n  const response = await fetch(url);\n  if (!response.ok) {\n    throw new Error(\`HTTP \${response.status}: \${await response.text()}\`);\n  }\n  console.log(await response.json());\n}`;
+  const relativePaths = paths.map((path) => JSON.stringify(path)).join(",\n  ");
+  return `// Your Dingo instance, synced to ${DINGO_NETWORK.label}${paths.some((p) => p.includes("TRANSACTION_ID")) ? " · replace TRANSACTION_ID with a transaction hash" : ""}
+const DINGO_REST_URL = ${JSON.stringify(OWN_DINGO_ENDPOINTS.blockfrostUrl)};
+const paths = [
+  ${relativePaths}
+];
+for (const path of paths) {
+  const response = await fetch(DINGO_REST_URL + path);
+  if (!response.ok) {
+    throw new Error(\`HTTP \${response.status}: \${await response.text()}\`);
+  }
+  console.log(await response.json());
+}`;
+}
+
+export function selfHostedDemoExample(): string {
+  const prefix = DINGO_NETWORK.id === "preview" ? "" : DINGO_NETWORK.id.toUpperCase().replaceAll("-", "_") + "_";
+  return `npm ci
+VITE_DINGO_${prefix}BLOCKFROST_URL=${OWN_DINGO_ENDPOINTS.blockfrostUrl} \\
+VITE_DINGO_${prefix}UTXORPC_URL=${OWN_DINGO_ENDPOINTS.utxorpcUrl} \\
+VITE_DINGO_${prefix}MESH_URL=${OWN_DINGO_ENDPOINTS.meshUrl} \\
+npm run dev
+# Open the local app with ?network=${DINGO_NETWORK.id}`;
 }

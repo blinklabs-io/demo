@@ -1,3 +1,5 @@
+import { DINGO_NETWORK } from "../dingo/config";
+import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
 import { Core } from "@blaze-cardano/sdk";
 import type { Cip30WalletApi } from "../dingo/cip30";
 import { getBlaze } from "../dingo/blaze";
@@ -9,7 +11,8 @@ import { assertSignedWithKey } from "../dingo/signatureWitness";
 import { blockfrostFetch } from "../dingo/blockfrost";
 import { inputId, walletOutputs } from "../tools/transactions";
 import {
-  PREPROD_MINSWAP_V2,
+  minswapDeployment,
+  minswapOrderReference,
   ORDER_DEPOSIT_ADA,
   BATCHER_FEE,
 } from "./constants";
@@ -26,10 +29,7 @@ import {
 } from "./orders";
 import { quoteDeposit, quoteSwap, quoteWithdraw } from "./quotes";
 
-const ORDER_REFERENCE = {
-  txHash: "8c98f0530cba144d264fbd2731488af25257d7ce6a0cd1586fc7209363724f03",
-  index: 0n,
-};
+
 async function identity(api: Cip30WalletApi, assertCurrent: () => void) {
   await assertWalletSession(api, assertCurrent);
   const address = Core.Address.fromBytes(
@@ -38,12 +38,12 @@ async function identity(api: Cip30WalletApi, assertCurrent: () => void) {
   assertCurrent();
   const payment = address.getProps().paymentPart;
   if (
-    address.getNetworkId() !== 0 ||
+    address.getNetworkId() !== CARDANO_NETWORK_ID ||
     payment?.type !== Core.CredentialType.KeyHash ||
     (!address.asBase() && !address.asEnterprise())
   )
     throw new Error(
-      "Connect a Preprod wallet with a base or enterprise payment signing key.",
+      `Connect a ${DINGO_NETWORK.label} wallet with a base or enterprise payment signing key.`,
     );
   return { address, key: String(payment.hash) };
 }
@@ -51,12 +51,12 @@ async function timing(assertCurrent: () => void) {
   const tip = await blockfrostFetch<{ slot: number }>("/api/v0/blocks/latest");
   assertCurrent();
   if (!Number.isSafeInteger(tip.slot) || tip.slot < 0)
-    throw new Error("Dingo returned invalid Preprod timing.");
+    throw new Error(`Dingo returned invalid ${DINGO_NETWORK.label} timing.`);
   return tip.slot;
 }
 async function deployment() {
   const scripts = await Promise.all(
-    [PREPROD_MINSWAP_V2.poolScriptHash, PREPROD_MINSWAP_V2.orderScriptHash].map(
+    [minswapDeployment().poolScriptHash, minswapDeployment().orderScriptHash].map(
       (hash) =>
         blockfrostFetch<{ script_hash: string; type: string }>(
           `/api/v0/scripts/${hash}`,
@@ -69,8 +69,8 @@ async function deployment() {
         script.type !== "plutusV2" ||
         script.script_hash !==
           [
-            PREPROD_MINSWAP_V2.poolScriptHash,
-            PREPROD_MINSWAP_V2.orderScriptHash,
+            minswapDeployment().poolScriptHash,
+            minswapDeployment().orderScriptHash,
           ][index],
     )
   )
@@ -119,7 +119,7 @@ async function signingKeys(
     const address = byId.get(ref)?.output().address(),
       payment = address?.getProps().paymentPart;
     if (
-      address?.getNetworkId() !== 0 ||
+      address?.getNetworkId() !== CARDANO_NETWORK_ID ||
       payment?.type !== Core.CredentialType.KeyHash
     )
       throw new Error(
@@ -319,16 +319,16 @@ export async function prepareMinswapCancel(
     );
   const references = await blaze.provider.resolveUnspentOutputs([
     new Core.TransactionInput(
-      Core.TransactionId(ORDER_REFERENCE.txHash),
-      ORDER_REFERENCE.index,
+      Core.TransactionId(minswapOrderReference().txHash),
+      minswapOrderReference().index,
     ),
   ]);
   if (
     references.length !== 1 ||
-    references[0].input().transactionId() !== ORDER_REFERENCE.txHash ||
-    references[0].input().index() !== ORDER_REFERENCE.index ||
+    references[0].input().transactionId() !== minswapOrderReference().txHash ||
+    references[0].input().index() !== minswapOrderReference().index ||
     references[0].output().scriptRef()?.hash() !==
-      PREPROD_MINSWAP_V2.orderScriptHash
+      minswapDeployment().orderScriptHash
   )
     throw new Error(
       "The canonical Minswap cancellation reference is unavailable.",
@@ -358,8 +358,8 @@ export async function prepareMinswapCancel(
       ?.values()
       .some(
         (input) =>
-          input.transactionId() === ORDER_REFERENCE.txHash &&
-          input.index() === ORDER_REFERENCE.index,
+          input.transactionId() === minswapOrderReference().txHash &&
+          input.index() === minswapOrderReference().index,
       )
   )
     throw new Error(

@@ -1,6 +1,7 @@
+vi.mock("../dingo/config", () => ({ DINGO_NETWORK: { id: "preprod", label: "Preprod", networkMagic: 1 } }));
 // @vitest-environment node
 import { Core } from "@blaze-cardano/sdk";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { authenticatePool, decodePoolDatum, type PoolDatum } from "./data";
 import { poolFixtures } from "./fixtures";
 import {

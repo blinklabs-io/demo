@@ -1,3 +1,4 @@
+import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
 import { DINGO_NETWORK } from "../dingo/config";
 import {
   assertTransactionNetwork,
@@ -176,14 +177,14 @@ async function walletIdentities(
     assertDingoNetwork(getDingoProvider()),
   ]);
   assertConnection();
-  if (network !== 0 || !addresses.length)
+  if (network !== CARDANO_NETWORK_ID || !addresses.length)
     throw new Error(
       `Connect a ${DINGO_NETWORK.label} wallet with a stake key.`,
     );
   const identities = addresses.flatMap((hex) => {
     const address = Core.Address.fromBytes(Core.HexBlob(hex));
     const credential = address.asReward()?.getPaymentCredential();
-    return address.getNetworkId() === 0 &&
+    return address.getNetworkId() === CARDANO_NETWORK_ID &&
       credential?.type === Core.Cardano.CredentialType.KeyHash
       ? [{ stakeAddress: address.toBech32(), key: credential.hash.toString() }]
       : [];

@@ -11,7 +11,7 @@ import {
 import { authenticatePool } from "./data";
 import { poolFixtures } from "./fixtures";
 import { blockfrostFetch } from "../dingo/blockfrost";
-vi.mock("../dingo/config", () => ({ DINGO_NETWORK: { id: "preprod" } }));
+vi.mock("../dingo/config", () => ({ DINGO_NETWORK: { id: "preprod", label: "Preprod", networkMagic: 1 } }));
 vi.mock("../dingo/blockfrost", () => ({ blockfrostFetch: vi.fn() }));
 beforeEach(() => vi.resetAllMocks());
 it("loads a bounded manual pool page and rejects unsupported records individually", async () => {
@@ -66,7 +66,7 @@ it("does not replace an unexpected response address with the requested pool addr
     ]);
   const result = await readMinswapPools();
   expect(result.pools).toEqual([]);
-  expect(result.errors[0]).toContain("another address");
+  expect(result.errors[0]).toContain("Unrecognized Minswap pool address");
 });
 
 it("ignores LP-only pollution across bounded pages before counting authenticated pool states", async () => {
@@ -162,4 +162,17 @@ it("rejects an oversized staking-address scope before making any order API reque
   );
   await expect(readMinswapOrders(senders)).rejects.toThrow("at most 20");
   expect(blockfrostFetch).not.toHaveBeenCalled();
+});
+
+it("ignores another authenticated pool that holds the requested LP token", async () => {
+  const pool = authenticatePool(poolFixtures[0]);
+  const other = {
+    ...poolFixtures[1],
+    amount: [...poolFixtures[1].amount, { unit: pool.lpAsset, quantity: "1" }],
+  };
+  expect(authenticatePool(other).lpAsset).not.toBe(pool.lpAsset);
+  vi.mocked(blockfrostFetch)
+    .mockResolvedValueOnce({ network_magic: 1 })
+    .mockResolvedValueOnce([other, poolFixtures[0]]);
+  await expect(readMinswapPool(pool)).resolves.toMatchObject({ lpAsset: pool.lpAsset });
 });

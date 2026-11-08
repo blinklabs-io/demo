@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { nativeTicker, nativeSymbol } from "../../lib/format";
 import { useId, useRef, useState } from "react";
 import { PageIntro } from "../../components/explorer/Visuals";
@@ -74,7 +75,7 @@ function SendForm({
               aria-label="Recipient address"
               value={recipient}
               onChange={(e) => edit(() => onRecipient(e.target.value))}
-              placeholder="addr_test1…"
+              placeholder={DINGO_NETWORK.id === "mainnet" ? "addr1…" : "addr_test1…"}
             />
           </label>
           <section className="send-ada">

@@ -10,10 +10,12 @@ import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import { MinswapMarket } from "./MinswapMarket";
 import { KernelMarket } from "./KernelMarket";
 const data = vi.hoisted(() => ({
+  network: { id: "preprod", label: "Preprod", networkMagic: 1 },
   family: "options",
   poolError: false,
   positionReads: 0,
   poolReads: 0,
+  popularRows: [] as unknown[],
   selectedReads: 0,
   positionRows: [] as unknown[],
   orderSenders: [] as string[],
@@ -27,9 +29,10 @@ const data = vi.hoisted(() => ({
     changeAddress: null as string | null,
     usedAddresses: [] as string[],
     rewardAddress: null,
-    tokens: [],
+    tokens: [] as { assetId: string; quantity: bigint }[],
   },
 }));
+vi.mock("../../lib/dingo/config", () => ({ DINGO_NETWORK: data.network, DINGO_CONFIG: {} }));
 vi.mock("../../stores/walletStore", () => ({
   useWalletStore: () => data.wallet,
 }));
@@ -84,6 +87,11 @@ vi.mock("../../lib/minswap/orders", () => ({
   },
 }));
 vi.mock("../../lib/minswap/read", () => ({
+  readPopularMinswapPools: async () => ({ pools: data.popularRows, errors: [], partial: false }),
+  readPopularMinswapPool: async (metric: object) => {
+    data.selectedReads++;
+    return { ...metric, reserveA: 1000000000n, reserveB: 1000000n, totalLiquidity: 1000000n, feeA: 30n, feeB: 30n, dynamicFee: false, txHash: "11".repeat(32), outputIndex: 0 };
+  },
   readMinswapPools: async () => {
     data.poolReads++;
     if (data.poolError) throw new Error("Refresh unavailable");
@@ -126,6 +134,8 @@ beforeEach(() => {
   (
     globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
   ).IS_REACT_ACT_ENVIRONMENT = true;
+  Object.assign(data.network, { id: "preprod", label: "Preprod", networkMagic: 1 });
+  data.wallet.tokens = [];
   notifyManager.setScheduler(queueMicrotask);
   host = document.createElement("div");
   document.body.append(host);
@@ -135,6 +145,7 @@ beforeEach(() => {
   data.poolError = false;
   data.positionReads = 0;
   data.poolReads = 0;
+  data.popularRows = [];
   data.selectedReads = 0;
   data.positionRows = [];
   data.orderSenders = [];
@@ -291,7 +302,7 @@ it("retains cached pools and the selected action when a background refresh fails
   data.poolError = true;
   await act(async () => {
     await client.refetchQueries({
-      queryKey: ["dingo", "markets", "minswap", "pools", 1],
+      queryKey: ["dingo", "markets", "minswap", "pools", "all", 1, ""],
     });
   });
   expect(host.querySelectorAll(".market-card")).toHaveLength(1);
@@ -528,3 +539,31 @@ it("uses Dingo chain time for lifecycle minimum-ADA preview despite a different 
 vi.mock("../../lib/dingo/chainTime", () => ({
   readDingoChainTime: async () => 1800000000000,
 }));
+
+it("refreshes mainnet positions when mainnet LP balances change", async () => {
+  Object.assign(data.network, { id: "mainnet", label: "Mainnet", networkMagic: 764824073 });
+  data.wallet.status = "connected";
+  const assetId = "f5808c2c990d86da54bfc97d89cee6efa20cd8461616359478d96b4c" + "11".repeat(32);
+  data.wallet.tokens = [{ assetId, quantity: 1n }];
+  await render(<MinswapMarket />);
+  const before = data.positionReads;
+  expect(before).toBeGreaterThan(0);
+  data.wallet.tokens = [{ assetId, quantity: 2n }];
+  await render(<MinswapMarket />);
+  expect(data.positionReads).toBeGreaterThan(before);
+});
+
+it("opens Mainnet on the volume catalog and only scans all pools after an explicit selection", async () => {
+  Object.assign(data.network, { id: "mainnet", label: "Mainnet", networkMagic: 764824073 });
+  data.popularRows = [{ id: "popular", lpAsset: "44".repeat(28) + "01", assetA: "lovelace", assetB: "33".repeat(28) + "01", volumeAda: 0.25 }];
+  await render(<MinswapMarket initialAction="swap" />);
+  expect(host.querySelector(".market-card")?.textContent).toContain("<1 ADA · 24h volume");
+  expect(data.selectedReads).toBe(1);
+  expect(button("Top volume").getAttribute("aria-pressed")).toBe("true");
+  expect(data.poolReads).toBe(0);
+  await act(async () => button("All pools").click());
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 20)); });
+  expect(button("All pools").getAttribute("aria-pressed")).toBe("true");
+  expect(data.poolReads).toBe(1);
+  expect(host.querySelectorAll(".market-card")).toHaveLength(1);
+});

@@ -228,7 +228,7 @@ it("keeps accepted tracking when a refreshed catalog removes its transaction for
   await click("Review transaction");
   await click("Sign & submit");
   await act(async () => {
-    client.setQueryData(["dingo", "markets", "minswap", "pools", 1], {
+    client.setQueryData(["dingo", "markets", "minswap", "pools", "all", 1, ""], {
       pools: [],
       partial: false,
       errors: [],
