@@ -220,14 +220,20 @@ export function liquidityAssetUnit(assetId: string) {
     : assetId.replace(".", "");
 }
 
+export function parseLiquidityOrderReference(reference: string) {
+  const match = /^([0-9a-f]{64})#(0|[1-9][0-9]{0,4})$/i.exec(reference.trim());
+  if (!match || Number(match[2]) > 65535) return null;
+  return { hash: match[1].toLowerCase(), index: Number(match[2]) };
+}
+
 export async function prepareLiquidityCancel(
   api: Cip30WalletApi,
   reference: string,
   assertCurrent: () => void,
 ) {
   assertSundaeNetwork();
-  const match = /^([0-9a-f]{64})#(0|[1-9][0-9]{0,4})$/i.exec(reference.trim());
-  if (!match || Number(match[2]) > 65535)
+  const parsed = parseLiquidityOrderReference(reference);
+  if (!parsed)
     throw new Error(
       "Enter an order reference as transaction-hash#output-index.",
     );
@@ -235,8 +241,8 @@ export async function prepareLiquidityCancel(
   const { blaze } = await getBlaze(api);
   const owner = (await blaze.wallet.getChangeAddress()).toBech32();
   const input = new Core.TransactionInput(
-    Core.TransactionId(match[1].toLowerCase()),
-    BigInt(match[2]),
+    Core.TransactionId(parsed.hash),
+    BigInt(parsed.index),
   );
   const outputs = await blaze.provider.resolveUnspentOutputs([input]);
   assertCurrent();
@@ -278,7 +284,7 @@ export async function prepareLiquidityCancel(
     throw new Error("This order belongs to another wallet account.");
   const query = new DingoSundaeQueryProvider(blaze.provider);
   const composed = await new TxBuilderV3(blaze, query).cancel({
-    utxo: { hash: match[1].toLowerCase(), index: Number(match[2]) },
+    utxo: parsed,
     ownerAddress: owner,
   });
   return finish(blaze, api, owner, composed, assertCurrent);

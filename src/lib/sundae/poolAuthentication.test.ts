@@ -76,6 +76,6 @@ it.each(["network", "key", "script", "nft"])(
     output.setDatum(Core.Datum.fromCbor(original.datum()!.toCbor()));
     await expect(
       provider(output).findPoolDataByIdent({ ident }),
-    ).rejects.toThrow("authenticated");
+    ).rejects.toThrow("Not an authenticated SundaeSwap V3 pool output.");
   },
 );

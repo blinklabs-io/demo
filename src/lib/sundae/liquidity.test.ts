@@ -291,7 +291,7 @@ it("requires a fresh review when the quote or pool identity changes", async () =
   ).rejects.toThrow("assets changed");
   expect(f.sign).not.toHaveBeenCalled();
 });
-it.each(["network", "account", "session", "expiry"])(
+it.each(["network", "account", "session", "expiry"] as const)(
   "refuses a stale %s before signing",
   async (cause) => {
     const f = fixture();
@@ -305,12 +305,18 @@ it.each(["network", "account", "session", "expiry"])(
     if (cause === "account") f.switchAccount();
     if (cause === "session") state.active = false;
     if (cause === "expiry") state.slot = 700;
-    await expect(draft.signAndSubmit()).rejects.toThrow();
+    const message = {
+      network: "Wallet network changed.",
+      account: "Wallet account changed. Review a new order.",
+      session: "Session changed",
+      expiry: "The draft expired. Build a new order.",
+    }[cause];
+    await expect(draft.signAndSubmit()).rejects.toThrow(message);
     expect(f.sign).not.toHaveBeenCalled();
     expect(f.post).not.toHaveBeenCalled();
   },
 );
-it.each(["body", "network", "expiry", "witness"])(
+it.each(["body", "network", "expiry", "witness"] as const)(
   "rejects %s changes while the wallet signs",
   async (cause) => {
     const f = fixture();
@@ -334,7 +340,13 @@ it.each(["body", "network", "expiry", "witness"])(
       }
       return signed;
     });
-    await expect(draft.signAndSubmit()).rejects.toThrow();
+    const message = {
+      body: "The wallet changed the reviewed transaction.",
+      network: "Wallet network changed.",
+      expiry: "The draft expired. Build a new order.",
+      witness: "The wallet did not sign every required funding key.",
+    }[cause];
+    await expect(draft.signAndSubmit()).rejects.toThrow(message);
     expect(f.post).not.toHaveBeenCalled();
   },
 );

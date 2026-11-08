@@ -14,12 +14,13 @@ import {
   prepareLiquidityCancel,
 } from "../../lib/sundae/liquidity";
 import type { Cip30WalletApi } from "../../lib/dingo/cip30";
-const mocks = vi.hoisted(() => ({ read: vi.fn() }));
+const mocks = vi.hoisted(() => ({ read: vi.fn(), network: vi.fn() }));
 vi.mock("../../stores/walletStore", () => ({
   useWalletStore: () => ({ status: "disconnected", tokens: [] }),
 }));
 vi.mock("../../lib/dingo/utxorpc/provider", () => ({
   getDingoProvider: vi.fn(),
+  assertDingoNetwork: mocks.network,
 }));
 vi.mock("../../lib/sundae/dingoQueryProvider", () => ({
   DingoSundaeQueryProvider: class {
@@ -68,6 +69,7 @@ let host: HTMLDivElement, root: Root, client: QueryClient;
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
+  mocks.network.mockResolvedValue(undefined);
   mocks.read.mockResolvedValue(pool);
   host = document.createElement("div");
   document.body.append(host);
@@ -157,10 +159,37 @@ it("supports manual amounts and cancellation references and blocks invalid quant
     expect.any(Function),
   );
 });
-it("keeps a failed pool read distinct from an empty pool", async () => {
+it("shows pool read failures with a retry action and no deposit review", async () => {
   mocks.read.mockRejectedValue(new Error("Pool authentication unavailable"));
   await render();
   expect(host.textContent).toContain("Pool authentication unavailable");
   expect(button("Retry pool")).toBeDefined();
   expect(host.textContent).not.toContain("Review liquidity deposit");
+});
+
+it("checks backend network identity before reading reserves", async () => {
+  mocks.network.mockRejectedValue(new Error("Dingo must serve Mainnet"));
+  await render();
+  expect(host.textContent).toContain("Dingo must serve Mainnet");
+  expect(mocks.read).not.toHaveBeenCalled();
+  expect(host.textContent).not.toContain("Review liquidity deposit");
+});
+it("uses the cancellation parser for padded and noncanonical references", async () => {
+  await render();
+  const hash = "66".repeat(32);
+  await fill("Order reference", `  ${hash}#1  `);
+  expect(button("Review order cancellation").disabled).toBe(false);
+  await act(async () => button("Review order cancellation").click());
+  expect(prepareLiquidityCancel).toHaveBeenCalledWith(
+    expect.anything(),
+    `  ${hash}#1  `,
+    expect.any(Function),
+  );
+  for (const index of ["01", "65536"]) {
+    await fill("Order reference", `${hash}#${index}`);
+    expect(button("Review order cancellation").disabled).toBe(true);
+    expect(host.textContent).toContain("output index from 0 to 65535");
+  }
+  await fill("Order reference", `${hash}#65535`);
+  expect(button("Review order cancellation").disabled).toBe(false);
 });

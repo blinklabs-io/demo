@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getDingoProvider } from "../../lib/dingo/utxorpc/provider";
+import {
+  getDingoProvider,
+  assertDingoNetwork,
+} from "../../lib/dingo/utxorpc/provider";
 import { DingoSundaeQueryProvider } from "../../lib/sundae/dingoQueryProvider";
 import { POOL_PRESETS } from "../../lib/sundae/protocol";
 import {
+  parseLiquidityOrderReference,
   prepareLiquidityCancel,
   prepareLiquidity,
   quoteLiquidity,
@@ -38,10 +42,13 @@ export function SundaeLiquidity({
   const selected = POOL_PRESETS.find((p) => p.ident === ident)!;
   const pool = useQuery({
     queryKey: ["dingo", "markets", "sundae", "liquidity", ident],
-    queryFn: () =>
-      new DingoSundaeQueryProvider(getDingoProvider()).findPoolDataByIdent({
+    queryFn: async () => {
+      const provider = getDingoProvider();
+      await assertDingoNetwork(provider);
+      return new DingoSundaeQueryProvider(provider).findPoolDataByIdent({
         ident,
-      }),
+      });
+    },
     staleTime: 30000,
     refetchInterval: 30000,
     retry: false,
@@ -284,9 +291,15 @@ export function SundaeLiquidity({
             onChange={(event) => setOrderRef(event.target.value)}
           />
         </label>
+        {orderRef.trim() && !parseLiquidityOrderReference(orderRef) && (
+          <p role="alert">
+            Enter a transaction hash and output index from 0 to 65535, separated
+            by #.
+          </p>
+        )}
         <MarketTransaction
           draftKey={orderRef}
-          ready={/^[0-9a-f]{64}#\d{1,5}$/i.test(orderRef)}
+          ready={!!parseLiquidityOrderReference(orderRef)}
           title="Review order cancellation"
           tracking={tracking}
           prepare={(api, assertCurrent) =>
