@@ -373,10 +373,10 @@ current reserve ratio. Estimates use integer arithmetic and are refreshed before
 building. V3 liquidity datums specify supplied assets rather than minimum
 returns, so execution uses the pool ratio at scooping time. Review shows the
 refundable order deposit, scooper fee, network fee, and order reference.
-[Deposit desktop](docs/screenshots/sundaeliquiditymainnet-deposit-1440.png) ·
-[Deposit mobile](docs/screenshots/sundaeliquiditymainnet-deposit-390.png) ·
-[Withdrawal desktop](docs/screenshots/sundaeliquiditymainnet-withdraw-1440.png) ·
-[Withdrawal mobile](docs/screenshots/sundaeliquiditymainnet-withdraw-390.png).
+[Deposit desktop](docs/screenshots/sundaeliquiditydeposit1440.png) ·
+[Deposit mobile](docs/screenshots/sundaeliquiditydeposit390.png) ·
+[Withdrawal desktop](docs/screenshots/sundaeliquiditywithdraw1440.png) ·
+[Withdrawal mobile](docs/screenshots/sundaeliquiditywithdraw390.png).
 
 An unexecuted V3 order can be cancelled by its transaction hash and output index
 with the account that owns its cancellation key. Wallet and backend network
