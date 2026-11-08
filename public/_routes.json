@@ -1,5 +1,8 @@
 {
   "version": 1,
-  "include": ["/pool-image"],
+  "include": [
+    "/pool-image",
+    "/market-pools"
+  ],
   "exclude": []
 }

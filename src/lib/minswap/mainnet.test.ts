@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { Core } from "@blaze-cardano/sdk";
 import { beforeAll, beforeEach, expect, it, vi } from "vitest";
-import { readMinswapPools, readMinswapPool } from "./read";
+import { readMinswapPools, readMinswapPool, readPopularMinswapPools, readPopularMinswapPool } from "./read";
 import { readMinswapAssetPage } from "./rpc";
 import { blockfrostFetch } from "../dingo/blockfrost";
 import { orderAddress, orderDatum } from "./orders";
@@ -79,4 +79,19 @@ it("authenticates pool state with a changed staking credential", async () => {
   const pool = (await readMinswapPools()).pools[0];
   expect(pool.address).toBe(address.toBech32());
   expect((await readMinswapPool(pool)).address).toBe(address.toBech32());
+});
+
+it("loads volume discovery without Dingo scans and authenticates only the selected market", async () => {
+  const known = (await readMinswapPools()).pools;
+  const metrics = known.map((p, i) => ({ lpAsset: p.lpAsset, assetA: p.assetA, assetB: p.assetB, volumeAda: 2 - i }));
+  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ pools: metrics }));
+  mocks.search.mockClear();
+  try {
+    const result = await readPopularMinswapPools();
+    expect(result.pools).toEqual(metrics.map((metric) => ({ ...metric, id: metric.lpAsset })));
+    expect(mocks.search).not.toHaveBeenCalled();
+    mocks.search.mockResolvedValue({ items: [item(0)], nextToken: "" });
+    expect((await readPopularMinswapPool(result.pools[0])).lpAsset).toBe(known[0].lpAsset);
+    await expect(readPopularMinswapPool({ ...metrics[0], assetB: "ff".repeat(28) })).rejects.toThrow("asset pair");
+  } finally { fetch.mockRestore(); }
 });

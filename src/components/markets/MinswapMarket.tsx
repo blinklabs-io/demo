@@ -11,6 +11,8 @@ import { useWalletStore } from "../../stores/walletStore";
 import {
   readLiquidityPositions,
   readMinswapPools,
+  readPopularMinswapPools,
+  readPopularMinswapPool,
   readMinswapPool,
 } from "../../lib/minswap/read";
 import type { MinswapPool } from "../../lib/minswap/data";
@@ -88,8 +90,9 @@ export function MinswapMarket({
   const tracking = parentTracking ?? { hash, submitted: setHash };
   const [page, setPage] = useState(1),
     [search, setSearch] = useState("");
+  const [catalog, setCatalog] = useState<"popular" | "all">(DINGO_NETWORK.id === "mainnet" ? "popular" : "all");
   const [cursors, setCursors] = useState<Record<number, string>>({ 1: "" });
-  const [chosen, setChosen] = useState<MinswapPool | null>(null);
+  const [chosen, setChosen] = useState<Pick<MinswapPool, "id" | "lpAsset" | "assetA" | "assetB"> | null>(null);
   const [mode, setMode] = useState<"swap" | "deposit" | "withdraw">(
     initialAction,
   );
@@ -126,12 +129,12 @@ export function MinswapMarket({
     [],
   );
   const pools = useQuery({
-    queryKey: ["dingo", "markets", "minswap", "pools", page, cursors[page]],
-    queryFn: ({ signal }) => readMinswapPools(page, signal, cursors[page]),
+    queryKey: ["dingo", "markets", "minswap", "pools", catalog, page, cursors[page]],
+    queryFn: async ({ signal }) => catalog === "popular" ? { ...await readPopularMinswapPools(signal), kind: "popular" as const } : { ...await readMinswapPools(page, signal, cursors[page]), kind: "all" as const },
     staleTime: 30000,
     refetchInterval: 30000,
   });
-  const ranked = (pools.data?.pools ?? []).toSorted((a, b) =>
+  const ranked = pools.data?.kind === "popular" ? pools.data.pools : (pools.data?.pools ?? []).toSorted((a, b) =>
     a.assetA === "lovelace" && b.assetA !== "lovelace"
       ? -1
       : b.assetA === "lovelace" && a.assetA !== "lovelace"
@@ -144,16 +147,21 @@ export function MinswapMarket({
               : 0
           : 0,
   );
-  const listed = ranked.find((p) => p.id === chosen?.id);
+  const requested = chosen ?? ranked[0];
+  const listed = ranked.find((p) => p.id === requested?.id);
+  const live = listed && "reserveA" in listed ? listed : undefined;
   const selectedPool = useQuery({
-    queryKey: ["dingo", "markets", "minswap", "selected", chosen?.id],
-    enabled: !!chosen && !listed,
-    queryFn: ({ signal }) => readMinswapPool(chosen!, signal),
+    queryKey: ["dingo", "markets", "minswap", "selected", requested?.id, requested?.assetA, requested?.assetB],
+    enabled: !!requested && !live,
+    queryFn: ({ signal }) => {
+      const metric = ranked.find((p) => p.id === requested!.id);
+      return metric && "volumeAda" in metric ? readPopularMinswapPool(metric, signal) : readMinswapPool(requested!, signal);
+    },
     staleTime: 30000,
     refetchInterval: 30000,
     retry: false,
   });
-  const pool = chosen ? (listed ?? selectedPool.data) : ranked[0];
+  const pool = live ?? selectedPool.data;
   const history = useQuery({
     queryKey: ["dingo", "markets", "minswap", "history", pool?.id],
     enabled: !!pool,
@@ -340,7 +348,7 @@ export function MinswapMarket({
           </h1>
           <p>
             Read the pool. See the quote. Add or remove liquidity, track your
-            positions, and manage orders without a separate indexer.
+            positions, and manage orders through Dingo.
           </p>
           <div className="market-source">
             <span>Venue: Minswap V2</span>
@@ -361,6 +369,14 @@ export function MinswapMarket({
           <div className="market-skeleton" />
         )}
       </section>
+      {DINGO_NETWORK.id === "mainnet" && (
+        <div className="market-mode" aria-label="Pool catalog">
+          {(["popular", "all"] as const).map((value) => <button key={value} aria-pressed={catalog === value} onClick={() => {
+            setCatalog(value); setPage(1); setCursors({ 1: "" }); setChosen(null);
+          }}>{value === "popular" ? "Top volume" : "All pools"}</button>)}
+        </div>
+      )}
+      {catalog === "popular" && <p className="market-help">Verified-token pools with trading activity, ranked by 24-hour volume in ADA. <a href="https://docs.minswap.org/developer/minswap-apis" target="_blank" rel="noreferrer">Volume: Minswap ↗</a> · rankings cached for up to one minute.</p>}
       {!pools.data ? (
         <MarketLoading error={pools.error} retry={() => void pools.refetch()} />
       ) : (
@@ -380,7 +396,7 @@ export function MinswapMarket({
             <div>
               <span className="eyebrow">This page</span>
               <strong>{pools.data?.pools.length} pools</strong>
-              <small>20 outputs maximum per query</small>
+              <small>{catalog === "popular" ? "Verified tokens · ranked by 24h volume" : "20 outputs maximum per query"}</small>
             </div>
             <div>
               <span className="eyebrow">
@@ -407,7 +423,7 @@ export function MinswapMarket({
               <span className="eyebrow">
                 {wallet.status === "connected"
                   ? "Your pending orders"
-                  : "Market data"}
+                  : "Pool state"}
               </span>
               <strong>
                 {wallet.status === "connected"
@@ -469,14 +485,14 @@ export function MinswapMarket({
             <section className="market-catalog">
               <div className="market-toolbar">
                 <div>
-                  <span className="eyebrow">Live pool UTxOs</span>
+                  <span className="eyebrow">{catalog === "popular" ? "Active markets" : "Live pool UTxOs"}</span>
                   <h2>Choose your market</h2>
                 </div>
                 <button
                   onClick={() => {
                     void pools.refetch();
                     if (wallet.status === "connected") void positions.refetch();
-                    if (chosen && !listed) void selectedPool.refetch();
+                    if (requested && !live) void selectedPool.refetch();
                   }}
                 >
                   Refresh ↻
@@ -494,8 +510,8 @@ export function MinswapMarket({
                 {rows.map((p) => (
                   <button
                     key={p.id}
-                    className={`market-card${pool?.id === p.id ? " selected" : ""}`}
-                    aria-pressed={pool?.id === p.id}
+                    className={`market-card${requested?.id === p.id ? " selected" : ""}`}
+                    aria-pressed={requested?.id === p.id}
                     onClick={() => setChosen(p)}
                   >
                     <span className="market-pair">
@@ -503,6 +519,7 @@ export function MinswapMarket({
                       <span>/</span>
                       <MarketAsset unit={p.assetB} />
                     </span>
+                    {"reserveA" in p && <>
                     <strong>{marketAmount(p.reserveA, p.assetA)}</strong>
                     <small>{marketAmount(p.reserveB, p.assetB)}</small>
                     <span className="market-terms">
@@ -511,14 +528,16 @@ export function MinswapMarket({
                         {p.dynamicFee ? "Dynamic fee enabled" : "Fixed fee"}
                       </span>
                     </span>
+                    </>}
+                    {"volumeAda" in p && <strong>{p.volumeAda < 1 ? "<1" : p.volumeAda.toLocaleString(undefined, { maximumFractionDigits: 0 })} ADA · 24h volume</strong>}
                     <small>Pool {p.id.slice(-12)}</small>
                   </button>
                 ))}
               </div>
               {!rows.length && (
                 <div className="market-empty">
-                  <strong>No matching pools on this page</strong>
-                  <p>Change the filter or try another page.</p>
+                  <strong>{catalog === "popular" && !search.trim() ? "No active pools available" : "No matching pools on this page"}</strong>
+                  <p>{catalog === "popular" ? "Change the filter, refresh, or browse all pools." : "Change the filter or try another page."}</p>
                 </div>
               )}
               {!!pools.data?.errors.length && (
@@ -550,6 +569,7 @@ export function MinswapMarket({
                 </button>
               </div>
             </section>
+            {requested && !pool && !selectedPool.error && <MarketLoading retry={() => void selectedPool.refetch()} />}
             {pool && (
               <section className="market-form">
                 <h2>
@@ -813,7 +833,7 @@ export function MinswapMarket({
         </>
       )}
       <p className="market-help">
-        All pool and order reads go to Dingo.{" "}
+        Pool states, quotes and orders use Dingo. Mainnet volume rankings use Minswap analytics.{" "}
         <Link to="/api">Inspect the available APIs ↗</Link>
       </p>
     </div>
