@@ -196,3 +196,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.build-this-setup { margin: 1rem 0; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; }
+.build-this-setup h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+.build-this-setup ol { list-style: decimal; padding-left: 1.25rem; }
+.build-this-setup li + li { margin-top: 0.5rem; }
