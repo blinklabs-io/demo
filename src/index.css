@@ -89,9 +89,33 @@ summary {
 }
 .sidebar-brand-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+.demo-source-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  border-radius: 8px;
+}
+.demo-source-link img { filter: brightness(0) invert(1); opacity: 0.8; }
+.demo-source-link:hover img { opacity: 1; }
+.demo-source-link:focus-visible { outline: 2px solid #65d9bb; outline-offset: 3px; }
+@media (forced-colors: active) {
+  .demo-source-link img { display: none; }
+  .demo-source-link::before {
+    content: "";
+    width: 22px;
+    height: 22px;
+    background: CanvasText;
+    mask: url("/github.svg") center / contain no-repeat;
+  }
 }
 .mobile-nav-toggle {
   display: none;
@@ -757,6 +781,23 @@ summary {
   .sidebar {
     width: 190px;
     padding: 23px 14px;
+  }
+  .sidebar-brand-row {
+    gap: 6px;
+  }
+  .sidebar .brand {
+    min-width: 0;
+    gap: 8px;
+    font-size: 24px;
+  }
+  .sidebar .brand-mark {
+    width: 34px;
+    height: 36px;
+    font-size: 30px;
+  }
+  .demo-source-link {
+    width: 28px;
+    height: 28px;
   }
   .workspace-header,
   .workspace-main {

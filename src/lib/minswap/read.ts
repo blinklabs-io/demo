@@ -3,7 +3,6 @@ import { blockfrostFetch } from "../dingo/blockfrost";
 import { DINGO_NETWORK } from "../dingo/config";
 import { minswapDeployment } from "./constants";
 import { authenticatePool, type MinswapPool, type MinswapUtxo } from "./data";
-import { POPULAR_POOL_LIMIT, type PopularPool } from "./popular";
 import { quoteWithdraw } from "./quotes";
 export function assertMinswapNetwork() {
   minswapDeployment();
@@ -149,20 +148,4 @@ export async function readLiquidityPositions(
     ),
     partial: held.length > 20,
   };
-}
-
-export async function readPopularMinswapPools(signal?: AbortSignal) {
-  if (DINGO_NETWORK.id !== "mainnet") throw new Error("Mainnet market volumes require Mainnet.");
-  const response = await fetch("/market-pools", { signal, credentials: "omit", headers: { Accept: "application/json" } });
-  if (!response.ok) throw new Error("Market volumes are unavailable. Retry or browse all pools.");
-  const data: { pools: PopularPool[] } = await response.json();
-  if (!Array.isArray(data.pools) || data.pools.length > POPULAR_POOL_LIMIT || new Set(data.pools.map((p) => p.lpAsset)).size !== data.pools.length || data.pools.some((p) => typeof p.volumeAda !== "number" || !Number.isFinite(p.volumeAda) || p.volumeAda <= 0))
-    throw new Error("Invalid market volume response.");
-  return { pools: data.pools.map((pool) => ({ ...pool, id: pool.lpAsset })), errors: [], partial: false, nextToken: "" };
-}
-export async function readPopularMinswapPool(metric: PopularPool, signal?: AbortSignal) {
-  const pool = await readMinswapPool(metric, signal);
-  if (pool.assetA !== metric.assetA || pool.assetB !== metric.assetB)
-    throw new Error("Market asset pair differs from its authenticated pool.");
-  return pool;
 }
