@@ -1,3 +1,4 @@
+import { CARDANO_NETWORK_ID } from "./networkIdentity";
 import { Core } from "@blaze-cardano/sdk";
 import { DINGO_NETWORK } from "./config";
 import { assertDingoNetwork, getDingoProvider, type DingoProvider } from "./utxorpc/provider";
@@ -11,9 +12,9 @@ export async function assertWalletSession(
   assertCurrent();
   const network = await wallet.getNetworkId();
   assertCurrent();
-  if (network !== 0)
+  if (network !== CARDANO_NETWORK_ID)
     throw new Error(
-      "Wallet network changed. Connect a testnet wallet and review a new transaction.",
+      `Wallet network changed. Connect a ${CARDANO_NETWORK_ID === 1 ? "mainnet" : "testnet"} wallet and review a new transaction.`,
     );
 }
 
@@ -45,7 +46,7 @@ export async function assertTransactionNetwork(
     resolved.length !== requested.size ||
     found.size !== requested.size ||
     [...requested].some((input) => !found.has(input)) ||
-    resolved.some((output) => output.output().address().getNetworkId() !== 0)
+    resolved.some((output) => output.output().address().getNetworkId() !== CARDANO_NETWORK_ID)
   )
     throw new Error(
       `Transaction funding is not available on ${DINGO_NETWORK.label}. Switch your wallet to ${DINGO_NETWORK.label} and build a new transaction.`,

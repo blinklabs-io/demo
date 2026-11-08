@@ -2,6 +2,11 @@ import { selectedDingoNetwork } from "./networks";
 
 export const DINGO_NETWORK = Object.freeze(selectedDingoNetwork());
 const endpoints = {
+  mainnet: {
+    blockfrostUrl: import.meta.env.VITE_DINGO_MAINNET_BLOCKFROST_URL || "https://dingo.mainnet.blinklabs.cloud",
+    utxorpcUrl: import.meta.env.VITE_DINGO_MAINNET_UTXORPC_URL || "https://dingo.mainnet.blinklabs.cloud:9090",
+    meshUrl: import.meta.env.VITE_DINGO_MAINNET_MESH_URL || "https://dingo.mainnet.blinklabs.cloud:8080",
+  },
   preview: {
     blockfrostUrl: import.meta.env.VITE_DINGO_BLOCKFROST_URL || "http://127.0.0.1:3000",
     utxorpcUrl: import.meta.env.VITE_DINGO_UTXORPC_URL || "http://127.0.0.1:9090",

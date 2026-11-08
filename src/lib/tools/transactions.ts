@@ -1,3 +1,4 @@
+import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
 import { DINGO_NETWORK } from "../dingo/config";
 import {
   assertTransactionNetwork,
@@ -73,7 +74,7 @@ export async function walletOutputs(api: Cip30WalletApi) {
   );
   if (new Set(utxos.map(inputId)).size !== utxos.length)
     throw new Error("Wallet returned duplicate UTxOs.");
-  if (utxos.some((u) => u.output().address().getNetworkId() !== 0))
+  if (utxos.some((u) => u.output().address().getNetworkId() !== CARDANO_NETWORK_ID))
     throw new Error("Wallet returned outputs from another network.");
   return utxos;
 }
@@ -109,8 +110,8 @@ async function identity(api: Cip30WalletApi, assertConnection: () => void) {
   const address = Core.Address.fromBytes(Core.HexBlob(raw));
   const key = address.getProps().paymentPart;
   if (
-    network !== 0 ||
-    address.getNetworkId() !== 0 ||
+    network !== CARDANO_NETWORK_ID ||
+    address.getNetworkId() !== CARDANO_NETWORK_ID ||
     key?.type !== Core.Cardano.CredentialType.KeyHash
   )
     throw new Error(
@@ -201,8 +202,8 @@ export async function prepareToolTransaction(
     } catch {
       throw new Error("Enter a valid recipient address.");
     }
-    if (address.getNetworkId() !== 0 || !address.getProps().paymentPart)
-      throw new Error("Recipient must be a testnet payment address.");
+    if (address.getNetworkId() !== CARDANO_NETWORK_ID || !address.getProps().paymentPart)
+      throw new Error(`Recipient must be a ${CARDANO_NETWORK_ID === 1 ? "mainnet" : "testnet"} payment address.`);
     const coin = parseNativeToLovelace(action.ada);
     if (coin <= 0n)
       throw new Error(
@@ -248,8 +249,8 @@ export async function prepareToolTransaction(
       } catch {
         throw new Error("Each recipient needs a valid payment address.");
       }
-      if (address.getNetworkId() !== 0 || !address.getProps().paymentPart)
-        throw new Error("Recipients must be testnet payment addresses.");
+      if (address.getNetworkId() !== CARDANO_NETWORK_ID || !address.getProps().paymentPart)
+        throw new Error(`Recipients must be ${CARDANO_NETWORK_ID === 1 ? "mainnet" : "testnet"} payment addresses.`);
       if (payment.asset === "lovelace") {
         const amount = parseNativeToLovelace(payment.amount);
         if (amount <= 0n) throw new Error("Each payment must be positive.");
@@ -391,7 +392,7 @@ export async function prepareToolTransaction(
         const address = Core.Address.fromBytes(Core.HexBlob(raw));
         const payment = address.getProps().paymentPart;
         if (
-          address.getNetworkId() === 0 &&
+          address.getNetworkId() === CARDANO_NETWORK_ID &&
           payment?.type === Core.Cardano.CredentialType.KeyHash
         )
           allowedPolicyKeys.add(payment.hash);

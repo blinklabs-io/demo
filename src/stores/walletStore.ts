@@ -1,3 +1,4 @@
+import { CARDANO_NETWORK_ID } from "../lib/dingo/networkIdentity";
 import { DINGO_NETWORK } from "../lib/dingo/config";
 import { create } from "zustand";
 import { Core } from "@blaze-cardano/sdk";
@@ -27,8 +28,8 @@ interface WalletDetails {
   tokens: WalletToken[];
 }
 
-// CIP-30 distinguishes mainnet from testnets; Dingo genesis verifies the selected testnet.
-const EXPECTED_NETWORK_ID = 0; // CIP-30 distinguishes testnet from mainnet; actual funding inputs are verified against selected Dingo before review/signing.
+// CIP-30 distinguishes mainnet from testnets; Dingo genesis verifies the selected network.
+const EXPECTED_NETWORK_ID = CARDANO_NETWORK_ID;
 
 interface WalletState extends WalletDetails {
   connectionId: number;

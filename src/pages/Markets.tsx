@@ -6,6 +6,7 @@ import { DINGO_NETWORK } from "../lib/dingo/config";
 import { Link } from "../components/NetworkLink";
 import { MinswapMarket } from "../components/markets/MinswapMarket";
 import { KernelMarket } from "../components/markets/KernelMarket";
+import { MainnetApps } from "../components/markets/MainnetApps";
 import NotFound from "./NotFound";
 
 export default function Markets() {
@@ -14,6 +15,7 @@ export default function Markets() {
     !["liquidity", "lending", "options", "orders", "marketplace"].includes(tab)
   )
     return <NotFound />;
+  if (DINGO_NETWORK.id === "mainnet") return tab === "liquidity" ? <MinswapMarket /> : <MainnetApps />;
   if (DINGO_NETWORK.id !== "preprod")
     return (
       <section className="market-hero">

@@ -53,7 +53,7 @@ it("honors separate Preprod overrides", async () => {
   });
 });
 it("rejects an invalid persisted selection instead of silently selecting another chain", async () => {
-  localStorage.setItem("dingo.network", "mainnet");
+  localStorage.setItem("dingo.network", "unknown");
   await expect(import("./config")).rejects.toThrow(
     "Unsupported saved Dingo network",
   );
@@ -67,7 +67,7 @@ it("uses explicit Preprod URL context before a conflicting saved selection", asy
   expect(DINGO_CONFIG.blockfrostUrl).toContain("preprod");
   expect(fetch).not.toHaveBeenCalled();
 });
-it.each(["mainnet", "", "preview&network=preprod"])(
+it.each(["unknown", "", "preview&network=preprod"])(
   "rejects invalid URL network %s despite valid saved context",
   async (value) => {
     localStorage.setItem("dingo.network", "preview");
@@ -115,6 +115,7 @@ it("honors independent Musashi endpoint overrides", async () => {
 });
 
 it.each([
+  ["mainnet", "MAINNET", 764824073],
   ["dijkstra", "DIJKSTRA", 6],
   ["prime-testnet", "PRIME_TESTNET", 3311],
 ] as const)("isolates %s defaults and all endpoint overrides", async (id, prefix, magic) => {

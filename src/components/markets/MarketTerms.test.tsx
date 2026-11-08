@@ -291,7 +291,7 @@ it("retains cached pools and the selected action when a background refresh fails
   data.poolError = true;
   await act(async () => {
     await client.refetchQueries({
-      queryKey: ["dingo", "markets", "minswap", "pools", 1],
+      queryKey: ["dingo", "markets", "minswap", "pools", 1, ""],
     });
   });
   expect(host.querySelectorAll(".market-card")).toHaveLength(1);

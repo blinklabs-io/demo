@@ -1,3 +1,4 @@
+import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
 import { DINGO_NETWORK } from "../dingo/config";
 import {
   assertTransactionNetwork,
@@ -49,8 +50,8 @@ async function walletIdentity(
   const address = Core.Address.fromBytes(Core.HexBlob(hex));
   const key = address.getProps().paymentPart;
   if (
-    network !== 0 ||
-    address.getNetworkId() !== 0 ||
+    network !== CARDANO_NETWORK_ID ||
+    address.getNetworkId() !== CARDANO_NETWORK_ID ||
     key?.type !== Core.Cardano.CredentialType.KeyHash
   )
     throw new Error(

@@ -1,3 +1,4 @@
+import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
 import { nativeTicker } from "../format";
 import { assertTransactionNetwork } from "../dingo/walletSession";
 import { Blaze, ColdWallet, Core } from "@blaze-cardano/sdk";
@@ -217,7 +218,7 @@ export function readTransaction(input: string, selectedEra?: Era) {
     }
   }
   if (!compatible.length) throw new Error(errors.join(" "));
-  // Shared-era bytes cannot prove their original era. Prefer the current testnet export format.
+  // Shared-era bytes cannot prove their original era. Prefer the current export format.
   return {
     ...compatible[0],
     eraSource:
@@ -242,10 +243,10 @@ export function transactionEnvelope(transaction: StudioTransaction) {
 function paymentAddress(value: string) {
   const address = Core.Address.fromBech32(value.trim());
   if (
-    address.getNetworkId() !== 0 ||
+    address.getNetworkId() !== CARDANO_NETWORK_ID ||
     !(address.asBase() || address.asEnterprise() || address.asPointer())
   )
-    throw new Error("Enter a testnet payment address.");
+    throw new Error(`Enter a ${CARDANO_NETWORK_ID === 1 ? "mainnet" : "testnet"} payment address.`);
   return address;
 }
 export async function buildPayment(
@@ -295,7 +296,7 @@ export async function buildPayment(
   // A cold wallet provides an address, never a private key or an extension signature.
   const blaze = await Blaze.from(
     provider,
-    new FundingWallet(address, Core.NetworkId.Testnet, provider),
+    new FundingWallet(address, CARDANO_NETWORK_ID, provider),
   );
   const builder = blaze
     .newTransaction()
@@ -355,23 +356,23 @@ export async function addWalletWitness(
 ) {
   const provider = getDingoProvider();
   assertConnection();
-  if ((await api.getNetworkId()) !== 0)
-    throw new Error("Connect a testnet wallet.");
+  if ((await api.getNetworkId()) !== CARDANO_NETWORK_ID)
+    throw new Error(`Connect a ${CARDANO_NETWORK_ID === 1 ? "mainnet" : "testnet"} wallet.`);
   await assertDingoNetwork(provider);
   const body = transaction.tx.body();
-  if (body.networkId() !== undefined && body.networkId() !== 0)
-    throw new Error("This transaction is not for testnet.");
+  if (body.networkId() !== undefined && body.networkId() !== CARDANO_NETWORK_ID)
+    throw new Error("This transaction is not for the selected network.");
   const addresses = [
     ...body.outputs().map((o) => o.address()),
     ...(body.collateralReturn() ? [body.collateralReturn()!.address()] : []),
   ];
   if (
-    addresses.some((a) => a.getNetworkId() !== 0) ||
+    addresses.some((a) => a.getNetworkId() !== CARDANO_NETWORK_ID) ||
     [...(body.withdrawals()?.keys() ?? [])].some(
-      (a) => Core.Address.fromBech32(a).getNetworkId() !== 0,
+      (a) => Core.Address.fromBech32(a).getNetworkId() !== CARDANO_NETWORK_ID,
     )
   )
-    throw new Error("Transaction contains a non-testnet address.");
+    throw new Error("Transaction contains an address from another network.");
   const inputs = [
     ...body.inputs().values(),
     ...(body.collateral()?.values() ?? []),
@@ -389,7 +390,7 @@ export async function addWalletWitness(
   if (
     !unique.length ||
     unique.some((i) => !found.has(`${i.transactionId()}#${i.index()}`)) ||
-    resolved.some((u) => u.output().address().getNetworkId() !== 0)
+    resolved.some((u) => u.output().address().getNetworkId() !== CARDANO_NETWORK_ID)
   )
     throw new Error(
       `Dingo must resolve every input, collateral and reference input on ${DINGO_NETWORK.label} before signing.`,
@@ -397,7 +398,7 @@ export async function addWalletWitness(
   assertConnection();
   const response = hex(await api.signTx(transaction.cbor, true));
   assertConnection();
-  if ((await api.getNetworkId()) !== 0)
+  if ((await api.getNetworkId()) !== CARDANO_NETWORK_ID)
     throw new Error("Wallet network changed while signing.");
   assertConnection();
   await assertTransactionNetwork(transaction.tx, assertConnection, provider);

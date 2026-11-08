@@ -1,5 +1,6 @@
+import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
 import { Core } from "@blaze-cardano/sdk";
-import { PREPROD_MINSWAP_V2, BATCHER_FEE } from "./constants";
+import { minswapDeployment, BATCHER_FEE } from "./constants";
 import { bytes, datumAsset, fields, integer, type MinswapUtxo } from "./data";
 import { assertMinswapGenesis } from "./read";
 import { blockfrostFetch } from "../dingo/blockfrost";
@@ -44,12 +45,12 @@ function receiver(address: Core.Address) {
 export function orderAddress(sender: Core.Address): Core.Address {
   const stake = sender.getProps().delegationPart;
   if (!stake)
-    return Core.Address.fromBech32(PREPROD_MINSWAP_V2.orderEnterpriseAddress);
+    return Core.Address.fromBech32(minswapDeployment().orderEnterpriseAddress);
   return Core.Cardano.BaseAddress.fromCredentials(
-    Core.NetworkId.Testnet,
+    CARDANO_NETWORK_ID,
     {
       type: Core.CredentialType.ScriptHash,
-      hash: Core.Hash28ByteBase16(PREPROD_MINSWAP_V2.orderScriptHash),
+      hash: Core.Hash28ByteBase16(minswapDeployment().orderScriptHash),
     },
     stake,
   ).toAddress();
@@ -62,10 +63,10 @@ export function orderDatum(
 ) {
   const payment = sender.getProps().paymentPart;
   if (
-    sender.getNetworkId() !== 0 ||
+    sender.getNetworkId() !== CARDANO_NETWORK_ID ||
     payment?.type !== Core.CredentialType.KeyHash
   )
-    throw new Error("Minswap orders require a testnet payment signing key.");
+    throw new Error("Minswap orders require a payment signing key on the selected network.");
   let step: Core.PlutusData;
   const kill = constr(0);
   if (action.kind === "swap")
@@ -116,9 +117,9 @@ export function decodeOrder(row: MinswapUtxo): MinswapOrder {
     payment = address?.getProps().paymentPart;
   if (
     !address ||
-    address.getNetworkId() !== 0 ||
+    address.getNetworkId() !== CARDANO_NETWORK_ID ||
     payment?.type !== Core.CredentialType.ScriptHash ||
-    payment.hash !== PREPROD_MINSWAP_V2.orderScriptHash ||
+    payment.hash !== minswapDeployment().orderScriptHash ||
     !row.inline_datum
   )
     throw new Error("Not an inline Minswap V2 order.");
@@ -139,7 +140,7 @@ export function decodeOrder(row: MinswapUtxo): MinswapOrder {
   const lpAsset = datumAsset(f[5]),
     step = f[6].asConstrPlutusData()?.getAlternative();
   if (
-    !lpAsset.startsWith(PREPROD_MINSWAP_V2.lpPolicyId) ||
+    !lpAsset.startsWith(minswapDeployment().lpPolicyId) ||
     lpAsset.length !== 120 ||
     step === undefined
   )
@@ -170,12 +171,12 @@ export function minswapOrderAccount(senders: readonly string[]) {
     const sender = Core.Address.fromBech32(value),
       key = sender.getProps().paymentPart;
     if (
-      sender.getNetworkId() !== 0 ||
+      sender.getNetworkId() !== CARDANO_NETWORK_ID ||
       (!sender.asBase() && !sender.asEnterprise()) ||
       key?.type !== Core.CredentialType.KeyHash
     )
       throw new Error(
-        "A Preprod payment address is required to find cancellable orders.",
+        "A payment address on the selected network is required to find cancellable orders.",
       );
     keys.add(String(key.hash));
     addresses.add(orderAddress(sender).toBech32());

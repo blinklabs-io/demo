@@ -1,6 +1,7 @@
+import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
 import { Core } from "@blaze-cardano/sdk";
 import {
-  PREPROD_MINSWAP_V2,
+  minswapDeployment,
   POOL_ADA_BUFFER,
   MAX_LIQUIDITY,
   BURNED_LIQUIDITY,
@@ -69,7 +70,7 @@ export function computeLpAsset(assetA: string, assetB: string): string {
       Core.sha3_256(Core.HexBlob(a)) + Core.sha3_256(Core.HexBlob(b)),
     ),
   );
-  return PREPROD_MINSWAP_V2.lpPolicyId + hash;
+  return minswapDeployment().lpPolicyId + hash;
 }
 export function decodePoolDatum(cbor: string): PoolDatum {
   if (!/^(?:[0-9a-f]{2})+$/i.test(cbor) || cbor.length > 131072)
@@ -133,9 +134,9 @@ export function authenticatePool(row: MinswapUtxo): MinswapPool {
   const payment = address?.getProps().paymentPart;
   if (
     !address ||
-    address.getNetworkId() !== 0 ||
+    address.getNetworkId() !== CARDANO_NETWORK_ID ||
     payment?.type !== Core.CredentialType.ScriptHash ||
-    payment.hash !== PREPROD_MINSWAP_V2.poolScriptHash
+    payment.hash !== minswapDeployment().poolScriptHash
   )
     throw new Error("Unrecognized Minswap pool address.");
   if (
@@ -156,7 +157,7 @@ export function authenticatePool(row: MinswapUtxo): MinswapPool {
       throw new Error("Invalid Minswap UTxO value.");
     amounts.set(amount.unit, BigInt(amount.quantity));
   }
-  if (amounts.get(PREPROD_MINSWAP_V2.poolAuthenAsset) !== 1n)
+  if (amounts.get(minswapDeployment().poolAuthenAsset) !== 1n)
     throw new Error("Minswap pool authentication token is absent.");
   const datum = decodePoolDatum(row.inline_datum);
   for (const [asset, reserve] of [

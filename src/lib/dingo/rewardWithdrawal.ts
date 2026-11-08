@@ -1,3 +1,4 @@
+import { CARDANO_NETWORK_ID } from "./networkIdentity";
 import { DINGO_NETWORK } from "./config";
 import { assertSignedWithKey } from "./signatureWitness";
 import {
@@ -19,7 +20,7 @@ async function readRewards(
   assertConnection();
   const parsed = Core.Address.fromBech32(address);
   const reward = parsed.asReward();
-  if (!reward || parsed.getNetworkId() !== Core.NetworkId.Testnet)
+  if (!reward || parsed.getNetworkId() !== CARDANO_NETWORK_ID)
     throw new Error(
       `Connect a ${DINGO_NETWORK.label} wallet with a reward address.`,
     );
@@ -35,7 +36,7 @@ async function readRewards(
   ]);
   assertConnection();
   if (
-    network !== Core.NetworkId.Testnet ||
+    network !== CARDANO_NETWORK_ID ||
     !addresses.some(
       (hex) => Core.Address.fromBytes(Core.HexBlob(hex)).toBech32() === address,
     )

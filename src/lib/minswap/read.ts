@@ -1,13 +1,11 @@
+import { readMinswapAssetPage } from "./rpc";
 import { blockfrostFetch } from "../dingo/blockfrost";
 import { DINGO_NETWORK } from "../dingo/config";
-import { PREPROD_MINSWAP_V2 } from "./constants";
+import { minswapDeployment } from "./constants";
 import { authenticatePool, type MinswapPool, type MinswapUtxo } from "./data";
 import { quoteWithdraw } from "./quotes";
 export function assertMinswapNetwork() {
-  if (DINGO_NETWORK.id !== "preprod")
-    throw new Error(
-      "This Minswap V2 deployment is on Preprod. Switch networks to continue.",
-    );
+  minswapDeployment();
 }
 export async function assertMinswapGenesis(signal?: AbortSignal) {
   assertMinswapNetwork();
@@ -15,22 +13,24 @@ export async function assertMinswapGenesis(signal?: AbortSignal) {
     "/api/v0/genesis",
     { signal },
   );
-  if (genesis.network_magic !== 1)
-    throw new Error("Minswap V2 requires verified Preprod Dingo data.");
+  if (genesis.network_magic !== DINGO_NETWORK.networkMagic)
+    throw new Error(`Minswap V2 requires verified ${DINGO_NETWORK.label} Dingo data.`);
 }
-export async function readMinswapPools(page = 1, signal?: AbortSignal) {
+export async function readMinswapPools(page = 1, signal?: AbortSignal, cursor = ""): Promise<{ pools: MinswapPool[]; partial: boolean; errors: string[]; nextToken?: string }> {
   if (!Number.isSafeInteger(page) || page < 1)
     throw new Error("Choose a valid Minswap pool page.");
   await assertMinswapGenesis(signal);
-  const rows = await blockfrostFetch<MinswapUtxo[]>(
-    `/api/v0/addresses/${PREPROD_MINSWAP_V2.poolCreationAddress}/utxos/${PREPROD_MINSWAP_V2.poolAuthenAsset}?count=20&page=${page}`,
+  if (DINGO_NETWORK.id === "mainnet" && page > 1 && !cursor) throw new Error("Load the preceding Minswap pool page first.");
+  const rpc = DINGO_NETWORK.id === "mainnet" ? await readMinswapAssetPage(minswapDeployment().poolAuthenAsset, cursor, signal) : null;
+  const rows = rpc ? rpc.rows : await blockfrostFetch<MinswapUtxo[]>(
+    `/api/v0/addresses/${minswapDeployment().poolCreationAddress}/utxos/${minswapDeployment().poolAuthenAsset}?count=20&page=${page}`,
     { signal },
   );
   const pools: MinswapPool[] = [],
     errors: string[] = [];
   for (const row of rows) {
     try {
-      if (row.address !== PREPROD_MINSWAP_V2.poolCreationAddress)
+      if (row.address !== minswapDeployment().poolCreationAddress)
         throw new Error("Dingo returned a pool from another address.");
       pools.push(authenticatePool(row));
     } catch (error) {
@@ -43,28 +43,31 @@ export async function readMinswapPools(page = 1, signal?: AbortSignal) {
     throw new Error(
       "Dingo returned competing live states for one Minswap pool.",
     );
-  return { pools, partial: rows.length === 20, errors };
+  return { pools, partial: rpc ? !!rpc.nextToken : rows.length === 20, errors, ...(rpc ? { nextToken: rpc.nextToken } : {}) };
 }
 async function poolByLp(lpAsset: string, signal?: AbortSignal) {
   if (
-    !new RegExp(`^${PREPROD_MINSWAP_V2.lpPolicyId}[0-9a-f]{64}$`).test(lpAsset)
+    !new RegExp(`^${minswapDeployment().lpPolicyId}[0-9a-f]{64}$`).test(lpAsset)
   )
     throw new Error("Invalid Minswap V2 liquidity token.");
   const candidates: MinswapUtxo[] = [];
   let complete = false;
   const seen = new Set<string>();
+  let cursor = "";
   for (let page = 1; page <= 5; page++) {
     signal?.throwIfAborted();
-    const rows = await blockfrostFetch<MinswapUtxo[]>(
-      `/api/v0/addresses/${PREPROD_MINSWAP_V2.poolCreationAddress}/utxos/${lpAsset}?count=20&page=${page}`,
+    const rpc = DINGO_NETWORK.id === "mainnet" ? await readMinswapAssetPage(lpAsset, cursor, signal) : null;
+    const rows = rpc ? rpc.rows.filter((row) => row.address === minswapDeployment().poolCreationAddress) : await blockfrostFetch<MinswapUtxo[]>(
+      `/api/v0/addresses/${minswapDeployment().poolCreationAddress}/utxos/${lpAsset}?count=20&page=${page}`,
       { signal },
     );
+    if (rpc) cursor = rpc.nextToken;
     if (rows.length > 20)
       throw new Error(
         "Dingo exceeded the requested Minswap pool lookup page size.",
       );
     for (const row of rows) {
-      if (row.address !== PREPROD_MINSWAP_V2.poolCreationAddress)
+      if (row.address !== minswapDeployment().poolCreationAddress)
         throw new Error("Dingo returned a pool from another address.");
       const key = row.tx_hash + "#" + row.output_index;
       if (seen.has(key))
@@ -73,13 +76,13 @@ async function poolByLp(lpAsset: string, signal?: AbortSignal) {
       if (
         row.amount.some(
           (asset) =>
-            asset.unit === PREPROD_MINSWAP_V2.poolAuthenAsset &&
+            asset.unit === minswapDeployment().poolAuthenAsset &&
             asset.quantity === "1",
         )
       )
         candidates.push(row);
     }
-    if (rows.length < 20) {
+    if (rpc ? !rpc.nextToken : rows.length < 20) {
       complete = true;
       break;
     }
@@ -111,7 +114,7 @@ export async function readLiquidityPositions(
   assertMinswapNetwork();
   const held = balances.filter(
     (row) =>
-      new RegExp(`^${PREPROD_MINSWAP_V2.lpPolicyId}[0-9a-f]{64}$`).test(
+      new RegExp(`^${minswapDeployment().lpPolicyId}[0-9a-f]{64}$`).test(
         row.assetId,
       ) && row.quantity > 0n,
   );

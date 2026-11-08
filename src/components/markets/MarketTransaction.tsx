@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { TransactionOutputs } from "../wallet/TransactionOutputs";
 import { useRef, useState } from "react";
 import type { Core } from "@blaze-cardano/sdk";
@@ -189,8 +190,8 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
           </div>
           <TransactionOutputs tx={draft.tx} />
           <p>
-            Review the amounts above. Your wallet signs; Dingo submits to
-            Preprod.
+            Review the amounts above. Your wallet signs; Dingo submits to{" "}
+            {DINGO_NETWORK.label}.
           </p>
           <div className="market-actions">
             <button
@@ -282,7 +283,7 @@ export function MarketConfirmation({ tracking }: { tracking: MarketTracking }) {
     >
       <strong>
         {confirmation.data
-          ? "Confirmed on Preprod"
+          ? `Confirmed on ${DINGO_NETWORK.label}`
           : failed
             ? "Transaction failed on chain"
             : confirmation.error

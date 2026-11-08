@@ -7,7 +7,7 @@ import {
   getDingoProvider,
   assertDingoNetwork,
 } from "../dingo/utxorpc/provider";
-import { PREPROD_MINSWAP_V2 } from "./constants";
+import { minswapDeployment } from "./constants";
 const INTERVAL = 6 * 60 * 60 * 1000;
 const OUTPUT_BUDGET = 64;
 export async function readMinswapHistory(
@@ -138,10 +138,10 @@ export async function readMinswapHistory(
             .filter(
               (output) =>
                 Core.Address.fromString(output.address)?.getProps().paymentPart
-                  ?.hash === PREPROD_MINSWAP_V2.poolScriptHash &&
+                  ?.hash === minswapDeployment().poolScriptHash &&
                 output.amount.some(
                   (asset) =>
-                    asset.unit === PREPROD_MINSWAP_V2.poolAuthenAsset &&
+                    asset.unit === minswapDeployment().poolAuthenAsset &&
                     asset.quantity === "1",
                 ),
             )

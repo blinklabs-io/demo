@@ -11,7 +11,7 @@ import {
 import { authenticatePool } from "./data";
 import { poolFixtures } from "./fixtures";
 import { blockfrostFetch } from "../dingo/blockfrost";
-vi.mock("../dingo/config", () => ({ DINGO_NETWORK: { id: "preprod" } }));
+vi.mock("../dingo/config", () => ({ DINGO_NETWORK: { id: "preprod", label: "Preprod", networkMagic: 1 } }));
 vi.mock("../dingo/blockfrost", () => ({ blockfrostFetch: vi.fn() }));
 beforeEach(() => vi.resetAllMocks());
 it("loads a bounded manual pool page and rejects unsupported records individually", async () => {
