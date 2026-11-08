@@ -60,6 +60,12 @@ function labelFor(asset: { assetId: string; ticker?: string }): string {
   );
 }
 
+function labelForV3(asset: IPoolDataAsset): string {
+  const label = labelFor(asset);
+  return DINGO_NETWORK.id === "mainnet" && asset.assetId !== ADA_METADATA.assetId
+    ? `${label} raw units` : label;
+}
+
 function hasKnownDecimals(
   asset: IPoolDataAsset,
 ): asset is IPoolDataAsset & { decimals: number } {
@@ -87,7 +93,7 @@ function createQueryProvider(): DingoSundaeQueryProvider {
 }
 
 export default function WalletSwap() {
-  const [version, setVersion] = useState<"V3" | "V4">("V4");
+  const [version, setVersion] = useState<"Minswap" | "V3" | "V4">(DINGO_NETWORK.id === "mainnet" && new URLSearchParams(window.location.search).get("venue") !== "sundae" ? "Minswap" : "V4");
   const [busy, setBusy] = useState(false);
   if (DINGO_NETWORK.id !== "preview" && DINGO_NETWORK.id !== "preprod" && DINGO_NETWORK.id !== "mainnet")
     return (
@@ -108,14 +114,14 @@ export default function WalletSwap() {
         </div>
       </section>
     );
-  if (DINGO_NETWORK.id === "preprod" || DINGO_NETWORK.id === "mainnet")
+  if (DINGO_NETWORK.id === "preprod")
     return <MinswapMarket initialAction="swap" />;
 
   return (
     <>
-      <nav className="swap-version-nav" aria-label="SundaeSwap market version">
+      <nav className="swap-version-nav" aria-label="Swap venue">
         <div className="swap-version-switch">
-          {(["V3", "V4"] as const).map((v) => (
+          {(DINGO_NETWORK.id === "mainnet" ? (["Minswap", "V3", "V4"] as const) : (["V3", "V4"] as const)).map((v) => (
             <button
               key={v}
               type="button"
@@ -123,12 +129,14 @@ export default function WalletSwap() {
               disabled={busy}
               onClick={() => setVersion(v)}
             >
-              SundaeSwap {v}
+              {v === "Minswap" ? v : `SundaeSwap ${v}`}
             </button>
           ))}
         </div>
       </nav>
-      {version === "V4" ? (
+      {version === "Minswap" ? (
+        <MinswapMarket initialAction="swap" />
+      ) : version === "V4" ? (
         <V4Swap onBusy={setBusy} />
       ) : (
         <V3Swap onBusy={setBusy} />
@@ -148,12 +156,6 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
   const connected = status === "connected" && Boolean(walletApi);
   const queryProvider = useMemo(() => createQueryProvider(), []);
 
-  // This app's Sundae V3 integration is hardcoded to Preview (script hashes,
-  // reference UTxOs). Verify the configured Dingo endpoint actually serves
-  // Preview, and that it has indexed the reference UTxOs the swap datum
-  // builder needs, before letting anyone build an order against it - a
-  // silently wrong network or a partially-synced node otherwise produces a
-  // transaction that fails deep inside the SDK with no useful diagnostic.
   const networkCheck = useQuery({
     queryKey: ["dingo", "assert-network"],
     queryFn: () => assertDingoNetwork(getDingoProvider()),
@@ -167,7 +169,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
   });
 
   const [direction, setDirection] = useState<SwapDirection>("adaToToken");
-  const [selectedIdent, setSelectedIdent] = useState(DEFAULT_POOL.ident);
+  const [selectedIdent, setSelectedIdent] = useState(DEFAULT_POOL?.ident ?? "");
   const [amount, setAmount] = useState("5");
   const [slippagePercent, setSlippagePercent] = useState("1");
 
@@ -179,7 +181,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
     queryFn: () => queryProvider.discoverPools(),
     staleTime: 300_000,
     retry: false,
-    enabled: networkCheck.isSuccess,
+    enabled: networkCheck.isSuccess && DINGO_NETWORK.id === "preview",
   });
 
   const discoveredAdaPools = (discoveredQuery.data ?? []).filter(
@@ -193,7 +195,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
   const options: Array<{ ident: string; label: string }> = usingDiscovered
     ? discoveredAdaPools.map((pool) => ({
         ident: pool.ident,
-        label: `${labelFor(pool.assetA)} / ${labelFor(pool.assetB)}`,
+        label: `${labelForV3(pool.assetA)} / ${labelForV3(pool.assetB)}`,
       }))
     : POOL_PRESETS.map((preset) => ({
         ident: preset.ident,
@@ -307,12 +309,12 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
     hasKnownDecimals(offered) &&
     hasKnownDecimals(received)
   ) {
-    spotPrice = spotPriceLabel(pool, offered, received, labelFor);
+    spotPrice = spotPriceLabel(pool, offered, received, labelForV3);
     try {
       parsedAmount = parseAssetAmount(
         amount,
         offered.decimals,
-        labelFor(offered),
+        labelForV3(offered),
       );
       if (parsedAmount > 0n) {
         const supplied = new AssetAmount(parsedAmount, offered);
@@ -326,8 +328,8 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           supplied,
           Number(slippagePercent) / 100,
         ).amount;
-        minimumReceive = `${formatAssetAmount(minimum, received.decimals)} ${labelFor(received)}`;
-        estimatedReceive = `${formatAssetAmount(output, received.decimals)} ${labelFor(received)}`;
+        minimumReceive = `${formatAssetAmount(minimum, received.decimals)} ${labelForV3(received)}`;
+        estimatedReceive = `${formatAssetAmount(output, received.decimals)} ${labelForV3(received)}`;
         const impactBps = priceImpactBasisPoints(
           pool,
           offered,
@@ -410,7 +412,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
       }
       if (!networkCheck.isSuccess || !referencesCheck.isSuccess) {
         throw new Error(
-          "Dingo Preview and Sundae V3 references have not been verified.",
+          "Dingo network and Sundae V3 references have not been verified.",
         );
       }
       if (!offered || !hasKnownDecimals(offered)) {
@@ -430,7 +432,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
       const requested = parseAssetAmount(
         amount,
         offered.decimals,
-        labelFor(offered),
+        labelForV3(offered),
       );
       if (currentBalance === null || requested > currentBalance)
         throw new Error(
@@ -483,15 +485,17 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
       />
       <p className="mb-4 text-sm text-slate-500">
         Order construction through Dingo UTxO RPC only.{" "}
-        {usingDiscovered
+        {DINGO_NETWORK.id === "mainnet"
+          ? "Named mainnet pools; current reserves and quotes are authenticated through Dingo. Token amounts use raw on-chain units."
+          : usingDiscovered
           ? "Pools discovered live from Dingo."
           : discoveredQuery.isError
-            ? "Pool discovery failed; select from the known Preview pools below."
+            ? "Pool discovery failed. Retry the Dingo query."
             : discoveredQuery.isFetching
               ? "Discovering pools from Dingo…"
               : !networkCheck.isSuccess
                 ? "Pool discovery will start after network verification."
-                : "Dingo returned no ADA-paired pools; showing the curated Preview pool list."}
+                : "Dingo returned no supported ADA-paired pools."}
       </p>
 
       {networkCheck.isError && (
@@ -499,7 +503,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           role="alert"
           className="rounded-md border border-red-900 p-4 text-sm text-red-300"
         >
-          Cannot verify Dingo’s Preview network: {networkCheck.error.message}{" "}
+          Cannot verify Dingo’s {DINGO_NETWORK.label} network: {networkCheck.error.message}{" "}
           <button type="button" onClick={() => void networkCheck.refetch()}>
             Retry network check
           </button>
@@ -507,7 +511,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
       )}
       {networkCheck.isPending && (
         <p role="status" className="text-sm text-slate-400">
-          Checking Dingo’s Preview network…
+          Checking Dingo’s {DINGO_NETWORK.label} network…
         </p>
       )}
       <section className="swap-venue-card" aria-label="Swap venue">
@@ -516,7 +520,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           <h2>
             SundaeSwap <span>V3</span>
           </h2>
-          <p>Cardano Preview · test network</p>
+          <p>Cardano {DINGO_NETWORK.label} · V3</p>
         </div>
         <ol className="swap-execution-path">
           <li>
@@ -580,8 +584,8 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
             </span>
           </div>
           <h2>
-            {offered ? labelFor(offered) : "…"} /{" "}
-            {received ? labelFor(received) : "…"}
+            {offered ? labelForV3(offered) : "…"} /{" "}
+            {received ? labelForV3(received) : "…"}
           </h2>
           <p className="swap-spot-price">{spotPrice}</p>
           {!pool ? (
@@ -664,7 +668,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
             <span>
               Available:{" "}
               {available !== null && offered
-                ? `${formatAssetAmount(available, offered.decimals)} ${labelFor(offered)}`
+                ? `${formatAssetAmount(available, offered.decimals)} ${labelForV3(offered)}`
                 : connected
                   ? "Checking wallet…"
                   : "Connect a wallet to see your balance"}
@@ -705,7 +709,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           </div>
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-slate-400">
-              {offered ? labelFor(offered) : "…"} offered
+              {offered ? labelForV3(offered) : "…"} offered
             </span>
             <input
               value={amount}
@@ -855,7 +859,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
                       prepared.built.minimumReceived,
                       prepared.received.decimals ?? 0,
                     )}{" "}
-                    {labelFor(prepared.received)}
+                    {labelForV3(prepared.received)}
                   </dd>
                 </div>
                 <div>
@@ -1234,7 +1238,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           <h2>
             SundaeSwap <span>V4</span>
           </h2>
-          <p>Cardano Preview · modular liquidity</p>
+          <p>Cardano {DINGO_NETWORK.label} · modular liquidity</p>
         </div>
         <ol className="swap-execution-path">
           <li>
@@ -1254,7 +1258,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           enter the order contract; submission does not complete the swap.
         </p>
         <details>
-          <summary>Verified Preview deployment</summary>
+          <summary>Verified {DINGO_NETWORK.label} deployment</summary>
           <dl>
             {[
               ["Order contract", V4_DEPLOYMENT.order],
@@ -1293,7 +1297,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
         <section className="swap-market-card">
           <div className="swap-market-heading">
             <span className="eyebrow">
-              Reference pool · {snapshot?.curveLabel ?? "Discovering"}
+              Reference pool · {snapshot?.curveLabel ?? (discovery.isPending ? "Discovering" : "No supported pools")}
             </span>
             <span className="live-tag">
               ●{" "}
@@ -1313,7 +1317,9 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
           <p className="swap-spot-price">
             {offered && received && Number.isFinite(livePrice)
               ? `1 ${labelFor(offered)}${offered.assetId === ADA_METADATA.assetId ? "" : " raw unit"} = ${(offerIndex === 0 ? livePrice : 1 / livePrice).toLocaleString(undefined, { maximumSignificantDigits: 8 })} ${labelFor(received)}${received.assetId === ADA_METADATA.assetId ? "" : " raw units"}`
-              : "Loading authenticated curve data…"}
+              : discovery.isPending || details.isPending && Boolean(snapshot)
+                ? "Loading authenticated curve data…"
+                : "No supported pool data available."}
           </p>
           <MarketChart points={points} label="V4 reference curve price" />
           <p className="swap-chart-caption">

@@ -1,8 +1,8 @@
 import { DINGO_NETWORK } from "../dingo/config";
-// Ported verbatim from dingo-sundae-preview/src/sundae/protocol.ts.
+import { MAINNET_SUNDAE_V3_PROTOCOL } from "./mainnet";
 import { EContractVersion, type ISundaeProtocolParamsFull } from "@sundaeswap/core";
 
-export const SUNDAE_V3_PROTOCOL: ISundaeProtocolParamsFull = {
+const PREVIEW_SUNDAE_V3_PROTOCOL: ISundaeProtocolParamsFull = {
   version: EContractVersion.V3,
   blueprint: {
     validators: [
@@ -61,6 +61,10 @@ export const SUNDAE_V3_PROTOCOL: ISundaeProtocolParamsFull = {
   ],
 };
 
+export const SUNDAE_V3_PROTOCOL = DINGO_NETWORK.id === "mainnet"
+  ? MAINNET_SUNDAE_V3_PROTOCOL : PREVIEW_SUNDAE_V3_PROTOCOL;
+export const SUNDAE_NETWORK = DINGO_NETWORK.id === "mainnet" ? "mainnet" : "preview";
+
 export type PoolPreset = {
   ident: string;
   label: string;
@@ -69,7 +73,7 @@ export type PoolPreset = {
   assetBDecimals: number;
 };
 
-export const POOL_PRESETS: PoolPreset[] = [
+const PREVIEW_POOL_PRESETS: PoolPreset[] = [
   {
     ident: "35a34996f515c5a28c8df9eada81f03f4f2756d92e7f73cde1f4e593",
     label: "ADA / USDM",
@@ -136,9 +140,26 @@ export const POOL_PRESETS: PoolPreset[] = [
   },
 ];
 
+const MAINNET_POOL_PRESETS: PoolPreset[] = [
+  {
+    ident: "bdf5e1ccc9aea3c8d587cc6b6fb74ea531538e96ab8cb7d56238698e",
+    label: "ADA / USDCx",
+    assetBLabel: "USDCx",
+    assetBAssetId: "1f3aec8bfe7ea4fe14c5f121e2a92e301afe414147860d557cac7e34.5553444378",
+    assetBDecimals: 0,
+  },
+  {
+    ident: "5b5d1f9da977498b5faf3efb83693b0442ed5f49d00d9b986a409c0b",
+    label: "ADA / NIGHT",
+    assetBLabel: "NIGHT",
+    assetBAssetId: "0691b2fecca1ac4f53cb6dfb00b7013e561d1f34403b957cbb5af1fa.4e49474854",
+    assetBDecimals: 0,
+  },
+];
+export const POOL_PRESETS = DINGO_NETWORK.id === "mainnet" ? MAINNET_POOL_PRESETS : PREVIEW_POOL_PRESETS;
 export const DEFAULT_POOL = POOL_PRESETS[0];
 
-export function assertPreviewSundae() {
-  if (DINGO_NETWORK.id !== "preview")
-    throw new Error("This SundaeSwap deployment is configured for Preview. Switch networks before building an order.");
+export function assertSundaeNetwork() {
+  if (DINGO_NETWORK.id !== "preview" && DINGO_NETWORK.id !== "mainnet")
+    throw new Error("This SundaeSwap deployment is configured for Preview or Mainnet. Switch networks before building an order.");
 }

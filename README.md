@@ -54,7 +54,7 @@ The existing `VITE_DINGO_*_URL` settings configure Preview. Preprod has separate
 `VITE_DINGO_PREPROD_UTXORPC_URL` overrides. Mainnet uses independent
 `VITE_DINGO_MAINNET_BLOCKFROST_URL`, `VITE_DINGO_MAINNET_MESH_URL`, and
 `VITE_DINGO_MAINNET_UTXORPC_URL` overrides. Each API must serve the selected
-network. SundaeSwap markets remain tied to the verified Preview deployments;
+network. SundaeSwap V3 and V4 use separate verified Mainnet and Preview deployments;
 other creation and participation tools use the selected network. CIP-30 reports
 only mainnet versus testnet, so transaction review and signing additionally
 require the actual spending and collateral inputs to be unspent on the selected
@@ -132,7 +132,7 @@ states, transaction lifecycles and Dingo API responsibilities.
   certificate records, redeemers, treasury donations, and required signers
 - CIP-119 DRep names and anchor links, plus active, retired, and expired DRep
   filters
-- Wallet balance, reward withdrawals, send, pool delegation, and SundaeSwap V3 and V4 Preview order flows
+- Wallet balance, reward withdrawals, send, pool delegation, and SundaeSwap V3 and V4 Mainnet and Preview order flows
 - DRep Yes, No, and Abstain votes from governance action pages, with fee review,
   CIP-95 wallet signing, and submission through Dingo
 - Blockfrost-compatible GET console and read-only Mesh POST console
@@ -200,10 +200,13 @@ identified and omitted without inferring balances. Addresses are displayed in
 full with copy controls. Wallets exposing CIP-95 can also show their DRep
 registration.
 
-The swap view opens SundaeSwap V4 on Preview, with V3 markets available in the
-same view. V4 discovers authenticated pool NFTs and verifies the deployed order,
+The swap view offers SundaeSwap V3 and V4 on Mainnet and Preview, alongside
+Minswap on Mainnet. Mainnet SundaeSwap token quantities use raw on-chain units;
+ADA uses six decimals. Mainnet V3 loads selected ADA/USDCx and ADA/NIGHT
+pools by their NFTs instead of scanning the full pool policy. V4 discovers authenticated pool NFTs and verifies the deployed order,
 settings and constraint scripts through Dingo. Discovery uses one bounded
-UTxORPC snapshot per contract address. Constant-sum and stableswap pools
+UTxORPC snapshot per payment credential, with network and script authentication
+on each returned output. Constant-sum and stableswap pools
 support reference quotes and swap intents; pools using other curve modules remain
 visible without offering unsupported quotes. Assets without verified decimal
 metadata use explicitly labelled raw units.
@@ -362,7 +365,7 @@ opaque cursors. LP lookups filter by both token and pool payment credential, so
 wallet-held LP tokens do not consume the lookup bound. Both paths authenticate
 output credentials, pool tokens, and datums from the returned CBOR.
 
-Discover also links to the official [SundaeSwap](https://app.sundae.fi/) and
+Discover offers native SundaeSwap V3/V4 swaps through Dingo and also links to the official [SundaeSwap](https://app.sundae.fi/) and
 [Liqwid](https://app.liqwid.finance/) mainnet applications. Those links open the
 protocol’s own workspace. Deployment identifiers follow the canonical
 [Minswap SDK](https://github.com/minswap/sdk/blob/main/src/types/constants.ts).

@@ -28,18 +28,19 @@ import {
   unitFromAssetId,
   type AssetHint,
 } from "./assets";
-import { SUNDAE_V3_PROTOCOL } from "./protocol";
+import { SUNDAE_V3_PROTOCOL, SUNDAE_NETWORK, assertSundaeNetwork } from "./protocol";
 
 const POOL_NFT_NAME_PREFIX = "000de140";
 
 export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
   readonly protocol: ISundaeProtocolParamsFull;
   private readonly provider: DingoProvider;
-  private readonly datumBuilder = new DatumBuilderV3("preview");
+  private readonly datumBuilder = new DatumBuilderV3(SUNDAE_NETWORK);
   private readonly assetHints = new Map<string, AssetHint>();
 
   constructor(provider: DingoProvider) {
-    super("preview");
+    super(SUNDAE_NETWORK);
+    assertSundaeNetwork();
     this.provider = provider;
     this.baseUrl = "dingo://utxorpc";
     this.protocol = SUNDAE_V3_PROTOCOL;
