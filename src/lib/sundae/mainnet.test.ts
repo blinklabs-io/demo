@@ -51,3 +51,13 @@ it.each([
   if (valid) await expect(discoverV4Pools()).resolves.toEqual([]);
   else await expect(discoverV4Pools()).rejects.toThrow("another address");
 });
+
+it("ignores unrelated key credentials with the pool script hash bytes", async () => {
+  const address = Core.addressFromCredential(1, Core.Credential.fromCore({
+    type: Core.CredentialType.KeyHash,
+    hash: Core.Hash28ByteBase16("21c9b7b965646069f9becebf8b4c3cedaf84c19b109eaa5980a14a26"),
+  }));
+  const output = new Core.TransactionOutput(address, new Core.Value(2000000n));
+  mocks.search.mockResolvedValue({ items: [{ txoRef: { hash: Core.fromHex("44".repeat(32)), index: 0 }, nativeBytes: Core.fromHex(output.toCbor()) }], nextToken: "" });
+  await expect(discoverV4Pools()).resolves.toEqual([]);
+});

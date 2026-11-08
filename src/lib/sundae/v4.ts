@@ -124,7 +124,7 @@ async function addressOutputs(hash: string, signal?: AbortSignal) {
       "V4 address exceeds the bounded 400-output discovery snapshot.",
     );
   const seen = new Set<string>();
-  return response.items.map((item) => {
+  return response.items.flatMap<Output>((item) => {
     if (
       !item.txoRef ||
       item.txoRef.hash.length !== 32 ||
@@ -136,6 +136,12 @@ async function addressOutputs(hash: string, signal?: AbortSignal) {
     const output = Core.TransactionOutput.fromCbor(
       Core.HexBlob.fromBytes(item.nativeBytes),
     );
+    const payment = output.address().getProps().paymentPart;
+    if (output.address().getNetworkId() === CARDANO_NETWORK_ID
+      && payment?.type === Core.CredentialType.KeyHash && payment.hash === hash) {
+      console.warn("Ignoring a non-script output in V4 payment-credential discovery.");
+      return [];
+    }
     if (!matchesScriptAddress(output.address(), hash))
       throw new Error("Dingo returned a V4 UTxO from another address.");
     const tx_hash = Core.toHex(item.txoRef.hash),
