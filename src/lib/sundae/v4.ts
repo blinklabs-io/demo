@@ -68,8 +68,7 @@ interface Output {
   inline_datum: string | null;
 }
 function matchesScriptAddress(address: Core.Address, hash: string): boolean {
-  const credential = address.asBase()?.getPaymentCredential()
-    ?? address.asEnterprise()?.getPaymentCredential();
+  const credential = address.getProps().paymentPart;
   return address.getNetworkId() === CARDANO_NETWORK_ID
     && credential?.type === Core.CredentialType.ScriptHash
     && credential.hash === hash;
@@ -136,14 +135,10 @@ async function addressOutputs(hash: string, signal?: AbortSignal) {
     const output = Core.TransactionOutput.fromCbor(
       Core.HexBlob.fromBytes(item.nativeBytes),
     );
-    const payment = output.address().getProps().paymentPart;
-    if (output.address().getNetworkId() === CARDANO_NETWORK_ID
-      && payment?.type === Core.CredentialType.KeyHash && payment.hash === hash) {
-      console.warn("Ignoring a non-script output in V4 payment-credential discovery.");
+    if (!matchesScriptAddress(output.address(), hash)) {
+      console.warn("Ignoring an unrelated output in V4 payment-credential discovery.");
       return [];
     }
-    if (!matchesScriptAddress(output.address(), hash))
-      throw new Error("Dingo returned a V4 UTxO from another address.");
     const tx_hash = Core.toHex(item.txoRef.hash),
       output_index = item.txoRef.index,
       key = `${tx_hash}#${output_index}`;
