@@ -26,6 +26,9 @@ function Sidebar({ pathname }: { pathname: string }) {
             dingo<span className="brand-sub">BUILD WITH DINGO</span>
           </span>
         </Link>
+        <a className="demo-source-link" href="https://github.com/blinklabs-io/demo" target="_blank" rel="noopener noreferrer" aria-label="View demo source on GitHub" title="View demo source on GitHub">
+          <img src="/github.svg" width="22" height="22" alt="" />
+        </a>
         <button
           type="button"
           className="mobile-nav-toggle"

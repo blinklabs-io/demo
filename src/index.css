@@ -93,6 +93,19 @@ summary {
   justify-content: space-between;
   gap: 12px;
 }
+.demo-source-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  border-radius: 8px;
+}
+.demo-source-link img { filter: brightness(0) invert(1); opacity: 0.8; }
+.demo-source-link:hover img { opacity: 1; }
+.demo-source-link:focus-visible { outline: 2px solid #65d9bb; outline-offset: 3px; }
 .mobile-nav-toggle {
   display: none;
 }
