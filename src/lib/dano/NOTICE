@@ -1,0 +1,5 @@
+Dano CLMM datum, quote, and redeemer implementation follows the public
+Dano Finance clmm-sdk at 0416dc1f3531ce77eec7664ea3947f192a3aca40.
+The SDK declares MIT licensing in package.json. Its mathematical formulas
+and transaction interfaces are adapted to the existing Blaze and Dingo stack.
+Public mainnet output fixtures contain no wallet keys.
