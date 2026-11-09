@@ -282,7 +282,7 @@ it.each(["body", "expiry", "signature"] as const)(
     post.mockRestore();
   },
 );
-it("verifies a real wallet signature and submits through the Dingo provider", async () => {
+it("verifies a real wallet signature and passes the signed transaction to the provider", async () => {
   const f = await setup(),
     draft = await prepareRapidSwap(
       f.api,

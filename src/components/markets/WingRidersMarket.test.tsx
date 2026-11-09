@@ -174,7 +174,7 @@ it("blocks invalid amounts while retaining the pool catalog", async () => {
   expect(host.querySelectorAll(".market-card")).toHaveLength(1);
 });
 
-it("invalidates a reviewed swap when the pool output changes without changing its quote", async () => {
+it("changes the draft key when the pool output changes without changing its quote", async () => {
   await render();
   const before = button("Review WingRiders Rapid swap").dataset.draftKey;
   await act(async () => {
@@ -198,4 +198,27 @@ it("invalidates a reviewed swap when the pool output changes without changing it
   expect(button("Review WingRiders Rapid swap").dataset.draftKey).not.toBe(
     before,
   );
+});
+
+it("uses integer token defaults on initial selection and implicit pool changes", async () => {
+  const tokenPool = { ...pool, name: "bb".repeat(32), assetA: pool.assetB, assetB: "lovelace", reserveA: pool.reserveB, reserveB: pool.reserveA };
+  vi.mocked(readRapidPools).mockResolvedValue({ pools: [tokenPool], errors: [], nextToken: "" });
+  await render();
+  expect(host.querySelector<HTMLInputElement>("input[inputmode]")!.value).toBe("1000000");
+  expect(button("Review WingRiders Rapid swap").disabled).toBe(false);
+  await act(async () => change(host.querySelector("input[inputmode]")!, "123"));
+  await act(async () => { client.setQueryData(["dingo", "markets", "wingriders", "pools", ""], { pools: [pool], errors: [], nextToken: "" }); });
+  await flush();
+  expect(host.querySelector<HTMLInputElement>("input[inputmode]")!.value).toBe("0.1");
+});
+it("blocks reviewing retained catalog data after a refresh fails", async () => {
+  await render();
+  vi.mocked(readRapidPools).mockRejectedValue(new Error("Catalog verification failed"));
+  await act(async () => { await client.refetchQueries({ queryKey: ["dingo", "markets", "wingriders", "pools", ""] }); });
+  await flush();
+  const review = button("Review WingRiders Rapid swap");
+  expect(review).toBeDefined();
+  expect(review.disabled).toBe(true);
+  await act(async () => review.click());
+  expect(prepareRapidSwap).not.toHaveBeenCalled();
 });

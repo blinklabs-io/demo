@@ -51,7 +51,7 @@ it.each(["network", "key", "marker"])("rejects a foreign %s", (kind) => {
     ),
   ).toThrow("Not an authenticated mainnet WingRiders Rapid pool.");
 });
-it("rejects malformed fees and quantities while retaining integer quote precision", () => {
+it("rejects malformed fee rules while retaining integer quote precision", () => {
   const utxo = rapidFixture(),
     values = fields(utxo.output().datum()!.asInlineData()!, 15);
   values[13] = Core.PlutusData.newInteger(0n);

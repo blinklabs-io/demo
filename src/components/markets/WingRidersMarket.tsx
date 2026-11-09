@@ -31,7 +31,7 @@ export function WingRidersMarket() {
     [chosen, setChosen] = useState(""),
     [lookup, setLookup] = useState("");
   const [aToB, setAToB] = useState(true),
-    [amount, setAmount] = useState("0.1");
+    [amountState, setAmountState] = useState<{ pool: string | undefined; value: string }>({ pool: undefined, value: "0.1" });
   const wallet = useWalletStore();
   useEffect(
     () =>
@@ -68,6 +68,10 @@ export function WingRidersMarket() {
   const pool = listed ?? selection.data;
   const offered = pool ? (aToB ? pool.assetA : pool.assetB) : "lovelace",
     received = pool ? (aToB ? pool.assetB : pool.assetA) : "lovelace";
+  const defaultAmount = offered === "lovelace" ? "0.1" : "1000000";
+  const amount = amountState.pool === pool?.name ? amountState.value : defaultAmount;
+  if (pool && amountState.pool !== pool.name)
+    setAmountState({ pool: pool.name, value: defaultAmount });
   let input = 0n,
     quote: ReturnType<typeof quoteRapidSwap> | undefined,
     error = "";
@@ -141,9 +145,7 @@ export function WingRidersMarket() {
                 onClick={() => {
                   setChosen(candidate.name);
                   setAToB(true);
-                  setAmount(
-                    candidate.assetA === "lovelace" ? "0.1" : "1000000",
-                  );
+                  setAmountState({ pool: candidate.name, value: candidate.assetA === "lovelace" ? "0.1" : "1000000" });
                 }}
               >
                 <strong>
@@ -240,11 +242,7 @@ export function WingRidersMarket() {
                   onChange={(event) => {
                     const forward = event.target.value === "a-to-b";
                     setAToB(forward);
-                    setAmount(
-                      (forward ? pool.assetA : pool.assetB) === "lovelace"
-                        ? "0.1"
-                        : "1000000",
-                    );
+                    setAmountState({ pool: pool.name, value: (forward ? pool.assetA : pool.assetB) === "lovelace" ? "0.1" : "1000000" });
                   }}
                 >
                   <option value="a-to-b">
@@ -264,7 +262,7 @@ export function WingRidersMarket() {
                 <input
                   inputMode={offered === "lovelace" ? "decimal" : "numeric"}
                   value={amount}
-                  onChange={(event) => setAmount(event.target.value)}
+                  onChange={(event) => setAmountState({ pool: pool.name, value: event.target.value })}
                 />
               </label>
               {wallet.status === "connected" && held != null && (

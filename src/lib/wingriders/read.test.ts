@@ -60,7 +60,7 @@ it("rejects a wrong backend or network before issuing pool queries", async () =>
   mocks.config.id = "preview";
   await expect(readRapidPools()).rejects.toThrow("requires Cardano Mainnet");
 });
-it("keeps valid pools when a record cannot be decoded and rejects repeated cursors", async () => {
+it("keeps valid pools when a record cannot be decoded and rejects a self-repeating cursor", async () => {
   mocks.query.mockResolvedValue({
     items: [{ nativeBytes: new Uint8Array() }, rpc()],
     nextToken: "next",
@@ -130,4 +130,28 @@ it("stops a selected-pool lookup after five bounded marker pages", async () => {
     "WingRiders Rapid lookup exceeded five bounded pool pages.",
   );
   expect(mocks.query).toHaveBeenCalledTimes(5);
+});
+
+it.each(["catalog", "selected"])("rejects two outpoints claiming the same pool in %s reads", async (kind) => {
+  const first = rpc(), second = rpc();
+  second.txoRef.index += 1;
+  mocks.query.mockResolvedValue({ items: [first, second], nextToken: "" });
+  await expect(kind === "catalog" ? readRapidPools() : readRapidPool(decodeRapidPool(rapidFixture()).name)).rejects.toThrow("competing WingRiders Rapid pool states");
+});
+it("rejects a repeated output reference carrying conflicting pool data", async () => {
+  const first = rpc(), second = rpc(1);
+  second.txoRef = first.txoRef;
+  mocks.query.mockResolvedValue({ items: [first, second], nextToken: "" });
+  await expect(readRapidPools()).rejects.toThrow("competing WingRiders Rapid pool states");
+});
+it("rejects an output index beyond the UTxO reference range", async () => {
+  const item = rpc();
+  item.txoRef.index = 0x100000000;
+  mocks.query.mockResolvedValue({ items: [item], nextToken: "" });
+  await expect(readRapidPools()).resolves.toMatchObject({ pools: [], errors: ["Dingo returned an invalid WingRiders Rapid output."] });
+});
+it("rejects a cross-page cursor cycle", async () => {
+  mocks.query.mockResolvedValueOnce({ items: [], nextToken: "A" }).mockResolvedValueOnce({ items: [], nextToken: "B" }).mockResolvedValueOnce({ items: [], nextToken: "A" });
+  await expect(readRapidPool(decodeRapidPool(rapidFixture()).name)).rejects.toThrow("repeated a WingRiders Rapid page cursor");
+  expect(mocks.query).toHaveBeenCalledTimes(3);
 });

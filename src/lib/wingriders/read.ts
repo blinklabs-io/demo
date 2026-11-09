@@ -19,6 +19,7 @@ function decodeOutput(item: RpcOutput) {
     item.txoRef.hash.length !== 32 ||
     !Number.isSafeInteger(item.txoRef.index) ||
     item.txoRef.index < 0 ||
+    item.txoRef.index > 0xffffffff ||
     !item.nativeBytes.length ||
     item.nativeBytes.length > 65536
   )
@@ -78,7 +79,7 @@ export async function readRapidPools(cursor = "", signal?: AbortSignal) {
       );
     }
   }
-  if (new Set(pools.map((pool) => pool.name)).size !== pools.length)
+  if (new Set(pools.map((pool) => pool.name)).size !== pools.length || new Set(pools.map((pool) => pool.utxo.input().toCbor())).size !== pools.length)
     throw new Error("Dingo returned competing WingRiders Rapid pool states.");
   return { pools, errors, nextToken: response.nextToken };
 }
