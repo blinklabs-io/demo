@@ -275,11 +275,11 @@ function DanoMainnet() {
                   <span>Receive</span>
                   <strong>{danoAmount(quote.received, received)}</strong>
                   <p>
-                    Pool trading fee: {Number(pool.fee) / 100}% · settlement fee: {danoAmount(quote.swapFee, "lovelace")}
+                    Pool trading fee: {Number(pool.fee) / 100}% (includes {danoAmount(quote.platform, offered)} for the platform) · settlement fee: {danoAmount(quote.swapFee, "lovelace")}
                   </p>
                 </div>
               )}
-              <p>ADA pools require staking reward settlement and cannot be traded here.</p>
+              {(pool.x === "lovelace" || pool.y === "lovelace") && <p>ADA pools require staking reward settlement and cannot be traded here.</p>}
               <p>
                 Token amounts use base units; ADA uses six decimal places. Swaps
                 settle directly in one transaction. If the pool changes before

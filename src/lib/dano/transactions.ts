@@ -141,7 +141,6 @@ export async function prepareDanoSwap(
     owner.address.toBytes()
   )
     throw new Error("Wallet account changed. Review a new swap.");
-  await assertTransactionNetwork(tx, assertCurrent, blaze.provider);
   return {
     tx,
     blaze,

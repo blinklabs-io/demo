@@ -117,3 +117,8 @@ it("invalidates the reviewed draft when configuration changes",async()=>{
  await render();const before=button("Review Dano CLMM swap").dataset.draftKey;
  await act(async()=>{client.setQueryData(["dingo","markets","dano","configuration"],{...config,utxo:{input:()=>({transactionId:()=>"66".repeat(32),index:()=>0n,toCbor:()=>"newconfiguration"})}});});await flush();expect(button("Review Dano CLMM swap").dataset.draftKey).not.toBe(before);
 });
+
+it("shows the included platform share and reserves the staking note for ADA pools",async()=>{
+ await render();expect(host.textContent).toContain("300 AAA base units for the platform");expect(host.textContent).not.toContain("cannot be traded here");
+ const ada = {...pool,x:"lovelace"};await act(async()=>client.setQueryData(["dingo","markets","dano","pools",""],{pools:[ada],errors:[],nextToken:""}));await flush();expect(host.textContent).toContain("ADA pools require staking reward settlement");expect(button("Review Dano CLMM swap").disabled).toBe(true);
+});

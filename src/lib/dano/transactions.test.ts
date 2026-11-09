@@ -152,17 +152,18 @@ it("verifies a real funding signature before handing the transaction to Dingo", 
  const post=vi.spyOn(f.ledger,"postTransactionToChain").mockResolvedValue(draft.tx.getId());
  await expect(submitDanoSwap(f.api,draft,()=>{})).resolves.toBe(String(draft.tx.getId()));expect(post).toHaveBeenCalledTimes(1);
 });
-it.each(["body","auxiliary","validity","account","reference"])("rejects %s changes during approval",async change=>{
+it.each(["body","auxiliary","validation flag","validity bounds","account","reference"])("rejects %s changes during approval",async change=>{
  const f=await setup(),draft=await prepareDanoSwap(f.api,f.args,()=>{}),post=vi.spyOn(f.ledger,"postTransactionToChain");
  vi.spyOn(f.blaze,"signTransaction").mockImplementation(async tx=>{
   if(change==="body")return new Core.Transaction(Core.TransactionBody.fromCore({...tx.body().toCore(),fee:tx.body().fee()+1n}),tx.witnessSet(),tx.auxiliaryData());
   if(change==="auxiliary")tx.setAuxiliaryData(Core.AuxiliaryData.fromCbor(Core.HexBlob("a1016161")));
-  if(change==="validity")return Core.Transaction.fromCbor(Core.TxCBOR(`84${tx.body().toCbor()}${tx.witnessSet().toCbor()}f4${tx.auxiliaryData()?.toCbor()??"f6"}`));
+  if(change==="validation flag")return Core.Transaction.fromCbor(Core.TxCBOR(`84${tx.body().toCbor()}${tx.witnessSet().toCbor()}f4${tx.auxiliaryData()?.toCbor()??"f6"}`));
+  if(change==="validity bounds") { const body=Core.TransactionBody.fromCore(tx.body().toCore()); body.setTtl(Core.Slot(draft.validUntil-1)); return new Core.Transaction(body,tx.witnessSet(),tx.auxiliaryData()); }
   if(change==="account")vi.spyOn(f.api,"getChangeAddress").mockResolvedValue(Core.addressFromCredential(1,Core.Credential.fromCore({type:Core.CredentialType.KeyHash,hash:Core.Hash28ByteBase16("44".repeat(28))})).toBytes());
   if(change==="reference")f.ledger.outputs.delete(point(f.reference.input()));
   return tx;
  });
- await expect(submitDanoSwap(f.api,draft,()=>{})).rejects.toThrow();expect(post).not.toHaveBeenCalled();
+ await expect(submitDanoSwap(f.api,draft,()=>{})).rejects.toThrow(change === "account" ? "Wallet account changed" : change === "reference" ? "pool or reference changed" : "Wallet changed the reviewed Dano CLMM transaction");expect(post).not.toHaveBeenCalled();
 });
 
 it("keeps the validity interval inside one epoch",async()=>{

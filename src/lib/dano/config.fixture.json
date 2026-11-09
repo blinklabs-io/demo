@@ -3,7 +3,8 @@
     {
       "nativeBytes": "owBYORH6mRvC+cQgbnLXE7w0h6cueQEFfKu402S+vu+POFteJ0SNchdi3DDMdoJkWW7g8j6VT2vmJst5wQGCGgAUlaahWBy8LTt88QCceIsdryIIo4AmqyDX+CCdiWrRoJwUoVggcvna55uy36Ob2PrfCJ6gyDd7Xqo8rvBUk5Zmiu8fkYcBAoIB2BhM2HmfGQPoGgABhqD/",
       "txoRef": {
-        "hash": "cXseLW4nHamyrHx25fodCCMwiVyV+FiJfIc32WoF3gw="
+        "hash": "cXseLW4nHamyrHx25fodCCMwiVyV+FiJfIc32WoF3gw=",
+        "index": 0
       },
       "cardano": {
         "address": "EfqZG8L5xCBuctcTvDSHpy55AQV8q7jTZL6+7484W14nRI1yF2LcMMx2gmRZbuDyPpVPa+Ymy3nB",
