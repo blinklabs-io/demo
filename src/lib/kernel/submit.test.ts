@@ -127,3 +127,18 @@ it("rejects a reference consumed while wallet approval is open", async () => {
   expect(boundary.sign).toHaveBeenCalledTimes(1);
   expect(boundary.post).not.toHaveBeenCalled();
 });
+
+it("rejects a funding witness signed over another transaction", async () => {
+  await Core.initCrypto();
+  const { draft, api } = fixture();
+  const key = Core.Ed25519PrivateKey.fromNormalHex(Core.Ed25519PrivateNormalKeyHex("11".repeat(32)));
+  draft.requiredFundingKeys = [key.toPublic().hash().hex()];
+  boundary.sign.mockImplementation(async (copy: Core.Transaction) => {
+    const witness = new Core.TransactionWitnessSet();
+    witness.setVkeys(Core.CborSet.fromCore([[key.toPublic().hex(), key.sign(Core.HexBlob("22".repeat(32))).hex()]], Core.VkeyWitness.fromCore));
+    copy.setWitnessSet(witness);
+    return copy;
+  });
+  await expect(submitKernelTransaction(api, draft, () => {})).rejects.toThrow("Wallet did not sign every funding input.");
+  expect(boundary.post).not.toHaveBeenCalled();
+});
