@@ -12,7 +12,7 @@ import { MarketTransaction, MarketConfirmation } from "./MarketTransaction";
 import { MarketLoading } from "./assets";
 import { marketAmount,rawAmount } from "./amounts";
 import "./markets.css";
-const indy=(amount:bigint)=>{const value=amount<0n?-amount:amount;const fraction=(value%1000000n).toString().padStart(6,"0").replace(/0+$/,"").padEnd(2,"0");return `${amount<0n?"-":""}${(value/1000000n).toLocaleString()}.${fraction} INDY`;};
+const indy=(amount:bigint)=>{const value=amount<0n?-amount:amount;const fraction=(value%1000000n).toString().padStart(6,"0").replace(/0+$/,"").padEnd(2,"0");return `${amount<0n?"-":""}${(value/1000000n).toLocaleString("en-US")}.${fraction} INDY`;};
 export function IndigoMarket(){return DINGO_NETWORK.id==="mainnet"?<IndigoMainnet/>:<section className="market-hero"><h1>Indigo on Mainnet</h1><Link to="/wallet/indigo?network=mainnet">Open Mainnet staking →</Link></section>;}
 function IndigoMainnet(){
  const wallet=useWalletStore(),client=useQueryClient(),[hash,submitted]=useState("");

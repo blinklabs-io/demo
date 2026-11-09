@@ -40,7 +40,12 @@ it("rejects invalid pages, references, outpoints and other networks",async()=>{
 it("resolves exact unspent position outpoints and rejects mismatched output responses",async()=>{
  const position=decodeIndigoPosition(decodeRpcOutput(rpc(positionFixture.items[0])));mocks.resolve.mockResolvedValue([position.utxo]);await expect(readIndigoPosition(indigoPoint(position))).resolves.toHaveProperty("owner",position.owner);
  mocks.resolve.mockResolvedValue([]);await expect(readIndigoPosition(indigoPoint(position))).rejects.toThrow("spent or unavailable");
+ const different=new Core.TransactionUnspentOutput(new Core.TransactionInput(Core.TransactionId("aa".repeat(32)),999n),Core.TransactionOutput.fromCbor(position.utxo.output().toCbor()));mocks.resolve.mockResolvedValue([different]);await expect(readIndigoPosition(indigoPoint(position))).rejects.toThrow("spent or unavailable");
 });
 it("reports unsupported outputs without hiding remaining wallet positions",async()=>{
  const row=rpc(positionFixture.items[0]),bad=decodeRpcOutput(rpc(positionFixture.items[1])),out=new Core.TransactionOutput(bad.output().address(),new Core.Value(2000000n,new Map([[Core.AssetId(INDIGO_POSITION),1n]])));out.setDatum(Core.Datum.newInlineData(pd.con(0)));mocks.search.mockResolvedValue({items:[{txoRef:rpc(positionFixture.items[1]).txoRef,nativeBytes:Core.fromHex(out.toCbor())},row],nextToken:""});const position=decodeIndigoPosition(decodeRpcOutput(row));const page=await readIndigoPositions([position.owner]);expect(page.positions).toHaveLength(1);expect(page.errors).toHaveLength(1);
+});
+
+it("keeps valid wallet positions when another row has malformed CBOR",async()=>{
+ const row=rpc(positionFixture.items[0]),position=decodeIndigoPosition(decodeRpcOutput(row));mocks.search.mockResolvedValue({items:[{...row,txoRef:{...row.txoRef,index:999},nativeBytes:new Uint8Array([0xff])},row],nextToken:"more"});const page=await readIndigoPositions([position.owner]);expect(page.positions.map(indigoPoint)).toEqual([indigoPoint(position)]);expect(page.errors).toHaveLength(1);expect(page.nextToken).toBe("more");
 });

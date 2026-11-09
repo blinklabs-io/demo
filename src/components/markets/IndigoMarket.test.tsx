@@ -40,3 +40,8 @@ it("loads exact positions and builds claim, withdrawal, and close actions",async
 it("blocks review when the live manager cannot be authenticated",async()=>{
  vi.mocked(readIndigoManager).mockRejectedValue(new Error("manager unavailable"));await render();expect(button("Review Indigo transaction").disabled).toBe(true);expect(host.textContent).toContain("manager unavailable");
 });
+
+it("formats INDY consistently when the browser default locale uses dot grouping",async()=>{
+ const original=BigInt.prototype.toLocaleString,format=vi.spyOn(BigInt.prototype,"toLocaleString").mockImplementation(function(this:bigint,...args){return original.call(this,args[0]??"de-DE",args[1]);});
+ try{await render();expect(host.textContent).toContain("11,776,792.382497 INDY");}finally{format.mockRestore();}
+});

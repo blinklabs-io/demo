@@ -61,8 +61,8 @@ class Ledger extends Provider {
   async awaitTransactionConfirmation(): Promise<boolean> {
     throw new Error("No live confirmation");
   }
-  async postTransactionToChain(): Promise<Core.TransactionId> {
-    throw new Error("No live submission");
+  async postTransactionToChain(tx: Core.Transaction): Promise<Core.TransactionId> {
+    throw new Error(`No live submission for ${tx.getId()}`);
   }
   async evaluateTransaction(
     tx: Core.Transaction,
@@ -122,7 +122,7 @@ it("rejects unauthorized ownership and changed reference scripts",async()=>{
 it("requires verified wallet signatures and submits the unchanged reviewed transaction",async()=>{
  const f=await setup(),draft=await prepareIndigoAction(f.api,{kind:"stake",amount:100000000n},()=>{});const send=vi.spyOn(f.ledger,"postTransactionToChain").mockResolvedValue(draft.tx.getId());
  vi.spyOn(f.blaze,"signTransaction").mockImplementation(async tx=>{const witness=Core.VkeyWitness.fromCore([f.key.toPublic().hex(),f.key.sign(Core.HexBlob(tx.getId())).hex()]);const w=Core.TransactionWitnessSet.fromCbor(tx.witnessSet().toCbor());w.setVkeys(Core.CborSet.fromCore([witness.toCore()],Core.VkeyWitness.fromCore));tx.setWitnessSet(w);return tx;});
- await expect(submitIndigoAction(f.api,draft,()=>{})).resolves.toBe(String(draft.tx.getId()));expect(send).toHaveBeenCalledTimes(1);
+ await expect(submitIndigoAction(f.api,draft,()=>{})).resolves.toBe(String(draft.tx.getId()));expect(send).toHaveBeenCalledTimes(1);const sent=send.mock.calls[0][0];expect(sent.body().toCbor()).toBe(draft.body);expect(sent.isValid()).toBe(true);expect(sent.auxiliaryData()?.toCbor()).toBe(draft.auxiliary);expect(sent.witnessSet().vkeys()?.size()).toBe(1);
 });
 it.each(["account","expiry","input"])("rejects stale %s before signing",async kind=>{
  const f=await setup(),draft=await prepareIndigoAction(f.api,{kind:"stake",amount:100000000n},()=>{}),sign=vi.spyOn(f.blaze,"signTransaction");

@@ -18,8 +18,20 @@ export async function readIndigoPositions(keys:readonly string[],cursor="",signa
   await assertIndigoMainnet();const response=await getDingoProvider().queryClient.inner.searchUtxos({maxItems:20,startToken:cursor,predicate:{match:{utxoPattern:{case:"cardano",value:{address:{exactAddress:hexToBytes(indigoAddress().toBytes())}}}}}},{signal});signal?.throwIfAborted();
   if(response.items.length>20||response.nextToken.length>4096||(response.nextToken&&response.nextToken===cursor))throw new Error("Dingo returned an invalid Indigo staking page.");
   const positions:ReturnType<typeof decodeIndigoPosition>[]=[],errors:string[]=[],seen=new Set<string>();
-  for(const row of response.items){const utxo=decodeRpcOutput(row),id=utxo.input().toCbor();if(seen.has(id))throw new Error("Dingo repeated an Indigo staking output.");seen.add(id);
-    if(utxo.output().amount().multiasset()?.has(Core.AssetId(INDIGO_MANAGER)))continue;
-    try{const position=decodeIndigoPosition(utxo);if(keys.includes(position.owner))positions.push(position);}catch(e){errors.push(e instanceof Error?e.message:"Unsupported Indigo output.");}
+  for (const row of response.items) {
+    const ref = row.txoRef;
+    if (!ref || ref.hash.length !== 32 || !Number.isInteger(ref.index) || ref.index < 0 || ref.index > 0xffffffff)
+      throw new Error("Dingo returned an invalid script output reference.");
+    const id = `${Core.toHex(ref.hash)}#${ref.index}`;
+    if (seen.has(id)) throw new Error("Dingo repeated an Indigo staking output.");
+    seen.add(id);
+    try {
+      const utxo = decodeRpcOutput(row);
+      if (utxo.output().amount().multiasset()?.has(Core.AssetId(INDIGO_MANAGER))) continue;
+      const position = decodeIndigoPosition(utxo);
+      if (keys.includes(position.owner)) positions.push(position);
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : "Unsupported Indigo output.");
+    }
   }return {positions,errors,nextToken:response.nextToken};
 }
