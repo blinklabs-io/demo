@@ -2,6 +2,7 @@
 import { Blaze, ColdWallet, Core, Provider } from "@blaze-cardano/sdk";
 import { makeUplcEvaluator } from "@blaze-cardano/vm";
 import { beforeAll, expect, it, vi } from "vitest";
+import { assertDingoTransactionBackends } from "../dingo/walletSession";
 import type { Cip30WalletApi } from "../dingo/cip30";
 import { getBlaze } from "../dingo/blaze";
 import { blockfrostFetch } from "../dingo/blockfrost";
@@ -24,6 +25,10 @@ vi.mock("../dingo/config", () => ({
     blockfrostUrl: "http://127.0.0.1:3000",
     utxorpcUrl: "http://127.0.0.1:9090",
   },
+}));
+vi.mock("../dingo/walletSession", async (original) => ({
+  ...(await original<typeof import("../dingo/walletSession")>()),
+  assertDingoTransactionBackends: vi.fn(),
 }));
 vi.mock("../dingo/blaze", async (original) => ({
   ...(await original<typeof import("../dingo/blaze")>()),
@@ -131,6 +136,7 @@ class MemoryProvider extends Provider {
   }
 }
 async function fixture() {
+  vi.mocked(assertDingoTransactionBackends).mockResolvedValue();
   const state: { provider?: MemoryProvider } = {};
   vi.mocked(blockfrostFetch).mockImplementation(async <T>(path: string) => {
     if (path === "/api/v0/epochs/latest/parameters") return phaseTwoParams as T;

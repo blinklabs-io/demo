@@ -14,6 +14,7 @@ vi.mock("../dingo/config", () => ({
 }));
 vi.mock("../dingo/blockfrost", () => ({ blockfrostFetch: boundary.fetch }));
 vi.mock("../dingo/walletSession", () => ({
+  assertDingoTransactionBackends: async () => {},
   assertWalletSession: async (_api: unknown, guard: () => void) => guard(),
   assertTransactionNetwork: async (_tx: unknown, guard: () => void) => guard(),
 }));
@@ -41,12 +42,16 @@ function fixture() {
   boundary.sign.mockImplementation(async (copy: Core.Transaction) => copy);
   const draft = {
     tx,
+    originalBody: tx.body().toCbor(),
+    originalAuxiliary: undefined,
+    requiredFundingKeys: [],
+    inputSnapshot: [],
     paymentAddress: address.toBech32(),
     validUntil: 200,
     blaze: {
       wallet: { getChangeAddress: async () => address },
       signTransaction: boundary.sign,
-      provider: { postTransactionToChain: boundary.post },
+      provider: { postTransactionToChain: boundary.post, resolveUnspentOutputs: async () => [] },
     },
   } as unknown as KernelDraft;
   return { draft, api: {} as Cip30WalletApi };
@@ -96,3 +101,29 @@ it.each([-1, NaN, Infinity, 1.5])(
     expect(boundary.post).not.toHaveBeenCalled();
   },
 );
+
+it("rejects wallet auxiliary data changes even when the transaction body is unchanged", async () => {
+  const { draft, api } = fixture();
+  boundary.sign.mockImplementation(async (copy: Core.Transaction) => {
+    const auxiliary = Core.AuxiliaryData.fromCbor(Core.HexBlob("a1016161"));
+    copy.setAuxiliaryData(auxiliary);
+    return copy;
+  });
+  await expect(submitKernelTransaction(api, draft, () => {})).rejects.toThrow("changed the reviewed transaction");
+  expect(boundary.post).not.toHaveBeenCalled();
+});
+it("requires cryptographically valid witnesses for every funding key", async () => {
+  const { draft, api } = fixture();
+  draft.requiredFundingKeys = ["11".repeat(28)];
+  await expect(submitKernelTransaction(api, draft, () => {})).rejects.toThrow("sign every funding input");
+  expect(boundary.post).not.toHaveBeenCalled();
+});
+it("rejects a reference consumed while wallet approval is open", async () => {
+  const { draft, api } = fixture();
+  const utxo = new Core.TransactionUnspentOutput(new Core.TransactionInput(Core.TransactionId("22".repeat(32)), 0n), draft.tx.body().outputs()[0]);
+  draft.inputSnapshot = [utxo.toCbor()];
+  vi.spyOn(draft.blaze.provider, "resolveUnspentOutputs").mockResolvedValueOnce([utxo]).mockResolvedValueOnce([]);
+  await expect(submitKernelTransaction(api, draft, () => {})).rejects.toThrow("inputs changed or were spent");
+  expect(boundary.sign).toHaveBeenCalledTimes(1);
+  expect(boundary.post).not.toHaveBeenCalled();
+});

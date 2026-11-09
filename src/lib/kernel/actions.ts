@@ -1,5 +1,11 @@
 import { Core } from "@blaze-cardano/sdk";
-import { KERNEL_LANES, KERNEL_OBSERVERS, type KernelLane } from "./protocol";
+import {
+  KERNEL_LANES,
+  KERNEL_OBSERVERS,
+  KERNEL_NETWORK_ID,
+  kernelDeployment,
+  type KernelLane,
+} from "./protocol";
 import { decodeKernelDatum } from "./datum";
 
 export type KernelAsset = { policyId: string; name: string };
@@ -328,7 +334,7 @@ export function createKernelPlan(
     add(action.nft, 1n);
     description = "List an NFT for an ADA spot sale";
   }
-  const protocol = KERNEL_LANES[lane],
+  const protocol = kernelDeployment(lane),
     mint = new Map<Core.AssetName, bigint>();
   for (const name of mintNames)
     mint.set(Core.AssetName(name), (mint.get(Core.AssetName(name)) ?? 0n) + 1n);
@@ -338,7 +344,7 @@ export function createKernelPlan(
   return {
     lane,
     address: Core.addressFromCredentials(
-      0,
+      KERNEL_NETWORK_ID,
       Core.Credential.fromCore({
         type: Core.CredentialType.ScriptHash,
         hash: Core.Hash28ByteBase16(protocol.validatorHash),

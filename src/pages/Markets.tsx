@@ -18,7 +18,11 @@ export default function Markets() {
   )
     return <NotFound />;
   if (DINGO_NETWORK.id === "mainnet")
-    return tab === "liquidity" ? <MainnetLiquidity /> : <MainnetApps />;
+    return tab === "liquidity" ? (
+      <MainnetLiquidity />
+    ) : tab === "orders" ? (
+      <KernelMarket family="orders" />
+    ) : <MainnetApps />;
   if (DINGO_NETWORK.id !== "preprod")
     return (
       <section className="market-hero">

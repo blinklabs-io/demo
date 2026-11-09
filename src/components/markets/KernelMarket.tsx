@@ -1,3 +1,4 @@
+import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { readDingoChainTime } from "../../lib/dingo/chainTime";
 import { loanCollateralChoices } from "../../lib/kernel/lifecycle";
 import { assetUnit, type KernelAsset } from "../../lib/kernel/actions";
@@ -347,7 +348,7 @@ function SelectedAction({
         side,
         extraAda: quote.extraAda,
       };
-      description = `Pay ${marketAmount(quote.paid, quote.ask.policyId + quote.ask.name || "lovelace")}${quote.ask.policyId && quote.extraAda > 0n ? ` + ${marketAmount(quote.extraAda, "lovelace")} added to the continuing order` : ""} · receive ${marketAmount(quote.take, quote.offer.policyId + quote.offer.name || "lovelace")}`;
+      description = `Pay ${marketAmount(quote.paid, quote.ask.policyId + quote.ask.name || "lovelace")}${quote.ask.policyId ? " base units" : ""}${quote.ask.policyId && quote.extraAda > 0n ? ` + ${marketAmount(quote.extraAda, "lovelace")} added to the continuing order` : ""} · receive ${marketAmount(quote.take, quote.offer.policyId + quote.offer.name || "lovelace")}${quote.offer.policyId ? " base units" : ""}`;
     } else if (record.kind === "ProposalDatum") {
       if (expired) throw new Error("These option terms have expired.");
       action = {
@@ -797,7 +798,7 @@ export function KernelMarket({ family }: { family: Family }) {
       <section className="market-hero">
         <div>
           <span className="eyebrow">
-            DeFi Kernel · Preprod · powered by Dingo
+            DeFi Kernel · {DINGO_NETWORK.label} · powered by Dingo
           </span>
           <h1>
             {titles[family][0]}
@@ -820,7 +821,7 @@ export function KernelMarket({ family }: { family: Family }) {
         {marketDiagram(family, record)}
       </section>
       <div className="market-mode" aria-label="Kernel market view">
-        {lanes[family].map((item) => (
+        {lanes[family].filter((item) => DINGO_NETWORK.id !== "mainnet" || item.lane === "one-way").map((item) => (
           <button
             key={item.lane}
             aria-pressed={item.lane === lane}

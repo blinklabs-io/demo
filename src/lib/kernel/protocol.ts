@@ -122,8 +122,33 @@ export const KERNEL_LANES = {
 } as const;
 export type KernelLane = keyof typeof KERNEL_LANES;
 export function assertKernelNetwork() {
-  if (DINGO_NETWORK.id !== "preprod")
-    throw new Error("Kernel contracts require Preprod.");
+  if (DINGO_NETWORK.id !== "preprod" && DINGO_NETWORK.id !== "mainnet")
+    throw new Error("Kernel contracts require Mainnet or Preprod.");
+}
+
+export const KERNEL_NETWORK_ID = DINGO_NETWORK.id === "mainnet" ? 1 : 0;
+export function assertKernelLane(lane: KernelLane) {
+  if (DINGO_NETWORK.id === "mainnet" && lane !== "one-way")
+    throw new Error("Only CardanoSwaps one-way orders are enabled on Mainnet.");
+}
+export function kernelDeployment(lane: KernelLane) {
+  assertKernelLane(lane);
+  if (DINGO_NETWORK.id !== "mainnet") return KERNEL_LANES[lane];
+  return {
+    ...KERNEL_LANES[lane],
+    references: [
+      {
+        hash: "1d2f40cede4c9aace33f4fcdf7c69005befc5896f14dffc51e6f16c466ee11b0",
+        index: 1,
+        hashScript: KERNEL_LANES["one-way"].validatorHash,
+      },
+      {
+        hash: "1d2f40cede4c9aace33f4fcdf7c69005befc5896f14dffc51e6f16c466ee11b0",
+        index: 0,
+        hashScript: KERNEL_LANES["one-way"].beaconPolicy,
+      },
+    ],
+  };
 }
 
 export const KERNEL_SOURCES = {
