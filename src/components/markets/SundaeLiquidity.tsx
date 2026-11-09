@@ -242,7 +242,12 @@ export function SundaeLiquidity({
             </p>
             <MarketTransaction
               draftKey={JSON.stringify(
-                [ident, mode, amountA, tokenAmount, lp, quote],
+                [
+                  ident,
+                  mode,
+                  mode === "deposit" ? [amountA, tokenAmount] : lp,
+                  quote,
+                ],
                 (_, value) =>
                   typeof value === "bigint" ? value.toString() : value,
               )}

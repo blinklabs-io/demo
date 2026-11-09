@@ -166,7 +166,11 @@ function fixture() {
   vi.spyOn(TxBuilderV3.prototype, "getMaxScooperFeeAmount").mockResolvedValue(
     1000000n,
   );
-  const api = { getNetworkId: async () => network } as Cip30WalletApi;
+  const api = {
+    getNetworkId: async () => network,
+    getUsedAddresses: vi.fn(async (): Promise<string[]> => []),
+    getUnusedAddresses: vi.fn(async (): Promise<string[]> => []),
+  } as unknown as Cip30WalletApi;
   const current = () => {
     if (!state.active) throw new Error("Session changed");
   };
@@ -438,6 +442,76 @@ it("builds an owned cancellation through the SDK and returns funds without anoth
   );
   expect(draft.deposit).toBe(0n);
   expect(draft.scooperFee).toBe(0n);
+  await draft.signAndSubmit();
+  expect(f.post).toHaveBeenCalledTimes(1);
+});
+
+it("rejects an incomplete funding lookup before a partial signature can be submitted", async () => {
+  const f = fixture();
+  const second = new Core.TransactionUnspentOutput(
+    new Core.TransactionInput(Core.TransactionId("55".repeat(32)), 0n),
+    new Core.TransactionOutput(
+      Core.Address.fromBytes(Core.HexBlob("61" + "77".repeat(28))),
+      new Core.Value(10000000n),
+    ),
+  );
+  f.extra.push(second);
+  f.transactionBuilder.addInput(second);
+  const original = f.resolve.getMockImplementation()!;
+  let lookups = 0;
+  f.resolve.mockImplementation(async (inputs) => {
+    const outputs = await original(inputs);
+    return ++lookups === 2 ? outputs.slice(0, 1) : outputs;
+  });
+  const draft = await prepareLiquidity(
+    f.api,
+    f.pool,
+    { type: "withdraw", lp: 50000n },
+    f.current,
+  );
+  await expect(draft.signAndSubmit()).rejects.toThrow(
+    "Transaction funding is not available on Mainnet.",
+  );
+  expect(f.sign).not.toHaveBeenCalled();
+  expect(f.post).not.toHaveBeenCalled();
+});
+it("cancels an order owned by an earlier controlled payment address", async () => {
+  const f = fixture();
+  const order = await prepareLiquidity(
+    f.api,
+    f.pool,
+    { type: "withdraw", lp: 50000n },
+    f.current,
+  );
+  const reference = new Core.TransactionInput(order.tx.getId(), 0n);
+  f.extra.push(new Core.TransactionUnspentOutput(reference, f.outputs[0]));
+  const scriptReference = SUNDAE_V3_PROTOCOL.references.find(
+    (entry) => entry.key === "order.spend",
+  )!;
+  f.extra.push(
+    new Core.TransactionUnspentOutput(
+      new Core.TransactionInput(
+        Core.TransactionId(scriptReference.txIn.hash),
+        BigInt(scriptReference.txIn.index),
+      ),
+      f.outputs[0],
+    ),
+  );
+  const oldAddress = Core.addressFromCredential(
+    1,
+    Core.Credential.fromCore({
+      type: Core.CredentialType.KeyHash,
+      hash: f.key.toPublic().hash().hex(),
+    }),
+  );
+  vi.mocked(f.api.getUsedAddresses).mockResolvedValue([oldAddress.toBytes()]);
+  f.switchAccount();
+  f.outputs.length = 0;
+  const draft = await prepareLiquidityCancel(
+    f.api,
+    `${reference.transactionId()}#0`,
+    f.current,
+  );
   await draft.signAndSubmit();
   expect(f.post).toHaveBeenCalledTimes(1);
 });

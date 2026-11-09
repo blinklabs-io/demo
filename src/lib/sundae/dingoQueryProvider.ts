@@ -256,6 +256,10 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
     const assetA = metadataFor(assetAId, this.assetHints.get(assetAId));
     const assetB = metadataFor(assetBId, this.assetHints.get(assetBId));
 
+    if (datum.protocolFees < 0n || datum.protocolFees > poolUtxo.output().amount().coin())
+      throw new Error("Invalid SundaeSwap V3 protocol fee balance.");
+    const reserve = (asset: IPoolDataAsset) => this.amountInOutput(poolUtxo, asset, ident)
+      - (asset.assetId === "ada.lovelace" ? datum.protocolFees : 0n);
     return {
       ident,
       version: EContractVersion.V3,
@@ -269,8 +273,8 @@ export class DingoSundaeQueryProvider extends QueryProviderSundaeSwap {
       protocolFee: 0,
       linearAmplificationFactor: 0n,
       liquidity: {
-        aReserve: this.amountInOutput(poolUtxo, assetA, ident),
-        bReserve: this.amountInOutput(poolUtxo, assetB, ident),
+        aReserve: reserve(assetA),
+        bReserve: reserve(assetB),
         lpTotal: datum.circulatingLp,
       },
     };

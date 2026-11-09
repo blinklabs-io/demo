@@ -79,3 +79,29 @@ it.each(["network", "key", "script", "nft"])(
     ).rejects.toThrow("Not an authenticated SundaeSwap V3 pool output.");
   },
 );
+
+it("excludes accrued ADA protocol fees from quotes and leaves token reserves intact", async () => {
+  const output = Core.TransactionOutput.fromCbor(Core.HexBlob(fixture.cbor));
+  const datum = output.datum()!.asInlineData()!.asConstrPlutusData()!;
+  const items = datum.getData(),
+    next = new Core.PlutusList();
+  for (let index = 0; index < items.getLength(); index++)
+    next.add(
+      index === 7 ? Core.PlutusData.newInteger(5000000n) : items.get(index),
+    );
+  output.setDatum(
+    Core.Datum.newInlineData(
+      Core.PlutusData.newConstrPlutusData(
+        new Core.ConstrPlutusData(datum.getAlternative(), next),
+      ),
+    ),
+  );
+  const pool = await provider(output).findPoolDataByIdent({ ident });
+  expect(pool.liquidity.aReserve).toBe(output.amount().coin() - 5000000n);
+  expect(pool.liquidity.bReserve).toBe(
+    output
+      .amount()
+      .multiasset()!
+      .get(Core.AssetId(pool.assetB.assetId.replace(".", ""))),
+  );
+});

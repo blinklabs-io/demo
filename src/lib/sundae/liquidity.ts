@@ -146,12 +146,11 @@ async function finish(
   composed.tx.setValidUntil(Core.Slot(validUntil));
   const built = await composed.build();
   assertCurrent();
-  await assertTransactionNetwork(built.builtTx, assertCurrent, blaze.provider);
-  const funding = await blaze.provider.resolveUnspentOutputs([
-    ...built.builtTx.body().inputs().values(),
-    ...(built.builtTx.body().collateral()?.values() ?? []),
-  ]);
-  assertCurrent();
+  const funding = await assertTransactionNetwork(
+    built.builtTx,
+    assertCurrent,
+    blaze.provider,
+  );
   const keys = new Set<string>(
     built.builtTx.body().requiredSigners()?.toCore() ?? [],
   );
@@ -270,9 +269,20 @@ export async function prepareLiquidityCancel(
     throw new Error("This order requires a different owner authorization.");
   const signer = DatumBuilderV3.getSignerKeyFromDatum(datum.toCbor());
   const ownAddress = Core.Address.fromBech32(owner);
+  const [used, unused] = await Promise.all([
+    api.getUsedAddresses(),
+    api.getUnusedAddresses(),
+  ]);
+  assertCurrent();
+  const controlled = [...new Set([...used, ...unused])].map((hex) =>
+    Core.Address.fromBytes(Core.HexBlob(hex)),
+  );
   const credentials = [
     ownAddress.getProps().paymentPart,
     ownAddress.asBase()?.getStakeCredential(),
+    ...controlled
+      .filter((address) => address.getNetworkId() === CARDANO_NETWORK_ID)
+      .map((address) => address.getProps().paymentPart),
   ];
   if (
     !credentials.some(

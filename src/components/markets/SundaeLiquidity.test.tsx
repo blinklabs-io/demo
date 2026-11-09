@@ -42,11 +42,13 @@ vi.mock("./MarketTransaction", () => ({
   MarketConfirmation: () => null,
   MarketTransaction: (props: {
     ready: boolean;
+    draftKey: string;
     title: string;
     prepare: (api: Cip30WalletApi, current: () => void) => Promise<unknown>;
   }) => (
     <button
       disabled={!props.ready}
+      data-draft-key={props.draftKey}
       onClick={() => void props.prepare({} as Cip30WalletApi, () => {})}
     >
       {props.title}
@@ -192,4 +194,25 @@ it("uses the cancellation parser for padded and noncanonical references", async 
   }
   await fill("Order reference", `${hash}#65535`);
   expect(button("Review order cancellation").disabled).toBe(false);
+});
+
+it("keeps a withdrawal draft when only the unused deposit ratio changes", async () => {
+  await render();
+  await act(async () => button("Withdraw").click());
+  await fill("LP amount", "10");
+  const before = button("Review liquidity withdrawal").dataset.draftKey;
+  await act(async () => {
+    client.setQueryData(
+      ["dingo", "markets", "sundae", "liquidity", pool.ident],
+      {
+        ...pool,
+        liquidity: {
+          ...pool.liquidity,
+          bReserve: pool.liquidity.bReserve + 1n,
+        },
+      },
+    );
+  });
+  await flush();
+  expect(button("Review liquidity withdrawal").dataset.draftKey).toBe(before);
 });
