@@ -1,0 +1,35 @@
+{
+  "items": [
+    {
+      "nativeBytes": "owBYORFGTu7onwWv94fUAEWvKkCoP9lsUTGX0y+8VP8CXjt8sX9JK5iqMtu8uX0SPFk0jC+29J9skL2dIwEaAL68IAKCAdgYWP/YeZ9BAFgcrz8L74Xub8CNueHugebouqQ6Qj4P6QNX3rGE69h5n0BA/xoAmJaAGgAHoSAaAoyGsth5n1gc8TrE1ms+4ZpqoPKiIphze9kHzJUSFmL8lxtSdUZTVFJJS0X/2HmfGgKMhrIaAJiWgP8A2Hmf2HmfWBwFve6WlJW0phBB3po01HO5BqHioEzZQGtByoFE/9h5n9h5n9h5n1gcXjt8sX9JK5iqMtu8uX0SPFk0jC+29J9skL2dI/////9YHAW97paUlbSmEEHemjTUc7kGoeKgTNlAa0HKgUSfWBxcsslo5dHHGXps52FZZzEKN1VF2bxlBjqWQzWy//8=",
+      "txoRef": {
+        "hash": "3foxEha2r2aFklrHKwZgklmTkiu68kQJlXZ2ggeEM3M="
+      },
+      "cardano": {
+        "address": "EUZO7uifBa/3h9QARa8qQKg/2WxRMZfTL7xU/wJeO3yxf0krmKoy27y5fRI8WTSML7b0n2yQvZ0j",
+        "coin": {
+          "int": "12500000"
+        },
+        "datum": {
+          "hash": "GscY7SIMqklCKMx5XpVmSs1R/9BWMZ5D/EMxHZd0S2A="
+        }
+      }
+    },
+    {
+      "nativeBytes": "owBYORFGTu7onwWv94fUAEWvKkCoP9lsUTGX0y+8VP8Ci8XCskV3mUYsruP+MLNc0LtmFm71CEUwlP5TLgEaAE56rAKCAdgYWP7YeZ9BAFgcbza6fAhjKTET/NQrd0oXKIM8NBusTTWcLovZXth5n0BA/xoAKFUMGgAHoSAaBh1zW9h5n1gcoAKPNQqqvgVF/ctWsDm/sI5LtNjE18PH1IHCNUVIT1NLWf/YeZ8aBh1zWxoAKFUM/wDYeZ/YeZ9YHJ6mJgI37fin3R8aNZVe4pIxFx6XRcJGBzFo8t3/2Hmf2Hmf2HmfWByLxcKyRXeZRiyu4/4ws1zQu2YWbvUIRTCU/lMu/////1gcnqYmAjft+KfdHxo1lV7ikjEXHpdFwkYHMWjy3Z9YHFyyyWjl0ccZemznYVlnMQo3VUXZvGUGOpZDNbL//w==",
+      "txoRef": {
+        "hash": "cS8lU9G8KT1sk1aqz22S37ORK3yXYsRkKIYD8f+mfOo="
+      },
+      "cardano": {
+        "address": "EUZO7uifBa/3h9QARa8qQKg/2WxRMZfTL7xU/wKLxcKyRXeZRiyu4/4ws1zQu2YWbvUIRTCU/lMu",
+        "coin": {
+          "int": "5143212"
+        },
+        "datum": {
+          "hash": "PhOwvKrEZMYghytZY3qOt1q/AZvSVjkd5GW6assiLh0="
+        }
+      }
+    }
+  ],
+  "nextToken": "133737993:1:0:712f2553d1bc293d6c9356aacf6d92dfb3912b7c9762c464288603f1ffa67cea"
+}
