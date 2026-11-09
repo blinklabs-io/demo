@@ -33,12 +33,14 @@ async function slot(assertCurrent: () => void) {
 }
 export async function prepareRapidSwap(
   api: Cip30WalletApi,
-  args: { poolName: string; aToB: boolean; amount: bigint; minimum: bigint },
+  args: { poolName: string; poolOutpoint: string; aToB: boolean; amount: bigint; minimum: bigint },
   assertCurrent: () => void,
 ) {
   await assertRapidMainnet();
   const owner = await identity(api, assertCurrent),
-    pool = await readRapidPool(args.poolName);
+    pool = await readRapidPool(args.poolOutpoint);
+  if (pool.name !== args.poolName)
+    throw new Error("The WingRiders pool identity differs from the reviewed pool.");
   assertCurrent();
   const { output, quote, redeemer } = rapidSwapOutput(
     pool,

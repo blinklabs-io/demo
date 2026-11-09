@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router";
 import { TransactionRehearsalCbor } from "../../components/wallet/TransactionRehearsal";
 import { WingRidersMarket } from "../../components/markets/WingRidersMarket";
 import { MinswapMarket } from "../../components/markets/MinswapMarket";
@@ -94,11 +95,19 @@ function createQueryProvider(): DingoSundaeQueryProvider {
 }
 
 export default function WalletSwap() {
-  const [version, setVersion] = useState<"Minswap" | "WingRiders" | "V3" | "V4">(() => {
-    const venue = new URLSearchParams(window.location.search).get("venue");
-    if (DINGO_NETWORK.id !== "mainnet" || venue === "sundae") return "V4";
-    return venue === "wingriders" ? "WingRiders" : "Minswap";
-  });
+  const [params, setParams] = useSearchParams();
+  type Venue = "Minswap" | "WingRiders" | "V3" | "V4";
+  const venue = params.get("venue");
+  const version: Venue = venue === "wingriders" && DINGO_NETWORK.id === "mainnet"
+    ? "WingRiders" : venue === "sundae-v3" ? "V3"
+    : venue === "sundae" || DINGO_NETWORK.id !== "mainnet" ? "V4" : "Minswap";
+  function setVersion(value: Venue) {
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set("venue", value === "WingRiders" ? "wingriders" : value === "Minswap" ? "minswap" : value === "V3" ? "sundae-v3" : "sundae");
+      return next;
+    });
+  }
   const [busy, setBusy] = useState(false);
   if (DINGO_NETWORK.id !== "preview" && DINGO_NETWORK.id !== "preprod" && DINGO_NETWORK.id !== "mainnet")
     return (
@@ -140,7 +149,7 @@ export default function WalletSwap() {
         </div>
       </nav>
       {version === "WingRiders" ? (
-        <WingRidersMarket />
+        <WingRidersMarket onBusy={setBusy} />
       ) : version === "Minswap" ? (
         <MinswapMarket initialAction="swap" />
       ) : version === "V4" ? (

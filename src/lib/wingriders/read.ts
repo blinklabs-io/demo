@@ -83,48 +83,19 @@ export async function readRapidPools(cursor = "", signal?: AbortSignal) {
     throw new Error("Dingo returned competing WingRiders Rapid pool states.");
   return { pools, errors, nextToken: response.nextToken };
 }
-export async function readRapidPool(name: string, signal?: AbortSignal) {
-  if (!/^[0-9a-f]{64}$/.test(name))
-    throw new Error("Enter a 32-byte WingRiders Rapid pool identifier.");
+export function rapidOutpoint(pool: ReturnType<typeof decodeRapidPool>) {
+  return `${pool.utxo.input().transactionId()}#${pool.utxo.input().index()}`;
+}
+export async function readRapidPool(outpoint: string, signal?: AbortSignal) {
+  const match = /^([a-f0-9]{64})#(0|[1-9]\d{0,9})$/.exec(outpoint);
+  if (!match || Number(match[2]) > 0xffffffff)
+    throw new Error("Enter a pool transaction hash followed by #output index.");
   await assertRapidMainnet();
-  const cursors = new Set<string>();
-  const seen = new Set<string>();
-  let cursor = "",
-    found: ReturnType<typeof decodeRapidPool> | undefined;
-  for (let index = 0; index < 5; index++) {
-    const response = await markerPage(cursor, signal);
-    for (const item of response.items) {
-      let pool: ReturnType<typeof decodeRapidPool>;
-      try {
-        pool = decodeRapidPool(decodeOutput(item));
-      } catch {
-        continue;
-      }
-      const reference = pool.utxo.input().toCbor();
-      if (seen.has(reference))
-        throw new Error("Dingo repeated a WingRiders Rapid pool output.");
-      seen.add(reference);
-      if (pool.name === name) {
-        if (found)
-          throw new Error(
-            "Dingo returned competing WingRiders Rapid pool states.",
-          );
-        found = pool;
-      }
-    }
-    if (!response.nextToken) {
-      if (!found)
-        throw new Error(
-          "The WingRiders Rapid pool is missing. Refresh its state.",
-        );
-      return found;
-    }
-    if (cursors.has(response.nextToken))
-      throw new Error("Dingo repeated a WingRiders Rapid page cursor.");
-    cursors.add(response.nextToken);
-    cursor = response.nextToken;
-  }
-  throw new Error(
-    "WingRiders Rapid lookup exceeded five bounded pool pages. Refresh the catalog.",
-  );
+  signal?.throwIfAborted();
+  const input = new Core.TransactionInput(Core.TransactionId(match[1]), BigInt(match[2]));
+  const outputs = await getDingoProvider().resolveUnspentOutputs([input]);
+  signal?.throwIfAborted();
+  if (outputs.length !== 1 || outputs[0].input().toCbor() !== input.toCbor())
+    throw new Error("The WingRiders Rapid pool output is spent or unavailable. Refresh its state.");
+  return decodeRapidPool(outputs[0]);
 }

@@ -18,6 +18,7 @@ vi.mock("../../stores/walletStore", () => ({
 vi.mock("../../lib/wingriders/read", () => ({
   readRapidPool: vi.fn(),
   readRapidPools: vi.fn(),
+  rapidOutpoint: (pool: RapidPool) => `${pool.utxo.input().transactionId()}#${pool.utxo.input().index()}`,
 }));
 vi.mock("../../lib/wingriders/transactions", () => ({
   prepareRapidSwap: vi.fn(async () => ({})),
@@ -120,6 +121,7 @@ it("forwards exact input and reviewed output in both directions", async () => {
     expect.anything(),
     {
       poolName: pool.name,
+      poolOutpoint: "33".repeat(32) + "#0",
       aToB: true,
       amount: 100000n,
       minimum: quoteRapidSwap(pool, true, 100000n).received,
@@ -132,6 +134,7 @@ it("forwards exact input and reviewed output in both directions", async () => {
     expect.anything(),
     {
       poolName: pool.name,
+      poolOutpoint: "33".repeat(32) + "#0",
       aToB: false,
       amount: 1000000n,
       minimum: quoteRapidSwap(pool, false, 1000000n).received,
@@ -155,7 +158,7 @@ it("shows failed explicit pool lookups and prevents approval", async () => {
     new Error("Pool state is ambiguous"),
   );
   await act(async () =>
-    change(host.querySelector("input[pattern]")!, "bb".repeat(32)),
+    change(host.querySelector("input[pattern]")!, "bb".repeat(32) + "#0"),
   );
   await act(async () =>
     host
@@ -201,7 +204,7 @@ it("changes the draft key when the pool output changes without changing its quot
 });
 
 it("uses integer token defaults on initial selection and implicit pool changes", async () => {
-  const tokenPool = { ...pool, name: "bb".repeat(32), assetA: pool.assetB, assetB: "lovelace", reserveA: pool.reserveB, reserveB: pool.reserveA };
+  const tokenPool = { ...pool, utxo: { input: () => ({ transactionId: () => "66".repeat(32), index: () => 0n }) }, name: "bb".repeat(32), assetA: pool.assetB, assetB: "lovelace", reserveA: pool.reserveB, reserveB: pool.reserveA } as unknown as RapidPool;
   vi.mocked(readRapidPools).mockResolvedValue({ pools: [tokenPool], errors: [], nextToken: "" });
   await render();
   expect(host.querySelector<HTMLInputElement>("input[inputmode]")!.value).toBe("1000000");
@@ -221,4 +224,26 @@ it("blocks reviewing retained catalog data after a refresh fails", async () => {
   expect(review.disabled).toBe(true);
   await act(async () => review.click());
   expect(prepareRapidSwap).not.toHaveBeenCalled();
+});
+
+it("keeps an explicit verified pool usable when catalog discovery fails", async () => {
+  vi.mocked(readRapidPools).mockRejectedValue(new Error("Catalog offline"));
+  await render();
+  await act(async () => change(host.querySelector("input[pattern]")!, "33".repeat(32) + "#0"));
+  await act(async () => host.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  await flush();
+  expect(button("Review WingRiders Rapid swap").disabled).toBe(false);
+  await act(async () => button("Review WingRiders Rapid swap").click());
+  expect(prepareRapidSwap).toHaveBeenCalledTimes(1);
+});
+
+it("resets direction and denomination when the default selected pool changes", async () => {
+  await render();
+  await act(async () => change(host.querySelector("select")!, "b-to-a"));
+  await act(async () => change(host.querySelector("input[inputmode]")!, "123"));
+  const next = { ...pool, name: "bb".repeat(32), utxo: { input: () => ({ transactionId: () => "66".repeat(32), index: () => 0n }) } };
+  await act(async () => client.setQueryData(["dingo", "markets", "wingriders", "pools", ""], { pools: [next], errors: [], nextToken: "" }));
+  await flush();
+  expect(host.querySelector<HTMLSelectElement>("select")!.value).toBe("a-to-b");
+  expect(host.querySelector<HTMLInputElement>("input[inputmode]")!.value).toBe("0.1");
 });

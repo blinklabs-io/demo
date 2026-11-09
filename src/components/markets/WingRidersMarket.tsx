@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "../NetworkLink";
-import { readRapidPool, readRapidPools } from "../../lib/wingriders/read";
+import { readRapidPool, readRapidPools, rapidOutpoint } from "../../lib/wingriders/read";
 import { quoteRapidSwap } from "../../lib/wingriders/data";
 import {
   prepareRapidSwap,
@@ -23,14 +23,14 @@ function rapidAmount(quantity: bigint, asset: string) {
   );
 }
 
-export function WingRidersMarket() {
+export function WingRidersMarket({ onBusy }: { onBusy?: (busy: boolean) => void }) {
   const [hash, submitted] = useState("");
   const tracking = { hash, submitted };
   const [cursors, setCursors] = useState([""]),
     [page, setPage] = useState(0),
     [chosen, setChosen] = useState(""),
     [lookup, setLookup] = useState("");
-  const [aToB, setAToB] = useState(true),
+  const [directionState, setAToB] = useState(true),
     [amountState, setAmountState] = useState<{ pool: string | undefined; value: string }>({ pool: undefined, value: "0.1" });
   const wallet = useWalletStore();
   useEffect(
@@ -55,8 +55,8 @@ export function WingRidersMarket() {
     retry: false,
   });
   const pools = catalog.data?.pools ?? [],
-    name = chosen || pools[0]?.name;
-  const listed = pools.find((pool) => pool.name === name);
+    name = chosen || (pools[0] ? rapidOutpoint(pools[0]) : undefined);
+  const listed = pools.find((pool) => rapidOutpoint(pool) === name);
   const selection = useQuery({
     queryKey: ["dingo", "markets", "wingriders", "selected", name],
     enabled: !!name && !listed,
@@ -66,12 +66,14 @@ export function WingRidersMarket() {
     retry: false,
   });
   const pool = listed ?? selection.data;
+  const aToB = amountState.pool === name ? directionState : true;
   const offered = pool ? (aToB ? pool.assetA : pool.assetB) : "lovelace",
     received = pool ? (aToB ? pool.assetB : pool.assetA) : "lovelace";
   const defaultAmount = offered === "lovelace" ? "0.1" : "1000000";
-  const amount = amountState.pool === pool?.name ? amountState.value : defaultAmount;
-  if (pool && amountState.pool !== pool.name)
-    setAmountState({ pool: pool.name, value: defaultAmount });
+  const amount = amountState.pool === name ? amountState.value : defaultAmount;
+  if (pool && amountState.pool !== name)
+    setAmountState({ pool: name, value: defaultAmount });
+  if (pool && amountState.pool !== name && !directionState) setAToB(true);
   let input = 0n,
     quote: ReturnType<typeof quoteRapidSwap> | undefined,
     error = "";
@@ -140,12 +142,12 @@ export function WingRidersMarket() {
             {pools.map((candidate) => (
               <button
                 key={candidate.name}
-                className={`market-card${candidate.name === name ? " selected" : ""}`}
-                aria-pressed={candidate.name === name}
+                className={`market-card${rapidOutpoint(candidate) === name ? " selected" : ""}`}
+                aria-pressed={rapidOutpoint(candidate) === name}
                 onClick={() => {
-                  setChosen(candidate.name);
+                  setChosen(rapidOutpoint(candidate));
                   setAToB(true);
-                  setAmountState({ pool: candidate.name, value: candidate.assetA === "lovelace" ? "0.1" : "1000000" });
+                  setAmountState({ pool: rapidOutpoint(candidate), value: candidate.assetA === "lovelace" ? "0.1" : "1000000" });
                 }}
               >
                 <strong>
@@ -205,10 +207,10 @@ export function WingRidersMarket() {
             }}
           >
             <label>
-              Pool identifier
+              Pool output reference
               <input
                 required
-                pattern="[a-fA-F0-9]{64}"
+                pattern="[a-fA-F0-9]{64}#[0-9]+"
                 value={lookup}
                 onChange={(event) => setLookup(event.target.value)}
               />
@@ -242,7 +244,7 @@ export function WingRidersMarket() {
                   onChange={(event) => {
                     const forward = event.target.value === "a-to-b";
                     setAToB(forward);
-                    setAmountState({ pool: pool.name, value: (forward ? pool.assetA : pool.assetB) === "lovelace" ? "0.1" : "1000000" });
+                    setAmountState({ pool: name, value: (forward ? pool.assetA : pool.assetB) === "lovelace" ? "0.1" : "1000000" });
                   }}
                 >
                   <option value="a-to-b">
@@ -262,7 +264,7 @@ export function WingRidersMarket() {
                 <input
                   inputMode={offered === "lovelace" ? "decimal" : "numeric"}
                   value={amount}
-                  onChange={(event) => setAmountState({ pool: pool.name, value: event.target.value })}
+                  onChange={(event) => setAmountState({ pool: name, value: event.target.value })}
                 />
               </label>
               {wallet.status === "connected" && held != null && (
@@ -294,8 +296,9 @@ export function WingRidersMarket() {
                   input.toString(),
                   quote?.received.toString(),
                 ])}
-                ready={!!quote && !selection.error && !catalog.error}
+                ready={!!quote && !(listed ? catalog.error : selection.error)}
                 tracking={tracking}
+                  onBusy={onBusy}
                 title="Review WingRiders Rapid swap"
                 prepare={(api, assertCurrent) => {
                   if (!pool || !quote)
@@ -306,6 +309,7 @@ export function WingRidersMarket() {
                     api,
                     {
                       poolName: pool.name,
+                      poolOutpoint: rapidOutpoint(pool),
                       aToB,
                       amount: input,
                       minimum: quote.received,

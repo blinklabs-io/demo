@@ -16,9 +16,12 @@ import {
 } from "../../lib/minswap/transactions";
 import { readTransactionConfirmation } from "../../lib/dingo/transactionConfirmation";
 import { useWalletStore } from "../../stores/walletStore";
+import { MarketTransaction } from "./MarketTransaction";
 import { MinswapMarket } from "./MinswapMarket";
 
 const boundary = vi.hoisted(() => ({
+  busy: vi.fn(),
+  finishBusy: null as null | (() => void),
   posts: 0,
   buildPending: false,
   signPending: false,
@@ -99,6 +102,8 @@ beforeEach(async () => {
   vi.spyOn(Core.Address.prototype, "toBech32").mockReturnValue(
     "addr_test1_fixture" as Core.PaymentAddress,
   );
+  boundary.busy.mockClear();
+  boundary.finishBusy = null;
   boundary.posts = 0;
   boundary.buildPending = false;
   boundary.signPending = false;
@@ -154,6 +159,7 @@ beforeEach(async () => {
     [
       { path: "/market", element: <MinswapMarket initialAction="swap" /> },
       { path: "/other", element: <p>Other page</p> },
+      { path: "/busy", element: <MarketTransaction draftKey="busy" ready title="Busy fixture" tracking={{ hash: "", submitted: () => {} }} onBusy={boundary.busy} prepare={async () => draft()} submit={async () => new Promise<string>((resolve) => { boundary.finishBusy = () => resolve(submittedHash); })} /> },
     ],
     { initialEntries: ["/market"] },
   );
@@ -347,4 +353,16 @@ it("rejects approval once the displayed account changes before React commits its
   await settle();
   expect(boundary.posts).toBe(0);
   expect(transactionLink()).toBeUndefined();
+});
+
+it("reports busy state throughout wallet submission and clears it after settlement", async () => {
+  await act(async () => router.navigate("/busy"));
+  await click("Review transaction");
+  expect(boundary.busy.mock.calls.map(([busy]) => busy)).toEqual([true, false]);
+  await click("Sign & submit");
+  expect(boundary.busy).toHaveBeenLastCalledWith(true);
+  expect(boundary.finishBusy).toBeTypeOf("function");
+  await act(async () => boundary.finishBusy!());
+  await settle();
+  expect(boundary.busy).toHaveBeenLastCalledWith(false);
 });

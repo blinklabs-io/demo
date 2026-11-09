@@ -376,8 +376,9 @@ Open `/wallet/swap?network=mainnet&venue=wingriders` for direct pool swaps.
 Dingo provides bounded pool pages, selected pool state, network identity,
 reference scripts, transaction evaluation, and submission. Pool authentication
 checks the script credential, validity marker, datum, and share inventory.
-Selected pool reads traverse at most five authenticated marker pages (up to
-100 outputs), so wallet-held LP tokens do not consume the lookup bound.
+Selected pool reads resolve exactly one transaction output reference and
+authenticate its pool script, marker, shares, and datum. Catalogue size and
+wallet-held LP tokens do not consume the selected-pool lookup bound.
 Quotes use integer arithmetic, exclude treasury balances and the pool ADA
 reserve deposit, and support both directions and all four fee-asset modes.
 Token amounts are shown in base units; ADA uses six decimal places.

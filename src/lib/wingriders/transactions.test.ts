@@ -184,7 +184,7 @@ it.each([0n, 1n, 2n, 3n])(
         quote = quoteRapidSwap(f.pool, aToB, amount);
       const draft = await prepareRapidSwap(
         f.api,
-        { poolName: f.pool.name, aToB, amount, minimum: quote.received },
+        { poolName: f.pool.name, poolOutpoint: point(f.pool.utxo.input()), aToB, amount, minimum: quote.received },
         () => {},
       );
       expect(f.ledger.evaluations).toBeGreaterThan(0);
@@ -212,7 +212,7 @@ it("rejects a quote below the reviewed output before building", async () => {
     prepareRapidSwap(
       f.api,
       {
-        poolName: f.pool.name,
+        poolName: f.pool.name, poolOutpoint: point(f.pool.utxo.input()),
         aToB: true,
         amount: 1000000n,
         minimum: quote.received + 1n,
@@ -226,7 +226,7 @@ it("rejects a consumed pool before wallet approval", async () => {
   const f = await setup();
   const draft = await prepareRapidSwap(
     f.api,
-    { poolName: f.pool.name, aToB: true, amount: 1000000n, minimum: 1n },
+    { poolName: f.pool.name, poolOutpoint: point(f.pool.utxo.input()), aToB: true, amount: 1000000n, minimum: 1n },
     () => {},
   );
   f.ledger.outputs.delete(point(f.pool.utxo.input()));
@@ -243,7 +243,7 @@ it("checks wallet network identity before building", async () => {
   await expect(
     prepareRapidSwap(
       f.api,
-      { poolName: f.pool.name, aToB: true, amount: 1000000n, minimum: 1n },
+      { poolName: f.pool.name, poolOutpoint: point(f.pool.utxo.input()), aToB: true, amount: 1000000n, minimum: 1n },
       () => {},
     ),
   ).rejects.toThrow("Wallet network changed.");
@@ -255,7 +255,7 @@ it.each(["body", "expiry", "signature"] as const)(
     const f = await setup(),
       draft = await prepareRapidSwap(
         f.api,
-        { poolName: f.pool.name, aToB: true, amount: 1000000n, minimum: 1n },
+        { poolName: f.pool.name, poolOutpoint: point(f.pool.utxo.input()), aToB: true, amount: 1000000n, minimum: 1n },
         () => {},
       );
     const sign = vi
@@ -286,7 +286,7 @@ it("verifies a real wallet signature and passes the signed transaction to the pr
   const f = await setup(),
     draft = await prepareRapidSwap(
       f.api,
-      { poolName: f.pool.name, aToB: true, amount: 1000000n, minimum: 1n },
+      { poolName: f.pool.name, poolOutpoint: point(f.pool.utxo.input()), aToB: true, amount: 1000000n, minimum: 1n },
       () => {},
     );
   const sign = vi

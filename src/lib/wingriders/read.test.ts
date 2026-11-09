@@ -6,6 +6,7 @@ import { decodeRapidPool, RAPID_POOL_HASH } from "./data";
 import { readRapidPool, readRapidPools } from "./read";
 const mocks = vi.hoisted(() => ({
   query: vi.fn(),
+  resolve: vi.fn(),
   network: vi.fn(),
   config: { id: "mainnet" },
 }));
@@ -15,6 +16,7 @@ vi.mock("../dingo/walletSession", () => ({
 }));
 vi.mock("../dingo/utxorpc/provider", () => ({
   getDingoProvider: () => ({
+    resolveUnspentOutputs: mocks.resolve,
     queryClient: { inner: { searchUtxos: mocks.query } },
   }),
 }));
@@ -33,6 +35,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.config.id = "mainnet";
   mocks.network.mockResolvedValue(undefined);
+  mocks.resolve.mockResolvedValue([rapidFixture()]);
   mocks.query.mockResolvedValue({ items: [rpc()], nextToken: "" });
 });
 it("uses bounded marker discovery with the canonical payment credential and opaque cursor", async () => {
@@ -74,69 +77,10 @@ it("keeps valid pools when a record cannot be decoded and rejects a self-repeati
     "invalid WingRiders Rapid page",
   );
 });
-it("finds selected pools through marker outputs rather than wallet LP outputs", async () => {
-  const pool = decodeRapidPool(rapidFixture());
-  await expect(readRapidPool(pool.name)).resolves.toMatchObject({
-    name: pool.name,
-  });
-  const request = mocks.query.mock.calls[0][0];
-  expect(request.maxItems).toBe(20);
-  expect(
-    Core.toHex(request.predicate.match.utxoPattern.value.asset.assetName),
-  ).toBe("50");
-  mocks.query.mockResolvedValue({ items: [rpc(), rpc()], nextToken: "" });
-  await expect(readRapidPool(pool.name)).rejects.toThrow(
-    "Dingo repeated a WingRiders Rapid pool output.",
-  );
-  mocks.query.mockResolvedValue({ items: [rpc()], nextToken: "" });
-  await expect(
-    readRapidPool(decodeRapidPool(rapidFixture(1)).name),
-  ).rejects.toThrow("pool is missing");
-});
-
-it("follows marker cursors and skips unrelated malformed outputs for a selected pool", async () => {
-  const pool = decodeRapidPool(rapidFixture());
-  mocks.query
-    .mockResolvedValueOnce({
-      items: [rpc(1), { nativeBytes: new Uint8Array() }],
-      nextToken: "next",
-    })
-    .mockResolvedValueOnce({ items: [rpc()], nextToken: "" });
-  await expect(readRapidPool(pool.name)).resolves.toMatchObject({
-    name: pool.name,
-  });
-  expect(mocks.query.mock.calls.map(([request]) => request.startToken)).toEqual(
-    ["", "next"],
-  );
-  expect(
-    mocks.query.mock.calls.every(
-      ([request]) =>
-        Core.toHex(
-          request.predicate.match.utxoPattern.value.asset.assetName,
-        ) === "50",
-    ),
-  ).toBe(true);
-});
-it("stops a selected-pool lookup after five bounded marker pages", async () => {
-  let count = 0;
-  mocks.query.mockImplementation(async () => {
-    const item = rpc(1);
-    item.txoRef.index = ++count;
-    return { items: [item], nextToken: `page-${count}` };
-  });
-  await expect(
-    readRapidPool(decodeRapidPool(rapidFixture()).name),
-  ).rejects.toThrow(
-    "WingRiders Rapid lookup exceeded five bounded pool pages.",
-  );
-  expect(mocks.query).toHaveBeenCalledTimes(5);
-});
-
-it.each(["catalog", "selected"])("rejects two outpoints claiming the same pool in %s reads", async (kind) => {
-  const first = rpc(), second = rpc();
-  second.txoRef.index += 1;
+it("rejects two outpoints claiming the same pool in a catalog page", async () => {
+  const first = rpc(), second = rpc(); second.txoRef.index += 1;
   mocks.query.mockResolvedValue({ items: [first, second], nextToken: "" });
-  await expect(kind === "catalog" ? readRapidPools() : readRapidPool(decodeRapidPool(rapidFixture()).name)).rejects.toThrow("competing WingRiders Rapid pool states");
+  await expect(readRapidPools()).rejects.toThrow("competing WingRiders Rapid pool states");
 });
 it("rejects a repeated output reference carrying conflicting pool data", async () => {
   const first = rpc(), second = rpc(1);
@@ -150,8 +94,26 @@ it("rejects an output index beyond the UTxO reference range", async () => {
   mocks.query.mockResolvedValue({ items: [item], nextToken: "" });
   await expect(readRapidPools()).resolves.toMatchObject({ pools: [], errors: ["Dingo returned an invalid WingRiders Rapid output."] });
 });
-it("rejects a cross-page cursor cycle", async () => {
-  mocks.query.mockResolvedValueOnce({ items: [], nextToken: "A" }).mockResolvedValueOnce({ items: [], nextToken: "B" }).mockResolvedValueOnce({ items: [], nextToken: "A" });
-  await expect(readRapidPool(decodeRapidPool(rapidFixture()).name)).rejects.toThrow("repeated a WingRiders Rapid page cursor");
-  expect(mocks.query).toHaveBeenCalledTimes(3);
+
+it("resolves exactly the selected output without traversing the pool catalog", async () => {
+  const pool = rapidFixture();
+  const outpoint = `${pool.input().transactionId()}#${pool.input().index()}`;
+  await expect(readRapidPool(outpoint)).resolves.toMatchObject({ name: decodeRapidPool(pool).name });
+  expect(mocks.resolve).toHaveBeenCalledTimes(1);
+  expect(mocks.resolve.mock.calls[0][0].map((input: Core.TransactionInput) => input.toCbor())).toEqual([pool.input().toCbor()]);
+  expect(mocks.query).not.toHaveBeenCalled();
+});
+it("rejects unavailable and mismatched selected outputs", async () => {
+  const pool = rapidFixture(); const outpoint = `${pool.input().transactionId()}#${pool.input().index()}`;
+  mocks.resolve.mockResolvedValue([]);
+  await expect(readRapidPool(outpoint)).rejects.toThrow("spent or unavailable");
+  mocks.resolve.mockResolvedValue([rapidFixture(1)]);
+  await expect(readRapidPool(outpoint)).rejects.toThrow("spent or unavailable");
+  mocks.resolve.mockResolvedValue([pool, pool]);
+  await expect(readRapidPool(outpoint)).rejects.toThrow("spent or unavailable");
+});
+it.each(["bad", "ab".repeat(32) + "#4294967296", "ab".repeat(32) + "#01"])("rejects invalid selected output %s before I/O", async (outpoint) => {
+  await expect(readRapidPool(outpoint)).rejects.toThrow("pool transaction hash");
+  expect(mocks.resolve).not.toHaveBeenCalled();
+  expect(mocks.network).not.toHaveBeenCalled();
 });
