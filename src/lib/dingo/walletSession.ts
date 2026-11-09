@@ -22,7 +22,7 @@ export async function assertTransactionNetwork(
   transaction: Core.Transaction,
   assertCurrent: () => void,
   provider: Pick<DingoProvider, "resolveUnspentOutputs"> = getDingoProvider(),
-): Promise<void> {
+): Promise<Core.TransactionUnspentOutput[]> {
   assertCurrent();
   if (transaction.toCbor().length > 131072)
     throw new Error("Transaction exceeds the 64 KiB verification limit.");
@@ -51,6 +51,7 @@ export async function assertTransactionNetwork(
     throw new Error(
       `Transaction funding is not available on ${DINGO_NETWORK.label}. Switch your wallet to ${DINGO_NETWORK.label} and build a new transaction.`,
     );
+  return resolved;
 }
 
 export async function assertDingoTransactionBackends() {

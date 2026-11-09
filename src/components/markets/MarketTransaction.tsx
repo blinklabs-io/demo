@@ -31,12 +31,14 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
   submit,
   title,
   children,
+  review,
   tracking,
 }: {
   draftKey: string;
   ready: boolean;
   title: string;
   children?: React.ReactNode;
+  review?: (draft: T) => React.ReactNode;
   tracking: MarketTracking;
   prepare: (api: Cip30WalletApi, assertCurrent: () => void) => Promise<T>;
   submit: (
@@ -188,6 +190,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
             <span>Network fee</span>
             <strong>{formatNativeCoin(draft.tx.body().fee())}</strong>
           </div>
+          {review?.(draft)}
           <TransactionOutputs tx={draft.tx} />
           <p>
             Review the amounts above. Your wallet signs; Dingo submits to{" "}
