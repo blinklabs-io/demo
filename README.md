@@ -449,6 +449,10 @@ Cardano address/network ID 1 and verifies network magic 764824073 through both
 Dingo REST and UTxO RPC before transaction construction and submission. Wallet
 network checks run again after signing; testnet addresses and funding are rejected.
 
+Every mainnet dapp and aggregator entry includes a link to its official site,
+including apps without a native Dingo integration. Native actions and official
+external links are both available from the mainnet app catalog.
+
 Mainnet Markets supports Minswap V2 pool discovery, swap orders, liquidity
 orders, wallet positions, and cancellation using its mainnet scripts and
 reference outputs. Pool discovery uses bounded asset-only UTxO RPC pages with
