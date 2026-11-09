@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { splashPlan, splashPoint, type SplashTerms } from "../../lib/splash/data";
-import { readSplashOrder, readSplashOrders } from "../../lib/splash/read";
+import { readSplashOrder, readSplashOrders, splashCancellationKeys } from "../../lib/splash/read";
 import { prepareSplashAction, submitSplashAction, type SplashAction } from "../../lib/splash/transactions";
 import { useWalletStore } from "../../stores/walletStore";
 import { useTipStore } from "../../stores/tipStore";
@@ -32,7 +32,7 @@ function SplashMainnet() {
   useEffect(() => useTipStore.subscribe((next, previous) => {
     if (next.revision !== previous.revision && next.lastAction !== "apply") { setCursors([""]); setPage(0); setChosen(""); }
   }), []);
-  const catalog = useQuery({ queryKey: ["dingo", "markets", "splash", "account", wallet.changeAddress, cursors[page]], queryFn: ({ signal }) => readSplashOrders(wallet.changeAddress!, cursors[page], signal), enabled: wallet.status === "connected" && !!wallet.changeAddress, staleTime: 30000, refetchInterval: 30000, retry: false });
+  const catalog = useQuery({ queryKey: ["dingo", "markets", "splash", "account", wallet.changeAddress, cursors[page]], queryFn: async ({ signal }) => { if (!wallet.walletApi) throw new Error("Connect a wallet to read its cancellation keys."); return readSplashOrders(wallet.changeAddress!, await splashCancellationKeys(wallet.walletApi), cursors[page], signal); }, enabled: wallet.status === "connected" && !!wallet.changeAddress, staleTime: 30000, refetchInterval: 30000, retry: false });
   const orders = catalog.data?.orders ?? [], point = chosen || (orders[0] ? splashPoint(orders[0]) : "");
   const listed = orders.find((order) => splashPoint(order) === point);
   const selection = useQuery({ queryKey: ["dingo", "markets", "splash", "selected", point], queryFn: ({ signal }) => readSplashOrder(point, signal), enabled: !!point && !listed, staleTime: 30000, refetchInterval: 30000, retry: false });
@@ -80,7 +80,7 @@ function SplashMainnet() {
           <h2>Inspect and cancel</h2>
           {selection.isFetching && !order && <MarketLoading retry={() => void selection.refetch()} />}
           {queryError && <p role="alert">{queryError.message}</p>}
-          {order ? <><span className="market-pair"><MarketAsset unit={order.input} /> → <MarketAsset unit={order.output} /></span><p>{amount(order.amount, order.input)} remaining at a minimum rate of {order.numerator.toString()}/{order.denominator.toString()} output/input base units.</p><p>Executor fee remaining: {amount(order.fee, "lovelace")}</p><div className="market-actions"><Link to={`/explorer/tx/${order.utxo.input().transactionId()}`}>Inspect transaction ↗</Link><CopyButton value={splashPoint(order)} label="order output reference" /></div><p>Cancellation returns the complete current order value to its committed recipient:</p><p style={{ overflowWrap: "anywhere" }}>{order.owner.toBech32()}</p></> : <p>Choose an account order or load its output reference.</p>}
+          {order ? <><span className="market-pair"><MarketAsset unit={order.input} /> → <MarketAsset unit={order.output} /></span><p>{amount(order.amount, order.input)} remaining at a minimum rate of {order.numerator.toString()}/{order.denominator.toString()} output/input base units.</p><p>Executor fee remaining: {amount(order.fee, "lovelace")}</p><div className="market-quote"><small>Complete remaining value</small><p>{amount(order.utxo.output().amount().coin(), "lovelace")}</p>{[...(order.utxo.output().amount().multiasset() ?? [])].map(([unit, quantity]) => <p key={unit}>{amount(quantity, unit)} · <MarketAsset unit={unit} /></p>)}</div><div className="market-actions"><Link to={`/explorer/tx/${order.utxo.input().transactionId()}`}>Inspect transaction ↗</Link><CopyButton value={splashPoint(order)} label="order output reference" /></div><p>Cancellation returns the complete current order value to its committed recipient:</p><p style={{ overflowWrap: "anywhere" }}>{order.owner.toBech32()}</p></> : <p>Choose an account order or load its output reference.</p>}
         </>}
         {error && <p role="alert">{error}</p>}
         <MarketTransaction draftKey={JSON.stringify([mode, action], (_, value) => typeof value === "bigint" ? String(value) : value)} ready={ready} title="Review Splash transaction" tracking={tracking} prepare={(api, guard) => { if (!action) throw new Error("Enter valid Splash order terms."); return prepareSplashAction(api, action, guard); }} submit={(draft, api, guard) => submitSplashAction(api, draft, guard)} />

@@ -11,9 +11,9 @@ import { readSplashOrder, readSplashOrders } from "../../lib/splash/read";
 import { prepareSplashAction } from "../../lib/splash/transactions";
 import type { Cip30WalletApi } from "../../lib/dingo/cip30";
 vi.mock("../../lib/dingo/config", () => ({ DINGO_NETWORK: { id: "mainnet", label: "Mainnet", networkMagic: 764824073 }, DINGO_CONFIG: { blockfrostUrl: "http://localhost", utxorpcUrl: "http://localhost" } }));
-const wallet = vi.hoisted(() => ({ status: "disconnected", changeAddress: null as string | null, tokens: [] }));
+const wallet = vi.hoisted(() => ({ status: "disconnected", changeAddress: null as string | null, tokens: [], walletApi: {} as Cip30WalletApi }));
 vi.mock("../../stores/walletStore", () => ({ useWalletStore: () => wallet }));
-vi.mock("../../lib/splash/read", () => ({ readSplashOrder: vi.fn(), readSplashOrders: vi.fn() }));
+vi.mock("../../lib/splash/read", () => ({ readSplashOrder: vi.fn(), readSplashOrders: vi.fn(), splashCancellationKeys: vi.fn(async () => ["11".repeat(28)]) }));
 vi.mock("../../lib/splash/transactions", () => ({ prepareSplashAction: vi.fn(async () => ({})), submitSplashAction: vi.fn() }));
 vi.mock("./MarketTransaction", () => ({ MarketConfirmation: () => null, MarketTransaction: (props: { ready: boolean; title: string; draftKey: string; prepare: (api: Cip30WalletApi, guard: () => void) => Promise<unknown> }) => <button disabled={!props.ready} data-draft-key={props.draftKey} onClick={() => void props.prepare({} as Cip30WalletApi, () => {})}>{props.title}</button> }));
 let host: HTMLDivElement, root: Root, client: QueryClient;
@@ -50,8 +50,8 @@ it("blocks invalid execution budgets before preparation", async () => {
 
 it("navigates forward again after revisiting a cached page", async () => {
   wallet.status = "connected"; wallet.changeAddress = "addr1_fixture";
-  const first = await vi.mocked(readSplashOrders)("addr1_fixture");
-  vi.mocked(readSplashOrders).mockImplementation(async (_, cursor) => ({ ...first, nextToken: cursor ? "" : "second" }));
+  const first = await vi.mocked(readSplashOrders)("addr1_fixture", ["11".repeat(28)]);
+  vi.mocked(readSplashOrders).mockImplementation(async (_, _keys, cursor) => ({ ...first, nextToken: cursor ? "" : "second" }));
   await render();
   await act(async () => button("Next orders").click()); await act(async () => { await vi.advanceTimersByTimeAsync(1); });
   expect(host.textContent).toContain("Page 2");
@@ -72,4 +72,12 @@ it("preserves create draft identity across account-order changes and cached refr
   vi.mocked(readSplashOrders).mockRejectedValue(new Error("offline"));
   await act(async () => { await client.invalidateQueries({ queryKey: ["dingo", "markets", "splash", "account"] }); }); await act(async () => { await vi.advanceTimersByTimeAsync(1); });
   expect(host.querySelectorAll(".market-card")).toHaveLength(1); expect(host.textContent).toContain("Refresh failed: offline");
+});
+
+it("shows accrued assets for an order with no remaining input", async () => {
+ const order = decodeSplashOrder(splashFixture()); order.amount = 0n;
+ const token = "33".repeat(28)+"01"; order.utxo.output().amount().setMultiasset(new Map([[Core.AssetId(token),123456n]]));
+ vi.spyOn(order.owner,"toBech32").mockReturnValue("addr1_fixture" as Core.PaymentAddress); vi.mocked(readSplashOrder).mockResolvedValue(order);
+ await render(); await act(async()=>change("Order output reference",splashPoint(order))); await act(async()=>host.querySelector("form")!.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}))); await act(async()=>{await vi.advanceTimersByTimeAsync(1);});
+ expect(host.textContent).toContain("Complete remaining value");expect(host.textContent).toContain("123,456");expect(host.textContent).toContain("0.00 ADA remaining");
 });

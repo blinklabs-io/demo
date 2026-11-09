@@ -1,3 +1,4 @@
+import type { Cip30WalletApi } from "../dingo/cip30";
 import { Core } from "@blaze-cardano/sdk";
 import { DINGO_NETWORK } from "../dingo/config";
 import { assertDingoTransactionBackends } from "../dingo/walletSession";
@@ -22,10 +23,10 @@ export async function readSplashOrder(outpoint: string, signal?: AbortSignal) {
   if (outputs.length !== 1 || outputs[0].input().toCbor() !== input.toCbor()) throw new Error("Splash order is spent or unavailable.");
   return decodeSplashOrder(outputs[0]);
 }
-export async function readSplashOrders(owner: string, cursor = "", signal?: AbortSignal) {
+export async function readSplashOrders(owner: string, cancelKeys: readonly string[], cursor = "", signal?: AbortSignal) {
   const address = Core.Address.fromBech32(owner);
   if (address.getNetworkId() !== 1) throw new Error("Use a mainnet account address.");
-  if (!address.getProps().delegationPart) throw new Error("Account listing requires a stake credential. Load an enterprise order by output reference.");
+  if (!cancelKeys.length || cancelKeys.some(key => !/^[a-f0-9]{56}$/.test(key))) throw new Error("Wallet cancellation keys are unavailable.");
   if (cursor.length > 4096) throw new Error("Splash page cursor exceeds the query limit.");
   await assertSplashMainnet(); signal?.throwIfAborted();
   const expectedAddress = splashOrderAddress(address);
@@ -46,8 +47,20 @@ export async function readSplashOrders(owner: string, cursor = "", signal?: Abor
       if (!item.nativeBytes.length || item.nativeBytes.length > 65536) throw new Error("Invalid Splash output CBOR size.");
       const output = Core.TransactionOutput.fromCbor(Core.HexBlob.fromBytes(item.nativeBytes));
       if (output.address().toBytes() !== expectedAddress.toBytes()) throw new Error("Splash output is outside the requested account address.");
-      orders.push(decodeSplashOrder(new Core.TransactionUnspentOutput(input, output)));
+      const order = decodeSplashOrder(new Core.TransactionUnspentOutput(input, output));
+      if (cancelKeys.includes(order.cancelKey)) orders.push(order);
     } catch (cause) { errors.push(cause instanceof Error ? cause.message : "Unsupported Splash output."); }
   }
   return { orders, errors, nextToken: response.nextToken };
+}
+
+export async function splashCancellationKeys(api: Cip30WalletApi) {
+  const addresses = [await api.getChangeAddress(), ...await api.getUsedAddresses(), ...await api.getUnusedAddresses()];
+  const keys = new Set<string>();
+  for (const hex of addresses) {
+    const address = Core.Address.fromBytes(Core.HexBlob(hex)), payment = address.getProps().paymentPart;
+    if (address.getNetworkId() !== 1) throw new Error("Use a mainnet wallet address.");
+    if (payment?.type === Core.CredentialType.KeyHash) keys.add(String(payment.hash));
+  }
+  return [...keys];
 }
