@@ -733,3 +733,36 @@ and 3311 respectively. Prime Testnet amounts display AP3X with up to six decimal
 
 Wallet swaps remain available only for networks with configured market deployments.
 Musashi header history uses its genesis slot clock because all its eras activate at genesis.
+
+## Reactor Bridge on Prime Testnet
+
+Open **Markets → Bridge** on Prime Testnet to transfer test AP3X to Vector or
+Nexus Testnet. Transfers are built locally with Blaze and Dingo, reviewed in the
+browser, signed by the connected CIP-30 wallet, and submitted through Dingo’s
+UTxO RPC service. Reactor’s live API supplies route availability, transfer limits,
+bridge fees, validator-change status, and delivery progress. Prime inclusion and
+bridge delivery are displayed separately.
+
+The Prime lock output pays the transfer amount plus the current bridge fee to
+`addr_test1wr44r7qudqwrpsgfs3m4t47x7xmw55dk4k96faak0w4aeqqxxwlvt`.
+Metadata label 1 records `d` (destination chain), `fa` (bridge fee), `s` (sender),
+`t` (`bridge`), and `tx` (recipient `a` and amount `m`). Address strings use
+40-character chunks; Nexus destinations omit their `0x` prefix in metadata.
+Vector Testnet uses network-ID-1 `addr1` payment addresses; Prime Testnet uses
+network ID 0 and magic 3311. These formats match the official Reactor testnet
+transaction builder for both routes.
+
+Funding inputs must match the wallet’s plain outputs on Dingo. Review is
+invalidated by form or wallet changes. Before and after signing, the application
+checks the selected Prime network, account, expiry, funding availability, and
+current bridge conditions. Every required funding signature is verified before
+submission. Native tokens remain in wallet change.
+
+The same-origin `/reactor` Pages Function relays only settings, validator status,
+and Prime transaction lookups from Reactor’s fixed testnet API. It forwards no
+wallet credentials or transaction submissions. Local static-only Vite hosting
+does not run Pages Functions; use a Pages Functions environment for live Reactor
+data. The bridge stays unavailable when these reads fail.
+
+[Reactor architecture](https://developers.apexfusion.org/documentation/reactor-bridge-technical-overview)
+· [Official testnet application](https://reactor.testnet.apexfusion.org/)

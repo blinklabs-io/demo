@@ -45,6 +45,10 @@ export class DingoProvider extends Provider {
         throw new Error(`Dingo returned invalid protocol parameter ${key}.`);
       return n;
     };
+    const major = number("protocol_major_ver");
+    const minor = number("protocol_minor_ver");
+    if (!Number.isSafeInteger(major) || !Number.isSafeInteger(minor) || major < 7)
+      throw new Error("Dingo returned an unsupported protocol version.");
     const models = p.cost_models_raw as Record<string, number[]> | null;
     const costModels = new Map<Core.PlutusLanguageVersion, number[]>();
     for (const [name, language] of [
@@ -52,6 +56,7 @@ export class DingoProvider extends Provider {
       ["PlutusV2", Core.PlutusLanguageVersion.V2],
       ["PlutusV3", Core.PlutusLanguageVersion.V3],
     ] as const) {
+      if (language === Core.PlutusLanguageVersion.V3 && major < 9) continue;
       const values = models?.[name];
       if (
         !Array.isArray(values) ||
@@ -77,10 +82,7 @@ export class DingoProvider extends Provider {
       monetaryExpansion: String(number("rho")),
       treasuryExpansion: String(number("tau")),
       minPoolCost: number("min_pool_cost"),
-      protocolVersion: {
-        major: number("protocol_major_ver"),
-        minor: number("protocol_minor_ver"),
-      },
+      protocolVersion: { major, minor },
       maxValueSize: number("max_val_size"),
       collateralPercentage: number("collateral_percent"),
       maxCollateralInputs: number("max_collateral_inputs"),
@@ -93,11 +95,15 @@ export class DingoProvider extends Provider {
         memory: number("max_block_ex_mem"),
         steps: number("max_block_ex_steps"),
       },
-      minFeeReferenceScripts: {
-        base: number("min_fee_ref_script_cost_per_byte"),
-        range: 25_600,
-        multiplier: 1.2,
-      },
+      ...(major >= 9
+        ? {
+            minFeeReferenceScripts: {
+              base: number("min_fee_ref_script_cost_per_byte"),
+              range: 25_600,
+              multiplier: 1.2,
+            },
+          }
+        : {}),
     };
   }
 

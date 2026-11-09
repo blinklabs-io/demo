@@ -1,7 +1,8 @@
 {
   "version": 1,
   "include": [
-    "/pool-image"
+    "/pool-image",
+    "/reactor"
   ],
   "exclude": []
 }

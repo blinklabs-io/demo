@@ -65,6 +65,8 @@ export function AppShell() {
         ? "mempool"
         : pathname === "/explorer/network"
           ? "network"
+          : pathname === "/wallet/bridge"
+            ? "bridge"
           : pathname === "/wallet/swap"
             ? "swap"
             : /^\/wallet\/markets(?:\/|$)/.test(pathname)

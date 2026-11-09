@@ -36,6 +36,11 @@ function creationExperience(
 }
 
 const experiences = [
+  ...(DINGO_NETWORK.id === "prime-testnet" ? [{
+    to: "/wallet/bridge", title: "Reactor Bridge", category: "Use", symbol: "⇄",
+    description: "Bridge test AP3X to Vector or Nexus. Build and sign here, then follow delivery through Reactor.",
+    tag: "Prime · Vector · Nexus", art: "network", action: "Bridge AP3X",
+  }] : []),
   ...(DINGO_NETWORK.id === "musashi"
     ? [
         {
@@ -213,9 +218,9 @@ export default function Experiences() {
           <div className="experience-actions">
             <Link
               className="experience-primary"
-              to={DINGO_NETWORK.id === "mainnet" ? "/wallet/markets/liquidity" : "/wallet/markets/liquidity?network=preprod"}
+              to={DINGO_NETWORK.id === "prime-testnet" ? "/wallet/bridge" : DINGO_NETWORK.id === "mainnet" ? "/wallet/markets/liquidity" : "/wallet/markets/liquidity?network=preprod"}
             >
-              Explore {DINGO_NETWORK.id === "mainnet" ? "Mainnet" : "Preprod"} DeFi →
+              {DINGO_NETWORK.id === "prime-testnet" ? "Bridge AP3X →" : `Explore ${DINGO_NETWORK.id === "mainnet" ? "Mainnet" : "Preprod"} DeFi →`}
             </Link>
             <a href="#live-block">See a block come alive ↓</a>
           </div>

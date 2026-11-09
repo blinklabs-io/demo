@@ -31,6 +31,7 @@ import DRepDetail from "./pages/explorer/DRepDetail";
 import WalletTools from "./pages/wallet/WalletTools";
 import WalletHome from "./pages/wallet/WalletHome";
 import WalletSend from "./pages/wallet/WalletSend";
+import WalletBridge from "./pages/wallet/WalletBridge";
 import WalletSwap from "./pages/wallet/WalletSwap";
 import WalletDelegate from "./pages/wallet/WalletDelegate";
 import NotFound from "./pages/NotFound";
@@ -104,6 +105,7 @@ export const router = createBrowserRouter([
           { path: "wallet/dano", element: <DanoMarket /> },
           { path: "wallet/indigo", element: <IndigoMarket /> },
           { path: "wallet/swap", element: <WalletSwap /> },
+          { path: "wallet/bridge", element: <WalletBridge /> },
           { path: "wallet/splash", element: <SplashMarket /> },
           { path: "wallet/markets", element: <Markets /> },
           { path: "wallet/markets/:tab", element: <Markets /> },

@@ -57,6 +57,17 @@ it("executes read examples and preserves HTTP failures", async () => {
   );
 });
 
+it("executes bridge examples against the workspace relay", async () => {
+  vi.stubGlobal("window", { location: { origin: "https://demo.example" } });
+  try {
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+    const fetch = vi.fn(async (url: string) => Response.json({ url }));
+    await new AsyncFunction("fetch", "console", recipeExample("bridge", "JavaScript"))(fetch, { log: vi.fn() });
+    expect(fetch.mock.calls.map((call) => call[0])).toEqual(["https://demo.example/reactor?resource=settings", "https://demo.example/reactor?resource=validators"]);
+    expect(recipeExample("bridge", "cURL")).toContain("https://demo.example/reactor?resource=settings");
+  } finally { vi.unstubAllGlobals(); }
+});
+
 it("configures the selected network's local demo endpoints", () => {
   expect(selfHostedDemoExample()).toContain("VITE_DINGO_MAINNET_BLOCKFROST_URL=http://127.0.0.1:3000");
   expect(selfHostedDemoExample()).toContain("VITE_DINGO_MAINNET_UTXORPC_URL=http://127.0.0.1:9090");

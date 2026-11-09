@@ -7,6 +7,13 @@ export const OWN_DINGO_ENDPOINTS = {
 } as const;
 
 export const recipes = {
+  bridge: {
+    title: "Bridge AP3X through Reactor",
+    path: "/reactor?resource=settings",
+    source: "src/lib/reactor/transactions.ts",
+    context: "Read Reactor’s live routes and fees. Build the Prime lock output and routing metadata locally with Blaze, verify funding through Dingo, collect CIP-30 witnesses, and submit over UTxO RPC. Track Prime inclusion separately from Reactor delivery.",
+    extra: "/reactor?resource=validators",
+  },
   leios: {
     title: "Read Leios ranking blocks",
     path: "/api/v0/blocks/latest",
@@ -151,6 +158,12 @@ export function recipeExample(
   const paths: string[] = [definition.path];
   if ("extra" in definition) paths.push(definition.extra);
   if ("canonical" in definition) paths.push(definition.canonical);
+  if (recipe === "bridge") {
+    const urls = paths.map((path) => window.location.origin + path);
+    if (language === "cURL")
+      return urls.map((url) => `curl --fail-with-body '${url.replaceAll("'", "'\\''")}'`).join("\n\n");
+    return `// ${DINGO_NETWORK.label}\nconst urls = [\n  ${urls.map((url) => JSON.stringify(url)).join(",\n  ")}\n];\nfor (const url of urls) {\n  const response = await fetch(url);\n  if (!response.ok) throw new Error(\`HTTP \${response.status}: \${await response.text()}\`);\n  console.log(await response.json());\n}`;
+  }
   if (language === "cURL")
     return `# Your Dingo instance, synced to ${DINGO_NETWORK.label}.\nDINGO_REST_URL='${OWN_DINGO_ENDPOINTS.blockfrostUrl}'\n\n` + paths
       .map((path) => `curl --fail-with-body "$DINGO_REST_URL${path}"`)

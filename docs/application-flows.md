@@ -19,6 +19,12 @@ flowchart TD
   Discover --> Create[Create and build]
   Discover --> Participate[Participate]
   Discover --> Markets[Markets]
+  Markets --> Bridge[Prime Testnet Reactor Bridge]
+  Bridge --> BridgeReview[Build and review lock output, destination and fees]
+  BridgeReview --> BridgeSign[CIP-30 signs; Dingo submits on Prime]
+  BridgeSign --> PrimeConfirmation[Prime inclusion]
+  PrimeConfirmation --> ReactorProgress[Reactor witnessing and batching]
+  ReactorProgress --> DestinationDelivery[Vector or Nexus delivery, rejection or refund]
   Markets --> Swap[Preview SundaeSwap / Preprod Minswap]
   Markets --> Liquidity[Liquidity and order management]
   Markets --> Kernel[Loans, options, orders and financial NFTs]
@@ -222,7 +228,7 @@ A response remains associated with the request that produced it.
 | Entity lookup    | `/explorer/lookup/:hash`, `/explorer/address/:address`, `/explorer/account/:stakeAddress`, `/explorer/asset/:assetId`, `/explorer/policy/:policyId`, `/explorer/handle/:handle`, `/explorer/metadata/:label`                          |
 | Participation    | `/participate`, `/explorer/governance`, `/explorer/proposal/:id`, `/explorer/dreps`, `/explorer/drep/:id`, `/explorer/surveys`, `/explorer/surveys/new`, `/explorer/surveys/:hash/:index`                                             |
 | Wallet           | `/wallet`, `/wallet/send`, `/wallet/delegate`; portfolio, rewards, transfers and delegation                                                                                                                                           |
-| Markets          | `/wallet/swap`; Preview SundaeSwap V3/V4 and Preprod Minswap previews and order review. `/wallet/markets` defaults to lending; `/wallet/markets/:tab` covers `liquidity`, `lending`, `options`, `orders` and `marketplace` on Preprod |
+| Markets          | `/wallet/bridge`; native Prime transfers to Vector or Nexus with separate source inclusion and delivery tracking. `/wallet/swap`; Preview SundaeSwap V3/V4 and Preprod Minswap previews and order review. `/wallet/markets` defaults to lending; `/wallet/markets/:tab` covers `liquidity`, `lending`, `options`, `orders` and `marketplace` on Preprod |
 | Creation         | `/wallet/tools` and `/wallet/tools/:tool`; transaction, token, proof, batch, UTxO, DRep and treasury capabilities                                                                                                                     |
 | Developer access | `/api`; inspect existing Dingo REST and Mesh responses                                                                                                                                                                                |
 
@@ -288,3 +294,16 @@ announcement. Blockfrost transaction CBOR supplies individual serialized sizes
 and fees. Body hashes are checked before rows enter the view, and a malformed
 row leaves other rows visible. Paged byte totals remain partial until the full
 indexed count is decoded; announced manifest size is a separate measurement.
+
+## Prime Reactor transfers
+
+The bridge reads live routes, limits, fees, and validator availability from the
+read-only Reactor relay. Blaze builds the Prime lock output and metadata locally;
+Dingo checks genesis and funding inputs before review and submission. Wallet or
+form changes invalidate a draft. Signing rechecks bridge conditions and expiry,
+and every required funding signature is verified.
+
+Prime inclusion is a source-chain confirmation, not proof of bridge delivery.
+The transfer view separately reads Reactor witnessing, batching, destination
+submission, delivery, rejection, failure, and refund records. A refund still
+progresses through the delivery statuses; a refund flag alone is not completion.
