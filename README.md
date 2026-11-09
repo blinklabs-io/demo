@@ -331,6 +331,33 @@ The source interfaces and mathematical formulas are attributed in
 ![Dano swap on desktop](docs/screenshots/danoswap1440.png)
 ![Dano swap on mobile](docs/screenshots/danoswap390.png)
 
+## FluidTokens V4 static lending pools
+
+Open `/wallet/fluidtokens?network=mainnet` to create a lending pool with explicit
+principal, collateral ratio, fixed total loan interest, and repayment periods.
+The pool uses one installment and allows a full collateral claim after the
+repayment window; it does not use oracle pricing or price-based liquidation.
+ADA deposits include the pool's minimum ledger funding. Native-token pools
+show their additional ADA funding separately.
+
+Wallet pool discovery reads bounded pages at the current account's full script
+address and filters against its known payment cancellation keys. Cancellation
+burns the pool identifier and returns all remaining pool value to the connected
+wallet. Existing loans and their bond tokens remain active. Exact output lookup
+can inspect script-managed pools; their cancellation requires the corresponding
+script authorization and is not enabled in this payment-key workflow.
+
+The configuration NFT and the deployed mint, spend, and cancellation scripts are
+authenticated through Dingo. Funding signatures, wallet identity, reviewed
+transaction bytes, expiry, and input availability are checked around signing.
+Contract interfaces and deployment sources are attributed in
+`src/lib/fluidtokens/NOTICE`.
+
+[Create desktop](docs/screenshots/fluidcreate1440.png) ·
+[Create mobile](docs/screenshots/fluidcreate390.png) ·
+[Inspect desktop](docs/screenshots/fluidinspect1440.png) ·
+[Inspect mobile](docs/screenshots/fluidinspect390.png).
+
 ## Sending asset bundles
 
 Send keeps a required ADA amount separate from additional native assets. The

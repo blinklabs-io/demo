@@ -1,3 +1,4 @@
+import { FluidTokensMarket } from "./components/markets/FluidTokensMarket";
 import { DanoMarket } from "./components/markets/DanoMarket";
 import { LeiosPulse } from "./components/explorer/LeiosPulse";
 import TransactionTracking from "./pages/explorer/TransactionTracking";
@@ -98,6 +99,7 @@ export const router = createBrowserRouter([
           { path: "wallet/tools", element: <WalletTools /> },
           { path: "wallet/tools/:tool", element: <WalletTools /> },
           { path: "wallet/send", element: <WalletSend /> },
+          { path: "wallet/fluidtokens", element: <FluidTokensMarket /> },
           { path: "wallet/dano", element: <DanoMarket /> },
           { path: "wallet/swap", element: <WalletSwap /> },
           { path: "wallet/splash", element: <SplashMarket /> },

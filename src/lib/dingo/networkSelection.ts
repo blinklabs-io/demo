@@ -21,6 +21,7 @@ export function networkDestination(pathname: string): string {
     "/wallet/delegate",
     "/wallet/swap",
     "/wallet/splash",
+    "/wallet/fluidtokens",
     "/wallet/dano",
     "/wallet/tools",
     "/participate",
