@@ -454,6 +454,23 @@ on an isolated in-memory ledger. The VM is a direct development dependency at
 the same version used by the application SDK; these tests require no wallet,
 external protocol API or transaction submission.
 
+## CardanoSwaps mainnet orders
+
+Open `/wallet/markets/orders?network=mainnet` to discover, create, fill, and
+cancel one-way limit orders through the existing DeFi Kernel contracts.
+Discovery reads bounded beacon-policy pages from Dingo. Prices and partial fills
+use integer arithmetic with payment rounded up to the contract’s requested rate.
+Native token amounts use base units; ADA uses six decimal places.
+
+Mainnet reference outputs are verified against the validator and beacon hashes
+from the pinned [CardanoSwaps source](https://github.com/fallen-icarus/cardano-swaps/tree/2bb88c506a8fe640a7d851409dd509a844545a6c).
+The wallet signs the reviewed body and auxiliary data; funding witnesses,
+backend identity, expiry, and all spending and reference inputs are checked
+around signing. Other Kernel lanes retain their Preprod deployments.
+
+[Desktop](docs/screenshots/cardanoswaps1440.png) ·
+[Mobile](docs/screenshots/cardanoswaps390.png).
+
 ## Exact 24-hour header comparison
 
 Explore’s Header versions view reads every block in the 24-hour window ending
