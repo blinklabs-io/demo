@@ -6,7 +6,13 @@ import {
   type DingoProvider,
 } from "../dingo/utxorpc/provider";
 import { decodeKernelDatum } from "./datum";
-import { KERNEL_LANES, assertKernelNetwork, type KernelLane } from "./protocol";
+import {
+  KERNEL_LANES,
+  assertKernelNetwork,
+  kernelDeployment,
+  KERNEL_NETWORK_ID,
+  type KernelLane,
+} from "./protocol";
 
 export type KernelRecord = {
   lane: KernelLane;
@@ -34,7 +40,7 @@ export async function kernelReferencesForLanes(
   const expected = [
     ...new Map(
       lanes
-        .flatMap((lane) => [...KERNEL_LANES[lane].references])
+        .flatMap((lane) => [...kernelDeployment(lane).references])
         .map((ref) => [`${ref.hash}#${ref.index}`, ref]),
     ).values(),
   ];
@@ -56,7 +62,7 @@ export async function kernelReferencesForLanes(
           (output) =>
             output.input().transactionId() === ref.hash &&
             output.input().index() === BigInt(ref.index) &&
-            output.output().address().getNetworkId() === 0 &&
+            output.output().address().getNetworkId() === KERNEL_NETWORK_ID &&
             output.output().scriptRef()?.hash() === ref.hashScript,
         ),
     )
@@ -70,11 +76,11 @@ export function kernelRecord(
   lane: KernelLane,
   utxo: Core.TransactionUnspentOutput,
 ): KernelRecord {
-  const protocol = KERNEL_LANES[lane],
+  const protocol = kernelDeployment(lane),
     output = utxo.output(),
     address = output.address();
   if (
-    address.getNetworkId() !== 0 ||
+    address.getNetworkId() !== KERNEL_NETWORK_ID ||
     address.getProps().paymentPart?.type !== Core.CredentialType.ScriptHash ||
     address.getProps().paymentPart?.hash !== protocol.validatorHash
   )
@@ -138,6 +144,7 @@ export async function loadKernelPage(
   provider: DingoProvider = getDingoProvider(),
 ) {
   assertKernelNetwork();
+  kernelDeployment(lane);
   signal?.throwIfAborted();
   if (startToken.length > 16384) throw new Error("Invalid Kernel page token.");
   await assertDingoNetwork(provider);
@@ -233,6 +240,7 @@ export async function loadKernelRequest(
       "Enter a request transaction hash followed by #output index.",
     );
   assertKernelNetwork();
+  kernelDeployment("loan-negotiation");
   signal?.throwIfAborted();
   await assertDingoNetwork(provider);
   signal?.throwIfAborted();

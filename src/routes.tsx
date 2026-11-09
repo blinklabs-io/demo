@@ -1,7 +1,10 @@
+import { FluidTokensMarket } from "./components/markets/FluidTokensMarket";
+import { DanoMarket } from "./components/markets/DanoMarket";
 import { LeiosPulse } from "./components/explorer/LeiosPulse";
 import TransactionTracking from "./pages/explorer/TransactionTracking";
 import Experiences from "./pages/Experiences";
 import Participate from "./pages/Participate";
+import { SplashMarket } from "./components/markets/SplashMarket";
 import Markets from "./pages/Markets";
 import PolicyDetail from "./pages/explorer/PolicyDetail";
 import HandleLookup from "./pages/explorer/HandleLookup";
@@ -97,8 +100,11 @@ export const router = createBrowserRouter([
           { path: "wallet/tools", element: <WalletTools /> },
           { path: "wallet/tools/:tool", element: <WalletTools /> },
           { path: "wallet/send", element: <WalletSend /> },
+          { path: "wallet/fluidtokens", element: <FluidTokensMarket /> },
+          { path: "wallet/dano", element: <DanoMarket /> },
           { path: "wallet/swap", element: <WalletSwap /> },
           { path: "wallet/bridge", element: <WalletBridge /> },
+          { path: "wallet/splash", element: <SplashMarket /> },
           { path: "wallet/markets", element: <Markets /> },
           { path: "wallet/markets/:tab", element: <Markets /> },
           { path: "wallet/delegate", element: <WalletDelegate /> },

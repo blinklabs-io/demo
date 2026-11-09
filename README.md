@@ -54,7 +54,7 @@ The existing `VITE_DINGO_*_URL` settings configure Preview. Preprod has separate
 `VITE_DINGO_PREPROD_UTXORPC_URL` overrides. Mainnet uses independent
 `VITE_DINGO_MAINNET_BLOCKFROST_URL`, `VITE_DINGO_MAINNET_MESH_URL`, and
 `VITE_DINGO_MAINNET_UTXORPC_URL` overrides. Each API must serve the selected
-network. SundaeSwap markets remain tied to the verified Preview deployments;
+network. SundaeSwap V3 and V4 use separate verified Mainnet and Preview deployments;
 other creation and participation tools use the selected network. CIP-30 reports
 only mainnet versus testnet, so transaction review and signing additionally
 require the actual spending and collateral inputs to be unspent on the selected
@@ -132,7 +132,7 @@ states, transaction lifecycles and Dingo API responsibilities.
   certificate records, redeemers, treasury donations, and required signers
 - CIP-119 DRep names and anchor links, plus active, retired, and expired DRep
   filters
-- Wallet balance, reward withdrawals, send, pool delegation, and SundaeSwap V3 and V4 Preview order flows
+- Wallet balance, reward withdrawals, send, pool delegation, and SundaeSwap V3 and V4 Mainnet and Preview order flows
 - DRep Yes, No, and Abstain votes from governance action pages, with fee review,
   CIP-95 wallet signing, and submission through Dingo
 - Blockfrost-compatible GET console and read-only Mesh POST console
@@ -200,10 +200,13 @@ identified and omitted without inferring balances. Addresses are displayed in
 full with copy controls. Wallets exposing CIP-95 can also show their DRep
 registration.
 
-The swap view opens SundaeSwap V4 on Preview, with V3 markets available in the
-same view. V4 discovers authenticated pool NFTs and verifies the deployed order,
+The swap view offers SundaeSwap V3 and V4 on Mainnet and Preview, alongside
+Minswap on Mainnet. Mainnet SundaeSwap token quantities use raw on-chain units;
+ADA uses six decimals. Mainnet V3 loads selected ADA/USDCx and ADA/NIGHT
+pools by their NFTs instead of scanning the full pool policy. V4 discovers authenticated pool NFTs and verifies the deployed order,
 settings and constraint scripts through Dingo. Discovery uses one bounded
-UTxORPC snapshot per contract address. Constant-sum and stableswap pools
+UTxORPC snapshot per payment credential, with network and script authentication
+on each returned output. Constant-sum and stableswap pools
 support reference quotes and swap intents; pools using other curve modules remain
 visible without offering unsupported quotes. Assets without verified decimal
 metadata use explicitly labelled raw units.
@@ -285,7 +288,77 @@ detect a rollback during the recount.
 Expensive REST reads share bounded queues matching Dingo v0.90.5's per-client
 admission limits. GET requests honor bounded `Retry-After` responses; mutations
 are never automatically retried. Swap flows use SundaeSwap core 3.4.0 with the
-Dingo query provider and verified Preview V4 deployment configuration.
+Dingo query provider and verified Mainnet and Preview V3/V4 deployment configurations.
+
+## Splash mainnet limit orders
+
+Open `/wallet/splash?network=mainnet` to create a Splash limit order with an
+explicit minimum output/input rate and funded execution terms. ADA uses six
+decimal places; native token amounts use whole base units. The form shows the
+step allowance, executor fee, additional ADA funding, and total ADA locked in
+the order before signing. Execution and settlement draw from that funding.
+
+Account discovery reads bounded pages across script addresses derived from the
+wallet’s change, used, and unused addresses.
+An output reference can load orders using other stake addresses. Cancellation
+requires the committed cancellation key and returns the complete remaining
+order value, including accrued assets, to its committed recipient.
+
+The integration pins the mainnet order-script hash and its cancellation reference output.
+It builds the canonical datum and beacon bytes locally and uses Dingo for all
+chain reads, evaluation, and submission. Wallet identity, funding signatures,
+transaction contents, validity, and input availability are checked around signing.
+
+[Create desktop](docs/screenshots/splashcreate1440.png) ·
+[Create mobile](docs/screenshots/splashcreate390.png) ·
+[Cancellation desktop](docs/screenshots/splashcancel1440.png) ·
+[Cancellation mobile](docs/screenshots/splashcancel390.png).
+
+## Dano mainnet concentrated-liquidity swaps
+
+Open `/wallet/dano?network=mainnet` to inspect live CLMM pools and swap native
+tokens directly. Pool discovery reads bounded pages at the enterprise pool
+address through Dingo; a pool can also be loaded by its output reference. Token amounts use whole base units.
+The quote shows the exact output, trading fee, and ADA settlement fee.
+
+The integration authenticates pool identifiers, the reference script, and the
+configuration NFT. A draft commits to the selected pool and configuration
+outputs, checks funding signatures and wallet identity, and expires within one
+epoch. If inputs or configuration change, refresh and review a new transaction.
+ADA pools can be inspected; their staking-reward settlement is not implemented.
+The source interfaces and mathematical formulas are attributed in
+`src/lib/dano/NOTICE`.
+
+![Dano swap on desktop](docs/screenshots/danoswap1440.png)
+![Dano swap on mobile](docs/screenshots/danoswap390.png)
+
+## FluidTokens V4 static lending pools
+
+Open `/wallet/fluidtokens?network=mainnet` to create a lending pool with explicit
+principal, collateral ratio, fixed total loan interest, and repayment periods.
+The pool uses one installment and allows a full collateral claim after the
+repayment window; it does not use oracle pricing or price-based liquidation.
+ADA deposits include the pool's minimum ledger funding. Native-token pools
+show their additional ADA funding separately.
+
+Wallet pool discovery reads bounded pages across script addresses derived from
+the wallet's change, used, and unused addresses, filtering against its known
+payment cancellation keys. Cancellation
+burns the pool identifier and returns all remaining pool value to the connected
+wallet. Existing loans and their bond tokens remain active. Exact output lookup
+can inspect script-managed pools; their cancellation requires the corresponding
+script authorization and is not enabled in this payment-key workflow.
+
+The configuration NFT and the deployed mint, spend, and cancellation scripts are
+authenticated through Dingo. Funding signatures, wallet identity, reviewed
+transaction bytes, expiry, and input availability are checked around signing.
+Contract interfaces and deployment sources are attributed in
+`src/lib/fluidtokens/NOTICE`.
+
+[Create desktop](docs/screenshots/fluidcreate1440.png) ·
+[Create mobile](docs/screenshots/fluidcreate390.png) ·
+[Inspect desktop](docs/screenshots/fluidinspect1440.png) ·
+[Inspect mobile](docs/screenshots/fluidinspect390.png).
 
 ## Sending asset bundles
 
@@ -362,10 +435,53 @@ opaque cursors. LP lookups filter by both token and pool payment credential, so
 wallet-held LP tokens do not consume the lookup bound. Both paths authenticate
 output credentials, pool tokens, and datums from the returned CBOR.
 
-Discover also links to the official [SundaeSwap](https://app.sundae.fi/) and
+Mainnet liquidity also offers SundaeSwap V3 deposits and withdrawals for the
+selected ADA/USDCx and ADA/NIGHT pools. Open
+`/wallet/markets/liquidity?network=mainnet&venue=sundae`. Token and LP quantities
+use base units; ADA uses six decimal places. The deposit form can match the
+current reserve ratio. Estimates use integer arithmetic and are refreshed before
+building. V3 liquidity datums specify supplied assets rather than minimum
+returns, so execution uses the pool ratio at scooping time. Review shows the
+refundable order deposit, scooper fee, network fee, and order reference.
+[Deposit desktop](docs/screenshots/sundaeliquiditydeposit1440.png) ·
+[Deposit mobile](docs/screenshots/sundaeliquiditydeposit390.png) ·
+[Withdrawal desktop](docs/screenshots/sundaeliquiditywithdraw1440.png) ·
+[Withdrawal mobile](docs/screenshots/sundaeliquiditywithdraw390.png).
+
+An unexecuted V3 order can be cancelled by its transaction hash and output index
+with the account that owns its cancellation key. Wallet and backend network
+identity, draft expiry, required witnesses, and the reviewed transaction body
+are checked again around signing. No protocol API is used.
+
+Discover offers native SundaeSwap V3/V4 swaps through Dingo and also links to the official [SundaeSwap](https://app.sundae.fi/) and
 [Liqwid](https://app.liqwid.finance/) mainnet applications. Those links open the
 protocol’s own workspace. Deployment identifiers follow the canonical
 [Minswap SDK](https://github.com/minswap/sdk/blob/main/src/types/constants.ts).
+
+## WingRiders Rapid mainnet swaps
+
+Open `/wallet/swap?network=mainnet&venue=wingriders` for direct pool swaps.
+Dingo provides bounded pool pages, selected pool state, network identity,
+reference scripts, transaction evaluation, and submission. Pool authentication
+checks the script credential, validity marker, datum, and share inventory.
+Selected pool reads resolve exactly one transaction output reference and
+authenticate its pool script, marker, shares, and datum. Catalogue size and
+wallet-held LP tokens do not consume the selected-pool lookup bound.
+Quotes use integer arithmetic, exclude treasury balances and the pool ADA
+reserve deposit, and support both directions and all four fee-asset modes.
+Token amounts are shown in base units; ADA uses six decimal places.
+
+Review and sign one atomic transaction. A changed pool or reference output,
+wallet account or network, expired draft, changed signed body, or missing
+funding signature stops submission. The current pool output is part of the
+review scope, so a refresh cannot leave a draft attached to an older output.
+The pool reference and datum follow the canonical
+[WingRiders Rapid source](https://github.com/WingRiders/rapid-dex/tree/9e4921e373796b0d3feaf73a342246e24231cde5).
+
+[ADA to token desktop](docs/screenshots/wingridersforward1440.png) ·
+[ADA to token mobile](docs/screenshots/wingridersforward390.png) ·
+[Token to ADA desktop](docs/screenshots/wingridersreverse1440.png) ·
+[Token to ADA mobile](docs/screenshots/wingridersreverse390.png).
 
 ## Preprod markets
 
@@ -407,6 +523,23 @@ The contract lifecycle tests execute pinned Kernel validators with the Blaze VM
 on an isolated in-memory ledger. The VM is a direct development dependency at
 the same version used by the application SDK; these tests require no wallet,
 external protocol API or transaction submission.
+
+## CardanoSwaps mainnet orders
+
+Open `/wallet/markets/orders?network=mainnet` to discover, create, fill, and
+cancel one-way limit orders through the existing DeFi Kernel contracts.
+Discovery reads bounded beacon-policy pages from Dingo. Prices and partial fills
+use integer arithmetic with payment rounded up to the contract’s requested rate.
+Native token amounts use base units; ADA uses six decimal places.
+
+Mainnet reference outputs are verified against the validator and beacon hashes
+from the pinned [CardanoSwaps source](https://github.com/fallen-icarus/cardano-swaps/tree/2bb88c506a8fe640a7d851409dd509a844545a6c).
+The wallet signs the reviewed body and auxiliary data; funding witnesses,
+backend identity, expiry, and all spending and reference inputs are checked
+around signing. Other Kernel lanes retain their Preprod deployments.
+
+[Desktop](docs/screenshots/cardanoswaps1440.png) ·
+[Mobile](docs/screenshots/cardanoswaps390.png).
 
 ## Exact 24-hour header comparison
 

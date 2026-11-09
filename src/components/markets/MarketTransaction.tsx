@@ -32,13 +32,17 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
   title,
   children,
   reviewDetails,
+  review,
   tracking,
+  onBusy,
 }: {
+  onBusy?: (busy: boolean) => void;
   draftKey: string;
   ready: boolean;
   title: string;
   children?: React.ReactNode;
   reviewDetails?: (draft: T) => React.ReactNode;
+  review?: (draft: T) => React.ReactNode;
   tracking: MarketTracking;
   prepare: (api: Cip30WalletApi, assertCurrent: () => void) => Promise<T>;
   submit: (
@@ -103,6 +107,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
       return;
     pending.current = true;
     setBusy(true);
+    onBusy?.(true);
     setError("");
     try {
       assertCurrent();
@@ -123,6 +128,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
     } finally {
       pending.current = false;
       setBusy(false);
+      onBusy?.(false);
     }
   }
   async function sign() {
@@ -137,6 +143,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
       return;
     pending.current = true;
     setBusy(true);
+    onBusy?.(true);
     setError("");
     try {
       assertCurrent();
@@ -158,6 +165,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
     } finally {
       pending.current = false;
       setBusy(false);
+      onBusy?.(false);
     }
   }
   function download() {
@@ -191,6 +199,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
             <span>Network fee</span>
             <strong>{formatNativeCoin(draft.tx.body().fee())}</strong>
           </div>
+          {review?.(draft)}
           <TransactionOutputs tx={draft.tx} />
           <p>
             Review the amounts above. Your wallet signs; Dingo submits to{" "}

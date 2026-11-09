@@ -5,6 +5,7 @@ import type { Cip30WalletApi } from "../dingo/cip30";
 import { getBlaze } from "../dingo/blaze";
 import { blockfrostFetch } from "../dingo/blockfrost";
 import {
+  assertDingoTransactionBackends,
   assertTransactionNetwork,
   assertWalletSession,
 } from "../dingo/walletSession";
@@ -16,7 +17,7 @@ import {
   type KernelRecord,
 } from "./markets";
 import { quoteKernelSwap } from "./swap";
-import { assertKernelNetwork, KERNEL_LANES } from "./protocol";
+import { assertKernelNetwork, assertKernelLane, KERNEL_LANES } from "./protocol";
 export type KernelAction =
   | KernelCreation
   | KernelLifecycle
@@ -34,6 +35,10 @@ export async function prepareKernelTransaction(
   assertCurrent: () => void,
 ) {
   assertKernelNetwork();
+  if ("record" in action) assertKernelLane(action.record.lane);
+  else if (action.kind !== "limit-order") assertKernelLane("loan-negotiation");
+  await assertDingoTransactionBackends();
+  assertCurrent();
   await assertWalletSession(api, assertCurrent);
   const { blaze } = await getBlaze(api);
   assertCurrent();
@@ -276,8 +281,29 @@ export async function prepareKernelTransaction(
   )
     throw new Error("Remaining transaction assets must return to this wallet.");
   const actual = tx.body().outputs()[0];
-  await assertTransactionNetwork(tx, assertCurrent, blaze.provider);
+  const funding = await assertTransactionNetwork(
+    tx, assertCurrent, blaze.provider,
+  );
+  const requiredFundingKeys = [...new Set(funding.flatMap((utxo) => {
+    const credential = utxo.output().address().getProps().paymentPart;
+    return credential?.type === Core.CredentialType.KeyHash
+      ? [String(credential.hash)] : [];
+  }))];
+  const referenceInputs = tx.body().referenceInputs()?.values() ?? [];
+  const references = await blaze.provider.resolveUnspentOutputs([...referenceInputs]);
+  assertCurrent();
+  if (
+    references.length !== referenceInputs.length ||
+    referenceInputs.some((input) => !references.some(
+      (utxo) => utxo.input().toCbor() === input.toCbor(),
+    ))
+  )
+    throw new Error("Kernel reference inputs are unavailable.");
   return {
+    originalBody: tx.body().toCbor(),
+    originalAuxiliary: tx.auxiliaryData()?.toCbor(),
+    requiredFundingKeys,
+    inputSnapshot: [...funding, ...references].map((utxo) => utxo.toCbor()),
     outputs: expectedOutputs,
     tx,
     blaze,
@@ -297,6 +323,8 @@ export async function submitKernelTransaction(
   assertCurrent: () => void,
 ) {
   assertKernelNetwork();
+  await assertDingoTransactionBackends();
+  assertCurrent();
   await assertWalletSession(api, assertCurrent);
   const current = await draft.blaze.wallet.getChangeAddress();
   assertCurrent();
@@ -311,6 +339,24 @@ export async function submitKernelTransaction(
   )
     throw new Error("Kernel draft expired. Build a new transaction.");
   await assertTransactionNetwork(draft.tx, assertCurrent, draft.blaze.provider);
+  const verifySnapshot = async () => {
+    const originals = draft.inputSnapshot.map((cbor) => Core.TransactionUnspentOutput.fromCbor(cbor));
+    const currentInputs = await draft.blaze.provider.resolveUnspentOutputs(originals.map((utxo) => utxo.input()));
+    assertCurrent();
+    if (
+      currentInputs.length !== originals.length ||
+      originals.some((original) => !currentInputs.some(
+        (utxo) => utxo.toCbor() === original.toCbor(),
+      ))
+    )
+      throw new Error("Kernel transaction inputs changed or were spent. Build a new transaction.");
+  };
+  await verifySnapshot();
+  if (
+    draft.tx.body().toCbor() !== draft.originalBody ||
+    draft.tx.auxiliaryData()?.toCbor() !== draft.originalAuxiliary
+  )
+    throw new Error("Reviewed Kernel transaction changed.");
   const id = draft.tx.getId();
   const signed = await draft.blaze.signTransaction(
     Core.Transaction.fromCbor(draft.tx.toCbor()),
@@ -320,8 +366,16 @@ export async function submitKernelTransaction(
   assertCurrent();
   if (afterAddress.toBech32() !== draft.paymentAddress)
     throw new Error("Wallet account changed while signing.");
-  if (signed.getId() !== id)
+  await assertDingoTransactionBackends();
+  assertCurrent();
+  await verifySnapshot();
+  if (
+    signed.getId() !== id || signed.body().toCbor() !== draft.originalBody ||
+    signed.auxiliaryData()?.toCbor() !== draft.originalAuxiliary
+  )
     throw new Error("Wallet changed the reviewed transaction.");
+  for (const key of draft.requiredFundingKeys)
+    assertSignedWithKey(signed, key, "Wallet did not sign every funding input.");
   if (draft.requiredKey)
     assertSignedWithKey(
       signed,
