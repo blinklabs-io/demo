@@ -13,7 +13,8 @@ import type { Cip30WalletApi } from "../../lib/dingo/cip30";
 vi.mock("../../lib/dingo/config", () => ({ DINGO_NETWORK: { id: "mainnet", label: "Mainnet", networkMagic: 764824073 }, DINGO_CONFIG: { blockfrostUrl: "http://localhost", utxorpcUrl: "http://localhost" } }));
 const wallet = vi.hoisted(() => ({ status: "disconnected", changeAddress: null as string | null, tokens: [], walletApi: {} as Cip30WalletApi }));
 vi.mock("../../stores/walletStore", () => ({ useWalletStore: () => wallet }));
-vi.mock("../../lib/splash/read", () => ({ readSplashOrder: vi.fn(), readSplashOrders: vi.fn(), splashCancellationKeys: vi.fn(async () => ["11".repeat(28)]) }));
+vi.mock("../../lib/dingo/ownedScriptOutputs", () => ({ walletScriptIdentity: vi.fn(async () => ({ keys: ["11".repeat(28)], addresses: ["61"+"11".repeat(28)] })) }));
+vi.mock("../../lib/splash/read", () => ({ readSplashOrder: vi.fn(), readSplashOrders: vi.fn() }));
 vi.mock("../../lib/splash/transactions", () => ({ prepareSplashAction: vi.fn(async () => ({})), submitSplashAction: vi.fn() }));
 vi.mock("./MarketTransaction", () => ({ MarketConfirmation: () => null, MarketTransaction: (props: { ready: boolean; title: string; draftKey: string; prepare: (api: Cip30WalletApi, guard: () => void) => Promise<unknown> }) => <button disabled={!props.ready} data-draft-key={props.draftKey} onClick={() => void props.prepare({} as Cip30WalletApi, () => {})}>{props.title}</button> }));
 let host: HTMLDivElement, root: Root, client: QueryClient;
@@ -50,8 +51,8 @@ it("blocks invalid execution budgets before preparation", async () => {
 
 it("navigates forward again after revisiting a cached page", async () => {
   wallet.status = "connected"; wallet.changeAddress = "addr1_fixture";
-  const first = await vi.mocked(readSplashOrders)("addr1_fixture", ["11".repeat(28)]);
-  vi.mocked(readSplashOrders).mockImplementation(async (_, _keys, cursor) => ({ ...first, nextToken: cursor ? "" : "second" }));
+  const first = await vi.mocked(readSplashOrders)({keys:["11".repeat(28)],addresses:["61"+"11".repeat(28)]});
+  vi.mocked(readSplashOrders).mockImplementation(async (_, cursor) => ({ ...first, nextToken: cursor ? "" : "second" }));
   await render();
   await act(async () => button("Next orders").click()); await act(async () => { await vi.advanceTimersByTimeAsync(1); });
   expect(host.textContent).toContain("Page 2");

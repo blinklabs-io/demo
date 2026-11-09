@@ -298,7 +298,8 @@ decimal places; native token amounts use whole base units. The form shows the
 step allowance, executor fee, additional ADA funding, and total ADA locked in
 the order before signing. Execution and settlement draw from that funding.
 
-Account discovery reads bounded pages at the account’s complete script address.
+Account discovery reads bounded pages across script addresses derived from the
+wallet’s change, used, and unused addresses.
 An output reference can load orders using other stake addresses. Cancellation
 requires the committed cancellation key and returns the complete remaining
 order value, including accrued assets, to its committed recipient.
@@ -330,6 +331,34 @@ The source interfaces and mathematical formulas are attributed in
 
 ![Dano swap on desktop](docs/screenshots/danoswap1440.png)
 ![Dano swap on mobile](docs/screenshots/danoswap390.png)
+
+## FluidTokens V4 static lending pools
+
+Open `/wallet/fluidtokens?network=mainnet` to create a lending pool with explicit
+principal, collateral ratio, fixed total loan interest, and repayment periods.
+The pool uses one installment and allows a full collateral claim after the
+repayment window; it does not use oracle pricing or price-based liquidation.
+ADA deposits include the pool's minimum ledger funding. Native-token pools
+show their additional ADA funding separately.
+
+Wallet pool discovery reads bounded pages across script addresses derived from
+the wallet's change, used, and unused addresses, filtering against its known
+payment cancellation keys. Cancellation
+burns the pool identifier and returns all remaining pool value to the connected
+wallet. Existing loans and their bond tokens remain active. Exact output lookup
+can inspect script-managed pools; their cancellation requires the corresponding
+script authorization and is not enabled in this payment-key workflow.
+
+The configuration NFT and the deployed mint, spend, and cancellation scripts are
+authenticated through Dingo. Funding signatures, wallet identity, reviewed
+transaction bytes, expiry, and input availability are checked around signing.
+Contract interfaces and deployment sources are attributed in
+`src/lib/fluidtokens/NOTICE`.
+
+[Create desktop](docs/screenshots/fluidcreate1440.png) ·
+[Create mobile](docs/screenshots/fluidcreate390.png) ·
+[Inspect desktop](docs/screenshots/fluidinspect1440.png) ·
+[Inspect mobile](docs/screenshots/fluidinspect390.png).
 
 ## Sending asset bundles
 

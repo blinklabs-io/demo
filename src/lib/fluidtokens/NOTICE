@@ -1,0 +1,8 @@
+FluidTokens V4 pool datum and redeemer interfaces follow the official contracts:
+https://github.com/FluidTokens/ft-cardano-loans-v4
+Source revision: 875d568afab2ace3bc16e89264924063b4d35381.
+The upstream aiken.toml declares Apache-2.0 licensing.
+Copyright holders: FluidTokens contract contributors.
+
+Mainnet configuration and reference outputs were verified against the public
+FluidTokens application and Dingo. No FluidTokens API client is included.
