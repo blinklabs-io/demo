@@ -52,13 +52,23 @@ export function splashAddress(data: Core.PlutusData) {
     return Core.addressFromCredential(1, credential(payment));
   }
   const [reference] = splashFields(stake, 0n, 1);
+  if (reference.asConstrPlutusData()?.getAlternative() === 1n) {
+    const [slot, tx, cert] = splashFields(reference, 1n, 3).map((value) => integer(value));
+    if (tx > 65535n || cert > 65535n) throw new Error("Invalid Splash stake pointer.");
+    return Core.Cardano.PointerAddress.fromCredentials(1, credential(payment).toCore(), { slot, txIndex: Core.Cardano.TxIndex(Number(tx)), certIndex: Core.Cardano.CertIndex(Number(cert)) }).toAddress();
+  }
   const [inline] = splashFields(reference, 0n, 1);
   return Core.addressFromCredentials(1, credential(payment), credential(inline));
 }
 export function splashAddressData(address: Core.Address) {
   const { paymentPart, delegationPart } = address.getProps();
-  if (address.getNetworkId() !== 1 || !paymentPart || address.asPointer()) throw new Error("Use a mainnet base or enterprise payment address.");
+  if (address.getNetworkId() !== 1 || !paymentPart) throw new Error("Use a mainnet payment address.");
   const cred = (part: typeof paymentPart) => pd.con(part.type, [pd.bytes(String(part.hash))]);
+  const pointer = address.asPointer()?.getStakePointer();
+  if (pointer) {
+    if (pointer.txIndex > 65535 || pointer.certIndex > 65535) throw new Error("Invalid Splash stake pointer.");
+    return pd.con(0, [cred(paymentPart), pd.con(0, [pd.con(1, [pd.int(pointer.slot), pd.int(BigInt(pointer.txIndex)), pd.int(BigInt(pointer.certIndex))])])]);
+  }
   return pd.con(0, [cred(paymentPart), delegationPart ? pd.con(0, [pd.con(0, [cred(delegationPart)])]) : pd.con(1)]);
 }
 export function splashOrderAddress(owner?: Core.Address) {

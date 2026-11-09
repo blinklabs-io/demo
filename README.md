@@ -303,7 +303,7 @@ An output reference can load orders using other stake addresses. Cancellation
 requires the committed cancellation key and returns the complete remaining
 order value, including accrued assets, to its committed recipient.
 
-The integration pins the current mainnet order and cancellation-script hashes.
+The integration pins the mainnet order-script hash and its cancellation reference output.
 It builds the canonical datum and beacon bytes locally and uses Dingo for all
 chain reads, evaluation, and submission. Wallet identity, funding signatures,
 transaction contents, validity, and input availability are checked around signing.

@@ -40,3 +40,18 @@ it("resolves a selected order exactly once and rejects a mismatched response", a
 it.each(["invalid", "aa".repeat(32) + "#4294967296", "aa".repeat(32) + "#01"])("rejects invalid output %s before I/O", async (point) => {
   await expect(readSplashOrder(point)).rejects.toThrow("transaction hash"); expect(mocks.resolve).not.toHaveBeenCalled(); expect(mocks.network).not.toHaveBeenCalled();
 });
+
+it("rejects enterprise and non-mainnet account listings before querying", async () => {
+  const credential = Core.Credential.fromCore({ type: Core.CredentialType.KeyHash, hash: Core.Hash28ByteBase16("11".repeat(28)) });
+  await expect(readSplashOrders(Core.addressFromCredential(1, credential).toBech32())).rejects.toThrow("stake credential");
+  await expect(readSplashOrders(Core.addressFromCredential(0, credential).toBech32())).rejects.toThrow("Use a mainnet account address.");
+  expect(mocks.search).not.toHaveBeenCalled();
+});
+it("rejects foreign account outputs and oversized pages", async () => {
+  const item = rpc(), foreign = splashFixture(1);
+  item.nativeBytes = Core.fromHex(foreign.output().toCbor());
+  mocks.search.mockResolvedValue({ items: [item], nextToken: "" });
+  const page = await readSplashOrders(account()); expect(page.orders).toEqual([]); expect(page.errors).toEqual(["Splash output is outside the requested account address."]);
+  mocks.search.mockResolvedValue({ items: Array.from({ length: 21 }, rpc), nextToken: "" });
+  await expect(readSplashOrders(account())).rejects.toThrow("invalid Splash order page");
+});

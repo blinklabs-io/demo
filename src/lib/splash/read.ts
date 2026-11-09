@@ -25,6 +25,7 @@ export async function readSplashOrder(outpoint: string, signal?: AbortSignal) {
 export async function readSplashOrders(owner: string, cursor = "", signal?: AbortSignal) {
   const address = Core.Address.fromBech32(owner);
   if (address.getNetworkId() !== 1) throw new Error("Use a mainnet account address.");
+  if (!address.getProps().delegationPart) throw new Error("Account listing requires a stake credential. Load an enterprise order by output reference.");
   if (cursor.length > 4096) throw new Error("Splash page cursor exceeds the query limit.");
   await assertSplashMainnet(); signal?.throwIfAborted();
   const expectedAddress = splashOrderAddress(address);

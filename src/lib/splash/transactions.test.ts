@@ -187,3 +187,13 @@ it("cancels a zero-remaining order and returns its accrued output tokens", async
   const cancelled = await prepareSplashAction(f.api, { kind: "cancel", outpoint: point(order.input()) }, () => {});
   expect(cancelled.output.amount().toCbor()).toBe(output.amount().toCbor()); expect(f.ledger.evaluations).toBeGreaterThan(0);
 });
+it("preserves a pointer-staked recipient through deployed-script cancellation", async () => {
+  const f = await setup(), draft = await prepareSplashAction(f.api, { kind: "create", terms }, () => {});
+  const recipient = Core.Cardano.PointerAddress.fromCredentials(1, f.address.getProps().paymentPart!, { slot: 123456n, txIndex: Core.Cardano.TxIndex(2), certIndex: Core.Cardano.CertIndex(1) }).toAddress();
+  const fields = splashFields(draft.output.datum()!.asInlineData()!, 0n, 12); fields[9] = splashAddressData(recipient);
+  draft.output.setDatum(Core.Datum.newInlineData(pd.con(0, fields)));
+  const order = new Core.TransactionUnspentOutput(new Core.TransactionInput(draft.tx.getId(), 0n), draft.output);
+  f.ledger.outputs.set(point(order.input()), order);
+  const cancelled = await prepareSplashAction(f.api, { kind: "cancel", outpoint: point(order.input()) }, () => {});
+  expect(cancelled.output.address().toBytes()).toBe(recipient.toBytes()); expect(f.ledger.evaluations).toBeGreaterThan(0);
+});
