@@ -1,0 +1,6 @@
+Splash contract specification: splashprotocol/splash-core (CC0),
+a185ee8668414fc2bafc232fb74533bc135137fd.
+Current order interfaces and deployment identifiers verified against
+splashprotocol/protocol-sdk ebc01e8871284c6ac450c35e8d5e3bcab7d5fb56
+and splash-offchain-multiplatform f23126425063d9d4dbf5ba07401f97737f99d3aa.
+No protocol API client code is included.

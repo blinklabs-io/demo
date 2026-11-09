@@ -290,6 +290,29 @@ admission limits. GET requests honor bounded `Retry-After` responses; mutations
 are never automatically retried. Swap flows use SundaeSwap core 3.4.0 with the
 Dingo query provider and verified Mainnet and Preview V3/V4 deployment configurations.
 
+## Splash mainnet limit orders
+
+Open `/wallet/splash?network=mainnet` to create a Splash limit order with an
+explicit minimum output/input rate and funded execution terms. ADA uses six
+decimal places; native token amounts use whole base units. The form shows the
+step allowance, executor fee, additional ADA funding, and total ADA locked in
+the order before signing. Execution and settlement draw from that funding.
+
+Account discovery reads bounded pages at the account’s complete script address.
+An output reference can load orders using other stake addresses. Cancellation
+requires the committed cancellation key and returns the complete remaining
+order value, including accrued assets, to its committed recipient.
+
+The integration pins the current mainnet order and cancellation-script hashes.
+It builds the canonical datum and beacon bytes locally and uses Dingo for all
+chain reads, evaluation, and submission. Wallet identity, funding signatures,
+transaction contents, validity, and input availability are checked around signing.
+
+[Create desktop](docs/screenshots/splashcreate1440.png) ·
+[Create mobile](docs/screenshots/splashcreate390.png) ·
+[Cancellation desktop](docs/screenshots/splashcancel1440.png) ·
+[Cancellation mobile](docs/screenshots/splashcancel390.png).
+
 ## Sending asset bundles
 
 Send keeps a required ADA amount separate from additional native assets. The
