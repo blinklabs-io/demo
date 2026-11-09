@@ -45,3 +45,8 @@ it("formats INDY consistently when the browser default locale uses dot grouping"
  const original=BigInt.prototype.toLocaleString,format=vi.spyOn(BigInt.prototype,"toLocaleString").mockImplementation(function(this:bigint,...args){return original.call(this,args[0]??"de-DE",args[1]);});
  try{await render();expect(host.textContent).toContain("11,776,792.382497 INDY");}finally{format.mockRestore();}
 });
+it("does not block a new stake when a loaded position is newer than the cached manager",async()=>{
+ vi.mocked(readIndigoManager).mockResolvedValue({...decodeIndigoManager(fixture(managerFixture.items[0])),snapshot:0n});
+ await render();await lookup();expect(button("Review Indigo transaction").disabled).toBe(true);
+ await act(async()=>button("Stake INDY").click());expect(button("Review Indigo transaction").disabled).toBe(false);
+});

@@ -25,7 +25,7 @@ function IndigoMainnet(){
  const selected=useQuery({queryKey:["dingo","markets","indigo","selected",point],queryFn:({signal})=>readIndigoPosition(point,signal),enabled:!!point&&!listed,staleTime:30000,refetchInterval:30000,retry:false});
  const position=listed??selected.data;let action:IndigoAction|undefined,error="",reward:bigint|undefined;
  try{
-   if(manager.data&&position)reward=indigoReward(manager.data,position);
+   if(mode!=="stake"&&manager.data&&position)reward=indigoReward(manager.data,position);
    if(mode==="stake"||mode==="add"||mode==="withdraw"){if(!/^\d{1,18}(?:\.\d{1,6})?$/.test(quantity.trim()))throw new Error("Enter INDY with at most six decimal places.");const amount=rawAmount(quantity,"lovelace");if(amount<=0n)throw new Error("Enter a positive INDY amount.");if(mode==="stake")action={kind:"stake",amount};else if(position)action={kind:"adjust",point:indigoPoint(position),amount:mode==="withdraw"?-amount:amount};}
    else if(position)action=mode==="close"?{kind:"close",point:indigoPoint(position)}:{kind:"adjust",point:indigoPoint(position),amount:0n};
  }catch(e){error=e instanceof Error?e.message:"Enter a valid staking amount.";}
