@@ -112,7 +112,7 @@ it("rejects wallet auxiliary data changes even when the transaction body is unch
   await expect(submitKernelTransaction(api, draft, () => {})).rejects.toThrow("changed the reviewed transaction");
   expect(boundary.post).not.toHaveBeenCalled();
 });
-it("requires cryptographically valid witnesses for every funding key", async () => {
+it("rejects a missing funding key witness", async () => {
   const { draft, api } = fixture();
   draft.requiredFundingKeys = ["11".repeat(28)];
   await expect(submitKernelTransaction(api, draft, () => {})).rejects.toThrow("sign every funding input");
