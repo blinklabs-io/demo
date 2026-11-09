@@ -1,0 +1,1 @@
+Pool datum and swap accounting follow WingRiders/rapid-dex at 9e4921e373796b0d3feaf73a342246e24231cde5: common/src/on-chain, common/src/helpers/datums.ts, sdk/core/src/amm/swap.ts, and sdk/core/src/on-chain/transaction. MIT copyright 2025 WingRiders. Transaction construction uses Blaze and Dingo.

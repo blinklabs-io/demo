@@ -33,7 +33,9 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
   children,
   review,
   tracking,
+  onBusy,
 }: {
+  onBusy?: (busy: boolean) => void;
   draftKey: string;
   ready: boolean;
   title: string;
@@ -103,6 +105,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
       return;
     pending.current = true;
     setBusy(true);
+    onBusy?.(true);
     setError("");
     try {
       assertCurrent();
@@ -123,6 +126,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
     } finally {
       pending.current = false;
       setBusy(false);
+      onBusy?.(false);
     }
   }
   async function sign() {
@@ -137,6 +141,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
       return;
     pending.current = true;
     setBusy(true);
+    onBusy?.(true);
     setError("");
     try {
       assertCurrent();
@@ -158,6 +163,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
     } finally {
       pending.current = false;
       setBusy(false);
+      onBusy?.(false);
     }
   }
   function download() {

@@ -1,4 +1,6 @@
+import { useSearchParams } from "react-router";
 import { TransactionRehearsalCbor } from "../../components/wallet/TransactionRehearsal";
+import { WingRidersMarket } from "../../components/markets/WingRidersMarket";
 import { MinswapMarket } from "../../components/markets/MinswapMarket";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
@@ -93,7 +95,19 @@ function createQueryProvider(): DingoSundaeQueryProvider {
 }
 
 export default function WalletSwap() {
-  const [version, setVersion] = useState<"Minswap" | "V3" | "V4">(DINGO_NETWORK.id === "mainnet" && new URLSearchParams(window.location.search).get("venue") !== "sundae" ? "Minswap" : "V4");
+  const [params, setParams] = useSearchParams();
+  type Venue = "Minswap" | "WingRiders" | "V3" | "V4";
+  const venue = params.get("venue");
+  const version: Venue = venue === "wingriders" && DINGO_NETWORK.id === "mainnet"
+    ? "WingRiders" : venue === "sundae-v3" ? "V3"
+    : venue === "sundae" || DINGO_NETWORK.id !== "mainnet" ? "V4" : "Minswap";
+  function setVersion(value: Venue) {
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set("venue", value === "WingRiders" ? "wingriders" : value === "Minswap" ? "minswap" : value === "V3" ? "sundae-v3" : "sundae");
+      return next;
+    });
+  }
   const [busy, setBusy] = useState(false);
   if (DINGO_NETWORK.id !== "preview" && DINGO_NETWORK.id !== "preprod" && DINGO_NETWORK.id !== "mainnet")
     return (
@@ -121,7 +135,7 @@ export default function WalletSwap() {
     <>
       <nav className="swap-version-nav" aria-label="Swap venue">
         <div className="swap-version-switch">
-          {(DINGO_NETWORK.id === "mainnet" ? (["Minswap", "V3", "V4"] as const) : (["V3", "V4"] as const)).map((v) => (
+          {(DINGO_NETWORK.id === "mainnet" ? (["Minswap", "WingRiders", "V3", "V4"] as const) : (["V3", "V4"] as const)).map((v) => (
             <button
               key={v}
               type="button"
@@ -129,12 +143,14 @@ export default function WalletSwap() {
               disabled={busy}
               onClick={() => setVersion(v)}
             >
-              {v === "Minswap" ? v : `SundaeSwap ${v}`}
+              {v === "Minswap" || v === "WingRiders" ? v : `SundaeSwap ${v}`}
             </button>
           ))}
         </div>
       </nav>
-      {version === "Minswap" ? (
+      {version === "WingRiders" ? (
+        <WingRidersMarket onBusy={setBusy} />
+      ) : version === "Minswap" ? (
         <MinswapMarket initialAction="swap" />
       ) : version === "V4" ? (
         <V4Swap onBusy={setBusy} />
