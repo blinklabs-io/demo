@@ -1,3 +1,4 @@
+import { parseOutpoint, walletScriptIdentity } from "../dingo/ownedScriptOutputs";
 import { Core, calculateMinAda } from "@blaze-cardano/sdk";
 import { getBlaze } from "../dingo/blaze";
 import type { Cip30WalletApi } from "../dingo/cip30";
@@ -6,7 +7,7 @@ import { assertWalletSession, assertTransactionNetwork } from "../dingo/walletSe
 import { assertSignedWithKey } from "../dingo/signatureWitness";
 import { pd } from "../kernel/actions";
 import { SPLASH_ORDER_HASH, SPLASH_REFERENCE, createSplashOrder, splashPlan, type SplashTerms } from "./data";
-import { assertSplashMainnet, readSplashOrder, splashInput } from "./read";
+import { assertSplashMainnet, readSplashOrder } from "./read";
 
 export type SplashAction = { kind: "create"; terms: SplashTerms } | { kind: "cancel"; outpoint: string };
 async function identity(api: Cip30WalletApi, guard: () => void) {
@@ -25,7 +26,7 @@ export async function prepareSplashAction(api: Cip30WalletApi, action: SplashAct
   if (action.kind === "create") splashPlan(action.terms);
   await assertSplashMainnet();
   const owner = await identity(api, guard), { blaze } = await getBlaze(api); guard();
-  const referenceInput = splashInput(`${SPLASH_REFERENCE}#0`);
+  const referenceInput = parseOutpoint(`${SPLASH_REFERENCE}#0`);
   const references = await blaze.provider.resolveUnspentOutputs([referenceInput]); guard();
   if (references.length !== 1 || references[0].input().toCbor() !== referenceInput.toCbor() || references[0].output().address().getNetworkId() !== 1 || references[0].output().scriptRef()?.hash() !== SPLASH_ORDER_HASH)
     throw new Error("Dingo did not verify the deployed Splash cancellation script.");
@@ -40,8 +41,8 @@ export async function prepareSplashAction(api: Cip30WalletApi, action: SplashAct
     builder.addInput(seed);
   } else {
     const order = await readSplashOrder(action.outpoint); guard();
-    const addresses = [owner.address.toBytes(), ...await api.getUsedAddresses(), ...await api.getUnusedAddresses()]; guard();
-    if (!addresses.some((hex) => { const address = Core.Address.fromBytes(Core.HexBlob(hex)); return address.getNetworkId() === 1 && address.getProps().paymentPart?.type === Core.CredentialType.KeyHash && address.getProps().paymentPart?.hash === order.cancelKey; }))
+    const {keys} = await walletScriptIdentity(api,owner.address.toBech32()); guard();
+    if (!keys.includes(order.cancelKey))
       throw new Error("This wallet does not own the Splash cancellation key.");
     signer = order.cancelKey;
     output = new Core.TransactionOutput(order.owner, Core.Value.fromCbor(order.utxo.output().amount().toCbor()));

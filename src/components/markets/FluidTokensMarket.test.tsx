@@ -13,7 +13,8 @@ import type { Cip30WalletApi } from "../../lib/dingo/cip30";
 vi.mock("../../lib/dingo/config", () => ({ DINGO_NETWORK: { id: "mainnet", label: "Mainnet", networkMagic: 764824073 }, DINGO_CONFIG: { blockfrostUrl: "http://localhost", utxorpcUrl: "http://localhost" } }));
 const wallet = vi.hoisted(() => ({ status: "disconnected", changeAddress: null as string | null, tokens: [], walletApi: {} as Cip30WalletApi }));
 vi.mock("../../stores/walletStore", () => ({ useWalletStore: () => wallet }));
-vi.mock("../../lib/fluidtokens/read", () => ({ readFluidPool: vi.fn(), readFluidPools: vi.fn(), fluidCancellationKeys: vi.fn(async () => ["11".repeat(28)]) }));
+vi.mock("../../lib/dingo/ownedScriptOutputs", () => ({ walletScriptIdentity: vi.fn(async () => ({ keys: ["11".repeat(28)], addresses: ["61"+"11".repeat(28)] })) }));
+vi.mock("../../lib/fluidtokens/read", () => ({ readFluidPool: vi.fn(), readFluidPools: vi.fn() }));
 vi.mock("../../lib/fluidtokens/transactions", () => ({ prepareFluidAction: vi.fn(async () => ({})), submitFluidAction: vi.fn() }));
 vi.mock("./MarketTransaction", () => ({ MarketConfirmation: () => null, MarketTransaction: (props: { ready: boolean; title: string; draftKey: string; prepare: (api: Cip30WalletApi, guard: () => void) => Promise<unknown> }) => <button disabled={!props.ready} data-draft-key={props.draftKey} onClick={() => void props.prepare({} as Cip30WalletApi, () => {})}>{props.title}</button> }));
 let host: HTMLDivElement, root: Root, client: QueryClient;
@@ -51,4 +52,13 @@ it("requires explicit quantities after changing either asset denomination",async
  expect(input("Amount to lend").value).toBe("");expect(input("For each principal quantity").value).toBe("");
  await act(async()=>{change("Amount to lend","1000000");change("For each principal quantity","1000000");});expect(button("Review FluidTokens transaction").disabled).toBe(false);
  await act(async()=>change("Collateral asset","lovelace"));expect(input("Collateral quantity required").value).toBe("");expect(button("Review FluidTokens transaction").disabled).toBe(true);
+});
+
+it("accepts uppercase collateral identifiers as canonical lowercase units",async()=>{
+ await render();const token="ab".repeat(28)+"4a";await act(async()=>{change("Collateral asset",token.toUpperCase());change("Collateral quantity required","1000000");});await act(async()=>button("Review FluidTokens transaction").click());expect(prepareFluidAction).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({terms:expect.objectContaining({collateral:token})}),expect.any(Function));
+});
+it("refreshes from the first wallet page after browsing another script address",async()=>{
+ wallet.status="connected";wallet.changeAddress="addr1_fixture";const data=await vi.mocked(readFluidPools)({keys:["11".repeat(28)],addresses:["61"+"11".repeat(28)]});vi.mocked(readFluidPools).mockImplementation(async(_,cursor)=>({...data,nextToken:cursor?"":"next"}));
+ await render();await act(async()=>button("Next pools").click());await act(async()=>{await vi.advanceTimersByTimeAsync(1);});expect(host.textContent).toContain("Page 2");const before=vi.mocked(readFluidPools).mock.calls.length;
+ await act(async()=>button("Refresh ↻").click());await act(async()=>{await vi.advanceTimersByTimeAsync(1);});expect(host.textContent).toContain("Page 1");expect(vi.mocked(readFluidPools).mock.calls.length).toBeGreaterThan(before);expect(vi.mocked(readFluidPools).mock.lastCall?.[1]).toBe("");
 });

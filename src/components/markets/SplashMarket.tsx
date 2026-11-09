@@ -1,8 +1,9 @@
+import { walletScriptIdentity } from "../../lib/dingo/ownedScriptOutputs";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { splashPlan, splashPoint, type SplashTerms } from "../../lib/splash/data";
-import { readSplashOrder, readSplashOrders, splashCancellationKeys } from "../../lib/splash/read";
+import { readSplashOrder, readSplashOrders } from "../../lib/splash/read";
 import { prepareSplashAction, submitSplashAction, type SplashAction } from "../../lib/splash/transactions";
 import { useWalletStore } from "../../stores/walletStore";
 import { useTipStore } from "../../stores/tipStore";
@@ -19,6 +20,7 @@ export function SplashMarket() {
 }
 function SplashMainnet() {
   const wallet = useWalletStore(), [hash, submitted] = useState("");
+  const client = useQueryClient();
   const tracking = { hash, submitted };
   const [mode, setMode] = useState<"create" | "cancel">("create");
   const [input, setInput] = useState("lovelace"), [output, setOutput] = useState("");
@@ -32,7 +34,7 @@ function SplashMainnet() {
   useEffect(() => useTipStore.subscribe((next, previous) => {
     if (next.revision !== previous.revision && next.lastAction !== "apply") { setCursors([""]); setPage(0); setChosen(""); }
   }), []);
-  const catalog = useQuery({ queryKey: ["dingo", "markets", "splash", "account", wallet.changeAddress, cursors[page]], queryFn: async ({ signal }) => { if (!wallet.walletApi) throw new Error("Connect a wallet to read its cancellation keys."); return readSplashOrders(wallet.changeAddress!, await splashCancellationKeys(wallet.walletApi), cursors[page], signal); }, enabled: wallet.status === "connected" && !!wallet.changeAddress, staleTime: 30000, refetchInterval: 30000, retry: false });
+  const catalog = useQuery({ queryKey: ["dingo", "markets", "splash", "account", wallet.changeAddress, cursors[page]], queryFn: async ({ signal }) => { if (!wallet.walletApi) throw new Error("Connect a wallet to read its cancellation keys."); return readSplashOrders(await walletScriptIdentity(wallet.walletApi,wallet.changeAddress!), cursors[page], signal); }, enabled: wallet.status === "connected" && !!wallet.changeAddress, staleTime: 30000, refetchInterval: 30000, retry: false });
   const orders = catalog.data?.orders ?? [], point = chosen || (orders[0] ? splashPoint(orders[0]) : "");
   const listed = orders.find((order) => splashPoint(order) === point);
   const selection = useQuery({ queryKey: ["dingo", "markets", "splash", "selected", point], queryFn: ({ signal }) => readSplashOrder(point, signal), enabled: !!point && !listed, staleTime: 30000, refetchInterval: 30000, retry: false });
@@ -53,7 +55,7 @@ function SplashMainnet() {
     <nav className="market-mode" aria-label="Splash action"><button aria-pressed={mode === "create"} onClick={() => setMode("create")}>Place a limit order</button><button aria-pressed={mode === "cancel"} onClick={() => setMode("cancel")}>Manage orders</button></nav>
     <div className="market-layout">
       <section className="market-catalog">
-        <div className="market-toolbar"><h2>Account orders</h2><button disabled={!wallet.changeAddress} onClick={() => void catalog.refetch()}>Refresh ↻</button></div>
+        <div className="market-toolbar"><h2>Account orders</h2><button disabled={!wallet.changeAddress} onClick={async () => { await client.invalidateQueries({ queryKey: ["dingo", "markets", "splash", "account", wallet.changeAddress], refetchType: "none" }); setCursors([""]); setPage(0); setChosen(""); if (page === 0) void catalog.refetch(); }}>Refresh ↻</button></div>
         {wallet.status !== "connected" ? <p>Connect a wallet to read orders at its Splash account address, or load an order by output reference.</p> : !catalog.data && (catalog.isPending || catalog.error) ? <MarketLoading error={catalog.error} retry={() => void catalog.refetch()} /> : <>
           {catalog.error && <p role="alert">Refresh failed: {catalog.error.message}</p>}
           <div className="market-grid">{orders.map((candidate) => <button className={`market-card${splashPoint(candidate) === point ? " selected" : ""}`} aria-pressed={splashPoint(candidate) === point} key={splashPoint(candidate)} onClick={() => { setChosen(splashPoint(candidate)); setMode("cancel"); }}><span className="market-pair"><MarketAsset unit={candidate.input} /> → <MarketAsset unit={candidate.output} /></span><strong>{amount(candidate.amount, candidate.input)} remaining</strong><small>Execution fee remaining: {amount(candidate.fee, "lovelace")}</small></button>)}</div>

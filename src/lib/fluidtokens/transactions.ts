@@ -1,3 +1,4 @@
+import { walletScriptIdentity } from "../dingo/ownedScriptOutputs";
 import { Core, calculateMinAda } from "@blaze-cardano/sdk";
 import { getBlaze } from "../dingo/blaze";
 import type { Cip30WalletApi } from "../dingo/cip30";
@@ -6,7 +7,7 @@ import { assertWalletSession, assertTransactionNetwork } from "../dingo/walletSe
 import { assertSignedWithKey } from "../dingo/signatureWitness";
 import { pd } from "../kernel/actions";
 import { FLUID_POOL_POLICY, FLUID_REFERENCES, createFluidPool, fluidRefData, fluidPlan, type FluidTerms } from "./data";
-import { assertFluidMainnet, readFluidPool, readFluidConfig, fluidCancellationKeys } from "./read";
+import { assertFluidMainnet, readFluidPool, readFluidConfig } from "./read";
 
 export type FluidAction = { kind: "create"; terms: FluidTerms } | { kind: "cancel"; outpoint: string };
 async function identity(api: Cip30WalletApi, guard: () => void) {
@@ -46,7 +47,7 @@ export async function prepareFluidAction(api: Cip30WalletApi, action: FluidActio
     builder.addInput(seed); mint(seed.input());
   } else {
     const pool = await readFluidPool(action.outpoint); guard();
-    const keys = await fluidCancellationKeys(api); guard();
+    const {keys} = await walletScriptIdentity(api,owner.address.toBech32()); guard();
     if (pool.authTag !== 0n) throw new Error("This pool requires script authorization for cancellation.");
     if (!keys.includes(pool.key)) throw new Error("This wallet does not own the FluidTokens pool cancellation key.");
     signer = pool.key; name = pool.name;

@@ -1,8 +1,9 @@
+import { walletScriptIdentity } from "../../lib/dingo/ownedScriptOutputs";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { fluidPlan, fluidPoint, FLUID_POOL_POLICY, type FluidTerms } from "../../lib/fluidtokens/data";
-import { readFluidPool, readFluidPools, fluidCancellationKeys } from "../../lib/fluidtokens/read";
+import { readFluidPool, readFluidPools } from "../../lib/fluidtokens/read";
 import { prepareFluidAction, submitFluidAction, type FluidAction } from "../../lib/fluidtokens/transactions";
 import { useWalletStore } from "../../stores/walletStore";
 import { useTipStore } from "../../stores/tipStore";
@@ -17,6 +18,7 @@ export function FluidTokensMarket() {
 }
 function FluidMainnet() {
   const wallet = useWalletStore(), [hash, submitted] = useState("");
+  const client = useQueryClient();
   const tracking = { hash, submitted };
   const [mode, setMode] = useState<"create" | "cancel">("create"), [principal, setPrincipal] = useState("lovelace"), [collateral, setCollateral] = useState("");
   const [deposit, setDeposit] = useState("100"), [collateralAmount, setCollateralAmount] = useState(""), [ratioPrincipal, setRatioPrincipal] = useState("1");
@@ -25,7 +27,7 @@ function FluidMainnet() {
   const [account, setAccount] = useState(wallet.changeAddress);
   if (account !== wallet.changeAddress) { setAccount(wallet.changeAddress); setCursors([""]); setPage(0); setChosen(""); }
   useEffect(() => useTipStore.subscribe((next, previous) => { if (next.revision !== previous.revision && next.lastAction !== "apply") { setCursors([""]); setPage(0); setChosen(""); } }), []);
-  const catalog = useQuery({ queryKey: ["dingo", "markets", "fluidtokens", "account", wallet.changeAddress, cursors[page]], queryFn: async ({ signal }) => { if (!wallet.walletApi) throw new Error("Connect a wallet to read its pool keys."); return readFluidPools(wallet.changeAddress!, await fluidCancellationKeys(wallet.walletApi), cursors[page], signal); }, enabled: wallet.status === "connected" && !!wallet.changeAddress, staleTime: 30000, refetchInterval: 30000, retry: false });
+  const catalog = useQuery({ queryKey: ["dingo", "markets", "fluidtokens", "account", wallet.changeAddress, cursors[page]], queryFn: async ({ signal }) => { if (!wallet.walletApi) throw new Error("Connect a wallet to read its pool keys."); return readFluidPools(await walletScriptIdentity(wallet.walletApi,wallet.changeAddress!), cursors[page], signal); }, enabled: wallet.status === "connected" && !!wallet.changeAddress, staleTime: 30000, refetchInterval: 30000, retry: false });
   const pools = catalog.data?.pools ?? [], point = chosen || (pools[0] ? fluidPoint(pools[0]) : ""), listed = pools.find(pool => fluidPoint(pool) === point);
   const selection = useQuery({ queryKey: ["dingo", "markets", "fluidtokens", "selected", point], queryFn: ({ signal }) => readFluidPool(point, signal), enabled: !!point && !listed, staleTime: 30000, refetchInterval: 30000, retry: false });
   const pool = listed ?? selection.data;
@@ -43,7 +45,7 @@ function FluidMainnet() {
     <header className="market-hero"><div><span className="eyebrow">FluidTokens V4 · Mainnet</span><h1>Set your lending terms.</h1><p>Create a static lending pool with explicit collateral quantities and fixed loan interest. Manage the remaining liquidity with your wallet; Dingo reads, evaluates, and submits transactions.</p><a href="https://app.fluidtokens.com/ada/markets" target="_blank" rel="noreferrer">Official FluidTokens ↗</a></div></header>
     <nav className="market-mode" aria-label="FluidTokens action"><button aria-pressed={mode === "create"} onClick={() => setMode("create")}>Create a lending pool</button><button aria-pressed={mode === "cancel"} onClick={() => setMode("cancel")}>Manage pools</button></nav>
     <div className="market-layout">
-      <section className="market-catalog"><div className="market-toolbar"><h2>Wallet pools</h2><button disabled={!wallet.changeAddress} onClick={() => void catalog.refetch()}>Refresh ↻</button></div>
+      <section className="market-catalog"><div className="market-toolbar"><h2>Wallet pools</h2><button disabled={!wallet.changeAddress} onClick={async () => { await client.invalidateQueries({ queryKey: ["dingo", "markets", "fluidtokens", "account", wallet.changeAddress], refetchType: "none" }); setCursors([""]); setPage(0); setChosen(""); if (page === 0) void catalog.refetch(); }}>Refresh ↻</button></div>
         {wallet.status !== "connected" ? <p>Connect a wallet to find pools controlled by its payment keys, or inspect a pool by output reference.</p> : !catalog.data && (catalog.isPending || catalog.error) ? <MarketLoading error={catalog.error} retry={() => void catalog.refetch()} /> : <>
           {catalog.error && <p role="alert">Refresh failed: {catalog.error.message}</p>}
           <div className="market-grid">{pools.map(candidate => <button className={`market-card${fluidPoint(candidate) === point ? " selected" : ""}`} key={fluidPoint(candidate)} onClick={() => { setChosen(fluidPoint(candidate)); setMode("cancel"); }}><MarketAsset unit={candidate.principal} /><strong>{amount(candidate.available,candidate.principal)} remaining</strong></button>)}</div>
@@ -57,8 +59,8 @@ function FluidMainnet() {
         {mode === "create" ? <>
           <h2>Create a static lending pool</h2>
           <datalist id="fluid-wallet-assets"><option value="lovelace">ADA</option>{wallet.tokens.map(token => <option key={token.assetId} value={token.assetId}>{marketAssetName(token.assetId)}</option>)}</datalist>
-          <label>Principal asset<input list="fluid-wallet-assets" value={principal} onChange={event => { setPrincipal(event.target.value); setDeposit(""); setRatioPrincipal(""); }} /></label><label>Amount to lend<input inputMode="decimal" value={deposit} onChange={event => setDeposit(event.target.value)} /></label>
-          <label>Collateral asset<input list="fluid-wallet-assets" placeholder="lovelace or policy ID + hexadecimal asset name" value={collateral} onChange={event => { setCollateral(event.target.value); setCollateralAmount(""); }} /></label>
+          <label>Principal asset<input list="fluid-wallet-assets" value={principal} onChange={event => { setPrincipal(event.target.value.toLowerCase()); setDeposit(""); setRatioPrincipal(""); }} /></label><label>Amount to lend<input inputMode="decimal" value={deposit} onChange={event => setDeposit(event.target.value)} /></label>
+          <label>Collateral asset<input list="fluid-wallet-assets" placeholder="lovelace or policy ID + hexadecimal asset name" value={collateral} onChange={event => { setCollateral(event.target.value.toLowerCase()); setCollateralAmount(""); }} /></label>
           <fieldset><legend>Fixed collateral ratio</legend><label>Collateral quantity required<input inputMode="decimal" value={collateralAmount} onChange={event => setCollateralAmount(event.target.value)} /></label><label>For each principal quantity<input inputMode="decimal" value={ratioPrincipal} onChange={event => setRatioPrincipal(event.target.value)} /></label></fieldset>
           <label>Total loan interest (%)<input inputMode="decimal" value={interest} onChange={event => setInterest(event.target.value)} /></label><label>Repayment due after (hours)<input inputMode="numeric" value={hours} onChange={event => setHours(event.target.value)} /></label><label>Additional repayment window (hours)<input inputMode="numeric" value={windowHours} onChange={event => setWindowHours(event.target.value)} /></label>
           {principal.trim() !== "lovelace" && <label>ADA funding for the pool<input inputMode="decimal" value={funding} onChange={event => setFunding(event.target.value)} /></label>}
