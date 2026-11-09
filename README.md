@@ -370,6 +370,30 @@ Discover offers native SundaeSwap V3/V4 swaps through Dingo and also links to th
 protocol’s own workspace. Deployment identifiers follow the canonical
 [Minswap SDK](https://github.com/minswap/sdk/blob/main/src/types/constants.ts).
 
+## WingRiders Rapid mainnet swaps
+
+Open `/wallet/swap?network=mainnet&venue=wingriders` for direct pool swaps.
+Dingo provides bounded pool pages, selected pool state, network identity,
+reference scripts, transaction evaluation, and submission. Pool authentication
+checks the script credential, validity marker, datum, and share inventory.
+Selected pool reads traverse at most five authenticated marker pages (up to
+100 outputs), so wallet-held LP tokens do not consume the lookup bound.
+Quotes use integer arithmetic, exclude treasury balances and the pool ADA
+reserve deposit, and support both directions and all four fee-asset modes.
+Token amounts are shown in base units; ADA uses six decimal places.
+
+Review and sign one atomic transaction. A changed pool or reference output,
+wallet account or network, expired draft, changed signed body, or missing
+funding signature stops submission. The current pool output is part of the
+review scope, so a refresh cannot leave a draft attached to an older output.
+The pool reference and datum follow the canonical
+[WingRiders Rapid source](https://github.com/WingRiders/rapid-dex/tree/9e4921e373796b0d3feaf73a342246e24231cde5).
+
+[ADA to token desktop](docs/screenshots/wingridersforward1440.png) ·
+[ADA to token mobile](docs/screenshots/wingridersforward390.png) ·
+[Token to ADA desktop](docs/screenshots/wingridersreverse1440.png) ·
+[Token to ADA mobile](docs/screenshots/wingridersreverse390.png).
+
 ## Preprod markets
 
 Markets brings existing Preprod contracts into the same Dingo-backed application:

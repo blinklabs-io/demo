@@ -1,4 +1,5 @@
 import { TransactionRehearsalCbor } from "../../components/wallet/TransactionRehearsal";
+import { WingRidersMarket } from "../../components/markets/WingRidersMarket";
 import { MinswapMarket } from "../../components/markets/MinswapMarket";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useDraftGuard } from "../../lib/useDraftGuard";
@@ -93,7 +94,11 @@ function createQueryProvider(): DingoSundaeQueryProvider {
 }
 
 export default function WalletSwap() {
-  const [version, setVersion] = useState<"Minswap" | "V3" | "V4">(DINGO_NETWORK.id === "mainnet" && new URLSearchParams(window.location.search).get("venue") !== "sundae" ? "Minswap" : "V4");
+  const [version, setVersion] = useState<"Minswap" | "WingRiders" | "V3" | "V4">(() => {
+    const venue = new URLSearchParams(window.location.search).get("venue");
+    if (DINGO_NETWORK.id !== "mainnet" || venue === "sundae") return "V4";
+    return venue === "wingriders" ? "WingRiders" : "Minswap";
+  });
   const [busy, setBusy] = useState(false);
   if (DINGO_NETWORK.id !== "preview" && DINGO_NETWORK.id !== "preprod" && DINGO_NETWORK.id !== "mainnet")
     return (
@@ -121,7 +126,7 @@ export default function WalletSwap() {
     <>
       <nav className="swap-version-nav" aria-label="Swap venue">
         <div className="swap-version-switch">
-          {(DINGO_NETWORK.id === "mainnet" ? (["Minswap", "V3", "V4"] as const) : (["V3", "V4"] as const)).map((v) => (
+          {(DINGO_NETWORK.id === "mainnet" ? (["Minswap", "WingRiders", "V3", "V4"] as const) : (["V3", "V4"] as const)).map((v) => (
             <button
               key={v}
               type="button"
@@ -129,12 +134,14 @@ export default function WalletSwap() {
               disabled={busy}
               onClick={() => setVersion(v)}
             >
-              {v === "Minswap" ? v : `SundaeSwap ${v}`}
+              {v === "Minswap" || v === "WingRiders" ? v : `SundaeSwap ${v}`}
             </button>
           ))}
         </div>
       </nav>
-      {version === "Minswap" ? (
+      {version === "WingRiders" ? (
+        <WingRidersMarket />
+      ) : version === "Minswap" ? (
         <MinswapMarket initialAction="swap" />
       ) : version === "V4" ? (
         <V4Swap onBusy={setBusy} />
