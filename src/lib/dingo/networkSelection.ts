@@ -23,6 +23,7 @@ export function networkDestination(pathname: string): string {
     "/wallet/splash",
     "/wallet/fluidtokens",
     "/wallet/dano",
+    "/wallet/indigo",
     "/wallet/tools",
     "/participate",
     "/explorer",

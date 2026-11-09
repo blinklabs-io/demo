@@ -1,0 +1,38 @@
+{
+  "items": [
+    {
+      "nativeBytes": "owBYHXERKZbrAR8g6swo3ths3hd6U+0iJk4BMRmcmDp+AYIbAAAAF6gzp6ehWBwktFhBLCp/msucU8fsQyWzaAaRLtVtL5G/z00moVNTVEFLSU5HX01BTkFHRVJfTkZUAQKCAdgYWB7YeZ/YeZ8bAAAKtf+GzCHYeZ8bAAABS1rLpkD///8=",
+      "txoRef": {
+        "hash": "0fRSiwA3eGtGvf/x0lHniUYb4kxRB3LAxnIGH3iFqdQ=",
+        "index": 0
+      },
+      "cardano": {
+        "address": "cREplusBHyDqzCje2GzeF3pT7SImTgExGZyYOn4=",
+        "coin": {
+          "int": "101606205351"
+        },
+        "assets": [
+          {
+            "policyId": "JLRYQSwqf5rLnFPH7EMls2gGkS7VbS+Rv89NJg==",
+            "assets": [
+              {
+                "name": "U1RBS0lOR19NQU5BR0VSX05GVA==",
+                "outputCoin": {
+                  "int": "1"
+                }
+              }
+            ]
+          }
+        ],
+        "datum": {
+          "hash": "DKAkLMAKuM/RTEaKaJARuLpCWgiupBNnxh5CoEv9G80="
+        }
+      }
+    }
+  ],
+  "ledgerTip": {
+    "slot": "202632671",
+    "hash": "86RS9ysI4qgkZYJt8Vg0iWqJiHffsnSPzKtBXAZxpwc=",
+    "height": "14176866"
+  }
+}

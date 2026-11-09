@@ -55,6 +55,7 @@ it("leaves the current chain intact when selecting it again", () => {
 it.each([
   ["/wallet/fluidtokens", "/wallet/fluidtokens"],
   ["/wallet/dano", "/wallet/dano"],
+  ["/wallet/indigo", "/wallet/indigo"],
   ["/wallet/splash", "/wallet/splash"],
   ["/explorer/leios", "/explorer/leios"],
   ["/explorer/track", "/explorer/track"],

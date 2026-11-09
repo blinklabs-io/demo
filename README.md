@@ -360,6 +360,27 @@ Contract interfaces and deployment sources are attributed in
 [Inspect desktop](docs/screenshots/fluidinspect1440.png) ·
 [Inspect mobile](docs/screenshots/fluidinspect390.png).
 
+## Indigo V3 INDY staking
+
+Open `/wallet/indigo?network=mainnet` to stake INDY, add or withdraw stake,
+claim ADA rewards, and close staking positions. INDY uses six decimal places.
+New positions hold 2 ADA, returned on closure. Adjusting or closing a position
+also settles its earned ADA rewards using the staking manager's on-chain
+reward snapshot. Active governance votes restrict withdrawals until their
+voting periods end.
+
+Dingo authenticates the staking manager NFT, position tokens, and deployed
+validator references. Wallet positions are filtered by known payment keys from
+bounded pages of the shared staking address; a known output reference can be
+loaded directly. Transaction review checks wallet identity, funding signatures,
+reviewed bytes, expiry, and input availability around signing. Contract and
+deployment sources are attributed in `src/lib/indigo/NOTICE`.
+
+[Stake desktop](docs/screenshots/indigostake1440.png) ·
+[Stake mobile](docs/screenshots/indigostake390.png) ·
+[Position desktop](docs/screenshots/indigoposition1440.png) ·
+[Position mobile](docs/screenshots/indigoposition390.png).
+
 ## Sending asset bundles
 
 Send keeps a required ADA amount separate from additional native assets. The

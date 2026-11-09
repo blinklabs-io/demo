@@ -1,0 +1,11 @@
+Indigo V3 staking schemas, reward calculations, and transaction layout follow
+@indigo-labs/indigo-sdk 0.5.13 (MIT), published by Indigo Labs:
+https://github.com/IndigoProtocol/indigo-sdk
+https://www.npmjs.com/package/@indigo-labs/indigo-sdk/v/0.5.13
+
+Deployment identifiers follow the canonical mainnet V3 system parameters:
+https://config.indigoprotocol.io/mainnet/mainnet-system-params-v3.json
+
+The maintained IndigoProtocol/indigo-mcp 0.4.2 uses this SDK version.
+Reference-script, manager, and staking-position fixtures are public mainnet
+outputs read through Dingo. Transactions evaluate against those deployed scripts.
