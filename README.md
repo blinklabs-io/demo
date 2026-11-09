@@ -313,6 +313,24 @@ transaction contents, validity, and input availability are checked around signin
 [Cancellation desktop](docs/screenshots/splashcancel1440.png) ·
 [Cancellation mobile](docs/screenshots/splashcancel390.png).
 
+## Dano mainnet concentrated-liquidity swaps
+
+Open `/wallet/dano?network=mainnet` to inspect live CLMM pools and swap native
+tokens directly. Pool discovery reads bounded pages at the enterprise pool
+address through Dingo; a pool can also be loaded by its output reference. Token amounts use whole base units.
+The quote shows the exact output, trading fee, and ADA settlement fee.
+
+The integration authenticates pool identifiers, the reference script, and the
+configuration NFT. A draft commits to the selected pool and configuration
+outputs, checks funding signatures and wallet identity, and expires within one
+epoch. If inputs or configuration change, refresh and review a new transaction.
+ADA pools can be inspected; their staking-reward settlement is not implemented.
+The source interfaces and mathematical formulas are attributed in
+`src/lib/dano/NOTICE`.
+
+![Dano swap on desktop](docs/screenshots/danoswap1440.png)
+![Dano swap on mobile](docs/screenshots/danoswap390.png)
+
 ## Sending asset bundles
 
 Send keeps a required ADA amount separate from additional native assets. The

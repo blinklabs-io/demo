@@ -1,0 +1,33 @@
+{
+  "items": [
+    {
+      "nativeBytes": "owBYORH6mRvC+cQgbnLXE7w0h6cueQEFfKu402S+vu+POFteJ0SNchdi3DDMdoJkWW7g8j6VT2vmJst5wQGCGgAUlaahWBy8LTt88QCceIsdryIIo4AmqyDX+CCdiWrRoJwUoVggcvna55uy36Ob2PrfCJ6gyDd7Xqo8rvBUk5Zmiu8fkYcBAoIB2BhM2HmfGQPoGgABhqD/",
+      "txoRef": {
+        "hash": "cXseLW4nHamyrHx25fodCCMwiVyV+FiJfIc32WoF3gw=",
+        "index": 0
+      },
+      "cardano": {
+        "address": "EfqZG8L5xCBuctcTvDSHpy55AQV8q7jTZL6+7484W14nRI1yF2LcMMx2gmRZbuDyPpVPa+Ymy3nB",
+        "coin": {
+          "int": "1349030"
+        },
+        "assets": [
+          {
+            "policyId": "vC07fPEAnHiLHa8iCKOAJqsg1/ggnYlq0aCcFA==",
+            "assets": [
+              {
+                "name": "cvna55uy36Ob2PrfCJ6gyDd7Xqo8rvBUk5Zmiu8fkYc=",
+                "outputCoin": {
+                  "int": "1"
+                }
+              }
+            ]
+          }
+        ],
+        "datum": {
+          "hash": "IwA8p5DlWFuLl2n6qBnKOuiJsru8bxWJNQmNR1qfK5A="
+        }
+      }
+    }
+  ]
+}
