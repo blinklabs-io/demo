@@ -23,7 +23,7 @@
     "react": "^19.2.6",
     "react-dom": "^19.3.1",
     "react-router": "^7.16.0",
-    "zustand": "^5.0.11"
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@blaze-cardano/vm": "0.3.3",
