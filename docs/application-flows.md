@@ -182,6 +182,7 @@ flowchart LR
   Browser --> Cache[React Query read cache]
   Cache --> REST[Dingo Blockfrost-compatible REST]
   Cache --> Mesh[Dingo Mesh and Rosetta]
+  Cache --> Kupo[Dingo Kupo]
   Browser --> RPC[Dingo UTxORPC]
   RPC --> Tip[FollowTip store]
   RPC --> Mempool[Mempool store]
@@ -204,6 +205,7 @@ flowchart LR
 | Blockfrost-compatible REST | Entity lookup, blocks and transactions, stake accounts, pools, DReps, governance, metadata, surveys, native assets, protocol parameters and network information |
 | UTxORPC                    | Genesis verification, bounded UTxO snapshots, protocol parameters, transaction building/evaluation/submission, block CBOR, FollowTip and mempool streams        |
 | Mesh / Rosetta             | Historical account-balance snapshots and explicit read-only API playground calls                                                                                |
+| Kupo                       | Address and asset output history, spent/unspent and creation-slot filters, datum and reference-script inspection, and read-only API playground queries |
 | Local wallet               | Explicit connection, public account information, spendable balances and signatures; keys stay in the extension                                                  |
 | Browser                    | Drafts, CBOR inspection, metadata editing, file hashing, visualizations and JSON exports                                                                        |
 | Publisher media            | Optional pool/token artwork and metadata links; these do not replace Dingo as the chain-data source                                                             |
@@ -214,10 +216,17 @@ singleton API clients do not survive that boundary. The current capability is
 preserved along with safe ticker filters and page anchors; entity-specific routes
 return to a contextual list and old-network entity prefills are discarded.
 
-The API playground accepts relative REST GET paths and a fixed allowlist of
-read-only Mesh POST endpoints. Editing the target, path or body cancels an
+The API playground accepts relative REST GET paths, read-only Kupo GET paths,
+and a fixed allowlist of read-only Mesh POST endpoints. Editing the target, path or body cancels an
 outstanding request and prevents its response appearing under another request.
 A response remains associated with the request that produced it.
+
+Address and asset pages load output history on demand through Kupo. Match
+previews retain exact decimal quantities, stop at 20 records and cancel the
+remaining stream. Creation-slot filters select a subset rather than paginating
+past a block that may contain more than 20 outputs. Datum and reference-script
+lookups start when their inspection controls open. Reads are bounded to 1 MiB;
+request failures and unsupported records remain distinct from empty results.
 
 ## Route families
 
@@ -230,7 +239,7 @@ A response remains associated with the request that produced it.
 | Wallet           | `/wallet`, `/wallet/send`, `/wallet/delegate`; portfolio, rewards, transfers and delegation                                                                                                                                           |
 | Markets          | `/wallet/bridge`; native Prime transfers to Vector or Nexus with separate source inclusion and delivery tracking. `/wallet/swap`; Preview SundaeSwap V3/V4 and Preprod Minswap previews and order review. `/wallet/markets` defaults to lending; `/wallet/markets/:tab` covers `liquidity`, `lending`, `options`, `orders` and `marketplace` on Preprod |
 | Creation         | `/wallet/tools` and `/wallet/tools/:tool`; transaction, token, proof, batch, UTxO, DRep and treasury capabilities                                                                                                                     |
-| Developer access | `/api`; inspect existing Dingo REST and Mesh responses                                                                                                                                                                                |
+| Developer access | `/api`; inspect existing Dingo REST, Mesh and Kupo responses                                                                                                                                                                           |
 
 ## Preprod contract data
 

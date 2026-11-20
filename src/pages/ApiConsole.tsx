@@ -216,6 +216,7 @@ export default function ApiConsole() {
     setError(null);
     setResult(null);
     const startedAt = performance.now();
+    let receivedStatus = 0;
 
     try {
       let response: Response;
@@ -234,6 +235,7 @@ export default function ApiConsole() {
           signal: controller.signal,
         });
       }
+      receivedStatus = response.status;
       const responseBody = target === "kupo" ? await readKupoPayload(response, controller.signal).then(payload => ({ body: JSON.stringify(payload.data, null, 2) + (payload.truncated ? "\n\nPreview limited to 20 records; narrow the query." : ""), isJson: !payload.truncated })) : await readResponseBody(response);
       if (!isCurrent()) return;
       setResult({
@@ -256,7 +258,7 @@ export default function ApiConsole() {
       const status =
         cause && typeof cause === "object" && "status" in cause
           ? Number(cause.status)
-          : 0;
+          : receivedStatus;
       setResult({
         status,
         duration: Math.round(performance.now() - startedAt),
