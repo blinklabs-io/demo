@@ -8,14 +8,18 @@ services come from Dingo; no external indexer is required.
 
 ## Run it
 
-Start Dingo with API storage enabled and the Blockfrost-compatible, Mesh, and
-UTxO RPC APIs selected. The default local endpoints are:
+The demo defaults to hosted Dingo APIs for the selected network. Preview uses:
 
 | API                        | Default URL             | Used for                                                                          |
 | -------------------------- | ----------------------- | --------------------------------------------------------------------------------- |
-| Blockfrost-compatible REST | `http://127.0.0.1:3000` | Explorer data, policies, health, network, pools, DReps, wallet accounts and UTxOs |
-| Mesh / Rosetta             | `http://127.0.0.1:8080` | Historical address balances and read-only Rosetta API console                     |
-| UTxO RPC                   | `http://127.0.0.1:9090` | Block headers, transaction building/submission, mempool and live tip              |
+| Blockfrost-compatible REST | `https://dingo.preview.blinklabs.cloud` | Explorer data, governance, accounts and UTxOs |
+| Mesh / Rosetta | `https://dingo.preview.blinklabs.cloud:8080` | Historical balances and read-only Rosetta queries |
+| UTxO RPC | `https://dingo.preview.blinklabs.cloud:9090` | Block headers, transaction building/submission, mempool and live tip |
+| Kupo | `https://dingo.preview.blinklabs.cloud:1442` | Indexed output matches, checkpoints, datums, scripts and metadata |
+
+Kupo uses Dingo's API storage and indexing backend. Its health view reports the
+API version and most recent indexed checkpoint. A connected service alone does
+not establish that indexing has reached the chain tip.
 
 Then run:
 
@@ -31,6 +35,18 @@ endpoints:
 VITE_DINGO_BLOCKFROST_URL=https://blockfrost.example \
 VITE_DINGO_MESH_URL=https://mesh.example \
 VITE_DINGO_UTXORPC_URL=https://utxorpc.example \
+VITE_DINGO_KUPO_URL=https://kupo.example:1442 \
+npm run dev
+```
+
+For a local Dingo instance, enable API storage and the Blockfrost, Mesh,
+UTxO RPC, and Kupo API plugins, then override all four Preview URLs:
+
+```sh
+VITE_DINGO_BLOCKFROST_URL=http://127.0.0.1:3000 \
+VITE_DINGO_MESH_URL=http://127.0.0.1:8080 \
+VITE_DINGO_UTXORPC_URL=http://127.0.0.1:9090 \
+VITE_DINGO_KUPO_URL=http://127.0.0.1:1442 \
 npm run dev
 ```
 
@@ -51,14 +67,58 @@ old-network delegation and entity prefills are discarded. Wallet connections are
 
 The existing `VITE_DINGO_*_URL` settings configure Preview. Preprod has separate
 `VITE_DINGO_PREPROD_BLOCKFROST_URL`, `VITE_DINGO_PREPROD_MESH_URL` and
-`VITE_DINGO_PREPROD_UTXORPC_URL` overrides. Mainnet uses independent
+`VITE_DINGO_PREPROD_UTXORPC_URL` and `VITE_DINGO_PREPROD_KUPO_URL` overrides. Mainnet uses independent
 `VITE_DINGO_MAINNET_BLOCKFROST_URL`, `VITE_DINGO_MAINNET_MESH_URL`, and
-`VITE_DINGO_MAINNET_UTXORPC_URL` overrides. Each API must serve the selected
+`VITE_DINGO_MAINNET_UTXORPC_URL` and `VITE_DINGO_MAINNET_KUPO_URL` overrides. Each API must serve the selected
 network. SundaeSwap V3 and V4 use separate verified Mainnet and Preview deployments;
 other creation and participation tools use the selected network. CIP-30 reports
 only mainnet versus testnet, so transaction review and signing additionally
 require the actual spending and collateral inputs to be unspent on the selected
 Dingo chain.
+
+## Indexed output history
+
+Address and asset views include output history backed by the Kupo API. Open
+an address or asset and select **Show output history** to:
+
+- Inspect unspent, spent, or all indexed outputs with transaction and address
+  links and exact native/token quantities.
+- Filter older results using their creation slot.
+- Resolve the datum CBOR and reference script attached to an output.
+
+The API playground offers read-only Kupo GET presets for health, checkpoints,
+indexed patterns, and output matches. Custom paths support address, asset
+(`policy_id.asset_name`), credential (`payment/delegation`), output reference
+(`output_index@transaction_id`), datum, script, and metadata queries. These views do not
+change indexing patterns, delete matches, or submit transactions. Kupo streams
+matches without a server-side limit parameter: the demo previews 20 records,
+cancels the remaining stream, and labels truncated results. Refine the pattern
+to inspect another subset. Slot filtering is explicit rather than pagination:
+outputs in the same block are not assumed to fit into a single preview.
+Responses exceeding 1 MiB are rejected. Malformed
+individual output records are reported separately from valid rows. Queries
+pass cancellation signals when navigating away or replacing a request.
+
+Kupo endpoints default to HTTPS port 1442 for every hosted network. Override
+`VITE_DINGO_KUPO_URL` for Preview or the network-specific forms:
+`VITE_DINGO_MAINNET_KUPO_URL`, `VITE_DINGO_PREPROD_KUPO_URL`,
+`VITE_DINGO_MUSASHI_KUPO_URL`, `VITE_DINGO_DIJKSTRA_KUPO_URL`, and
+`VITE_DINGO_PRIME_TESTNET_KUPO_URL`.
+
+For example, read the public Preview service without a wallet:
+
+```sh
+curl --fail -H 'Accept: application/json' \
+  https://dingo.preview.blinklabs.cloud:1442/health
+curl --fail https://dingo.preview.blinklabs.cloud:1442/checkpoints
+```
+
+Kupo match reads request `Accept: application/json;asset-quantity=string` and
+retain quantities as decimal strings, avoiding JavaScript integer rounding.
+An empty output preview is distinct from a failed request. Data is limited to
+what the selected node has indexed.
+
+[Desktop](docs/screenshots/kupo1440.png) · [Mobile](docs/screenshots/kupo390.png).
 
 ## Explore without a wallet
 

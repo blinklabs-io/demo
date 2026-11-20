@@ -1,3 +1,4 @@
+import { isKupoReadPath, kupoFetch, readKupoPayload } from "../lib/dingo/kupo";
 import { DINGO_NETWORK } from "../lib/dingo/config";
 import { PageIntro } from "../components/explorer/Visuals";
 import { useEffect, useRef, useState } from "react";
@@ -9,7 +10,7 @@ import {
 import { DINGO_CONFIG } from "../lib/dingo/config";
 import { Panel } from "../components/explorer/Panel";
 
-type ApiTarget = "blockfrost" | "mesh";
+type ApiTarget = "blockfrost" | "mesh" | "kupo";
 
 interface EndpointPreset {
   label: string;
@@ -17,6 +18,12 @@ interface EndpointPreset {
   body?: string;
 }
 
+const KUPO_PRESETS: EndpointPreset[] = [
+  { label: "Kupo index health", path: "/health" },
+  { label: "Recent checkpoints", path: "/checkpoints" },
+  { label: "Indexed patterns", path: "/patterns" },
+  { label: "Recent unspent outputs", path: "/matches/*?unspent&order=most_recent_first" },
+];
 const BLOCKFROST_PRESETS: EndpointPreset[] = [
   { label: "Health", path: "/health" },
   { label: "Latest block", path: "/api/v0/blocks/latest" },
@@ -94,6 +101,7 @@ function isSafePath(path: string, target: ApiTarget): boolean {
   if (!path.startsWith("/") || path.startsWith("//") || path.includes("\\")) {
     return false;
   }
+  if (target === "kupo") return isKupoReadPath(path);
   if (target === "mesh" && !MESH_READ_PATHS.has(path)) return false;
 
   try {
@@ -153,14 +161,14 @@ export default function ApiConsole() {
     setError(null);
     update();
   }
-  const presets = target === "mesh" ? MESH_PRESETS : BLOCKFROST_PRESETS;
+  const presets = target === "mesh" ? MESH_PRESETS : target === "kupo" ? KUPO_PRESETS : BLOCKFROST_PRESETS;
   const baseUrl =
-    target === "mesh" ? DINGO_CONFIG.meshUrl : DINGO_CONFIG.blockfrostUrl;
+    target === "mesh" ? DINGO_CONFIG.meshUrl : target === "kupo" ? DINGO_CONFIG.kupoUrl : DINGO_CONFIG.blockfrostUrl;
 
   function changeTarget(nextTarget: ApiTarget) {
     editRequest(() => setTarget(nextTarget));
     const nextPresets =
-      nextTarget === "mesh" ? MESH_PRESETS : BLOCKFROST_PRESETS;
+      nextTarget === "mesh" ? MESH_PRESETS : nextTarget === "kupo" ? KUPO_PRESETS : BLOCKFROST_PRESETS;
     setPath(nextPresets[0].path);
     setBody(nextPresets[0].body ?? "{}");
     setResult(null);
@@ -216,6 +224,8 @@ export default function ApiConsole() {
           method: "GET",
           signal: controller.signal,
         });
+      } else if (target === "kupo") {
+        response = await kupoFetch(requestedPath, controller.signal);
       } else {
         response = await fetch(`${DINGO_CONFIG.meshUrl}${requestedPath}`, {
           method: "POST",
@@ -224,7 +234,7 @@ export default function ApiConsole() {
           signal: controller.signal,
         });
       }
-      const responseBody = await readResponseBody(response);
+      const responseBody = target === "kupo" ? await readKupoPayload(response, controller.signal).then(payload => ({ body: JSON.stringify(payload.data, null, 2) + (payload.truncated ? "\n\nPreview limited to 20 records; narrow the query." : ""), isJson: !payload.truncated })) : await readResponseBody(response);
       if (!isCurrent()) return;
       setResult({
         status: response.status,
@@ -233,7 +243,7 @@ export default function ApiConsole() {
       });
       if (!response.ok) {
         setError(
-          `Dingo ${target === "mesh" ? "Mesh" : "Blockfrost-compatible"} API returned ${response.status}.`,
+          `Dingo ${target === "mesh" ? "Mesh" : target === "kupo" ? "Kupo" : "Blockfrost-compatible"} API returned ${response.status}.`,
         );
       }
     } catch (cause) {
@@ -293,6 +303,7 @@ export default function ApiConsole() {
                 Blockfrost-compatible REST · GET
               </option>
               <option value="mesh">Mesh / Rosetta · read-only POST</option>
+              <option value="kupo">Kupo · read-only GET</option>
             </select>
           </div>
 

@@ -1,4 +1,5 @@
 import { nativeTicker } from "../../lib/format";
+import { OutputHistory } from "../../components/explorer/OutputHistory";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { BarChart, Metric } from "../../components/explorer/Visuals";
 import { compactAda } from "../../lib/visualFormat";
@@ -228,6 +229,8 @@ function AddressDetailContent({ address }: { address?: string }) {
           />
         </QueryState>
       </Panel>
+
+      {address && <OutputHistory pattern={address} />}
 
       <Panel title="Transactions">
         <QueryState hasData={txsQuery.data !== undefined} isLoading={txsQuery.isLoading} error={txsQuery.error}>

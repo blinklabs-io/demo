@@ -4,6 +4,7 @@ export const OWN_DINGO_ENDPOINTS = {
   blockfrostUrl: "http://127.0.0.1:3000",
   utxorpcUrl: "http://127.0.0.1:9090",
   meshUrl: "http://127.0.0.1:8080",
+  kupoUrl: "http://127.0.0.1:1442",
 } as const;
 
 export const recipes = {
@@ -189,6 +190,7 @@ export function selfHostedDemoExample(): string {
 VITE_DINGO_${prefix}BLOCKFROST_URL=${OWN_DINGO_ENDPOINTS.blockfrostUrl} \\
 VITE_DINGO_${prefix}UTXORPC_URL=${OWN_DINGO_ENDPOINTS.utxorpcUrl} \\
 VITE_DINGO_${prefix}MESH_URL=${OWN_DINGO_ENDPOINTS.meshUrl} \\
+VITE_DINGO_${prefix}KUPO_URL=${OWN_DINGO_ENDPOINTS.kupoUrl} \\
 npm run dev
 # Open the local app with ?network=${DINGO_NETWORK.id}`;
 }

@@ -1,4 +1,5 @@
 import { AssetDistribution } from "../../components/chain/AssetDistribution";
+import { OutputHistory } from "../../components/explorer/OutputHistory";
 import { ChainMark } from "../../components/explorer/ChainMark";
 import { PageIntro } from "../../components/explorer/Visuals";
 import { Metric } from "../../components/explorer/Visuals";
@@ -120,6 +121,7 @@ export default function AssetDetail() {
           supply={BigInt(asset.quantity)}
         />
       )}
+      {asset && <OutputHistory pattern={`${asset.policy_id}.${asset.asset_name}`} />}
     </div>
   );
 }

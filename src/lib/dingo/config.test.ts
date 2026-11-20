@@ -45,11 +45,13 @@ it("honors separate Preprod overrides", async () => {
   vi.stubEnv("VITE_DINGO_PREPROD_BLOCKFROST_URL", "https://rest.invalid/");
   vi.stubEnv("VITE_DINGO_PREPROD_UTXORPC_URL", "https://rpc.invalid/");
   vi.stubEnv("VITE_DINGO_PREPROD_MESH_URL", "https://mesh.invalid/");
+  vi.stubEnv("VITE_DINGO_PREPROD_KUPO_URL", "https://kupo.invalid/");
   const { DINGO_CONFIG } = await import("./config");
   expect(DINGO_CONFIG).toEqual({
     blockfrostUrl: "https://rest.invalid",
     utxorpcUrl: "https://rpc.invalid",
     meshUrl: "https://mesh.invalid",
+    kupoUrl: "https://kupo.invalid",
   });
 });
 it("rejects an invalid persisted selection instead of silently selecting another chain", async () => {
@@ -106,11 +108,13 @@ it("honors independent Musashi endpoint overrides", async () => {
   );
   vi.stubEnv("VITE_DINGO_MUSASHI_UTXORPC_URL", "https://musashi-rpc.invalid/");
   vi.stubEnv("VITE_DINGO_MUSASHI_MESH_URL", "https://musashi-mesh.invalid/");
+  vi.stubEnv("VITE_DINGO_MUSASHI_KUPO_URL", "https://musashi-kupo.invalid/");
   const { DINGO_CONFIG } = await import("./config");
   expect(DINGO_CONFIG).toEqual({
     blockfrostUrl: "https://musashi-rest.invalid",
     utxorpcUrl: "https://musashi-rpc.invalid",
     meshUrl: "https://musashi-mesh.invalid",
+    kupoUrl: "https://musashi-kupo.invalid",
   });
 });
 
@@ -127,10 +131,16 @@ it.each([
   vi.stubEnv("VITE_DINGO_PREPROD_MESH_URL", "https://preprod-mesh.invalid");
   const config = await import("./config");
   expect(config.DINGO_NETWORK.networkMagic).toBe(magic);
-  expect(config.DINGO_CONFIG).toEqual({ blockfrostUrl: `https://dingo.${id}.blinklabs.cloud`, utxorpcUrl: `https://dingo.${id}.blinklabs.cloud:9090`, meshUrl: `https://dingo.${id}.blinklabs.cloud:8080` });
+  expect(config.DINGO_CONFIG).toEqual({ blockfrostUrl: `https://dingo.${id}.blinklabs.cloud`, utxorpcUrl: `https://dingo.${id}.blinklabs.cloud:9090`, meshUrl: `https://dingo.${id}.blinklabs.cloud:8080`, kupoUrl: `https://dingo.${id}.blinklabs.cloud:1442` });
   vi.stubEnv(`VITE_DINGO_${prefix}_BLOCKFROST_URL`, "https://rest.invalid/");
   vi.stubEnv(`VITE_DINGO_${prefix}_UTXORPC_URL`, "https://rpc.invalid/");
   vi.stubEnv(`VITE_DINGO_${prefix}_MESH_URL`, "https://mesh.invalid/");
+  vi.stubEnv(`VITE_DINGO_${prefix}_KUPO_URL`, "https://kupo.invalid/");
   vi.resetModules();
-  expect((await import("./config")).DINGO_CONFIG).toEqual({ blockfrostUrl: "https://rest.invalid", utxorpcUrl: "https://rpc.invalid", meshUrl: "https://mesh.invalid" });
+  expect((await import("./config")).DINGO_CONFIG).toEqual({ blockfrostUrl: "https://rest.invalid", utxorpcUrl: "https://rpc.invalid", meshUrl: "https://mesh.invalid", kupoUrl: "https://kupo.invalid" });
+});
+
+it("uses hosted Preview APIs and permits explicit self-hosted Kupo overrides",async()=>{
+ const config=await import("./config");expect(config.DINGO_CONFIG).toEqual({blockfrostUrl:"https://dingo.preview.blinklabs.cloud",utxorpcUrl:"https://dingo.preview.blinklabs.cloud:9090",meshUrl:"https://dingo.preview.blinklabs.cloud:8080",kupoUrl:"https://dingo.preview.blinklabs.cloud:1442"});
+ vi.stubEnv("VITE_DINGO_KUPO_URL","http://127.0.0.1:1442/");vi.resetModules();expect((await import("./config")).DINGO_CONFIG.kupoUrl).toBe("http://127.0.0.1:1442");
 });
