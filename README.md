@@ -226,10 +226,12 @@ ticker initials. Pool-controlled metadata and image URLs are never fetched
 automatically by the browser.
 
 Recent blocks and block details show the protocol version decoded from the
-block header bytes returned by UTxO RPC. CIP-203 scheme-zero IDs identify Dingo
-(69), Amaru (65), and the shared Gerolamo/cardano-bean signal (67). Amaru release
-dates are decoded from payload layout zero; other payloads remain opaque.
-Reserved schemes and unknown layouts are not interpreted. Unsignalled blocks
+block header bytes returned by UTxO RPC. CIP-203 scheme-zero IDs identify
+registered Amaru (65) and TSUNAGI (79), alongside historical Dingo (69) and
+shared Gerolamo/cardano-bean (67) signals. Registry-linked payload definitions
+decode named integer, boolean and enum fields when they conform to supported
+format 0. Other payloads remain opaque; unknown enum and layout values retain
+their numbers. Reserved schemes are not interpreted. Unsignalled blocks
 are displayed as assumed Haskell; legacy release minors identify Haskell.
 Header versions are distinct from the current epoch's protocol parameters.
 
@@ -638,10 +640,24 @@ Pie slices, version legends, hourly bars and alternative-node markers expose eve
 versions. Select a version or hour to inspect its blocks. The block list is
 paginated; counts always cover the verified records rather than just displayed
 links. CIP-203 scheme, identifier and payload fields identify self-reported producers.
-Amaru layout 0 payloads expose a release date or unreleased build status; reserved
-layouts and unspecified payload formats remain opaque.
+Payload fields use supported registry-linked definitions; unspecified,
+nonconforming and unsupported formats remain opaque.
 ID 67 is ambiguous between Gerolamo and cardano-bean. Unsignalled blocks remain
 assumed Haskell; opt-outs and unsupported or unregistered signals stay unidentified.
+
+The bundled registry is pinned to the [CIP-0203 registry snapshot](https://github.com/cardano-foundation/CIPs/blob/8bf55a9b05841799000f454b619ee5acd4b41854/CIP-0203/registry.json).
+Definitions are bundled from their registry-linked immutable URLs and validated
+before use, including bit bounds, overlaps, unique field names and selector
+widths. Updating a snapshot requires updating the matching source URL and data;
+the browser does not fetch producer-supplied definitions. The current
+[Amaru definition](https://github.com/pragma-org/amaru/blob/8fce2fbbf25e8445d4b5060598a02c8aff1df032/cip-203-payload-definition.json)
+uses `format` and `selector` rather than the current `definition_format` and
+`layout_version` contract, so its payload remains numeric without an inferred
+release date. Dingo and Gerolamo are historical attributions rather than
+entries in that snapshot.
+
+Representative producer signals: [Desktop](docs/screenshots/producer-registry1440.png)
+· [Mobile](docs/screenshots/producer-registry390.png).
 
 Loading is progressive and can be cancelled by switching to Latest blocks or
 leaving the page. Compact verified header records are cached per network and

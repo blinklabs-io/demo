@@ -53,7 +53,7 @@ export function BlockHeaderVersion({
         height="22"
       />
       {query.data.major}.{query.data.minor}
-      {node.release && <small>{node.release}</small>}
+      {node.payloadSummary && <small>{node.payloadSummary}</small>}
     </span>
   );
 }

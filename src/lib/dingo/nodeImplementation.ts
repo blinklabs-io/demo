@@ -1,3 +1,6 @@
+import { registeredProducer } from "./nodeRegistry";
+import type { DecodedProducerPayload } from "./producerPayload";
+
 export type ProducerSignal =
   | { kind: "invalid" }
   | { kind: "unsupported"; scheme: number }
@@ -17,31 +20,15 @@ export function decodeProducerSignal(minor: string): ProducerSignal {
   };
 }
 
-type AmaruPayload =
-  | { kind: "unsupported"; layout: number }
-  | { kind: "unreleased"; layout: 0 }
-  | { kind: "release"; layout: 0; date: string };
-
-function decodeAmaruPayload(payload: number): AmaruPayload {
-  const layout = payload >>> 20;
-  if (layout !== 0) return { kind: "unsupported", layout };
-  const days = (payload >>> 6) & 0x3fff;
-  if (!days) return { kind: "unreleased", layout: 0 };
-  return {
-    kind: "release",
-    layout: 0,
-    date: new Date(Date.UTC(2026, 0, 1) + days * 86400000)
-      .toISOString()
-      .slice(0, 10),
-  };
-}
 interface NodeIdentity {
   id: string;
   name: string;
   icon: string;
   detail: string;
   signal: ProducerSignal;
-  release?: string;
+  payloadSummary?: string;
+  decodedPayload?: DecodedProducerPayload;
+  registration?: string;
 }
 
 export function nodeImplementation(minor: string): NodeIdentity {
@@ -88,12 +75,30 @@ export function nodeImplementation(minor: string): NodeIdentity {
       detail: `Legacy cardano-node release minor ${id}`,
       signal,
     };
+  const registered = registeredProducer(0, id, payload);
+  if (registered) {
+    const decoded = registered.decodedPayload;
+    const payloadSummary = decoded.kind === "decoded"
+      ? decoded.fields.map(field => `${field.name}: ${field.label === undefined ? String(field.value) : `${field.label} (${field.value})`}`).join(" · ")
+      : undefined;
+    return {
+      id: registered.id,
+      name: registered.name,
+      icon: registered.icon,
+      signal,
+      registration: registered.status,
+      decodedPayload: decoded,
+      payloadSummary,
+      detail: `CIP-203 · scheme 0 · ID ${id} · ${decoded.kind === "decoded" ? "payload" : "opaque payload"} ${payload} · ${registered.status} registry entry${decoded.kind === "unknown-layout" ? ` · unknown payload layout ${decoded.layoutVersion}` : payloadSummary ? ` · ${payloadSummary}` : ""}`,
+    };
+  }
   if (id === 69)
     return {
       id: "dingo",
       name: "Dingo",
       icon: "/nodes/dingo.png",
-      detail,
+      detail: `${detail} · historical producer signal`,
+      registration: "historical",
       signal,
     };
   if (id === 67)
@@ -101,27 +106,10 @@ export function nodeImplementation(minor: string): NodeIdentity {
       ...unknown,
       id: "gerolamo-bean",
       name: "Gerolamo / cardano-bean",
-      detail: `${detail} · shared identifier; implementation cannot be distinguished`,
+      detail: `${detail} · historical shared identifier; implementation cannot be distinguished`,
+      registration: "historical",
       signal,
     };
-  if (id === 65) {
-    const decoded = decodeAmaruPayload(payload);
-    const release =
-      decoded.kind === "release"
-        ? `Release ${decoded.date}`
-        : decoded.kind === "unreleased"
-          ? "Unreleased build"
-          : `Unknown payload layout ${decoded.layout}`;
-    return {
-      id: "amaru",
-      name: "Amaru",
-      icon: "/nodes/amaru.svg",
-      signal,
-      release,
-      detail: `CIP-203 · scheme 0 · ID 65 · ${release}${decoded.kind !== "unsupported" ? " · layout 0; unassigned flags ignored" : "; payload not interpreted"}`,
-    };
-  }
-
   return {
     ...unknown,
     name: `Unregistered implementation ${id}`,

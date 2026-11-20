@@ -175,6 +175,15 @@ export path and never enters submission states.
 
 ## Network and data ownership
 
+Producer identities split the header's unsigned 32-bit minor field into the
+CIP-0203 scheme, identifier and payload. The bundled registry resolves Amaru
+and TSUNAGI; historical Dingo and shared Gerolamo/cardano-bean signals keep their
+attribution independently of current registration. Registry-linked payload
+definitions use format 0 and are validated before named fields are decoded.
+Unsupported or invalid definitions retain the opaque numeric payload, unknown
+enum and layout values retain their numbers, and reserved schemes are not
+interpreted. All block, pool and header-history views use this shared decoder.
+
 ```mermaid
 flowchart LR
   Browser[Browser application]

@@ -27,9 +27,11 @@ function color(record: Pick<VersionRecord, "minor" | "major">) {
         ? 260
         : family === "gerolamo-bean"
           ? 35
-          : family === "unknown"
-            ? 0
-            : 195;
+          : family === "tsunagi"
+            ? 315
+            : family === "unknown"
+              ? 0
+              : 195;
   const version = BigInt(record.major) * 37n + BigInt(record.minor) * 17n;
   const range = family === "cardano-node" ? 45n : 15n;
   return `hsl(${hue + Number(version % range)} ${family === "unknown" ? 10 : 65}% ${55 + Number(version % 13n)}%)`;
@@ -228,7 +230,7 @@ export function HeaderVersionChart({
                   <small>
                     Header {node.id} · {node.count.toLocaleString()} blocks
                   </small>
-                  {node.release && <small>{node.release}</small>}
+                  {node.payloadSummary && <small>{node.payloadSummary}</small>}
                 </span>
                 <b>{((node.count / windowRecords.length) * 100).toFixed(2)}%</b>
               </button>
@@ -406,8 +408,8 @@ export function HeaderVersionChart({
         >
           CIP-203 ↗
         </a>
-        ). Amaru release dates are decoded from its published payload format;
-        other payloads remain opaque. ID 67 can be Gerolamo or cardano-bean.
+        ). Identities come from the registry or documented historical signals.
+        Payloads without a supported definition remain opaque. ID 67 can be Gerolamo or cardano-bean.
         Unsignalled blocks are assumed Haskell; explicit opt-outs, unregistered
         IDs and unsupported schemes stay unidentified. Signals are
         self-reported.

@@ -67,7 +67,7 @@ export function PoolProducer({ poolId }: { poolId: string }) {
                 <span>
                   Header {header.data.major}.{header.data.minor}
                 </span>
-                {node.release && <span>{node.release}</span>}
+                {node.payloadSummary && <span>{node.payloadSummary}</span>}
               </div>
               <Link to={`/explorer/block/${block.data.hash}`}>
                 Block #{block.data.height.toLocaleString()} ↗

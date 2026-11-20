@@ -89,7 +89,7 @@ export function RecentHeaderVersions({
                       ? colors[colorIndex % colors.length]
                       : "#293b4b",
                   }}
-                  aria-label={`Block ${block.height}, ${node ? `${node.name}, ` : ""}${node?.release ? `${node.release}, ` : ""}header version ${version ?? (header.isError ? "unavailable" : "loading")}`}
+                  aria-label={`Block ${block.height}, ${node ? `${node.name}, ` : ""}${node?.payloadSummary ? `${node.payloadSummary}, ` : ""}header version ${version ?? (header.isError ? "unavailable" : "loading")}`}
                   title={`Block ${block.height} · ${date(block.time)} · ${node ? `${node.name} · ${node.detail} · ` : ""}${version ?? (header.isError ? "Header unavailable" : "Loading header")}`}
                 >
                   {node && (
@@ -142,8 +142,9 @@ export function RecentHeaderVersions({
         <p className="mt-2 text-xs text-slate-500">
           Uses the same headers as the block list below. Shares cover decoded
           headers in this recent window, not a 24-hour network total. Node
-          identities decode CIP-203 scheme, identifier and payload fields,
-          including Amaru release dates. ID 67 is shared by Gerolamo and
+          identities follow the CIP-203 registry, including Amaru and TSUNAGI,
+          with historical Dingo and Gerolamo signals retained. Payloads without
+          a supported definition remain opaque. ID 67 is shared by Gerolamo and
           cardano-bean; unsignalled blocks are assumed Haskell. Explicit
           opt-outs and unsupported signals stay unidentified.
         </p>

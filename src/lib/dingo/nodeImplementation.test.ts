@@ -52,14 +52,17 @@ it("keeps legacy markers, ambiguous IDs, opt-outs and unknown identifiers distin
   expect(nodeImplementation("99").name).toBe("Unregistered implementation 99");
   expect(nodeImplementation("257").id).toBe("unknown");
 });
-it.each([
-  ["65", "Unreleased build"],
-  ["2637889", "Release 2026-06-11"],
-  ["4374593", "Release 2026-09-25"],
-  ["4374849", "Release 2026-09-25"],
-  [String(0x0042ff41), "Release 2026-09-25"],
-  ["268419137", "Release 2070-11-09"],
-  [String(0x1042c041), "Unknown payload layout 1"],
-])("deciphers Amaru payload vector %s", (minor, release) => {
-  expect(nodeImplementation(minor)).toMatchObject({ id: "amaru", release });
+it("resolves the current registry while preserving historical identities", () => {
+  expect(nodeImplementation("79")).toMatchObject({ id: "tsunagi", name: "TSUNAGI", registration: "active", decodedPayload: { kind: "opaque", reason: "absent" } });
+  expect(nodeImplementation("65")).toMatchObject({ id: "amaru", registration: "active", decodedPayload: { kind: "opaque", reason: "invalid-definition" } });
+  expect(nodeImplementation("69")).toMatchObject({ id: "dingo", registration: "historical" });
+  expect(nodeImplementation("67")).toMatchObject({ id: "gerolamo-bean", registration: "historical" });
 });
+it.each(["65", "2637889", "4374593", "4374849", String(0x0042ff41), "268419137", String(0x1042c041)])(
+  "keeps Amaru payload %s opaque when its linked definition is nonconforming", minor => {
+    const identity = nodeImplementation(minor);
+    expect(identity).toMatchObject({ id: "amaru", decodedPayload: { kind: "opaque", reason: "invalid-definition" } });
+    expect(identity.payloadSummary).toBeUndefined();
+    expect(identity.detail).toContain("opaque payload");
+  },
+);

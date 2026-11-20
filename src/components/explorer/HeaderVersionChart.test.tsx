@@ -250,3 +250,16 @@ it("displays packed producer signals consistently in the chart and inspection li
     await close();
   }
 });
+
+it("recognizes TSUNAGI in the legend and selected block list", async () => {
+  const { host, close } = await render([record(1, "79"), record(2, "65"), record(3, "69")]);
+  try {
+    const tsunagi = [...host.querySelectorAll<HTMLButtonElement>(".header-node-legend button")].find(button => button.textContent?.includes("TSUNAGI"))!;
+    expect(tsunagi).toBeDefined();
+    expect(tsunagi.title).toContain("active registry entry");
+    await act(async () => tsunagi.click());
+    expect(host.querySelectorAll(".header-history-blocks a")).toHaveLength(1);
+    expect(host.querySelector(".header-history-blocks")?.textContent).toContain("TSUNAGI");
+    expect(host.querySelector(".header-history-blocks")?.textContent).toContain("11.79");
+  } finally { await close(); }
+});
