@@ -25,7 +25,7 @@ function color(record: Pick<VersionRecord, "minor" | "major">) {
       ? 150
       : family === "amaru"
         ? 260
-        : family === "gerolamo-bean"
+        : family === "gerolamo" || family === "cardano-bean"
           ? 35
           : family === "tsunagi"
             ? 315

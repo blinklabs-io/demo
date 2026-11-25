@@ -222,6 +222,17 @@ it("gives different full Haskell versions distinct chart colors", async () => {
     await close();
   }
 });
+it("keeps Gerolamo and cardano-bean in the orange chart family", async () => {
+  const { host, close } = await render([record(1, "42"), record(2, "67")]);
+  try {
+    const fills = [...host.querySelectorAll(".header-node-pie path")].map((p) =>
+      p.getAttribute("fill"),
+    );
+    expect(fills).toEqual(["hsl(46 65% 58%)", "hsl(36 65% 67%)"]);
+  } finally {
+    await close();
+  }
+});
 it("displays packed producer signals consistently in the chart and inspection list", async () => {
   const { host, close } = await render([
     record(1, "315973"),

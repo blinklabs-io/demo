@@ -55,7 +55,9 @@ it("offers another page only after a full page and appends it on request", async
       "/api/v0/pools/pool1test/delegators?count=20&page=2&order=asc",
       expect.anything(),
     );
-    expect(host.querySelectorAll(".pool-delegator")).toHaveLength(25);
+    await vi.waitFor(() =>
+      expect(host.querySelectorAll(".pool-delegator")).toHaveLength(25),
+    );
     expect(host.textContent).toContain("Showing 25 delegators");
     expect(host.textContent).toContain("stake1u24");
     expect(

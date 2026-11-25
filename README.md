@@ -654,8 +654,8 @@ the browser does not fetch producer-supplied definitions. The current
 [Amaru definition](https://github.com/pragma-org/amaru/blob/8fce2fbbf25e8445d4b5060598a02c8aff1df032/cip-203-payload-definition.json)
 uses `format` and `selector` rather than the current `definition_format` and
 `layout_version` contract, so its payload remains numeric without an inferred
-release date. Dingo and Gerolamo are historical attributions rather than
-entries in that snapshot.
+release date. Dingo (69), Gerolamo (42), and cardano-bean (67) are historical
+attributions rather than entries in that snapshot.
 
 Representative producer signals: [Desktop](docs/screenshots/producer-registry1440.png)
 · [Mobile](docs/screenshots/producer-registry390.png).
