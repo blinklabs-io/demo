@@ -7,6 +7,7 @@ import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { treemap } from "../../lib/chain/geometry";
 import { formatNativeCoin, shortenHash } from "../../lib/format";
+import { decodeLeiosTransaction } from "../../lib/explorer/leiosTransactions";
 const kinds = [
   { id: "transfer", label: "Transfers / other", color: "#43d9b6" },
   { id: "stake", label: "Stake / certificates", color: "#69b8f2" },
@@ -30,7 +31,33 @@ interface Record {
 function decode(row: Raw): Record {
   if (!/^[a-f0-9]+$/i.test(row.cbor) || row.cbor.length % 2)
     throw new Error("Invalid transaction CBOR.");
-  const tx = Core.Transaction.fromCbor(Core.TxCBOR(row.cbor));
+  const envelope = new Core.CborReader(Core.HexBlob(row.cbor));
+  const envelopeLength = envelope.readStartArray();
+  let txCbor = row.cbor;
+  if (envelopeLength === 4) {
+    const body = envelope.readEncodedValue();
+    const witnesses = envelope.readEncodedValue();
+    const thirdState = envelope.peekState();
+    const third = envelope.readEncodedValue();
+    const fourth = envelope.readEncodedValue();
+    envelope.readEndArray();
+    if (envelope.getBytesRemaining()) throw new Error("Trailing transaction data.");
+    if (thirdState !== Core.CborReaderState.Boolean) {
+      const dijkstra = decodeLeiosTransaction(row);
+      txCbor = `84${Core.toHex(body)}${Core.toHex(witnesses)}${Core.toHex(fourth)}${Core.toHex(third)}`;
+      const tx = Core.Transaction.fromCbor(Core.TxCBOR(txCbor));
+      if (tx.body().fee() !== dijkstra.fee || tx.isValid() !== dijkstra.valid)
+        throw new Error("Dijkstra transaction fields do not match its envelope.");
+      return {
+        id: row.tx_hash,
+        weight: BigInt(row.cbor.length / 2),
+        bytes: row.cbor.length / 2,
+        fee: dijkstra.fee,
+        kind: transactionActivity(tx),
+      };
+    }
+  }
+  const tx = Core.Transaction.fromCbor(Core.TxCBOR(txCbor));
   if (tx.getId() !== row.tx_hash)
     throw new Error("Transaction hash does not match CBOR.");
   const body = tx.body();
