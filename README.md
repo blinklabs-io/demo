@@ -227,8 +227,8 @@ automatically by the browser.
 
 Recent blocks and block details show the protocol version decoded from the
 block header bytes returned by UTxO RPC. CIP-203 scheme-zero IDs identify
-registered Amaru (65) and TSUNAGI (79), alongside historical Dingo (69) and
-shared Gerolamo/cardano-bean (67) signals. Registry-linked payload definitions
+registered Amaru (65) and TSUNAGI (79), alongside historical Dingo (69),
+Gerolamo (42), and cardano-bean (67) signals. Registry-linked payload definitions
 decode named integer, boolean and enum fields when they conform to supported
 format 0. Other payloads remain opaque; unknown enum and layout values retain
 their numbers. Reserved schemes are not interpreted. Unsignalled blocks
@@ -642,8 +642,9 @@ paginated; counts always cover the verified records rather than just displayed
 links. CIP-203 scheme, identifier and payload fields identify self-reported producers.
 Payload fields use supported registry-linked definitions; unspecified,
 nonconforming and unsupported formats remain opaque.
-ID 67 is ambiguous between Gerolamo and cardano-bean. Unsignalled blocks remain
-assumed Haskell; opt-outs and unsupported or unregistered signals stay unidentified.
+IDs 42, 67, and 79 identify Gerolamo, cardano-bean, and TSUNAGI. Unsignalled
+blocks remain assumed Haskell; opt-outs and unsupported or unregistered signals
+stay unidentified.
 
 The bundled registry is pinned to the [CIP-0203 registry snapshot](https://github.com/cardano-foundation/CIPs/blob/8bf55a9b05841799000f454b619ee5acd4b41854/CIP-0203/registry.json).
 Definitions are bundled from their registry-linked immutable URLs and validated

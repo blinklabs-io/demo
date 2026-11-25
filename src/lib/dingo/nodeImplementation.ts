@@ -101,12 +101,21 @@ export function nodeImplementation(minor: string): NodeIdentity {
       registration: "historical",
       signal,
     };
+  if (id === 42)
+    return {
+      id: "gerolamo",
+      icon: "/nodes/unknown.svg",
+      name: "Gerolamo",
+      detail: `${detail} · historical producer signal`,
+      registration: "historical",
+      signal,
+    };
   if (id === 67)
     return {
-      ...unknown,
-      id: "gerolamo-bean",
-      name: "Gerolamo / cardano-bean",
-      detail: `${detail} · historical shared identifier; implementation cannot be distinguished`,
+      id: "cardano-bean",
+      name: "cardano-bean",
+      icon: "/nodes/bean.svg",
+      detail: `${detail} · historical producer signal`,
       registration: "historical",
       signal,
     };

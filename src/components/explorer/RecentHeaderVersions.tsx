@@ -144,8 +144,9 @@ export function RecentHeaderVersions({
           headers in this recent window, not a 24-hour network total. Node
           identities follow the CIP-203 registry, including Amaru and TSUNAGI,
           with historical Dingo and Gerolamo signals retained. Payloads without
-          a supported definition remain opaque. ID 67 is shared by Gerolamo and
-          cardano-bean; unsignalled blocks are assumed Haskell. Explicit
+          a supported definition remain opaque. IDs 42, 67 and 79 identify
+          Gerolamo, cardano-bean and TSUNAGI; unsignalled blocks are assumed
+          Haskell. Explicit
           opt-outs and unsupported signals stay unidentified.
         </p>
       </section>

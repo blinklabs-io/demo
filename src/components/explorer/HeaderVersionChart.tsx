@@ -409,7 +409,8 @@ export function HeaderVersionChart({
           CIP-203 ↗
         </a>
         ). Identities come from the registry or documented historical signals.
-        Payloads without a supported definition remain opaque. ID 67 can be Gerolamo or cardano-bean.
+        Payloads without a supported definition remain opaque. IDs 42, 67 and
+        79 identify Gerolamo, cardano-bean and TSUNAGI.
         Unsignalled blocks are assumed Haskell; explicit opt-outs, unregistered
         IDs and unsupported schemes stay unidentified. Signals are
         self-reported.

@@ -234,7 +234,7 @@ it("displays packed producer signals consistently in the chart and inspection li
     const legend = host.querySelector(".header-node-legend")!;
     expect(legend.textContent).toContain("Dingo");
     expect(legend.textContent).toContain("Amaru");
-    expect(legend.textContent).toContain("Gerolamo / cardano-bean");
+    expect(legend.textContent).toContain("cardano-bean");
     expect(legend.textContent).toContain("Identity withheld");
     expect(legend.textContent).toContain("Unsupported scheme 1");
     const dingo = [
