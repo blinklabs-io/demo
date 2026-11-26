@@ -29,7 +29,7 @@
     "@blaze-cardano/vm": "0.3.3",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.5",
-    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/jest-dom": "^8.0.0",
     "@types/node": "^26.6.6",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.3.0",
