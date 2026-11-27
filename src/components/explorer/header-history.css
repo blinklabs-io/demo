@@ -395,36 +395,6 @@
 }
 
 @media (max-width: 760px) {
-  .header-node-columns {
-    display: none;
-  }
-  .header-node-legend > button {
-    grid-template-columns: 20px minmax(0, 1fr) max-content 8ch;
-  }
-  .header-node-legend img {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .header-node-legend .header-node-name {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .header-node-legend .header-node-version {
-    grid-column: 3;
-    grid-row: 1;
-  }
-  .header-node-legend .header-node-count {
-    grid-column: 2;
-    grid-row: 2;
-  }
-  .header-node-legend > button > b {
-    grid-column: 4;
-    grid-row: 1 / 3;
-  }
-  .header-node-bar {
-    grid-column: 3;
-    grid-row: 2;
-  }
   .header-hour-chart {
     gap: 2px;
     height: 120px;
