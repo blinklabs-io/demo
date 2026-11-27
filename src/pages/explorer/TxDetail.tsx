@@ -372,7 +372,17 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
           </>
         )}
       </QueryState>
-      {hash && <TransactionTracker hash={hash} embedded={Boolean(tx)} />}
+      {hash && (
+        <TransactionTracker
+          hash={hash}
+          embedded={Boolean(tx)}
+          validUntil={
+            tx?.invalid_hereafter == null
+              ? undefined
+              : Number(tx.invalid_hereafter)
+          }
+        />
+      )}
       {tx && (
         <>
           <QueryState

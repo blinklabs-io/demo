@@ -271,11 +271,13 @@ Kernel cursors before further discovery.
 Transaction pages and `/explorer/track/:hash` show a shared tracker. Successful
 Dingo submissions record a bounded in-memory receipt after the returned ID is
 verified. Mempool snapshots supply current observation; indexed transaction
-records supply inclusion and script validity. Each poll re-reads inclusion, the
-tip, and the canonical block at the inclusion height before reporting confirmation
-depth. Rollbacks and reconnects reset tracker queries, and unavailable reads
-remove the displayed confirmation count. Switching networks returns a tracked
-transaction to the empty tracker while preserving the capability.
+records supply inclusion, script validity and, on transaction pages, the upper
+validity bound (`invalid_hereafter`) when no receipt or observation carries one.
+Each poll re-reads inclusion, the tip, and the canonical block at the inclusion
+height before reporting confirmation depth. Rollbacks and reconnects reset
+tracker queries, and unavailable reads remove the displayed confirmation count.
+Switching networks returns a tracked transaction to the empty tracker while
+preserving the capability.
 
 The data workbench at `/wallet/tools/data` decodes pasted CBOR locally. Loading a
 transaction verifies its serialized ID before extracting data. Input resolution

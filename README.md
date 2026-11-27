@@ -733,8 +733,10 @@ script failure, and confirmation depth. Inclusion is re-read every ten seconds
 and reset when the chain stream rolls back or reconnects. Confirmation depth
 comes from the canonical block at the inclusion height. Missing records do not
 prove rejection, and confirmation depth is not a finality guarantee. When a
-submitted or observed transaction's validity upper bound is known, the tracker
-explains expiry without excluding earlier inclusion that has yet to be indexed.
+validity upper bound is known from a submission receipt, a mempool observation,
+or, on a transaction detail page, the indexed transaction's `invalid_hereafter`,
+the tracker explains expiry without excluding earlier inclusion that has yet to
+be indexed.
 Submission receipts retain at most fifty transaction IDs, timestamps, and
 validity bounds in memory; reloading clears them.
 
