@@ -2,8 +2,8 @@ import { Metric, PageIntro } from "../../components/explorer/Visuals";
 import { Link } from "../../components/NetworkLink";
 import { RollingNumber } from "../../components/RollingNumber";
 import { useMempoolStore } from "../../stores/mempoolStore";
-import { Panel } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
+import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
 import { formatNativeCoin } from "../../lib/format";
 import { useNow } from "../../lib/useNow";
 import { MempoolGraph } from "../../components/explorer/MempoolGraph";
@@ -62,50 +62,60 @@ export default function MempoolFeed() {
         />
         <Metric label="Live feed" value={feed} />
       </div>
-      <Panel title="Pending transactions">
-        {error && status === "error" && (
-          <p className="mb-3 text-sm text-red-400">{error}</p>
-        )}
-        {sorted.length === 0 ? (
-          <p className="panel-empty">
-            {status === "live" && !error
-              ? "No transactions are waiting. New arrivals appear here automatically."
-              : "Waiting for the mempool feed."}
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Transaction</th>
-                  <th className="num">Inputs</th>
-                  <th className="num">Outputs</th>
-                  <th className="num">Output value</th>
-                  <th className="num">Fee</th>
-                  <th className="num">Seen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((tx) => (
-                  <tr key={tx.hash}>
-                    <td>
-                      <HashLink kind="tx" id={tx.hash} />
-                    </td>
-                    <td className="num">{tx.inputCount}</td>
-                    <td className="num">{tx.outputCount}</td>
-                    <td className="num">
-                      {formatNativeCoin(tx.totalOutputLovelace)}
-                    </td>
-                    <td className="num">{formatNativeCoin(tx.fee)}</td>
-                    <td className="num">{formatAge(tx.seenAt, now)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Panel>
+      {error && status === "error" && (
+        <p className="text-sm text-red-400" role="alert">{error}</p>
+      )}
       <MempoolGraph transactions={sorted} status={status} />
+      <LazyDisclosure
+        className="data-panel mempool-transaction-list"
+        title={
+          <>
+            <h2>Pending transactions</h2>
+            <span>{sorted.length.toLocaleString()} transactions</span>
+          </>
+        }
+      >
+        <div className="panel-content">
+          {sorted.length === 0 ? (
+            <p className="panel-empty">
+              {status === "live" && !error
+                ? "No transactions are waiting. New arrivals appear here automatically."
+                : "Waiting for the mempool feed."}
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Transaction</th>
+                    <th className="num">Inputs</th>
+                    <th className="num">Outputs</th>
+                    <th className="num">Output value</th>
+                    <th className="num">Fee</th>
+                    <th className="num">Seen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((tx) => (
+                    <tr key={tx.hash}>
+                      <td>
+                        <HashLink kind="tx" id={tx.hash} />
+                      </td>
+                      <td className="num">{tx.inputCount}</td>
+                      <td className="num">{tx.outputCount}</td>
+                      <td className="num">
+                        {formatNativeCoin(tx.totalOutputLovelace)}
+                      </td>
+                      <td className="num">{formatNativeCoin(tx.fee)}</td>
+                      <td className="num">{formatAge(tx.seenAt, now)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </LazyDisclosure>
     </div>
   );
 }

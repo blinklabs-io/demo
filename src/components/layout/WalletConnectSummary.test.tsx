@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { WalletConnectSummary } from "./WalletConnectSummary";
-const data = vi.hoisted(() => ({ network: { id: "mainnet" }, connect: vi.fn(async () => {}) }));
+const data = vi.hoisted(() => ({ network: { id: "mainnet", label: "Mainnet" }, connect: vi.fn(async () => {}) }));
 vi.mock("../../lib/dingo/config", () => ({ DINGO_NETWORK: data.network, DINGO_CONFIG: {} }));
 vi.mock("../../stores/walletStore", () => ({
   useWalletStore: (selector: (state: unknown) => unknown) => selector({
@@ -11,9 +11,11 @@ vi.mock("../../stores/walletStore", () => ({
     connect: data.connect, disconnect: vi.fn(),
   }),
 }));
-it.each(["mainnet", "preview", "preprod", "musashi", "dijkstra", "prime-testnet"])(
+it.each(["mainnet", "preview", "preprod", "musashi", "dijkstra", "prime-testnet", "prime-mainnet"])(
   "informs the user before connecting on %s", async (network) => {
-    data.network.id = network; data.connect.mockClear();
+    data.network.id = network;
+    data.network.label = network === "prime-mainnet" ? "Prime Mainnet" : network === "mainnet" ? "Mainnet" : network;
+    data.connect.mockClear();
     const host = document.createElement("div");document.body.append(host);
     const root = createRoot(host);
     try {
@@ -22,8 +24,12 @@ it.each(["mainnet", "preview", "preprod", "musashi", "dijkstra", "prime-testnet"
       const notice = host.querySelector('[role="note"]');
       const wallet = [...host.querySelectorAll("button")].find((b) => b.textContent === "Example wallet")!;
       expect(data.connect).not.toHaveBeenCalled();
-      if (network === "mainnet") {
-        expect(notice?.textContent).toContain("Mainnet uses real ADA and tokens");
+      if (network === "mainnet" || network === "prime-mainnet") {
+        expect(notice?.textContent).toContain(
+          network === "mainnet"
+            ? "Mainnet uses real ADA and tokens"
+            : "Prime Mainnet uses real AP3X and tokens",
+        );
         expect(notice?.textContent).toContain("loss of funds");
         expect(notice?.textContent).toContain("do not imply endorsement by Blink Labs or by the protocol’s developers");
         expect(notice?.textContent).toContain("does not provide financial advice");

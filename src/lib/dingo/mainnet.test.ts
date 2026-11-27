@@ -21,11 +21,11 @@ function fixture() {
     witness.setVkeys(Core.CborSet.fromCore([[key.toPublic().hex(), key.sign(Core.HexBlob(tx.getId())).hex()]], Core.VkeyWitness.fromCore)); signing?.(); return witness.toCbor();
   }) } as unknown as Cip30WalletApi;
   const provider = state.provider = new DingoProvider();
-  vi.spyOn(provider.queryClient, "readGenesis").mockResolvedValue({ networkMagic: 764824073 } as Awaited<ReturnType<typeof provider.queryClient.readGenesis>>);
+  vi.spyOn(provider.queryClient, "readGenesis").mockResolvedValue({ networkMagic: 764824073, systemStart: "2017-09-23T21:44:51Z" } as Awaited<ReturnType<typeof provider.queryClient.readGenesis>>);
   vi.spyOn(provider, "getParameters").mockResolvedValue(Core.hardCodedProtocolParams);
   vi.spyOn(provider, "resolveUnspentOutputs").mockImplementation(async (inputs) => inputs.filter((input) => input.toCbor() === funding.input().toCbor()).map(() => funding));
   const post = vi.spyOn(provider, "postTransactionToChain").mockImplementation(async (tx) => tx.getId());
-  vi.mocked(blockfrostFetch).mockImplementation(async (path) => (path.endsWith("genesis") ? { network_magic: 764824073 } : { slot: 1000 }) as never);
+  vi.mocked(blockfrostFetch).mockImplementation(async (path) => (path.endsWith("genesis") ? { network_magic: 764824073, system_start: 1506203091 } : { slot: 1000 }) as never);
   const action = { kind: "send" as const, address: address(1).toBech32(), ada: "10", assets: [] };
   return { api, provider, post, funding, address, action, setNetwork: (value: number) => { network = value; }, onSign: (fn: () => void) => { signing = fn; } };
 }

@@ -2,11 +2,12 @@ import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { HashLink } from "../explorer/HashLink";
 import { useEffect, useId, useRef, useState } from "react";
 import { useWalletStore } from "../../stores/walletStore";
-import { shortenHash } from "../../lib/format";
+import { nativeTicker, shortenHash } from "../../lib/format";
 
 export function WalletConnectSummary() {
   const noticeId = useId();
-  const mainnet = DINGO_NETWORK.id === "mainnet";
+  const mainnet =
+    DINGO_NETWORK.id === "mainnet" || DINGO_NETWORK.id === "prime-mainnet";
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const status = useWalletStore((state) => state.status);
@@ -86,8 +87,8 @@ export function WalletConnectSummary() {
         <div className={`absolute left-0 z-10 mt-2 ${mainnet ? "w-80 max-w-[calc(100vw-2rem)] max-md:fixed max-md:inset-x-4 max-md:top-20 max-md:z-50 max-md:w-auto max-md:max-h-[calc(100dvh-6rem)] max-md:overflow-y-auto" : "w-56"} rounded-md border border-slate-700 bg-slate-900 p-2 text-sm shadow-lg`}>
           {mainnet && (
             <div id={noticeId} role="note" className="mb-2 rounded-md border border-amber-500/50 bg-amber-950/40 p-3 text-amber-100">
-              <strong className="block">Real funds on Mainnet</strong>
-              <p className="mt-1">Mainnet uses real ADA and tokens. Transactions can result in loss of funds. Use at your own risk. Protocol integrations do not imply endorsement by Blink Labs or by the protocol’s developers. This demo does not provide financial advice.</p>
+              <strong className="block">Real funds on {DINGO_NETWORK.label}</strong>
+              <p className="mt-1">{DINGO_NETWORK.label} uses real {nativeTicker()} and tokens. Transactions can result in loss of funds. Use at your own risk. Protocol integrations do not imply endorsement by Blink Labs or by the protocol’s developers. This demo does not provide financial advice.</p>
             </div>
           )}
           {availableWallets.length === 0 && (

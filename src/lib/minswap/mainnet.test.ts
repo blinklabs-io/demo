@@ -13,7 +13,7 @@ vi.mock("../dingo/utxorpc/provider", async (original) => ({ ...await original<ty
 const native = ["owBYORHqB7cz2TISnDeK9idDbny8LvC/luADa7UbO95rUlY8VBC/9qDUPM67fDfh9p9esmBVJSGt/zO5wgGCGgBEqiGiWBzMmGWeaIAfKCd3m727la9a6sz9zICwHlXFuS98oUZDSEFMSUUaO5rKAFgc9YCMLJkNhtpUv8l9ic7m76IM2EYWFjWUeNlrTKJDTVNQAVgg2cH312CDEHdE4/IzatoXx0vtJMi7UKLu+nRyJ5YFYcUbf/////////8CggHYGFhu2Hmf2Hmf2HqfWBwerpa68p4naC6j+BWro2GgxgWdReS/vpW70vRK///YeZ9AQP/YeZ9YHMyYZZ5ogB8oJ3ebvbuVr1rqzP3MgLAeVcW5L3xGQ0hBTElF/woBGjuTKakYHhge2HmfGQaC/9h5gP8=", "owBYORHqB7cz2TISnDeK9idDbny8LvC/luADa7UbO95rUlY8VBC/9qDUPM67fDfh9p9esmBVJSGt/zO5wgGCGgBEqiGiWBy85+ISaCTjopybvZ3t3vImkQcQhH7qWdoXvH4RoUVTTlVNUBsAAAAMzkFmAFgc9YCMLJkNhtpUv8l9ic7m76IM2EYWFjWUeNlrTKJDTVNQAVgg70UwOY5T7qde49AqmC6HpcaAd2kEtdYQ5jv2lwxSihIbf/////////8CggHYGFhx2Hmf2Hmf2HqfWBwerpa68p4naC6j+BWro2GgxgWdReS/vpW70vRK///YeZ9AQP/YeZ9YHLzn4hJoJOOinJu9ne3e8iaRBxCEfupZ2he8fhFFU05VTVD/CgEbAAAADMjLPFEYZBhk2HmfGQaC/9h5gP8="];
 const item = (index: number) => ({ parsedState: { case: "cardano" }, txoRef: { hash: new Uint8Array(32).fill(index + 1), index: 0 }, nativeBytes: Uint8Array.from(Buffer.from(native[index], "base64")) });
 beforeAll(() => Core.initCrypto());
-beforeEach(() => { vi.clearAllMocks(); mocks.genesis.mockResolvedValue({ networkMagic: 764824073 }); vi.mocked(blockfrostFetch).mockResolvedValue({ network_magic: 764824073 }); mocks.search.mockResolvedValue({ items: [item(0), item(1)], nextToken: "next-page" }); });
+beforeEach(() => { vi.clearAllMocks(); mocks.genesis.mockResolvedValue({ networkMagic: 764824073, systemStart: "2017-09-23T21:44:51Z" }); vi.mocked(blockfrostFetch).mockResolvedValue({ network_magic: 764824073, system_start: 1506203091 }); mocks.search.mockResolvedValue({ items: [item(0), item(1)], nextToken: "next-page" }); });
 it("authenticates mainnet pools from asset-only RPC pages and preserves the opaque cursor", async () => {
   const result = await readMinswapPools();
   expect(result.errors).toEqual([]); expect(result.pools).toHaveLength(2); expect(result.partial).toBe(true); expect(result.nextToken).toBe("next-page");
@@ -35,7 +35,7 @@ it("finds a mainnet LP state and routes its order to the mainnet contract", asyn
 it("rejects wrong-chain, incomplete, unrelated, duplicate and repeating RPC pages", async () => {
   const asset = minswapDeployment().poolAuthenAsset;
   mocks.genesis.mockResolvedValue({ networkMagic: 1 }); await expect(readMinswapAssetPage(asset)).rejects.toThrow("requires Mainnet"); expect(mocks.search).not.toHaveBeenCalled();
-  mocks.genesis.mockResolvedValue({ networkMagic: 764824073 });
+  mocks.genesis.mockResolvedValue({ networkMagic: 764824073, systemStart: "2017-09-23T21:44:51Z" });
   mocks.search.mockResolvedValue({ items: [{ ...item(0), nativeBytes: new Uint8Array() }], nextToken: "" }); await expect(readMinswapAssetPage(asset)).rejects.toThrow("incomplete Cardano");
   mocks.search.mockResolvedValue({ items: [item(0)], nextToken: "" }); await expect(readMinswapAssetPage("22".repeat(28) + "01")).rejects.toThrow("without the requested");
   mocks.search.mockResolvedValue({ items: [item(0), item(0)], nextToken: "" }); await expect(readMinswapAssetPage(asset)).rejects.toThrow("repeated");

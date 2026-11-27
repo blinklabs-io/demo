@@ -104,7 +104,7 @@ export function nodeImplementation(minor: string): NodeIdentity {
   if (id === 42)
     return {
       id: "gerolamo",
-      icon: "/nodes/unknown.svg",
+      icon: "/nodes/gerolamo.svg",
       name: "Gerolamo",
       detail: `${detail} · historical producer signal`,
       registration: "historical",

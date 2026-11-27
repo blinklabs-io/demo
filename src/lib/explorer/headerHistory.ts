@@ -3,6 +3,7 @@ import { blockfrostFetch } from "../dingo/blockfrost";
 import { DINGO_CONFIG, DINGO_NETWORK } from "../dingo/config";
 import { getSyncClient } from "../dingo/utxorpc/streaming";
 import { bytesToHex, hexToBytes } from "../dingo/utxorpc/bytes";
+import { matchesDingoRestGenesis } from "../dingo/networkIdentity";
 
 export interface HeaderHistoryRow {
   hash: string;
@@ -210,7 +211,7 @@ export async function loadHeaderHistory({
     slot_length: number;
   }>("/api/v0/genesis", { signal });
   if (
-    genesis.network_magic !== DINGO_NETWORK.networkMagic ||
+    !matchesDingoRestGenesis(genesis) ||
     !integer(genesis.system_start)
   )
     throw new Error(

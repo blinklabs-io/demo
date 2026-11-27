@@ -1,4 +1,7 @@
-import { CARDANO_NETWORK_ID } from "../networkIdentity";
+import {
+  CARDANO_NETWORK_ID,
+  matchesDingoRpcGenesis,
+} from "../networkIdentity";
 import { useSubmissionStore } from "../../../stores/submissionStore";
 import {
   Core,
@@ -190,7 +193,7 @@ export class DingoProvider extends Provider {
     assertCurrent?.();
     const genesis = await this.queryClient.readGenesis();
     assertCurrent?.();
-    if (genesis.networkMagic !== DINGO_NETWORK.networkMagic)
+    if (!matchesDingoRpcGenesis(genesis))
       throw new Error(`Dingo submission requires ${DINGO_NETWORK.label}.`);
     const id = Core.TransactionId(
       bytesToHex(await this.submitClient.submitTx(hexToBytes(tx.toCbor()))),

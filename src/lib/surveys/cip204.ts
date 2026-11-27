@@ -1,4 +1,7 @@
-import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
+import {
+  CARDANO_NETWORK_ID,
+  matchesDingoRestGenesis,
+} from "../dingo/networkIdentity";
 import { DINGO_NETWORK } from "../dingo/config";
 import {
   assertTransactionNetwork,
@@ -204,7 +207,11 @@ async function validate(proposal: VotingProposal) {
     blockfrostFetch<{ epoch: number; slot: number; epoch_slot: number }>(
       "/api/v0/blocks/latest",
     ),
-    blockfrostFetch<{ network_magic: number; epoch_length: number }>(
+    blockfrostFetch<{
+      network_magic: number;
+      system_start: number;
+      epoch_length: number;
+    }>(
       "/api/v0/genesis",
     ),
   ]);
@@ -214,7 +221,7 @@ async function validate(proposal: VotingProposal) {
   )
     throw new Error("Governance action changed. Reload this page.");
   if (
-    genesis.network_magic !== DINGO_NETWORK.networkMagic ||
+    !matchesDingoRestGenesis(genesis) ||
     !Number.isSafeInteger(genesis.epoch_length) ||
     genesis.epoch_length <= 0 ||
     !Number.isSafeInteger(tip.epoch) ||

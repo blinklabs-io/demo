@@ -311,7 +311,11 @@ export default function Experiences() {
       </section>
       <footer className="experience-footnote">
         <p>
-          {DINGO_NETWORK.id === "mainnet" ? "Cardano Mainnet transactions use ADA." : `${DINGO_NETWORK.label} is a public test network. Transactions use test ${nativeTicker()}.`} Your wallet signs; Dingo provides chain data and submits
+          {DINGO_NETWORK.id === "mainnet"
+            ? "Cardano Mainnet transactions use ADA."
+            : DINGO_NETWORK.id === "prime-mainnet"
+              ? "Prime Mainnet transactions use AP3X."
+              : `${DINGO_NETWORK.label} is a public test network. Transactions use test ${nativeTicker()}.`} Your wallet signs; Dingo provides chain data and submits
           transactions.
         </p>
         <Link to="/api">See the APIs behind these tools</Link>

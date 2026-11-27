@@ -73,7 +73,7 @@ function SendForm({
               aria-label="Recipient address"
               value={recipient}
               onChange={(e) => edit(() => onRecipient(e.target.value))}
-              placeholder={DINGO_NETWORK.id === "mainnet" ? "addr1…" : "addr_test1…"}
+              placeholder={DINGO_NETWORK.id === "mainnet" || DINGO_NETWORK.id === "prime-mainnet" ? "addr1…" : "addr_test1…"}
             />
           </label>
           <section className="send-ada">

@@ -201,9 +201,8 @@ function decodePool(output: Output): V4Pool | undefined {
     const quantity = integer(pair[1]);
     const held = output.amount.find(
       (a) => a.unit === unitFromAssetId(id),
-    )?.quantity;
+    )?.quantity ?? "0";
     if (
-      !held ||
       !/^\d+$/.test(held) ||
       BigInt(held) < quantity + (policy ? 0n : integer(body[7]))
     )
