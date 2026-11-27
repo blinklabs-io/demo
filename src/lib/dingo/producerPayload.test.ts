@@ -33,7 +33,7 @@ it("selects layouts and preserves unknown enum and layout numbers", () => {
   expect(decodeProducerPayload(3 << 20, versioned)).toEqual({ kind: "unknown-layout", layoutVersion: 3 });
 });
 it.each([
-  null, {}, amaru,
+  null, {},
   { ...flat, extra: true },
   { ...flat, layout_version: versioned.layout_version },
   { ...flat, fields: [] },
@@ -54,6 +54,16 @@ it.each([
   { definition_format: 0, layout_version: { bits: [20, 21], layouts: { "4": { fields: flat.fields } } } },
 ])("does not interpret a missing or nonconforming definition %#", source => {
   expect(decodeProducerPayload(1234, source).kind).toBe("opaque");
+});
+it("decodes the current registry-linked Amaru definition", () => {
+  expect(decodeProducerPayload(64, amaru)).toEqual({
+    kind: "decoded",
+    layoutVersion: 0,
+    fields: [
+      { name: "days_since_amaru_epoch", type: "integer", value: 1 },
+      { name: "flags", type: "integer", value: 0 },
+    ],
+  });
 });
 it("does not guess unsupported definition formats or reject unknown producer bits", () => {
   expect(decodeProducerPayload(0, { ...flat, definition_format: 1 })).toEqual({ kind: "opaque", reason: "unsupported-format" });

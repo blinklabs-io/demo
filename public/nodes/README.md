@@ -8,8 +8,8 @@ Original assets from [PRAGMA node diversity conformance](https://github.com/prag
 - amaru.svg: nodes/amaru/logo.svg
 - unknown.svg: generic node icon created for this application
 
-Block displays decode the [CIP-0203 producer signal](https://github.com/cardano-foundation/CIPs/tree/8bf55a9b05841799000f454b619ee5acd4b41854/CIP-0203): scheme bits 31–30, payload bits 29–8 and implementation ID bits 7–0. Schemes other than zero are not decoded. The pinned registry identifies Amaru as ID 65 and TSUNAGI as ID 79. Historical Dingo signals use ID 69, Gerolamo uses ID 42, and cardano-bean uses ID 67.
+Block displays decode the [CIP-0203 producer signal](https://github.com/cardano-foundation/CIPs/tree/c7d5a3897c75aef9e0cf6c37187da7d25ecc1248/CIP-0203): scheme bits 31–30, payload bits 29–8 and implementation ID bits 7–0. Schemes other than zero are not decoded. The pinned registry identifies Amaru as ID 65, Bean as ID 67, Scarab as ID 73, and TSUNAGI as ID 79. Historical Dingo signals use ID 69 and Gerolamo uses ID 42.
 
-Payload fields are decoded only from supported registry-linked definitions. The bundled Amaru definition does not conform to the supported definition contract, so its payload remains opaque without an inferred release date. Unspecified, nonconforming and unsupported payload formats remain opaque.
+Payload fields are decoded only from supported registry-linked definitions. The bundled Amaru definition uses format 0 with a versioned layout. Unspecified, nonconforming and unsupported payload formats remain opaque.
 
 Unsignalled minor 0 is displayed as assumed Haskell cardano-node. Reserved release minors 1–15 with zero payload identify legacy Haskell nodes. Explicit opt-out ID 255, unregistered identifiers and unsupported schemes remain unidentified. All signals are producer declarations, not independent software attestations.
