@@ -1,10 +1,10 @@
-import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useQuery } from "@tanstack/react-query";
 import { blockfrostFetch, BlockfrostError } from "../../lib/dingo/blockfrost";
 import { networkName } from "../../lib/dingo/networkNames";
 import { useNodeHealth } from "../../lib/dingo/nodeHealth";
 import { useTipStore } from "../../stores/tipStore";
 import { useNow } from "../../lib/useNow";
+import { matchesDingoRestGenesis } from "../../lib/dingo/networkIdentity";
 
 function formatAge(seconds: number): string {
   if (seconds < 60) return `${seconds}s ago`;
@@ -22,7 +22,10 @@ export function NodeHealthStrip() {
   const genesis = useQuery({
     queryKey: ["dingo", "genesis"],
     queryFn: ({ signal }) =>
-      blockfrostFetch<{ network_magic: number }>("/api/v0/genesis", { signal }),
+      blockfrostFetch<{ network_magic: number; system_start: number }>(
+        "/api/v0/genesis",
+        { signal },
+      ),
     staleTime: Infinity,
   });
 
@@ -62,8 +65,8 @@ export function NodeHealthStrip() {
       {!genesis.data && <span role="status" className="text-amber-300">
         {genesis.isLoading ? "Verifying network…" : "Network verification unavailable"}
       </span>}
-      {genesis.data && genesis.data.network_magic !== DINGO_NETWORK.networkMagic && (
-        <span className="text-red-300" role="alert">API reports {networkName(genesis.data.network_magic)}</span>
+      {genesis.data && !matchesDingoRestGenesis(genesis.data) && (
+        <span className="text-red-300" role="alert">API reports a different {networkName(genesis.data.network_magic)} genesis</span>
       )}
       <span className="flex items-center gap-2">
         <span

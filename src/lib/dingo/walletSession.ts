@@ -1,4 +1,7 @@
-import { CARDANO_NETWORK_ID } from "./networkIdentity";
+import {
+  CARDANO_NETWORK_ID,
+  matchesDingoRestGenesis,
+} from "./networkIdentity";
 import { Core } from "@blaze-cardano/sdk";
 import { DINGO_NETWORK } from "./config";
 import { assertDingoNetwork, getDingoProvider, type DingoProvider } from "./utxorpc/provider";
@@ -57,9 +60,11 @@ export async function assertTransactionNetwork(
 export async function assertDingoTransactionBackends() {
   const [, genesis] = await Promise.all([
     assertDingoNetwork(getDingoProvider()),
-    blockfrostFetch<{ network_magic: number }>("/api/v0/genesis"),
+    blockfrostFetch<{ network_magic: number; system_start: number }>(
+      "/api/v0/genesis",
+    ),
   ]);
-  if (genesis.network_magic !== DINGO_NETWORK.networkMagic)
+  if (!matchesDingoRestGenesis(genesis))
     throw new Error(
       `Dingo REST API must serve ${DINGO_NETWORK.label} (network magic ${DINGO_NETWORK.networkMagic}).`,
     );

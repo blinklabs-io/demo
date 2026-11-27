@@ -1,9 +1,13 @@
 import { expect, it, vi, afterEach } from "vitest";
 afterEach(() => { window.history.replaceState(null, "", "/"); localStorage.clear(); vi.resetModules(); });
-it("formats Prime's native units as AP3X while preserving the explicit ADA formatter", async () => {
-  window.history.replaceState(null, "", "/?network=prime-testnet");
+it.each([
+  ["prime-testnet", 0],
+  ["prime-mainnet", 1],
+] as const)("formats %s native units as AP3X with network ID %i", async (network, networkId) => {
+  window.history.replaceState(null, "", `/?network=${network}`);
   vi.resetModules();
   const { formatNativeCoin, formatAda, nativeTicker } = await import("./format");
+  const { CARDANO_NETWORK_ID } = await import("./dingo/networkIdentity");
   const { compactAda } = await import("./visualFormat");
   const { marketAssetName } = await import("../components/markets/amounts");
   expect(marketAssetName("lovelace")).toBe("AP3X");
@@ -11,4 +15,17 @@ it("formats Prime's native units as AP3X while preserving the explicit ADA forma
   expect(formatNativeCoin(1500000n)).toBe("1.50 AP3X");
   expect(formatAda(1500000n)).toBe("1.50 ADA");
   expect(compactAda(1000000000000n)).toBe("1M AP3X");
+  expect(CARDANO_NETWORK_ID).toBe(networkId);
+});
+
+it.each([
+  ["mainnet", "ADA"],
+  ["prime-mainnet", "AP3X"],
+  ["preview", "test ADA"],
+  ["prime-testnet", "test AP3X"],
+] as const)("labels %s native funds as %s", async (network, expected) => {
+  window.history.replaceState(null, "", `/?network=${network}`);
+  vi.resetModules();
+  const { nativeFundsLabel } = await import("./format");
+  expect(nativeFundsLabel()).toBe(expected);
 });

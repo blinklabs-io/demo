@@ -1,4 +1,7 @@
-import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
+import {
+  CARDANO_NETWORK_ID,
+  matchesDingoRestGenesis,
+} from "../dingo/networkIdentity";
 import { DINGO_NETWORK } from "../dingo/config";
 import {
   assertTransactionNetwork,
@@ -122,10 +125,12 @@ async function identity(api: Cip30WalletApi, assertConnection: () => void) {
 async function timing() {
   const [tip, genesis] = await Promise.all([
     blockfrostFetch<{ slot: number }>("/api/v0/blocks/latest"),
-    blockfrostFetch<{ network_magic: number }>("/api/v0/genesis"),
+    blockfrostFetch<{ network_magic: number; system_start: number }>(
+      "/api/v0/genesis",
+    ),
   ]);
   if (
-    genesis.network_magic !== DINGO_NETWORK.networkMagic ||
+    !matchesDingoRestGenesis(genesis) ||
     !Number.isSafeInteger(tip.slot) ||
     tip.slot < 0
   )

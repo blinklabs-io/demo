@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { beforeAll, beforeEach, afterEach, expect, it, vi } from "vitest";
 import { Core } from "@blaze-cardano/sdk";
-import { EContractVersion } from "@sundaeswap/core";
+import { AssetAmount } from "@sundaeswap/asset";
+import { ADA_METADATA, DatumBuilderV4, EContractVersion } from "@sundaeswap/core";
 import { DingoSundaeQueryProvider } from "./dingoQueryProvider";
-import { discoverV4Pools } from "./v4";
+import { discoverV4Pools, V4_DEPLOYMENT } from "./v4";
 import poolFixture from "./mainnet-pool.fixture.json";
 import { POOL_PRESETS } from "./protocol";
 import type { DingoProvider } from "../dingo/utxorpc/provider";
@@ -72,4 +73,62 @@ it("keeps a valid pool when the index also returns an unrelated key credential",
   const pools = await discoverV4Pools();
   expect(pools).toHaveLength(1);
   expect(pools[0].ident).toBe("9f91de10b16697c05362266204fc744e7771e8c1a5124e2e273c4e30");
+});
+
+it("accepts a zero pool reserve omitted from the output value", async () => {
+  const ident = "11".repeat(28);
+  const token = { assetId: `${"22".repeat(28)}.544f4b454e`, decimals: 0 };
+  const datum = new DatumBuilderV4("mainnet").buildPoolDatum({
+    assets: [
+      new AssetAmount(10_000_000n, ADA_METADATA),
+      new AssetAmount(0n, token),
+    ],
+    totalLp: 10_000_000n,
+    circulatingLp: 10_000_000n,
+    premintedLp: 0n,
+    identifier: ident,
+    actions: [
+      { tag: 100n, enabled: true, modules: [V4_DEPLOYMENT.constantSum] },
+    ],
+    moduleState: [[V4_DEPLOYMENT.constantSum, "80"]],
+    minSurplus: 15_000_000n,
+  });
+  const address = Core.addressFromCredential(
+    1,
+    Core.Credential.fromCore({
+      type: Core.CredentialType.ScriptHash,
+      hash: Core.Hash28ByteBase16(poolHash),
+    }),
+  );
+  const value = new Core.Value(
+    25_000_000n,
+    new Map([
+      [
+        Core.AssetId(
+          V4_DEPLOYMENT.poolPolicy + DatumBuilderV4.cip68Names(ident).nft,
+        ),
+        1n,
+      ],
+    ]),
+  );
+  const output = new Core.TransactionOutput(address, value);
+  output.setDatum(
+    Core.Datum.newInlineData(
+      Core.PlutusData.fromCbor(Core.HexBlob(datum.inline)),
+    ),
+  );
+  mocks.search.mockResolvedValue({
+    items: [
+      {
+        txoRef: { hash: Core.fromHex("33".repeat(32)), index: 0 },
+        nativeBytes: Core.fromHex(output.toCbor()),
+      },
+    ],
+    nextToken: "",
+  });
+
+  const pools = await discoverV4Pools();
+
+  expect(pools).toHaveLength(1);
+  expect(pools[0].reserves).toEqual([10_000_000n, 0n]);
 });

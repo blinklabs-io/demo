@@ -99,6 +99,7 @@ it("connects copied Leios and mempool SDK examples to the reader's instance", as
 it.each([
   ["preview", ""], ["preprod", "PREPROD_"], ["mainnet", "MAINNET_"],
   ["musashi", "MUSASHI_"], ["dijkstra", "DIJKSTRA_"], ["prime-testnet", "PRIME_TESTNET_"],
+  ["prime-mainnet", "PRIME_MAINNET_"],
 ])("uses the actual %s endpoint override names in runnable shell examples", (id, prefix) => {
   const previous = DINGO_NETWORK.id;
   try {

@@ -6,6 +6,7 @@ export const DINGO_NETWORKS = {
   musashi: { id: "musashi", label: "Musashi", networkMagic: 164 },
   dijkstra: { id: "dijkstra", label: "Dijkstra", networkMagic: 6 },
   "prime-testnet": { id: "prime-testnet", label: "Prime Testnet", networkMagic: 3311 },
+  "prime-mainnet": { id: "prime-mainnet", label: "Prime Mainnet", networkMagic: 764824073 },
 } as const;
 export type DingoNetworkId = keyof typeof DINGO_NETWORKS;
 export function isDingoNetworkId(value: string): value is DingoNetworkId {
@@ -16,7 +17,7 @@ export function urlDingoNetwork(search: string): DingoNetworkId | null {
   if (!values.length) return null;
   if (values.length !== 1 || !isDingoNetworkId(values[0]))
     throw new Error(
-      "Choose a valid network in the URL: mainnet, preview, preprod, musashi, dijkstra, or prime-testnet.",
+      "Choose a valid network in the URL: mainnet, preview, preprod, musashi, dijkstra, prime-testnet, or prime-mainnet.",
     );
   return values[0];
 }
@@ -35,16 +36,12 @@ export function persistDingoNetwork(network: DingoNetworkId): boolean {
   }
 }
 export function selectedDingoNetwork() {
+  if (typeof window === "undefined") return DINGO_NETWORKS.preview;
   const explicit =
-    typeof window === "undefined"
-      ? null
-      : urlDingoNetwork(window.location.search);
+    urlDingoNetwork(window.location.search);
   if (explicit !== null) return DINGO_NETWORKS[explicit];
-  const value =
-    typeof window === "undefined"
-      ? null
-      : window.localStorage.getItem(NETWORK_STORAGE_KEY);
-  if (value === null) return DINGO_NETWORKS.preview;
+  const value = window.localStorage.getItem(NETWORK_STORAGE_KEY);
+  if (value === null) return DINGO_NETWORKS.mainnet;
   if (!isDingoNetworkId(value))
     throw new Error(
       `Unsupported saved Dingo network "${value}". Clear the saved network selection to continue.`,

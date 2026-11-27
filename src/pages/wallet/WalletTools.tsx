@@ -34,7 +34,11 @@ import {
   type Payment,
 } from "../../lib/tools/transactions";
 import { fileDigest, verifyDocumentProof } from "../../lib/tools/proofs";
-import { formatNativeCoin, nativeTicker } from "../../lib/format";
+import {
+  formatNativeCoin,
+  nativeFundsLabel,
+  nativeTicker,
+} from "../../lib/format";
 import { readWalletDRep } from "../../lib/dingo/governanceVote";
 
 function ToolTransaction(
@@ -161,7 +165,7 @@ function Batch() {
                 <input
                   value={r.address}
                   onChange={(e) => update(r.id, { address: e.target.value })}
-                  placeholder={DINGO_NETWORK.id === "mainnet" ? "addr1…" : "addr_test1…"}
+                  placeholder={DINGO_NETWORK.id === "mainnet" || DINGO_NETWORK.id === "prime-mainnet" ? "addr1…" : "addr_test1…"}
                   autoComplete="off"
                 />
               </label>
@@ -205,7 +209,7 @@ function Batch() {
               rows={4}
               value={csv}
               onChange={(e) => setCsv(e.target.value)}
-              placeholder={DINGO_NETWORK.id === "mainnet" ? "addr1…,5,lovelace" : "addr_test1…,5,lovelace"}
+              placeholder={DINGO_NETWORK.id === "mainnet" || DINGO_NETWORK.id === "prime-mainnet" ? "addr1…,5,lovelace" : "addr_test1…,5,lovelace"}
             />
           </label>
           <button onClick={importRows}>Replace recipients</button>
@@ -858,7 +862,7 @@ function Treasury() {
       <aside className="tool-treasury data-panel">
         <strong>
           {amount || "—"}
-          <small>test {nativeTicker()}</small>
+          <small>{nativeFundsLabel()}</small>
         </strong>
         <p>{DINGO_NETWORK.label} treasury donation</p>
         <span className="tool-route-pill">From your wallet to the Cardano treasury</span>
