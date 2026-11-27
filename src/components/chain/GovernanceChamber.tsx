@@ -12,9 +12,9 @@ interface Ballot {
   counted: boolean;
 }
 const choices = [
-  { id: "yes", name: "Yes", color: "#47dfb9" },
-  { id: "no", name: "No", color: "#fb948d" },
-  { id: "abstain", name: "Abstain", color: "#b5a5f8" },
+  { id: "yes", name: "Yes", color: "var(--ok)" },
+  { id: "no", name: "No", color: "var(--danger)" },
+  { id: "abstain", name: "Abstain", color: "var(--gray-8)" },
 ];
 function roleName(role: string) {
   return role === "drep"
@@ -91,8 +91,7 @@ function Chamber({ proposalId }: { proposalId: string }) {
     <section className="chain-visual governance-chamber">
       <header className="chain-heading">
         <div>
-          <span className="eyebrow">The voices behind the decision</span>
-          <h2>Inside the voting chamber.</h2>
+          <h2>Recorded votes by role</h2>
         </div>
         <span className="chain-scope">
           {rows.length} ballot records loaded
@@ -136,7 +135,7 @@ function Chamber({ proposalId }: { proposalId: string }) {
           <path
             d="M55 285 A245 245 0 0 1 545 285"
             fill="none"
-            stroke="#273b4b"
+            stroke="var(--line-strong)"
             strokeDasharray="3 8"
           />
           {dots.map((d, i) => (
@@ -161,7 +160,7 @@ function Chamber({ proposalId }: { proposalId: string }) {
             x="300"
             y="292"
             textAnchor="middle"
-            fill="#8ea9b9"
+            fill="var(--text-3)"
             fontSize="13"
           >
             COUNTED BALLOTS LOADED
@@ -222,7 +221,7 @@ function Chamber({ proposalId }: { proposalId: string }) {
           >
             <code>{v.voter}</code>
             <span>
-              {v.vote} · {shortenHash(v.tx_hash)} ↗
+              {v.vote} · {shortenHash(v.tx_hash)}
             </span>
           </Link>
         ))}

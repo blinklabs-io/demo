@@ -13,7 +13,7 @@ import { QueryState } from "../../components/explorer/QueryState";
 import { HashLink } from "../../components/explorer/HashLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { useNow } from "../../lib/useNow";
-import { useMempoolStore } from "../../stores/mempoolStore";
+import { RollingNumber } from "../../components/RollingNumber";
 
 interface GenesisResponse {
   epoch_length: number;
@@ -29,16 +29,14 @@ function timeLabel(unixSeconds: number): string {
 }
 
 function shortDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ${seconds % 60}s`;
+  if (seconds < 5) return "now";
+  if (seconds < 60) return `${seconds}s ago`;
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s ago`;
 }
 
 export default function ExplorerOverview() {
   const [chart, setChart] = useState<"tx_count" | "size">("tx_count");
-  const now = useNow(15_000);
-  const pendingCount = useMempoolStore((state) => state.pendingTxs.size);
-  const mempoolStatus = useMempoolStore((state) => state.status);
+  const now = useNow(5_000);
   const blocksQuery = useQuery({
     ...recentBlocksQuery,
     refetchInterval: 20_000,
@@ -72,16 +70,14 @@ export default function ExplorerOverview() {
   return (
     <div className="flex flex-col gap-4 overview-showcase">
       <PageIntro
-        eyebrow="A living chain. Powered by Dingo."
         title="Explore the chain"
-        detail="Every block. Every epoch. Happening now."
-        symbol="◈"
+        detail={`Recent blocks, the current epoch and pending transactions on ${DINGO_NETWORK.label}, read from Dingo.`}
         action={
-          <Link to="/explorer/mempool" className="status-badge positive">
-            {mempoolStatus === "live"
-              ? `${pendingCount} pending transactions`
-              : "Connecting to mempool"}
-          </Link>
+          <div className="page-actions">
+            <Link className="experience-primary" to="/explorer/track">Track a transaction</Link>
+            <Link className="button-secondary" to="/explorer/mempool">Watch the mempool</Link>
+            <Link className="button-secondary" to="/explorer/pools">Browse stake pools</Link>
+          </div>
         }
       />
       <QueryState hasData={blocksQuery.data !== undefined} isLoading={blocksQuery.isLoading} error={blocksQuery.error}>
@@ -89,27 +85,31 @@ export default function ExplorerOverview() {
           <div className="metric-grid">
             <Metric
               label="Latest block"
-              value={`#${latest.height.toLocaleString()}`}
-              detail={`${shortDuration(Math.max(0, Math.floor(now / 1000) - latest.time))} ago`}
+              value={<RollingNumber value={`#${latest.height.toLocaleString()}`} />}
+              detail={shortDuration(Math.max(0, Math.floor(now / 1000) - latest.time))}
             />
             <Metric
               label="Current epoch"
-              value={latest.epoch.toLocaleString()}
+              value={<RollingNumber value={latest.epoch.toLocaleString()} />}
               detail={
                 progress === null ? "" : `${progress.toFixed(1)}% complete`
               }
             />
             <Metric
               label="Block interval"
-              value={average === null ? "—" : `${average}s`}
-              detail={`Average across ${intervals.length} intervals`}
+              value={<RollingNumber value={average === null ? "—" : `${average}s`} />}
+              detail={`Average of the last ${intervals.length}`}
             />
             <Metric
               label="Transactions"
-              value={blocks
-                .reduce((sum, b) => sum + b.tx_count, 0)
-                .toLocaleString()}
-              detail={`Across ${blocks.length} recent blocks`}
+              value={
+                <RollingNumber
+                  value={blocks
+                    .reduce((sum, b) => sum + b.tx_count, 0)
+                    .toLocaleString()}
+                />
+              }
+              detail={`In the last ${blocks.length} blocks`}
             />
           </div>
         )}
@@ -119,11 +119,11 @@ export default function ExplorerOverview() {
         <Panel
           title="Block activity"
           action={
-            <div className="flex gap-2">
+            <div className="segmented" role="group" aria-label="Chart measure">
               {(["tx_count", "size"] as const).map((key) => (
                 <button
                   key={key}
-                  className={`status-badge ${chart === key ? "positive" : "neutral"}`}
+                  type="button"
                   aria-pressed={chart === key}
                   onClick={() => setChart(key)}
                 >
@@ -146,11 +146,8 @@ export default function ExplorerOverview() {
                 detail: timeLabel(block.time),
               }))}
             />
-            <p className="mt-5 text-xs text-slate-400">
-              Hover or focus a bar for details. Select a block to explore it.
-            </p>
             {blocksQuery.data?.incomplete && (
-              <p className="mt-2 text-xs text-amber-300">
+              <p className="mt-4 text-xs text-amber-300">
                 Only available blocks are shown.
               </p>
             )}
@@ -159,26 +156,18 @@ export default function ExplorerOverview() {
         <Panel title="Transactions in the latest block">
           <QueryState hasData={txs.data !== undefined} isLoading={txs.isLoading} error={txs.error}>
             {txs.data?.length === 0 ? (
-              <Link
-                className="sealed-block"
-                to={`/explorer/block/${latest?.hash}`}
-              >
-                <span className="sealed-block-symbol" aria-hidden="true">
-                  ⬡<i>✓</i>
-                </span>
-                <strong>Block sealed.</strong>
-                <p>No transactions in this block.</p>
-                <small>
-                  Inspect block #{latest?.height.toLocaleString()} →
-                </small>
-              </Link>
+              <p className="panel-empty">
+                Block{" "}
+                <Link to={`/explorer/block/${latest?.hash}`}>
+                  #{latest?.height.toLocaleString()}
+                </Link>{" "}
+                has no transactions.
+              </p>
             ) : (
               <ul className="activity-list">
                 {txs.data?.map((hash) => (
                   <li key={hash}>
-                    <span className="status-badge positive">TX</span>
                     <HashLink kind="tx" id={hash} />
-                    <span className="text-slate-500">↗</span>
                   </li>
                 ))}
               </ul>
@@ -189,11 +178,6 @@ export default function ExplorerOverview() {
       {blocks.length > 0 && (
         <Panel
           title="Header versions"
-          action={
-            <span className="text-xs text-slate-400">
-              {DINGO_NETWORK.label} · Node diversity
-            </span>
-          }
         >
           <HeaderVersionHistory recent={blocks} />
         </Panel>
@@ -204,30 +188,37 @@ export default function ExplorerOverview() {
             <thead>
               <tr>
                 <th>Block</th>
+                <th>Age</th>
+                <th className="num">Transactions</th>
+                <th className="num">Size</th>
                 <th>Producer</th>
-                <th>Header version</th>
-                <th>Transactions</th>
-                <th>Size</th>
-                <th>Time</th>
+                <th>Node</th>
               </tr>
             </thead>
             <tbody>
               {blocks.map((block) => (
                 <tr key={block.hash}>
                   <td>
-                    <HashLink kind="block" id={String(block.height)} />
+                    <Link
+                      className="table-id"
+                      to={`/explorer/block/${block.hash}`}
+                    >
+                      {block.height.toLocaleString()}
+                    </Link>
                   </td>
+                  <td title={timeLabel(block.time)}>
+                    {shortDuration(
+                      Math.max(0, Math.floor(now / 1000) - block.time),
+                    )}
+                  </td>
+                  <td className="num">{block.tx_count}</td>
+                  <td className="num">{(block.size / 1024).toFixed(1)} KB</td>
                   <td>
                     <HashLink kind="pool" id={block.slot_leader} />
                   </td>
                   <td>
                     <BlockHeaderVersion hash={block.hash} slot={block.slot} />
                   </td>
-                  <td>
-                    <span className="status-badge">{block.tx_count}</span>
-                  </td>
-                  <td>{(block.size / 1024).toFixed(1)} KB</td>
-                  <td>{timeLabel(block.time)}</td>
                 </tr>
               ))}
             </tbody>

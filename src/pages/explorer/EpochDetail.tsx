@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import {
   epochSummaryQuery,
   useRefetchOnEpochCompletion,
@@ -5,13 +6,14 @@ import {
 import { EpochFingerprints } from "../../components/chain/EpochFingerprints";
 import { eraNameFromProtocol } from "../../lib/dingo/networkNames";
 import {
-  Metric,
-  Gauge,
-  PageIntro,
   EmptyState,
 } from "../../components/explorer/Visuals";
 import { useNow } from "../../lib/useNow";
+import { Link } from "../../components/NetworkLink";
+import { RollingNumber } from "../../components/RollingNumber";
 import { useParams } from "react-router";
+
+const EpochRing = lazy(() => import("../../components/chain/EpochRing"));
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { Panel, Field } from "../../components/explorer/Panel";
@@ -125,7 +127,6 @@ export default function EpochDetail() {
     return (
       <Panel title="Epoch">
         <EmptyState
-          icon="◷"
           title="Epoch not found."
           detail="Enter a non-negative whole epoch number."
         />
@@ -134,19 +135,28 @@ export default function EpochDetail() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageIntro
-        eyebrow="The network's heartbeat"
-        title={selectedEpoch !== undefined ? `Epoch ${selectedEpoch}` : "Epoch"}
-        detail="One cycle. Thousands of blocks. A network moving forward."
-        symbol="◷"
-      />
-      <Panel
-        title={
-          selectedEpoch !== undefined
-            ? `Epoch ${selectedEpoch}`
-            : "Epoch timing"
-        }
-      >
+      <header className="detail-header">
+        <h1>
+          {selectedEpoch !== undefined
+            ? `Epoch ${selectedEpoch.toLocaleString()}`
+            : "Epoch"}
+        </h1>
+        {selectedEpoch !== undefined && (
+          <nav aria-label="Adjacent epochs">
+            {selectedEpoch > 0 ? (
+              <Link to={`/explorer/epoch/${selectedEpoch - 1}`}>Previous</Link>
+            ) : (
+              <span>First epoch</span>
+            )}
+            {tipQuery.data && selectedEpoch < tipQuery.data.epoch ? (
+              <Link to={`/explorer/epoch/${selectedEpoch + 1}`}>Next</Link>
+            ) : (
+              <span>Current epoch</span>
+            )}
+          </nav>
+        )}
+      </header>
+      <Panel title="Timing">
         <QueryState
           hasData={Boolean(era && selectedEpoch !== undefined)}
           isLoading={
@@ -159,47 +169,57 @@ export default function EpochDetail() {
           {progress !== undefined &&
           starts !== undefined &&
           ends !== undefined ? (
-            <>
-              <div className="epoch-cockpit">
-                <Gauge
-                  label="Epoch elapsed"
-                  value={progress}
-                  detail={
-                    selectedEpoch !== undefined
-                      ? `Epoch ${selectedEpoch}`
-                      : undefined
-                  }
-                />
-                <div className="epoch-countdown">
-                  <span className="eyebrow">
-                    {progress >= 100 ? "Cycle complete" : "Time remaining"}
+            <div className="epoch-hero">
+              <div>
+              <div className="epoch-timing">
+                <div>
+                  <span className="field-label">Elapsed</span>
+                  <strong>
+                    <RollingNumber
+                      value={`${Math.min(100, progress).toFixed(1)}%`}
+                    />
+                  </strong>
+                </div>
+                <div>
+                  <span className="field-label">
+                    {progress >= 100 ? "Status" : "Time remaining"}
                   </span>
                   <strong>
-                    {progress >= 100
-                      ? "Complete"
-                      : `${Math.floor(Math.max(0, ends - now / 1000) / 3600)}h ${Math.floor((Math.max(0, ends - now / 1000) % 3600) / 60)}m`}
+                    <RollingNumber
+                      value={
+                        progress >= 100
+                          ? "Complete"
+                          : `${Math.floor(Math.max(0, ends - now / 1000) / 3600)}h ${Math.floor((Math.max(0, ends - now / 1000) % 3600) / 60)}m`
+                      }
+                    />
                   </strong>
-                  <span>
-                    {((ends - starts) / 3600).toLocaleString()} hour cycle
-                  </span>
-                  <div
-                    className="epoch-segments"
-                    aria-label={`${progress.toFixed(1)} percent elapsed`}
-                  >
-                    {Array.from({ length: 40 }, (_, i) => (
-                      <i
-                        key={i}
-                        className={i < progress / 2.5 ? "elapsed" : ""}
-                      />
-                    ))}
-                  </div>
+                </div>
+                <div>
+                  <span className="field-label">Length</span>
+                  <strong>
+                    {((ends - starts) / 3600).toLocaleString()} hours
+                  </strong>
                 </div>
               </div>
-              <div className="mt-5 flex flex-wrap justify-between gap-4 text-xs text-slate-400">
-                <span>Start · {new Date(starts * 1000).toLocaleString()}</span>
-                <span>End · {new Date(ends * 1000).toLocaleString()}</span>
+              <div
+                className="epoch-track"
+                role="meter"
+                aria-label="Epoch elapsed"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.min(100, Math.round(progress))}
+              >
+                <i style={{ width: `${Math.min(100, progress)}%` }} />
               </div>
-            </>
+              <div className="epoch-bounds">
+                <span>{new Date(starts * 1000).toLocaleString()}</span>
+                <span>{new Date(ends * 1000).toLocaleString()}</span>
+              </div>
+              </div>
+              <Suspense fallback={null}>
+                <EpochRing progress={Math.min(100, progress)} />
+              </Suspense>
+            </div>
           ) : (
             <p className="text-sm text-slate-400">
               No era timing is available for this epoch.
@@ -212,7 +232,7 @@ export default function EpochDetail() {
         action={
           <button
             type="button"
-            className="status-badge"
+            className="button-secondary"
             disabled={selectedEpoch === undefined || epochQuery.isFetching}
             onClick={() =>
               void queryClient.invalidateQueries({
@@ -222,7 +242,7 @@ export default function EpochDetail() {
               })
             }
           >
-            {epochQuery.isFetching ? "Reading totals…" : "Refresh totals ↻"}
+            {epochQuery.isFetching ? "Reading totals…" : "Refresh totals"}
           </button>
         }
       >
@@ -250,21 +270,19 @@ export default function EpochDetail() {
             notFoundLabel="Epoch not found."
           >
             {epochQuery.data && (
-              <div>
-                <div className="metric-grid mb-4">
-                  <Metric
-                    label="Blocks"
-                    value={epochQuery.data.block_count.toLocaleString()}
-                  />
-                  <Metric
-                    label="Transactions"
-                    value={epochQuery.data.tx_count.toLocaleString()}
-                  />
-                  <Metric
-                    label="Fees"
-                    value={formatNativeCoin(BigInt(epochQuery.data.fees))}
-                  />
-                </div>
+              <div className="field-grid">
+                <Field
+                  label="Blocks"
+                  value={epochQuery.data.block_count.toLocaleString()}
+                />
+                <Field
+                  label="Transactions"
+                  value={epochQuery.data.tx_count.toLocaleString()}
+                />
+                <Field
+                  label="Fees"
+                  value={formatNativeCoin(BigInt(epochQuery.data.fees))}
+                />
                 <Field
                   label="Output"
                   value={formatNativeCoin(BigInt(epochQuery.data.output))}
@@ -295,7 +313,7 @@ export default function EpochDetail() {
           error={paramsQuery.error}
         >
           {paramsQuery.data && (
-            <div>
+            <div className="field-grid">
               <Field
                 label="Era"
                 value={eraNameFromProtocol(paramsQuery.data.protocol_major_ver)}
@@ -308,11 +326,11 @@ export default function EpochDetail() {
               <Field label="Min fee B" value={paramsQuery.data.min_fee_b} />
               <Field
                 label="Max block size"
-                value={`${paramsQuery.data.max_block_size} bytes`}
+                value={`${paramsQuery.data.max_block_size.toLocaleString()} bytes`}
               />
               <Field
                 label="Max tx size"
-                value={`${paramsQuery.data.max_tx_size} bytes`}
+                value={`${paramsQuery.data.max_tx_size.toLocaleString()} bytes`}
               />
               <Field
                 label="Key deposit"

@@ -166,10 +166,7 @@ export function ToolTransaction({
         <section className="tool-review" aria-label="Transaction review">
           <div className="tool-review-heading">
             <div>
-              <span className="eyebrow">
-                Unsigned draft · {DINGO_NETWORK.label}
-              </span>
-              <h3>Check the actual transaction.</h3>
+              <h3>Unsigned draft on {DINGO_NETWORK.label}</h3>
             </div>
             <strong>
               {formatNativeCoin(draft.tx.body().fee())}
@@ -249,7 +246,7 @@ export function ToolTransaction({
                   ? "Submitted · confirmation unavailable"
                   : "Submitted to Dingo"}
           </strong>
-          <Link to={`/explorer/tx/${submit.data}`}>View transaction →</Link>
+          <Link to={`/explorer/tx/${submit.data}`}>View transaction</Link>
           <code>{submit.data}</code>
           {savedPolicy && (
             <button onClick={() => downloadPolicy(savedPolicy)}>

@@ -1,6 +1,8 @@
+import { ToolArt } from "../components/illustrations/ToolArt";
+import type { ToolFormKind } from "../lib/chain/toolForms";
+import { RollingNumber } from "../components/RollingNumber";
 import { MainnetApps } from "../components/markets/MainnetApps";
 import { nativeTicker } from "../lib/format";
-import { ExperienceDiagram } from "../components/illustrations/ExperienceDiagram";
 import { DINGO_NETWORK } from "../lib/dingo/config";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -9,16 +11,17 @@ import {
 } from "../lib/explorer/recentBlocks";
 import { creationTools, type CreationToolId } from "../lib/creationTools";
 import { ChainSnapshot } from "../components/explorer/ChainSnapshot";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link } from "../components/NetworkLink";
 import { useNodeHealth } from "../lib/dingo/nodeHealth";
 import { useMempoolStore } from "../stores/mempoolStore";
 import { BlockActivityStrip } from "../components/chain/BlockActivityStrip";
 import { BlockMosaic } from "../components/chain/BlockMosaic";
 
+const ChainScene = lazy(() => import("../components/chain/ChainScene"));
+
 function creationExperience(
   id: CreationToolId,
-  art: string,
   tag: string,
   category = "Create",
 ) {
@@ -27,88 +30,75 @@ function creationExperience(
     to: tool.to,
     title: tool.name,
     category,
-    symbol: tool.icon,
     description: tool.description,
     tag,
-    art,
-    action: `Open ${tool.name}`,
+    art: id as ToolFormKind,
   };
 }
 
 const experiences = [
   ...(DINGO_NETWORK.id === "prime-testnet" ? [{
-    to: "/wallet/bridge", title: "Reactor Bridge", category: "Use", symbol: "⇄",
+    to: "/wallet/bridge", title: "Reactor Bridge", category: "Use",
     description: "Bridge test AP3X to Vector or Nexus. Build and sign here, then follow delivery through Reactor.",
-    tag: "Prime · Vector · Nexus", art: "network", action: "Bridge AP3X",
+    tag: "Prime · Vector · Nexus",
+    art: "bridge" as ToolFormKind,
   }] : []),
   ...(DINGO_NETWORK.id === "musashi"
     ? [
         {
           to: "/explorer/leios",
-          title: "Leios in motion",
+          title: "Leios on Musashi",
           category: "Explore",
-          symbol: "◉",
           description:
             "Follow ranking blocks, endorser-block announcements, and certificates on Musashi.",
           tag: "Musashi · Leios",
-          art: "network",
-          action: "Explore Leios",
+          art: "leios" as ToolFormKind,
         },
       ]
     : []),
-  creationExperience("transactions", "studio", "Compose · Inspect · Export"),
-  creationExperience("data", "studio", "Datums · Redeemers · CBOR"),
+  creationExperience("transactions", "Compose · Inspect · Export"),
+  creationExperience("data", "Datums · Redeemers · CBOR"),
   {
     to: "/explorer/track",
     title: "Transaction tracker",
     category: "Explore",
-    symbol: "↗",
     description:
       "Follow submission, mempool presence, inclusion and confirmations with live chain evidence.",
     tag: "From submission to inclusion",
-    art: "mempool",
-    action: "Track a transaction",
+    art: "track" as ToolFormKind,
   },
   {
     to: "/participate",
     title: "Participation",
     category: "Participate",
-    symbol: "◉",
     description:
-      `Answer governance actions as an ${nativeTicker()} holder. Create surveys. See what the chain thinks.`,
+      `Answer governance actions as an ${nativeTicker()} holder, create surveys, and read the recorded responses.`,
     tag: "CIP-204 + CIP-179",
-    art: "voice",
-    action: "Join the conversation",
+    art: "participate" as ToolFormKind,
   },
-  creationExperience("mint", "mint", "CIP-25 · Native assets"),
+  creationExperience("mint", "CIP-25 · Native assets"),
   {
     to: DINGO_NETWORK.id === "mainnet" ? "/wallet/markets/liquidity" : "/wallet/markets/liquidity?network=preprod",
     title: "DeFi markets",
     category: "Use",
-    symbol: "⇄",
     description: DINGO_NETWORK.id === "mainnet"
       ? "Swap Cardano assets, manage liquidity positions and follow Minswap orders through Dingo."
       : "Explore lending, covered options, liquidity positions and direct on-chain markets through Dingo.",
     tag: DINGO_NETWORK.id === "mainnet" ? "Minswap · Mainnet" : "DeFi Kernel + Minswap · Preprod",
-    art: "swap",
-    action: "Explore markets",
+    art: "markets" as ToolFormKind,
   },
   {
     to: "/explorer/mempool",
     title: "Live mempool",
     category: "Explore",
-    symbol: "≋",
     description:
-      "Follow transactions through Dingo’s live mempool, before they become part of a block.",
+      "Watch pending transactions in Dingo’s mempool before they are included in a block.",
     tag: "Live transaction stream",
-    art: "mempool",
-    action: "Follow the flow",
+    art: "mempool" as ToolFormKind,
   },
-  creationExperience("proof", "proof", "Local hashing · On-chain proofs"),
-  creationExperience("utxos", "utxo", "Consolidate · Split", "Use"),
-  creationExperience(
-    "batch",
-    "payments",
+  creationExperience("proof", "Local hashing · On-chain proofs"),
+  creationExperience("utxos", "Consolidate · Split", "Use"),
+  creationExperience("batch",
     "Multiple recipients · CSV import",
     "Use",
   ),
@@ -116,60 +106,12 @@ const experiences = [
     to: "/explorer/network",
     title: "Network operations",
     category: "Explore",
-    symbol: "◎",
     description:
-      "Explore supply, stake, network progress, and the signals behind the chain.",
+      "Supply, stake, epoch progress and protocol timing.",
     tag: "Network instruments",
-    art: "network",
-    action: "See the instruments",
+    art: "network" as ToolFormKind,
   },
 ];
-function ExperienceArt({ kind }: { kind: string }) {
-  const diagram =
-    kind === "mempool" ||
-    kind === "utxo" ||
-    kind === "payments" ||
-    kind === "network" ||
-    kind === "studio"
-      ? kind
-      : null;
-  return (
-    <div className={`experience-art art-${kind}`} aria-hidden="true">
-      {diagram ? (
-        <ExperienceDiagram kind={diagram} />
-      ) : kind === "voice" ? (
-        <>
-          {Array.from({ length: 21 }, (_, i) => (
-            <i
-              key={i}
-              style={{
-                transform: `rotate(${i * 8 - 80}deg) translateY(-62px)`,
-              }}
-            />
-          ))}
-          <b>◉</b>
-        </>
-      ) : kind === "mint" ? (
-        <>
-          <i />
-          <i />
-          <b>✦</b>
-        </>
-      ) : kind === "swap" ? (
-        <svg viewBox="0 0 260 120">
-          <path d="M10 92 40 78 68 88 93 55 123 64 151 38 177 48 206 19 249 28" />
-          <path d="M10 106 40 93 68 100 93 77 123 82 151 62 177 73 206 49 249 56" />
-        </svg>
-      ) : kind === "proof" ? (
-        <>
-          <i />
-          <b>✓</b>
-          <span>SHA-256</span>
-        </>
-      ) : null}
-    </div>
-  );
-}
 export default function Experiences() {
   const [filter, setFilter] = useState("All");
   const health = useNodeHealth();
@@ -199,73 +141,46 @@ export default function Experiences() {
     <div className="experience-page">
       <section className="experience-hero">
         <div>
-          <span className="eyebrow">
-            Build with Dingo · Cardano {DINGO_NETWORK.label}
-          </span>
-          <h1>
-            Build apps.
-            <br />
-            Move value.
-            <br />
-            <em>Make it real.</em>
-          </h1>
+          <h1>Cardano apps, served by Dingo</h1>
           <p>
-            A Cardano node is an app platform. Trade, create, participate, and
-            follow the chain in motion. This workspace shows how Dingo services
-            dApp development and operation. No wallet is needed to explore;
-            connect only when you need to sign.
+            Each network here has its own Dingo node. On {DINGO_NETWORK.label},
+            the explorer, swaps, token tools and governance read from and
+            submit to that node's APIs. No external indexer, and no wallet
+            until you sign.
           </p>
           <div className="experience-actions">
             <Link
               className="experience-primary"
               to={DINGO_NETWORK.id === "prime-testnet" ? "/wallet/bridge" : DINGO_NETWORK.id === "mainnet" ? "/wallet/markets/liquidity" : "/wallet/markets/liquidity?network=preprod"}
             >
-              {DINGO_NETWORK.id === "prime-testnet" ? "Bridge AP3X →" : `Explore ${DINGO_NETWORK.id === "mainnet" ? "Mainnet" : "Preprod"} DeFi →`}
+              {DINGO_NETWORK.id === "prime-testnet" ? "Bridge AP3X" : `Explore ${DINGO_NETWORK.id === "mainnet" ? "Mainnet" : "Preprod"} DeFi`}
             </Link>
-            <a href="#live-block">See a block come alive ↓</a>
+            <a href="#live-block">Look inside a recent block</a>
           </div>
         </div>
-        <div className="experience-orbit">
-          <div className="orbit-ring" />
-          <div className="orbit-ring inner" />
-          <div className="orbit-core">
-            <span
-              className={`live-dot ${health.data?.isHealthy ? "" : "inactive"}`}
-            />
-            <strong>DINGO</strong>
-            <small>
-              {health.data
-                ? `Epoch ${health.data.tipEpoch}`
-                : health.isError
-                  ? "Connection unavailable"
-                  : `Connecting to ${DINGO_NETWORK.label}`}
-            </small>
-          </div>
-          <Link className="orbit-node node-one" to="/wallet/tools/mint">
-            ✦<span>Create</span>
-          </Link>
-          <Link className="orbit-node node-two" to="/participate">
-            ◉<span>Participate</span>
-          </Link>
-          <Link className="orbit-node node-three" to="/wallet/swap">
-            ⇄<span>Trade</span>
-          </Link>
-          <Link className="orbit-node node-four" to="/explorer/mempool">
-            ≋<span>Watch</span>
-          </Link>
-        </div>
+        {recent.data && (
+          <Suspense fallback={null}>
+            <ChainScene blocks={recent.data.blocks.slice(0, 10)} />
+          </Suspense>
+        )}
         <div className="experience-pulse">
           <Link to="/explorer">
             <span>Latest block</span>
             <strong>
-              {health.data ? `#${health.data.tipHeight.toLocaleString()}` : "—"}
+              <RollingNumber
+                value={
+                  health.data
+                    ? `#${health.data.tipHeight.toLocaleString()}`
+                    : "—"
+                }
+              />
             </strong>
           </Link>
           <Link to="/explorer/mempool">
-            <span>Mempool · {stream}</span>
+            <span>Mempool</span>
             <strong>
               {stream === "live"
-                ? `${pending} pending`
+                ? <RollingNumber value={`${pending} pending`} />
                 : stream === "error"
                   ? "Reconnecting…"
                   : stream === "idle"
@@ -274,8 +189,8 @@ export default function Experiences() {
             </strong>
           </Link>
           <Link to="/api">
-            <span>The engine underneath</span>
-            <strong>Explore Dingo APIs ↗</strong>
+            <span>APIs</span>
+            <strong>Open the API playground</strong>
           </Link>
         </div>
       </section>
@@ -283,14 +198,7 @@ export default function Experiences() {
       <ChainSnapshot />
       <section id="live-block" className="experience-live">
         <header className="experience-section-heading">
-          <div>
-            <span className="eyebrow">
-              {inspectedBlock
-                ? "A recent block under your microscope"
-                : "Look inside the latest block"}
-            </span>
-            <h2>Every tile tells a story.</h2>
-          </div>
+          <h2>Recent blocks</h2>
           {shownBlock && (
             <div className="experience-actions">
               {inspectedBlock &&
@@ -310,7 +218,7 @@ export default function Experiences() {
                   >
                     {recent.isFetching
                       ? "Refreshing…"
-                      : "Refresh recent activity →"}
+                      : "Refresh recent activity"}
                   </button>
                 )}
               <Link to={`/explorer/block/${shownBlock.hash}`}>
@@ -320,8 +228,8 @@ export default function Experiences() {
           )}
         </header>
         <p>
-          See what transactions do and how much space they occupy. Select a tile
-          to inspect the transaction behind it.
+          Pick a block to see its transactions sized by bytes. Select a tile to
+          open that transaction.
         </p>
         {recent.data && (
           <BlockActivityStrip
@@ -358,10 +266,7 @@ export default function Experiences() {
       </section>
       <section id="experiences">
         <header className="experience-section-heading">
-          <div>
-            <span className="eyebrow">Real transactions. Real chain data.</span>
-            <h2>Dingo capabilities.</h2>
-          </div>
+          <h2>What you can do here</h2>
           <div
             className="experience-filters"
             role="group"
@@ -389,31 +294,27 @@ export default function Experiences() {
             )
             .map((experience) => (
               <Link
-                className={`experience-card theme-${experience.art}`}
+                className="experience-card"
+                data-category={experience.category}
                 key={experience.to}
                 to={experience.to}
               >
-                <ExperienceArt kind={experience.art} />
-                <div className="experience-card-copy">
-                  <span className="eyebrow">{experience.tag}</span>
+                <ToolArt kind={experience.art} />
+                <div className="experience-card-body">
                   <h3>{experience.title}</h3>
                   <p>{experience.description}</p>
-                  <strong>
-                    {experience.action}
-                    <span aria-hidden="true">↗</span>
-                  </strong>
+                  <small>{experience.tag}</small>
                 </div>
               </Link>
             ))}
         </div>
       </section>
       <footer className="experience-footnote">
-        <strong>Built with Dingo. From development to operation.</strong>
         <p>
           {DINGO_NETWORK.id === "mainnet" ? "Cardano Mainnet transactions use ADA." : `${DINGO_NETWORK.label} is a public test network. Transactions use test ${nativeTicker()}.`} Your wallet signs; Dingo provides chain data and submits
           transactions.
         </p>
-        <Link to="/api">See the APIs powering these experiences →</Link>
+        <Link to="/api">See the APIs behind these tools</Link>
       </footer>
     </div>
   );

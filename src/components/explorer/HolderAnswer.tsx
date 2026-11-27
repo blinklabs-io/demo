@@ -114,15 +114,11 @@ function AnswerForm({
     <Panel title="Your voice · CIP-204">
       <div id="holder-answer" className="holder-answer">
         <div className="holder-intro">
-          <span className="holder-mark" aria-hidden="true">
-            ◉
-          </span>
           <div>
-            <span className="eyebrow">Holder opinion · public on chain</span>
-            <h3>You don’t have to be a DRep to be heard.</h3>
+            <h3>Holder opinion</h3>
             <p>
               Answer this governance action with your stake key. This records
-              your opinion; it does not cast an official governance vote.
+              your opinion publicly on chain; it does not cast an official governance vote.
             </p>
           </div>
         </div>
@@ -186,7 +182,6 @@ function AnswerForm({
         )}
         {draft && (
           <section className="survey-review">
-            <span className="eyebrow">Actual transaction · metadata 1695</span>
             <h3>Your answer: {draft.choice.toUpperCase()}</h3>
             <p>
               Action <HashLink kind="tx" id={draft.proposal.tx_hash} /> #
@@ -201,7 +196,7 @@ function AnswerForm({
             </div>
             <p>
               Network fee <strong>{formatNativeCoin(draft.tx.body().fee())}</strong> ·{" "}
-              {DINGO_NETWORK.label}
+              {DINGO_NETWORK.label} · metadata label 1695
             </p>
             <p>
               Your stake credential and answer will be public and permanent.

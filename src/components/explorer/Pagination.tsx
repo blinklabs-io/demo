@@ -9,21 +9,21 @@ export function Pagination({
 }) {
   if (page === 1 && !hasNextPage) return null;
   return (
-    <div className="mt-3 flex items-center justify-between text-sm">
+    <div className="pagination">
       <button
         type="button"
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
-        className="rounded-md border border-slate-700 px-3 py-1 text-slate-300 hover:border-slate-500 disabled:opacity-40"
+        className="button-secondary"
       >
         Previous
       </button>
-      <span className="text-slate-500">Page {page}</span>
+      <span>Page {page}</span>
       <button
         type="button"
         onClick={() => onPageChange(page + 1)}
         disabled={!hasNextPage}
-        className="rounded-md border border-slate-700 px-3 py-1 text-slate-300 hover:border-slate-500 disabled:opacity-40"
+        className="button-secondary"
       >
         Next
       </button>

@@ -1,7 +1,8 @@
+import { ChainMark } from "../../components/explorer/ChainMark";
 import { nativeTicker } from "../../lib/format";
 import { OutputHistory } from "../../components/explorer/OutputHistory";
-import { PageIntro } from "../../components/explorer/Visuals";
-import { BarChart, Metric } from "../../components/explorer/Visuals";
+import { Metric } from "../../components/explorer/Visuals";
+import { CopyButton } from "../../components/explorer/CopyButton";
 import { compactAda } from "../../lib/visualFormat";
 import { useParams } from "react-router";
 import { useState } from "react";
@@ -82,146 +83,106 @@ function AddressDetailContent({ address }: { address?: string }) {
 
   return (
     <div className="flex flex-col gap-4 detail-showcase">
-      <PageIntro
-        eyebrow="An on-chain identity"
-        title="Address explorer"
-        symbol="⌘"
-      />
-      {address && (
-        <div className="rounded-xl border border-slate-700 p-4">
-          <HashLink kind="address" id={address} full />
-        </div>
-      )}
-      <Panel
-        title={
-          <>
+      <header className="detail-header">
+        <div className="detail-identity">
+          {address && <span className="detail-mark"><ChainMark value={address} /></span>}
+          <h1>
             Address <YoursBadge value={address} />
-          </>
-        }
+          </h1>
+          {address && (
+            <p className="detail-id">
+              <code>{address}</code>
+              <CopyButton value={address} label="address" />
+            </p>
+          )}
+        </div>
+      </header>
+      <QueryState
+        hasData={summaryQuery.data !== undefined}
+        isLoading={summaryQuery.isLoading}
+        error={summaryQuery.error}
+        notFoundLabel="Address not found (no on-chain activity yet)."
       >
-        <QueryState hasData={summaryQuery.data !== undefined}
-          isLoading={summaryQuery.isLoading}
-          error={summaryQuery.error}
-          notFoundLabel="Address not found (no on-chain activity yet)."
-        >
-          {summaryQuery.data && (
-            <div>
-              <div className="metric-grid mb-6">
-                <Metric
-                  label={`${nativeTicker()} balance`}
-                  value={compactAda(
-                    summaryQuery.data.amount.find(
-                      (amount) => amount.unit === "lovelace",
-                    )?.quantity ?? "0",
-                  )}
+        {summaryQuery.data && (
+          <>
+            <div className="metric-grid">
+              <Metric
+                label={`${nativeTicker()} balance`}
+                value={compactAda(
+                  summaryQuery.data.amount.find(
+                    (amount) => amount.unit === "lovelace",
+                  )?.quantity ?? "0",
+                )}
+              />
+              <Metric
+                label="Native assets"
+                value={
+                  summaryQuery.data.amount.filter(
+                    (amount) => amount.unit !== "lovelace",
+                  ).length
+                }
+              />
+              <Metric
+                label="Controlled by"
+                value={summaryQuery.data.script ? "Script" : "Payment key"}
+                detail={summaryQuery.data.type}
+              />
+            </div>
+            <Panel title="Balance">
+              <div className="field-grid">
+                <Field
+                  label="Holdings"
+                  value={<AdaAmount amount={summaryQuery.data.amount} />}
                 />
-                <Metric
-                  label="Native assets"
-                  value={
-                    summaryQuery.data.amount.filter(
-                      (amount) => amount.unit !== "lovelace",
-                    ).length
-                  }
-                />
-                <Metric
-                  label="Address type"
-                  value={summaryQuery.data.script ? "Script" : "Wallet"}
-                />
-              </div>
-              <details className="technical-details">
-                <summary>Address record & asset balances</summary>
-                <div className="record-grid">
-                  {" "}
-                  <Field
-                    label="Balance"
-                    value={<AdaAmount amount={summaryQuery.data.amount} />}
-                  />
-                  <Field label="Type" value={summaryQuery.data.type} />
-                  <Field
-                    label="Script"
-                    value={summaryQuery.data.script ? "Yes" : "No"}
-                  />
+                {summaryQuery.data.stake_address && (
                   <Field
                     label="Stake address"
                     value={
-                      summaryQuery.data.stake_address ? (
-                        <HashLink
-                          kind="account"
-                          id={summaryQuery.data.stake_address}
-                        />
-                      ) : (
-                        "—"
-                      )
+                      <HashLink
+                        kind="account"
+                        id={summaryQuery.data.stake_address}
+                      />
                     }
                   />
-                </div>
-              </details>
-            </div>
-          )}
-        </QueryState>
-      </Panel>
+                )}
+              </div>
+            </Panel>
+          </>
+        )}
+      </QueryState>
 
-      <Panel title="UTxOs">
+      <Panel title="Unspent outputs">
         <QueryState hasData={utxosQuery.data !== undefined} isLoading={utxosQuery.isLoading} error={utxosQuery.error}>
           {utxosQuery.data?.length === 0 && (
-            <p className="text-sm text-slate-500">No unspent UTxOs.</p>
+            <p className="panel-empty">No unspent outputs.</p>
           )}
           {utxosQuery.data && utxosQuery.data.length > 0 && (
-            <div className="mb-6">
-              <BarChart
-                title={`${nativeTicker()} per UTxO (current page)`}
-                items={utxosQuery.data.map((utxo) => ({
-                  label: `#${utxo.output_index}`,
-                  value:
-                    Number(
-                      BigInt(
-                        utxo.amount.find((amount) => amount.unit === "lovelace")
-                          ?.quantity ?? "0",
-                      ),
-                    ) / 1_000_000,
-                  href: `/explorer/tx/${utxo.tx_hash}`,
-                }))}
-              />
-            </div>
-          )}
-          <ul className="flex flex-col gap-2">
-            {utxosQuery.data?.map((utxo) => (
-              <li
-                key={`${utxo.tx_hash}:${utxo.output_index}`}
-                className="rounded border border-slate-800 p-2 text-sm"
-              >
-                <HashLink kind="tx" id={utxo.tx_hash} />
-                <span className="text-slate-500">#{utxo.output_index}</span>
-                <div className="mt-1">
+            <ul className="utxo-list">
+              {utxosQuery.data.map((utxo) => (
+                <li key={`${utxo.tx_hash}:${utxo.output_index}`}>
+                  <div>
+                    <HashLink kind="tx" id={utxo.tx_hash} />
+                    <span>#{utxo.output_index}</span>
+                  </div>
                   <AdaAmount amount={utxo.amount} assetLimit={3} />
-                </div>
-                {(utxo.data_hash ||
-                  utxo.inline_datum ||
-                  utxo.reference_script_hash) && (
-                  <details className="mt-2 text-xs text-slate-500">
-                    <summary className="cursor-pointer">
-                      Datum and script references
-                    </summary>
-                    {utxo.data_hash && (
-                      <p className="mt-1 break-all">
-                        Datum hash: {utxo.data_hash}
-                      </p>
-                    )}
-                    {utxo.inline_datum && (
-                      <p className="mt-1 break-all">
-                        Inline datum: {utxo.inline_datum}
-                      </p>
-                    )}
-                    {utxo.reference_script_hash && (
-                      <p className="mt-1 break-all">
-                        Reference script: {utxo.reference_script_hash}
-                      </p>
-                    )}
-                  </details>
-                )}
-              </li>
-            ))}
-          </ul>
+                  {(utxo.data_hash ||
+                    utxo.inline_datum ||
+                    utxo.reference_script_hash) && (
+                    <details>
+                      <summary>Datum and script references</summary>
+                      {utxo.data_hash && <p>Datum hash: {utxo.data_hash}</p>}
+                      {utxo.inline_datum && (
+                        <p>Inline datum: {utxo.inline_datum}</p>
+                      )}
+                      {utxo.reference_script_hash && (
+                        <p>Reference script: {utxo.reference_script_hash}</p>
+                      )}
+                    </details>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
           <Pagination
             page={utxoPage}
             onPageChange={setUtxoPage}
@@ -235,19 +196,32 @@ function AddressDetailContent({ address }: { address?: string }) {
       <Panel title="Transactions">
         <QueryState hasData={txsQuery.data !== undefined} isLoading={txsQuery.isLoading} error={txsQuery.error}>
           {txsQuery.data?.length === 0 && (
-            <p className="text-sm text-slate-500">No transactions yet.</p>
+            <p className="panel-empty">No transactions yet.</p>
           )}
-          <ul className="activity-list address-timeline">
-            {txsQuery.data?.map((tx) => (
-              <li key={tx.tx_hash} className="flex items-center gap-2">
-                <HashLink kind="tx" id={tx.tx_hash} />
-                <span className="text-slate-500">
-                  block {tx.block_height} ·{" "}
-                  {new Date(tx.block_time * 1000).toLocaleString()}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {txsQuery.data && txsQuery.data.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Transaction</th>
+                    <th className="num">Block</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {txsQuery.data.map((tx) => (
+                    <tr key={tx.tx_hash}>
+                      <td>
+                        <HashLink kind="tx" id={tx.tx_hash} />
+                      </td>
+                      <td className="num">{tx.block_height.toLocaleString()}</td>
+                      <td>{new Date(tx.block_time * 1000).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           <Pagination
             page={txPage}
             onPageChange={setTxPage}

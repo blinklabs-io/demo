@@ -43,7 +43,7 @@ it("decodes a Dijkstra transaction in the block mosaic", async () => {
     await act(async () => root.render(<MemoryRouter><QueryClientProvider client={client}>
       <BlockMosaic hash={"22".repeat(32)} total={1} />
     </QueryClientProvider></MemoryRouter>));
-    expect(container.textContent).toContain("1 transactions");
+    expect(container.textContent).toContain("1 transaction ");
     expect(container.textContent).toContain("1 of 1 records loaded");
     expect(container.textContent).not.toContain("undecodable");
   } finally {

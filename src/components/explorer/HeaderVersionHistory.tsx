@@ -115,7 +115,7 @@ export function HeaderVersionHistory({ recent }: { recent: RecentBlock[] }) {
               ? "Reading history…"
               : job.error
                 ? "Retry 24-hour history"
-                : "Refresh ↻"}
+                : "Refresh"}
           </button>
         )}
       </div>

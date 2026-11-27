@@ -167,7 +167,7 @@ function RewardsForm({
               ? "Creating transaction…"
               : submit.isSuccess && !confirmation.data
                 ? "Withdrawal submitted"
-                : "Create withdrawal transaction →"}
+                : "Create withdrawal transaction"}
           </button>
         )}
       </div>

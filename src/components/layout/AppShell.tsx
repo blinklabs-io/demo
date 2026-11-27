@@ -4,7 +4,7 @@ import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { networkSearch, urlDingoNetwork } from "../../lib/dingo/networks";
 import { reloadDingoPage } from "../../lib/dingo/networkSelection";
 import { useChainReconciliation } from "../../lib/chain/useChainReconciliation";
-import { useEffect, useLayoutEffect } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect } from "react";
 import {
   mainNavigation,
   normalizePath,
@@ -20,6 +20,8 @@ import { Link } from "../NetworkLink";
 import { Header } from "./Header";
 import { useMempoolStore } from "../../stores/mempoolStore";
 import { useTipStore } from "../../stores/tipStore";
+
+const LiquidForm = lazy(() => import("../LiquidForm"));
 
 export function AppShell() {
   const location = useLocation();
@@ -79,6 +81,12 @@ export function AppShell() {
                 : null;
   const area =
     mainNavigation.find((item) => item.matches(pathname))?.area ?? "discover";
+  // The floating form belongs to each section's front page and to Markets;
+  // tables, detail pages and forms stay clear of it.
+  const showcase =
+    ["/explorer", "/participate", "/wallet", "/wallet/swap"].includes(
+      pathname,
+    ) || /^\/wallet\/markets(?:\/|$)/.test(pathname);
   useChainReconciliation();
   useEffect(() => {
     if (navigationType === "POP" && !hash) return;
@@ -104,6 +112,9 @@ export function AppShell() {
     >
       <Header />
       <main className="workspace-main">
+        <Suspense fallback={null}>
+          {showcase && <LiquidForm area={area} />}
+        </Suspense>
         {section && (
           <div className="section-nav">
             <nav aria-label={section.label}>

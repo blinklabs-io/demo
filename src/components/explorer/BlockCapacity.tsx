@@ -133,12 +133,16 @@ export function BlockCapacity({
               className="block-capacity"
               aria-label="Block resource capacity"
             >
-              <Gauge
-                label="Block capacity used"
-                value={usage.percent}
-                detail={`${usage.percent >= 100 ? "Full" : "Highest utilization"} · ${usage.bottleneck.label.toLowerCase()} · epoch ${epoch}`}
-                tone={usage.percent >= 100 ? "red" : "violet"}
-              />
+              <p
+                className="block-capacity-summary"
+                data-full={usage.percent >= 100 || undefined}
+              >
+                <strong>{usage.percent.toFixed(1)}%</strong>
+                <span>
+                  {usage.percent >= 100 ? "Full" : "of block capacity used"},
+                  limited by {usage.bottleneck.label.toLowerCase()}
+                </span>
+              </p>
               <div className="block-resource-meters">
                 {usage.resources.map((resource) =>
                   resource.percent === null ? (

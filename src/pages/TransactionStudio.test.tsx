@@ -119,7 +119,7 @@ it("releases the busy lock when a query navigation cancels a pending build", asy
       }),
   );
   const build = [...container.querySelectorAll("button")].find(
-    (node) => node.textContent === "Build unsigned transaction →",
+    (node) => node.textContent === "Build unsigned transaction",
   )!;
   await act(async () => build.click());
   expect(

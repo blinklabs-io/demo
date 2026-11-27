@@ -12,7 +12,14 @@ import { CopyButton } from "./CopyButton";
 import { Link } from "../NetworkLink";
 import "./developer-tools.css";
 
-export function TransactionTracker({ hash }: { hash: string }) {
+export function TransactionTracker({
+  hash,
+  embedded = false,
+}: {
+  hash: string;
+  /** On the transaction's own page the hash and a link to it are already shown. */
+  embedded?: boolean;
+}) {
   const normalized = hash.toLowerCase();
   const receipt = useSubmissionStore((s) => s.receipts.get(normalized));
   const pending = useMempoolStore((s) => s.pendingTxs.get(normalized));
@@ -52,22 +59,24 @@ export function TransactionTracker({ hash }: { hash: string }) {
     >
       <header>
         <div>
-          <span className="eyebrow">
-            Transaction journey · {DINGO_NETWORK.label}
-          </span>
-          <h2>Follow it onto the chain.</h2>
+          <h2>
+            {embedded
+              ? "Lifecycle"
+              : `Transaction status on ${DINGO_NETWORK.label}`}
+          </h2>
         </div>
         <span className="developer-badge" role="status">
           {verdict}
         </span>
       </header>
-      <div className="developer-identifier">
-        <code>{normalized}</code>
-        <CopyButton value={normalized} label="tracked transaction ID" />
-      </div>
+      {!embedded && (
+        <div className="developer-identifier">
+          <code>{normalized}</code>
+          <CopyButton value={normalized} label="tracked transaction ID" />
+        </div>
+      )}
       <ol className="tracking-steps">
         <li data-observed={!!receipt}>
-          <span>01</span>
           <strong>Submitted</strong>
           <p>
             {receipt
@@ -76,7 +85,6 @@ export function TransactionTracker({ hash }: { hash: string }) {
           </p>
         </li>
         <li data-observed={!!pending && stream === "live"}>
-          <span>02</span>
           <strong>Mempool</strong>
           <p>
             {pending && stream === "live"
@@ -87,7 +95,6 @@ export function TransactionTracker({ hash }: { hash: string }) {
           </p>
         </li>
         <li data-observed={!!inclusion}>
-          <span>03</span>
           <strong>Included</strong>
           <p>
             {inclusion ? (
@@ -105,7 +112,6 @@ export function TransactionTracker({ hash }: { hash: string }) {
           </p>
         </li>
         <li data-observed={depth !== null}>
-          <span>04</span>
           <strong>Confirmations</strong>
           <p>
             {depth !== null
@@ -142,7 +148,9 @@ export function TransactionTracker({ hash }: { hash: string }) {
         >
           {query.isFetching ? "Checking…" : "Check again"}
         </button>
-        <Link to={`/explorer/tx/${normalized}`}>Transaction details →</Link>
+        {!embedded && (
+          <Link to={`/explorer/tx/${normalized}`}>Transaction details</Link>
+        )}
       </div>
       <p className="developer-note">
         Rechecked every 10 seconds. Inclusion is re-read to reflect rollbacks.

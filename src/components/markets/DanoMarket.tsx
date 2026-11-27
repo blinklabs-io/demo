@@ -24,7 +24,7 @@ function danoAmount(quantity: bigint, asset: string) {
   );
 }
 
-export function DanoMarket() { return DINGO_NETWORK.id === "mainnet" ? <DanoMainnet /> : <section className="market-hero"><h1>Dano on Mainnet</h1><Link to="/wallet/dano?network=mainnet">Open Mainnet swaps →</Link></section>; }
+export function DanoMarket() { return DINGO_NETWORK.id === "mainnet" ? <DanoMainnet /> : <section className="market-hero"><h1>Dano on Mainnet</h1><Link to="/wallet/dano?network=mainnet">Open Mainnet swaps</Link></section>; }
 function DanoMainnet() {
   const [hash, submitted] = useState("");
   const tracking = { hash, submitted };
@@ -99,8 +99,7 @@ function DanoMainnet() {
       <MarketConfirmation tracking={tracking} />
       <header className="market-hero">
         <div>
-          <span className="eyebrow">Dano CLMM · Mainnet</span>
-          <h1>A swap in one transaction.</h1>
+          <h1>Dano CLMM swaps on Mainnet</h1>
           <p>
             Swap native tokens directly against concentrated liquidity, with amounts reviewed before
             your wallet signs. Dingo reads the chain and submits your
@@ -325,7 +324,7 @@ function DanoMainnet() {
                 <p style={{ overflowWrap: "anywhere" }}>{pool.x}</p>
                 <p style={{ overflowWrap: "anywhere" }}>{pool.y}</p>
                 <Link to={`/explorer/tx/${pool.utxo.input().transactionId()}`}>
-                  Current pool transaction ↗
+                  Current pool transaction
                 </Link>
               </details>
             </>

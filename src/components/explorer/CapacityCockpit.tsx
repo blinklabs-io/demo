@@ -24,8 +24,7 @@ export function CapacityCockpit() {
     >
       <header className="capacity-heading">
         <div>
-          <span className="eyebrow">Three resources. One block.</span>
-          <h2 id="capacity-cockpit-title">What fills a block?</h2>
+          <h2 id="capacity-cockpit-title">Block capacity</h2>
           <p>
             Bytes, execution memory or steps: the first resource to reach its
             limit makes the block full.
@@ -35,7 +34,7 @@ export function CapacityCockpit() {
           disabled={recent.isFetching}
           onClick={() => void recent.refetch()}
         >
-          {recent.isFetching ? "Refreshing…" : "Refresh blocks ↻"}
+          {recent.isFetching ? "Refreshing…" : "Refresh blocks"}
         </button>
       </header>
       <QueryState
@@ -59,7 +58,7 @@ export function CapacityCockpit() {
                 {new Date(selected.time * 1000).toLocaleTimeString()}
               </span>
               <Link to={`/explorer/block/${selected.hash}`}>
-                Explore block →
+                Open block
               </Link>
             </div>
             <BlockCapacity

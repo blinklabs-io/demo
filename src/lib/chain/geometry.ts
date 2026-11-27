@@ -48,13 +48,14 @@ export function treemap<T extends WeightedTile>(
   );
   return result;
 }
+// Chart categories, in the order they are handed out (see --viz-* in index.css).
 export const visualColors = [
-  "#3fddbf",
-  "#a99bff",
-  "#ffc969",
-  "#65b8f5",
-  "#ee89c3",
-  "#fb927f",
+  "var(--viz-1)",
+  "var(--viz-2)",
+  "var(--viz-3)",
+  "var(--viz-4)",
+  "var(--viz-5)",
+  "var(--viz-6)",
 ];
 export function fingerprint(value: string) {
   let hash = 2166136261;

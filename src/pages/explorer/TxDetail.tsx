@@ -288,19 +288,16 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
         <section className="ti-passport">
           <div className="ti-passport-top">
             <span className="eyebrow">Live from Dingo’s mempool</span>
-            <span className="ti-verdict pending">◷ Awaiting inclusion</span>
+            <span className="ti-verdict pending">Awaiting inclusion</span>
           </div>
           <div className="ti-passport-heading">
             <div>
-              <h1>Waiting for a block.</h1>
+              <h1>Pending transaction</h1>
               <p>
                 This transaction has been observed in the mempool. Its ledger
                 effects are not confirmed.
               </p>
             </div>
-            <span className="ti-passport-emblem" aria-hidden="true">
-              ≋
-            </span>
           </div>
           <div className="ti-identifier">
             <code>{pendingTx.hash}</code>
@@ -313,7 +310,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
             </div>
             <b>→</b>
             <div className="ti-pending-core">
-              MEMPOOL<small>Not confirmed</small>
+              Mempool<small>Not confirmed</small>
             </div>
             <b>→</b>
             <div>
@@ -332,7 +329,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
             </div>
           </div>
           <Link to="/explorer/mempool" className="experience-primary">
-            Watch the mempool →
+            Watch the mempool
           </Link>
         </section>
       </div>
@@ -341,8 +338,6 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
 
   return (
     <div className="transaction-explorer" key={hash}>
-      {hash && <TransactionTracker hash={hash} />}
-      <BuildThis recipe="workbench" />
       <QueryState
         hasData={txQuery.data !== undefined}
         isLoading={txQuery.isLoading}
@@ -356,21 +351,20 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
               inspection={inspection?.data ?? undefined}
             />
             <div className="ti-context-actions">
-              <Link to="/wallet/tools/data" state={{ transactionHash: hash }}>
-                Inspect datums & redeemers →
-              </Link>
               <span>
-                Block header{" "}
+                Block produced by{" "}
                 <BlockHeaderVersion hash={tx.block} slot={tx.slot} />
               </span>
               <div>
+                <Link to="/wallet/tools/data" state={{ transactionHash: hash }}>
+                  Inspect datums and redeemers
+                </Link>
                 {transactionCborQuery.data?.cbor && (
                   <Link
-                    className="experience-primary"
                     to="/wallet/tools/transactions"
                     state={{ transactionCbor: transactionCborQuery.data.cbor }}
                   >
-                    Open in transaction studio →
+                    Open in transaction studio
                   </Link>
                 )}
               </div>
@@ -378,6 +372,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
           </>
         )}
       </QueryState>
+      {hash && <TransactionTracker hash={hash} embedded={Boolean(tx)} />}
       {tx && (
         <>
           <QueryState
@@ -528,6 +523,7 @@ function TxDetailBody({ hash }: { hash: string | undefined }) {
           </details>
         </>
       )}
+      <BuildThis recipe="workbench" />
     </div>
   );
 }

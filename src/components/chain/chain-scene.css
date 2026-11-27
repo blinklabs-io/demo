@@ -1,0 +1,135 @@
+.chain-scene {
+  position: relative;
+  min-width: 0;
+  min-height: 400px;
+  margin: 0 -48px 0 0;
+}
+.chain-scene canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+}
+.chain-scene[data-fallback] canvas {
+  display: none;
+}
+.chain-scene-caption {
+  position: absolute;
+  left: 0;
+  bottom: 16px;
+  max-width: 34ch;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+/* Anchored at the top of the largest block: a leader line, then the figures. */
+.chain-scene-callout {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.chain-scene-callout::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 4px;
+  width: 1px;
+  height: 48px;
+  background: var(--text-3);
+}
+.chain-scene-callout::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  bottom: 2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text);
+}
+.chain-scene-callout p {
+  position: absolute;
+  left: -16px;
+  bottom: 52px;
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.chain-scene-callout strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+}
+.chain-scene[data-fallback] .chain-scene-callout {
+  display: none;
+}
+.chain-scene-tip {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 12px)) scale(0.95);
+  transform-origin: bottom center;
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+.chain-scene-tip[data-open] {
+  opacity: 1;
+  transform: translate(-50%, calc(-100% - 12px));
+  transition-duration: 200ms;
+}
+.chain-scene-tip strong {
+  color: var(--text);
+  font-size: 14px;
+}
+.chain-scene-list {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+.chain-scene-list a {
+  color: var(--text-2);
+}
+@media (max-width: 1000px) {
+  .chain-scene {
+    min-height: 0;
+    margin: 16px -24px 0;
+  }
+  .chain-scene canvas {
+    position: static;
+    height: 280px;
+  }
+  .chain-scene-caption {
+    position: static;
+    max-width: none;
+    padding: 0 24px 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chain-scene-tip {
+    transform: translate(-50%, calc(-100% - 12px));
+  }
+}

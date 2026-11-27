@@ -113,18 +113,17 @@ export default function WalletSwap() {
     return (
       <section className="market-hero">
         <div>
-          <span className="eyebrow">Choose a deployed market</span>
-          <h1>Explore markets on Mainnet, Preview or Preprod.</h1>
+          <h1>Explore markets on Mainnet, Preview or Preprod</h1>
           <p>
             The swap integrations use network-specific contracts. Choose their
             network to open a fresh workspace.
           </p>
           <div className="market-actions">
-            <Link to="/wallet/bridge?network=prime-testnet">Bridge AP3X on Prime →</Link>
-            <Link to="/wallet/swap?network=mainnet">Open Mainnet swaps →</Link>
-            <Link to="/wallet/swap?network=preview">Open Preview swaps →</Link>
-            <Link to="/wallet/swap?network=preprod">Open Preprod swaps →</Link>
-            <Link to="/explorer/leios?network=musashi">Explore Leios on Musashi →</Link>
+            <Link to="/wallet/bridge?network=prime-testnet">Bridge AP3X on Prime</Link>
+            <Link to="/wallet/swap?network=mainnet">Open Mainnet swaps</Link>
+            <Link to="/wallet/swap?network=preview">Open Preview swaps</Link>
+            <Link to="/wallet/swap?network=preprod">Open Preprod swaps</Link>
+            <Link to="/explorer/leios?network=musashi">Explore Leios on Musashi</Link>
           </div>
         </div>
       </section>
@@ -496,9 +495,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
   return (
     <div className="wallet-workbench swap-workbench">
       <PageIntro
-        eyebrow="SundaeSwap V3 · on Dingo"
         title="Asset swaps"
-        symbol="⇄"
       />
       <p className="mb-4 text-sm text-slate-500">
         Order construction through Dingo UTxO RPC only.{" "}
@@ -533,7 +530,6 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
       )}
       <section className="swap-venue-card" aria-label="Swap venue">
         <div>
-          <span className="eyebrow">Execution venue</span>
           <h2>
             SundaeSwap <span>V3</span>
           </h2>
@@ -541,13 +537,13 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
         </div>
         <ol className="swap-execution-path">
           <li>
-            <strong>01</strong> Sign an order
+            <strong>1.</strong>  Sign an order
           </li>
           <li>
-            <strong>02</strong> Submit through Dingo
+            <strong>2.</strong>  Submit through Dingo
           </li>
           <li>
-            <strong>03</strong> Scooper executes in the pool
+            <strong>3.</strong>  Scooper executes in the pool
           </li>
         </ol>
         <p>
@@ -565,7 +561,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
               <Link
                 to={`/explorer/asset/${SUNDAE_V3_PROTOCOL.blueprint.validators.find((validator) => validator.title === "pool.mint")!.hash}${DatumBuilderV3.computePoolNftName(effectiveIdent)}`}
               >
-                View liquidity pool NFT →
+                View liquidity pool NFT
               </Link>
             </dd>
             {["order.spend", "pool.spend"].map((name) => (
@@ -676,7 +672,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
                 d === "adaToToken" ? "tokenToAda" : "adaToToken",
               )
             }
-            className="self-start rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-500"
+            className="self-start rounded-md border border-slate-700 px-3 py-2 text-xs text-slate-300 hover:border-slate-500"
           >
             Reverse direction
           </button>
@@ -865,8 +861,7 @@ function V3Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
               className="tool-review tool-transaction"
               aria-label="Swap order review"
             >
-              <span className="eyebrow">Unsigned order · SundaeSwap V3</span>
-              <h3>Review the fixed order.</h3>
+              <h3>Unsigned SundaeSwap V3 order</h3>
               <TransactionRehearsalCbor cbor={prepared.built.unsignedCbor} />
               <dl className="tool-facts">
                 <div>
@@ -1245,13 +1240,10 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
   return (
     <div className="wallet-workbench swap-workbench swap-v4">
       <PageIntro
-        eyebrow="SundaeSwap V4 · on Dingo"
         title="Asset swaps"
-        symbol="⇄"
       />
       <section className="swap-venue-card" aria-label="V4 execution venue">
         <div>
-          <span className="eyebrow">Execution venue</span>
           <h2>
             SundaeSwap <span>V4</span>
           </h2>
@@ -1259,13 +1251,13 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
         </div>
         <ol className="swap-execution-path">
           <li>
-            <strong>01</strong>Set a minimum
+            <strong>1.</strong> Set a minimum
           </li>
           <li>
-            <strong>02</strong>Sign an intent
+            <strong>2.</strong> Sign an intent
           </li>
           <li>
-            <strong>03</strong>Scooper routes the trade
+            <strong>3.</strong> Scooper routes the trade
           </li>
         </ol>
         <p>
@@ -1418,7 +1410,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
               });
             }}
           >
-            Reverse direction ⇄
+            Reverse direction
           </button>
           <div className="swap-balance-row">
             <span>
@@ -1601,9 +1593,6 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
               className="v4-built-review"
               aria-label="Unsigned V4 intent review"
             >
-              <span className="eyebrow">
-                Unsigned intent · ready for review
-              </span>
               <h3>Your exact transaction costs</h3>
               <TransactionRehearsalCbor cbor={prepared.built.cbor} />
               <p>Nothing has been signed or submitted.</p>
@@ -1653,7 +1642,7 @@ function V4Swap({ onBusy }: { onBusy: (busy: boolean) => void }) {
             <p className="text-emerald-300">
               Intent submitted; execution is separate.{" "}
               <Link to={`/explorer/tx/${submit.data.hash}`}>
-                View order transaction →
+                View order transaction
               </Link>
             </p>
           )}

@@ -95,8 +95,7 @@ export function SundaeLiquidity({
       {!parentTracking && <MarketConfirmation tracking={tracking} />}
       <header className="market-hero">
         <div>
-          <span className="eyebrow">SundaeSwap V3 · Liquidity</span>
-          <h1>A share of the pool.</h1>
+          <h1>SundaeSwap V3 liquidity</h1>
           <p>
             Deposit both assets or exchange LP tokens for your share. Read pool
             reserves and submit orders through Dingo.
@@ -138,10 +137,9 @@ export function SundaeLiquidity({
       {data && (
         <div className="market-layout">
           <article className="market-catalog">
-            <span className="eyebrow">Live reserves</span>
             <h2>{selected.label}</h2>
             <p>
-              {marketAmount(data.liquidity.aReserve, a)} /{" "}
+              Live reserves: {marketAmount(data.liquidity.aReserve, a)} /{" "}
               {marketAmount(data.liquidity.bReserve, b)}
             </p>
             <p>
@@ -161,7 +159,7 @@ export function SundaeLiquidity({
             {wallet.status === "connected" && (
               <p>Wallet: {balance.toLocaleString()} LP base units</p>
             )}
-            <Link to={`/wallet/swap?venue=sundae`}>Swap assets →</Link>
+            <Link to={`/wallet/swap?venue=sundae`}>Swap assets</Link>
           </article>
           <article className="market-form">
             <nav

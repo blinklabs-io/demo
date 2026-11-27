@@ -5,9 +5,8 @@ export function WalletWelcome({ purpose }: { purpose: string }) {
   return (
     <section className="data-panel wallet-welcome">
       <EmptyState
-        icon="▣"
-        title="Your wallet. Your keys."
-        detail={`Connect a browser wallet to ${purpose}. Transactions are reviewed and signed in your wallet.`}
+        title="Connect a wallet"
+        detail={`Connect a browser wallet to ${purpose}. Every transaction is reviewed and signed in your wallet, never here.`}
         action={<WalletConnectSummary />}
       />
       <div className="welcome-steps">

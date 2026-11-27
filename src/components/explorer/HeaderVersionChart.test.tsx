@@ -103,7 +103,7 @@ it("labels partial counts and pages all blocks without rendering thousands of li
     await act(async () => all.click());
     expect(host.querySelectorAll(".header-history-blocks a")).toHaveLength(12);
     const next = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-      (b) => b.textContent === "Next →",
+      (b) => b.textContent === "Next",
     )!;
     await act(async () => next.click());
     await act(async () => next.click());
@@ -156,7 +156,7 @@ it("uses hourly boundaries and full versions while excluding out-of-window cache
   }
 });
 
-it("keeps Haskell header versions in separate pie slices with exact percentages and filters", async () => {
+it("keeps Haskell header versions in separate rows with exact percentages and filters", async () => {
   const rows = [
     ...Array.from({ length: 48 }, (_, i) => record(i + 1, "1")),
     ...Array.from({ length: 50 }, (_, i) => record(i + 49, "2")),
@@ -172,7 +172,7 @@ it("keeps Haskell header versions in separate pie slices with exact percentages 
     ].find((button) => button.textContent?.includes("11.1"))!;
     expect(version.textContent).toContain("48.00%");
     expect(version.textContent).toContain("48 blocks");
-    expect(host.querySelectorAll(".header-node-pie path")).toHaveLength(4);
+    expect(host.querySelectorAll(".header-node-bar")).toHaveLength(4);
     await act(async () => version.click());
     expect(host.querySelector(".header-history-records h3")?.textContent).toBe(
       "48 verified blocks",
@@ -187,18 +187,18 @@ it("keeps Haskell header versions in separate pie slices with exact percentages 
     await close();
   }
 });
-it("keeps the full-circle single-node pie selectable by keyboard", async () => {
+it("keeps a single-node row selectable and at exactly 100 percent", async () => {
   const { host, close } = await render([record(1, "1"), record(2, "1")]);
   try {
-    const slice = host.querySelector('.header-node-pie [role="button"]')!;
-    expect(slice.getAttribute("aria-label")).toContain("100.00%");
-    expect(slice.getAttribute("d")?.match(/A115/g)).toHaveLength(2);
-    await act(async () =>
-      slice.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
-      ),
-    );
-    expect(slice.getAttribute("aria-pressed")).toBe("true");
+    const row = host.querySelector<HTMLButtonElement>(
+      ".header-node-legend button",
+    )!;
+    expect(row.textContent).toContain("100.00%");
+    expect(
+      host.querySelector<HTMLElement>(".header-node-bar i")?.style.width,
+    ).toBe("100%");
+    await act(async () => row.click());
+    expect(row.getAttribute("aria-pressed")).toBe("true");
     expect(host.querySelector(".header-history-records h3")?.textContent).toBe(
       "2 verified blocks",
     );
@@ -206,7 +206,7 @@ it("keeps the full-circle single-node pie selectable by keyboard", async () => {
     await close();
   }
 });
-it("gives different full Haskell versions distinct chart colors", async () => {
+it("gives each Haskell header version its own labelled row in one family colour", async () => {
   const { host, close } = await render([
     { ...record(1, "0"), major: "10" },
     record(2, "0"),
@@ -214,21 +214,26 @@ it("gives different full Haskell versions distinct chart colors", async () => {
     record(4, "2"),
   ]);
   try {
-    const fills = [...host.querySelectorAll(".header-node-pie path")].map((p) =>
-      p.getAttribute("fill"),
-    );
-    expect(new Set(fills).size).toBe(4);
+    const rows = [
+      ...host.querySelectorAll<HTMLElement>(".header-node-legend button"),
+    ];
+    expect(new Set(rows.map((row) => row.querySelector("small")?.textContent)).size).toBe(4);
+    const fills = [
+      ...host.querySelectorAll<HTMLElement>(".header-node-bar i"),
+    ].map((bar) => bar.style.background);
+    expect(new Set(fills).size).toBe(1);
+    expect(host.querySelectorAll(".header-family-bar span")).toHaveLength(1);
   } finally {
     await close();
   }
 });
-it("keeps Gerolamo and cardano-bean in the orange chart family", async () => {
+it("keeps Gerolamo and cardano-bean in one chart colour", async () => {
   const { host, close } = await render([record(1, "42"), record(2, "67")]);
   try {
-    const fills = [...host.querySelectorAll(".header-node-pie path")].map((p) =>
-      p.getAttribute("fill"),
-    );
-    expect(fills).toEqual(["hsl(46 65% 58%)", "hsl(36 65% 67%)"]);
+    const fills = [
+      ...host.querySelectorAll<HTMLElement>(".header-node-bar i"),
+    ].map((bar) => bar.style.background);
+    expect(fills).toEqual(["var(--viz-2)", "var(--viz-2)"]);
   } finally {
     await close();
   }

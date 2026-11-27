@@ -169,7 +169,7 @@ it("rechecks completion on refresh and discards an earlier run after failure", a
     expect(host.textContent).toContain("complete 24 hours");
     const refresh = [
       ...host.querySelectorAll<HTMLButtonElement>("button"),
-    ].find((b) => b.textContent === "Refresh ↻")!;
+    ].find((b) => b.textContent === "Refresh")!;
     await act(async () => refresh.click());
     expect(host.textContent).not.toContain("complete 24 hours");
     await act(async () => fail(new Error("Snapshot rolled back")));
@@ -204,7 +204,7 @@ it("does not revive an orphaned snapshot when a new run fails before progress", 
   try {
     const refresh = [
       ...host.querySelectorAll<HTMLButtonElement>("button"),
-    ].find((b) => b.textContent === "Refresh ↻")!;
+    ].find((b) => b.textContent === "Refresh")!;
     await act(async () => refresh.click());
     expect(host.querySelector('[role="alert"]')?.textContent).toContain(
       "Snapshot rolled back",
@@ -246,7 +246,7 @@ it("preserves the inspected version and page across an automatic refresh", async
         .click(),
     );
     const next = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-      (b) => b.textContent === "Next →",
+      (b) => b.textContent === "Next",
     )!;
     await act(async () => next.click());
     expect(host.querySelector(".header-history-pages")?.textContent).toContain(

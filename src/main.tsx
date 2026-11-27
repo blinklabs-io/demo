@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { installNetworkRestoreGuard, persistDingoNetwork, selectedDingoNetwork, urlDingoNetwork } from "./lib/dingo/networks";
 import NetworkRecovery from "./NetworkRecovery";
 import "./index.css";
+import "./ui.css";
 import "./experiences.css";
 import "./components/wallet/studio.css";
 import "./components/chain/chain.css";

@@ -2,9 +2,9 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px 20px;
-  margin: 18px 0;
-  color: #a8c4cf;
+  gap: 12px 24px;
+  margin: 16px 0;
+  color: var(--text-2);
   font-size: 12px;
 }
 .flow-controls label {
@@ -13,20 +13,21 @@
   gap: 8px;
 }
 .flow-controls input {
-  accent-color: #54e7c5;
+  accent-color: var(--accent);
 }
 .flow-controls button,
 .flow-inspector button {
-  padding: 7px 12px;
-  border: 1px solid #426875;
-  border-radius: 9px;
-  color: #c8f6ea;
-  background: #153d36;
-  cursor: pointer;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line-control);
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
 }
 .flow-controls > span {
   margin-left: auto;
-  color: #8fa7b9;
+  color: var(--text-2);
 }
 .flow-branch {
   cursor: pointer;
@@ -35,27 +36,28 @@
 .flow-branch:hover rect,
 .flow-branch:focus-visible rect,
 .flow-branch[aria-pressed="true"] rect {
-  stroke: #f5d17e;
-  stroke-width: 2;
+  stroke: var(--accent);
+  stroke-width: 1.5;
 }
 .flow-inspector {
   display: grid;
   gap: 12px;
   grid-template-columns: 1fr auto;
   align-items: center;
-  padding: 20px;
+  padding: 16px;
   margin: 16px 0;
-  border: 1px solid #678da0;
-  border-radius: 16px;
-  background: linear-gradient(120deg, #17463d, #302449);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
 }
 .flow-inspector > div:first-child {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 .flow-inspector strong {
-  font-size: 24px;
-  color: #8df3d8;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
 }
 .flow-inspector-address {
   grid-column: 1/-1;
@@ -66,11 +68,11 @@
 }
 .flow-inspector-address code {
   overflow-wrap: anywhere;
-  color: #cde3ee;
+  color: var(--text);
   font-size: 12px;
 }
 .flow-inspector > a {
-  color: #8bd4fa;
+  color: var(--accent-strong);
   font-size: 13px;
 }
 .flow-inspector > button {
@@ -81,25 +83,25 @@
   text-align: left;
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #c4e6e3;
+  color: var(--accent);
   font-size: 12px;
   cursor: pointer;
 }
 .river-mobile-node > button[aria-pressed="true"] {
-  color: #ffe0a0;
+  color: var(--warn);
 }
 .river-svg path {
   transition: opacity 0.2s ease;
 }
 .river-svg .flow-branch[aria-pressed="true"] rect {
-  fill: #44374f;
+  fill: var(--surface-3);
 }
 @media (max-width: 600px) {
   .flow-controls > span {
     margin-left: 0;
   }
   .flow-inspector {
-    padding: 14px;
+    padding: 16px;
   }
   .flow-inspector strong {
     font-size: 20px;

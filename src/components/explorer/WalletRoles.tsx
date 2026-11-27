@@ -39,9 +39,6 @@ export function WalletRoles({
     <Panel title="Your roles on chain">
       <div className="wallet-role-grid">
         <section className="wallet-role-card">
-          <span className="wallet-role-icon" aria-hidden="true">
-            ⬡
-          </span>
           <h3>Pool ownership</h3>
           {!stakeAddress ? (
             <p>No wallet stake credential available to check.</p>
@@ -109,9 +106,6 @@ export function WalletRoles({
           )}
         </section>
         <section className="wallet-role-card">
-          <span className="wallet-role-icon" aria-hidden="true">
-            ◈
-          </span>
           <h3>DRep registration</h3>
           {!walletApi?.cip95 ? (
             <p>The connected wallet does not expose its DRep credential.</p>
@@ -134,7 +128,7 @@ export function WalletRoles({
                       to="/explorer/governance"
                       className="text-sm text-teal-300"
                     >
-                      Vote on governance actions →
+                      Vote on governance actions
                     </Link>
                   )}
                 </>

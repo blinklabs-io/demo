@@ -16,7 +16,7 @@ export default function HandleLookup() {
   });
   return (
     <div className="flex flex-col gap-4">
-    <PageIntro title={handle ? `$${handle}` : "Handle lookup"} eyebrow="On-chain address resolution" />
+    <PageIntro title={handle ? `$${handle}` : "Handle lookup"} />
     <Panel title="Resolved address">
       {query.isPending && (
         <div role="status" className="visual-empty">
@@ -46,7 +46,6 @@ export default function HandleLookup() {
           </div>
         ) : (
           <EmptyState
-            icon="$"
             title="Handle not found"
             detail="Dingo has no active Handle token matching this name on the selected network."
           />

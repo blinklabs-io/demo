@@ -5,7 +5,8 @@ import { useSearchParams } from "react-router";
 import { Link } from "../../components/NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { compactAda } from "../../lib/visualFormat";
-import { Gauge, PageIntro } from "../../components/explorer/Visuals";
+import { PageIntro } from "../../components/explorer/Visuals";
+import { Icon } from "../../components/Icon";
 import {
   PoolIdentity,
   type PoolMetadata,
@@ -25,32 +26,54 @@ interface PoolExtendedRow {
   margin_cost: number;
 }
 
-function PoolRow({ row }: { row: PoolExtendedRow }) {
+function PoolTable({ rows }: { rows: PoolExtendedRow[] }) {
+  if (!rows.length) return null;
   return (
-    <div className="pool-card">
-      <PoolIdentity
-        poolId={row.pool_id}
-        metadata={row.metadata}
-      />
-      <div className="pool-card-metrics">
-        <strong>
-          {compactAda(row.live_stake)}
-          <small>Live stake</small>
-        </strong>
-        <strong>
-          {row.blocks_minted.toLocaleString()}
-          <small>Blocks minted</small>
-        </strong>
-        <strong>
-          {(row.margin_cost * 100).toFixed(1)}%<small>Margin</small>
-        </strong>
-      </div>
-      <Gauge
-        label="Saturation"
-        value={row.live_saturation * 100}
-        tone={row.live_saturation > 1 ? "red" : "teal"}
-        detail={row.live_saturation > 1 ? "Oversaturated" : undefined}
-      />
+    <div className="overflow-x-auto">
+      <table className="data-table pool-table">
+        <thead>
+          <tr>
+            <th>Pool</th>
+            <th className="num">Live stake</th>
+            <th>Saturation</th>
+            <th className="num">Blocks minted</th>
+            <th className="num">Margin</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const saturation = row.live_saturation * 100;
+            return (
+              <tr key={row.pool_id}>
+                <td>
+                  <PoolIdentity poolId={row.pool_id} metadata={row.metadata} />
+                </td>
+                <td className="num">{compactAda(row.live_stake)}</td>
+                <td>
+                  <span
+                    className="inline-meter"
+                    data-over={saturation > 100 || undefined}
+                    title={saturation > 100 ? "Oversaturated" : undefined}
+                  >
+                    <span
+                      role="meter"
+                      aria-label="Saturation"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.min(100, Math.round(saturation))}
+                    >
+                      <i style={{ width: `${Math.min(100, saturation)}%` }} />
+                    </span>
+                    {saturation.toFixed(1)}%
+                  </span>
+                </td>
+                <td className="num">{row.blocks_minted.toLocaleString()}</td>
+                <td className="num">{(row.margin_cost * 100).toFixed(1)}%</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -143,14 +166,17 @@ function PoolDirectory() {
     setSort("stake");
     setPage(1);
   };
-  const pageSize = 12;
+  const pageSize = 20;
   return (
     <div className="flex flex-col gap-4">
       <PageIntro
-        eyebrow="Meet the block makers"
         title="Stake pools"
-        detail="Find your pool. Explore the operators securing the chain."
-        symbol="⬡"
+        detail="Search registered stake pools by ticker, name, or pool ID."
+        action={
+          <div className="page-actions">
+            <Link className="experience-primary" to="/wallet/delegate">Delegate your stake</Link>
+          </div>
+        }
       />
       <section
         className="directory-filter-bar"
@@ -159,7 +185,7 @@ function PoolDirectory() {
         <label className="directory-search">
           <span className="eyebrow">Find a pool</span>
           <span className="directory-search-field">
-            <span aria-hidden="true">⌕</span>
+            <Icon name="search" size={16} />
             <input
               type="search"
               aria-label="Search stake pools"
@@ -264,7 +290,6 @@ function PoolDirectory() {
         )}
         {!matches.length && !query.isPending && (
           <div className="list-empty">
-            <span aria-hidden="true">⌕</span>
             <p>
               {loading || query.isError
                 ? "No matches in the pools loaded so far."
@@ -277,11 +302,9 @@ function PoolDirectory() {
             )}
           </div>
         )}
-        <div className="pool-results">
-          {matches.slice((page - 1) * pageSize, page * pageSize).map((row) => (
-            <PoolRow key={row.pool_id} row={row} />
-          ))}
-        </div>
+        <PoolTable
+          rows={matches.slice((page - 1) * pageSize, page * pageSize)}
+        />
         <Pagination
           page={page}
           onPageChange={setPage}
@@ -329,8 +352,8 @@ function PoolTickerResults({ ticker }: { ticker: string }) {
             by multiple pools.
           </p>
         </div>
-        <Link className="status-badge" to="/explorer/pools">
-          All pools →
+        <Link className="button-secondary" to="/explorer/pools">
+          All pools
         </Link>
       </div>
       <Panel title={`${matches.length} matching pools`}>
@@ -352,7 +375,7 @@ function PoolTickerResults({ ticker }: { ticker: string }) {
           </div>
         )}
         {searching && (
-          <p role="status" className="mb-5 text-xs text-slate-400">
+          <p role="status" className="mb-6 text-xs text-slate-400">
             Searching pool metadata… {pools.length.toLocaleString()} pools
             checked.
           </p>
@@ -362,11 +385,7 @@ function PoolTickerResults({ ticker }: { ticker: string }) {
             No indexed pool metadata matches this ticker.
           </p>
         )}
-        <div className="pool-results">
-          {matches.map((row) => (
-            <PoolRow key={row.pool_id} row={row} />
-          ))}
-        </div>
+        <PoolTable rows={matches} />
       </Panel>
     </div>
   );

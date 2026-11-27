@@ -160,12 +160,12 @@ export function inspectChainTransaction(cbor: string, hash: string) {
     metadata,
     certs,
     bytes: [
-      { label: "Body", value: bodyBytes, color: "#5eead4" },
-      { label: "Witnesses", value: witnessBytes, color: "#c4b5fd" },
+      { label: "Body", value: bodyBytes, color: "var(--viz-1)" },
+      { label: "Witnesses", value: witnessBytes, color: "var(--viz-2)" },
       {
         label: "Auxiliary & envelope",
         value: totalBytes - bodyBytes - witnessBytes,
-        color: "#fbbf24",
+        color: "var(--viz-3)",
       },
     ],
     totalBytes,

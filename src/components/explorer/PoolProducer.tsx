@@ -70,7 +70,7 @@ export function PoolProducer({ poolId }: { poolId: string }) {
                 {node.payloadSummary && <span>{node.payloadSummary}</span>}
               </div>
               <Link to={`/explorer/block/${block.data.hash}`}>
-                Block #{block.data.height.toLocaleString()} ↗
+                Block #{block.data.height.toLocaleString()}
               </Link>
             </div>
             <p>{node.detail}</p>

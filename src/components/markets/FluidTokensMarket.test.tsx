@@ -60,5 +60,5 @@ it("accepts uppercase collateral identifiers as canonical lowercase units",async
 it("refreshes from the first wallet page after browsing another script address",async()=>{
  wallet.status="connected";wallet.changeAddress="addr1_fixture";const data=await vi.mocked(readFluidPools)({keys:["11".repeat(28)],addresses:["61"+"11".repeat(28)]});vi.mocked(readFluidPools).mockImplementation(async(_,cursor)=>({...data,nextToken:cursor?"":"next"}));
  await render();await act(async()=>button("Next pools").click());await act(async()=>{await vi.advanceTimersByTimeAsync(1);});expect(host.textContent).toContain("Page 2");const before=vi.mocked(readFluidPools).mock.calls.length;
- await act(async()=>button("Refresh ↻").click());await act(async()=>{await vi.advanceTimersByTimeAsync(1);});expect(host.textContent).toContain("Page 1");expect(vi.mocked(readFluidPools).mock.calls.length).toBeGreaterThan(before);expect(vi.mocked(readFluidPools).mock.lastCall?.[1]).toBe("");
+ await act(async()=>button("Refresh").click());await act(async()=>{await vi.advanceTimersByTimeAsync(1);});expect(host.textContent).toContain("Page 1");expect(vi.mocked(readFluidPools).mock.calls.length).toBeGreaterThan(before);expect(vi.mocked(readFluidPools).mock.lastCall?.[1]).toBe("");
 });

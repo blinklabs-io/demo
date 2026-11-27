@@ -65,8 +65,7 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
     >
       <header className="rehearsal-heading">
         <div>
-          <span className="eyebrow">Read the actual transaction</span>
-          <h3>Rehearse the transaction.</h3>
+          <h3>Transaction rehearsal</h3>
         </div>
         <span className={`rehearsal-state${valid ? "" : " invalid"}`}>
           {valid ? "Transaction body" : "Script-invalid flag"}
@@ -79,9 +78,6 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
         </div>
         <i aria-hidden="true">→</i>
         <div className="rehearsal-core">
-          <span className="rehearsal-core-symbol" aria-hidden="true">
-            ◈
-          </span>
           <b>One transaction</b>
           <span>{display(body.fee(), "lovelace")} declared fee</span>
         </div>
@@ -261,7 +257,6 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
       </div>
       {(body.referenceInputs()?.size() ?? 0) > 0 && (
         <div className="rehearsal-reference">
-          <span aria-hidden="true">⌘</span>
           <div>
             <strong>{body.referenceInputs()!.size()} reference inputs</strong>
             <span>Read by the transaction; not spent.</span>
@@ -273,7 +268,6 @@ export function TransactionRehearsal({ tx }: { tx: Core.Transaction }) {
           className={`rehearsal-collateral${valid ? "" : " invalid"}`}
           aria-label="Collateral path"
         >
-          <span aria-hidden="true">◇</span>
           <div>
             <strong>
               {body.collateral()!.size()} collateral inputs · separate failure

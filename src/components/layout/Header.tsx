@@ -5,9 +5,16 @@ import { Link } from "../NetworkLink";
 import { NodeHealthStrip } from "./NodeHealthStrip";
 import { GlobalLookup } from "./GlobalLookup";
 import { NetworkSwitcher } from "./NetworkSwitcher";
+import { Icon } from "../Icon";
 
 function Sidebar({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
+  // Close the mobile menu when the route changes, without rebuilding the sidebar.
+  const [seen, setSeen] = useState(pathname);
+  if (seen !== pathname) {
+    setSeen(pathname);
+    setOpen(false);
+  }
   const toggle = useRef<HTMLButtonElement>(null);
   return (
     <aside
@@ -21,13 +28,11 @@ function Sidebar({ pathname }: { pathname: string }) {
     >
       <div className="sidebar-brand-row">
         <Link to="/" className="brand">
-          <span className="brand-mark" aria-hidden="true">d</span>
-          <span>
-            dingo<span className="brand-sub">BUILD WITH DINGO</span>
-          </span>
+          <span className="brand-word" aria-hidden="true" />
+          <span className="sr-only">dingo</span>
         </Link>
         <a className="demo-source-link" href="https://github.com/blinklabs-io/demo" target="_blank" rel="noopener noreferrer" aria-label="View demo source on GitHub" title="View demo source on GitHub">
-          <img src="/github.svg" width="22" height="22" alt="" />
+          <Icon name="github" />
         </a>
         <button
           type="button"
@@ -38,15 +43,12 @@ function Sidebar({ pathname }: { pathname: string }) {
           aria-controls="main-navigation"
           onClick={() => setOpen((value) => !value)}
         >
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path d={open ? "m6 6 12 12M6 18 18 6" : "M4 6h16M4 12h16M4 18h16"} />
-          </svg>
+          <Icon name={open ? "close" : "menu"} />
           Menu
         </button>
       </div>
-      <p className="nav-caption">DINGO WORKSPACE</p>
       <nav id="main-navigation" aria-label="Main navigation" data-open={open}>
-        {mainNavigation.map(({ to, label, icon, matches, group, area }) => (
+        {mainNavigation.map(({ to, label, matches, group, area }) => (
           <Link
             key={to}
             data-area={area}
@@ -55,14 +57,13 @@ function Sidebar({ pathname }: { pathname: string }) {
             aria-current={!group && matches(pathname) ? "page" : undefined}
             onClick={() => setOpen(false)}
           >
-            <span className="nav-icon" aria-hidden="true">{icon}</span>
+            <Icon name={area} className="nav-icon" />
             {label}
           </Link>
         ))}
       </nav>
       <div className="sidebar-footer">
         <span className="live-dot" /> Powered by Dingo
-        <p>Develop and operate on Cardano.</p>
       </div>
     </aside>
   );
@@ -73,7 +74,7 @@ export function Header() {
   const path = normalizePath(pathname);
   return (
     <>
-      <Sidebar key={path} pathname={path} />
+      <Sidebar pathname={path} />
       <header className="workspace-header">
         <GlobalLookup />
         <div className="health-row">

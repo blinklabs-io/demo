@@ -1,7 +1,7 @@
+import { ChainMark } from "../../components/explorer/ChainMark";
+import { CopyButton } from "../../components/explorer/CopyButton";
 import { AssetDistribution } from "../../components/chain/AssetDistribution";
 import { OutputHistory } from "../../components/explorer/OutputHistory";
-import { ChainMark } from "../../components/explorer/ChainMark";
-import { PageIntro } from "../../components/explorer/Visuals";
 import { Metric } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
 import { Link } from "../../components/NetworkLink";
@@ -38,82 +38,70 @@ export default function AssetDetail() {
 
   return (
     <div className="flex flex-col gap-4 detail-showcase">
-      <PageIntro
-        eyebrow="Native to the chain"
-        title={asset?.asset_name_ascii || "Asset explorer"}
-        symbol={<ChainMark value={assetId ?? ""} />}
-      />
-      <Panel title="Asset">
-        <QueryState hasData={asset !== undefined}
-          isLoading={assetQuery.isLoading}
-          error={assetQuery.error}
-          notFoundLabel="Asset not found."
-        >
-          {asset && (
-            <div>
-              <div className="metric-grid mb-6">
-                <Metric
-                  label="Issued supply"
-                  value={BigInt(asset.quantity).toLocaleString()}
-                />
-                <Metric
-                  label="Mint / burn events"
-                  value={asset.mint_or_burn_count}
-                />
-              </div>
-              <details className="technical-details">
-                <summary>Policy, mint & metadata</summary>
-                <div className="record-grid">
-                  {" "}
-                  <Field label="Asset ID" value={asset.asset} />
-                  <Field
-                    label="Policy ID"
-                    value={
-                      <Link
-                        className="text-teal-300 hover:underline"
-                        to={`/explorer/policy/${asset.policy_id}`}
-                      >
+      <header className="detail-header">
+        <div className="detail-identity">
+          {assetId && <span className="detail-mark"><ChainMark value={asset?.asset ?? assetId} /></span>}
+          <h1>{asset?.asset_name_ascii || "Asset"}</h1>
+          {assetId && (
+            <p className="detail-id">
+              <code>{asset?.asset ?? assetId}</code>
+              <CopyButton value={asset?.asset ?? assetId} label="asset ID" />
+            </p>
+          )}
+        </div>
+      </header>
+      <QueryState
+        hasData={asset !== undefined}
+        isLoading={assetQuery.isLoading}
+        error={assetQuery.error}
+        notFoundLabel="Asset not found."
+      >
+        {asset && (
+          <>
+            <div className="metric-grid">
+              <Metric
+                label="Issued supply"
+                value={BigInt(asset.quantity).toLocaleString()}
+                detail="Base units"
+              />
+              <Metric
+                label="Mint and burn events"
+                value={asset.mint_or_burn_count}
+              />
+            </div>
+            <Panel title="Details">
+              <div className="field-grid">
+                <Field
+                  label="Policy ID"
+                  value={
+                    <span className="address-identifier address-identifier-full">
+                      <Link to={`/explorer/policy/${asset.policy_id}`}>
                         {asset.policy_id}
                       </Link>
-                    }
-                  />
-                  <Field
-                    label="Fingerprint"
-                    value={asset.fingerprint}
-                  />
-                  <Field
-                    label="Mint tx"
-                    value={
-                      <HashLink
-                        kind="tx"
-                        id={asset.initial_mint_tx_hash}
-                        full
-                      />
-                    }
-                  />
-                  {asset.onchain_metadata != null && (
-                    <Field
-                      label="On-chain metadata"
-                      value={
-                        <details>
-                          <summary>View metadata</summary>
-                          <pre className="whitespace-pre-wrap break-all text-xs text-slate-300">
-                            {JSON.stringify(
-                              asset.onchain_metadata,
-                              null,
-                              2,
-                            )}
-                          </pre>
-                        </details>
-                      }
-                    />
-                  )}
-                </div>
-              </details>
-            </div>
-          )}
-        </QueryState>
-      </Panel>
+                      <CopyButton value={asset.policy_id} label="policy ID" />
+                    </span>
+                  }
+                />
+                <Field label="Fingerprint" value={asset.fingerprint} />
+                <Field
+                  label="First mint transaction"
+                  value={
+                    <HashLink kind="tx" id={asset.initial_mint_tx_hash} full />
+                  }
+                />
+              </div>
+              {asset.onchain_metadata != null && (
+                <details className="technical-details">
+                  <summary>On-chain metadata</summary>
+                  <pre className="record-json">
+                    {JSON.stringify(asset.onchain_metadata, null, 2)}
+                  </pre>
+                </details>
+              )}
+            </Panel>
+          </>
+        )}
+      </QueryState>
 
       {asset && (
         <AssetDistribution

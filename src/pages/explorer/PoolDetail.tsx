@@ -2,8 +2,10 @@ import { PoolProducer } from "../../components/explorer/PoolProducer";
 import { PoolMetadataPanel } from "../../components/explorer/PoolMetadataPanel";
 import { PoolDelegators } from "../../components/explorer/PoolDelegators";
 import { PoolRelays } from "../../components/explorer/PoolRelays";
-import { PoolIdentity } from "../../components/explorer/PoolIdentity";
-import { Gauge, Metric, PageIntro } from "../../components/explorer/Visuals";
+import { Metric } from "../../components/explorer/Visuals";
+import { CopyButton } from "../../components/explorer/CopyButton";
+import { PoolAvatar } from "../../components/explorer/PoolIdentity";
+import { compactAda } from "../../lib/visualFormat";
 import { useParams } from "react-router";
 import { Link } from "../../components/NetworkLink";
 import { useQuery } from "@tanstack/react-query";
@@ -62,74 +64,94 @@ export default function PoolDetail() {
 
   return (
     <div className="flex flex-col gap-4 detail-showcase">
-      <PageIntro
-        eyebrow="The block makers"
-        title={metadataQuery.data?.name || "Stake pool"}
-        detail={metadataQuery.data?.description}
-        symbol="⬡"
-        action={
-          poolId &&
-          !notFound &&
-          poolQuery.data && (
-            <Link
-              className="experience-primary"
-              to={`/wallet/delegate?pool=${encodeURIComponent(poolQuery.data.pool_id)}`}
-            >
-              Delegate to this pool
-            </Link>
-          )
-        }
-      />
-      <Panel
-        title={
-          poolId ? (
-            <PoolIdentity poolId={poolId} metadata={metadataQuery.data} />
-          ) : (
-            "Stake pool"
-          )
-        }
+      <header className="detail-header">
+        <div className="pool-hero">
+          {poolId && (
+            <PoolAvatar
+              key={`${poolId}:${metadataQuery.data?.hash ?? ""}`}
+              poolId={poolQuery.data?.pool_id ?? poolId}
+              metadata={metadataQuery.data}
+            />
+          )}
+          <h1>
+            {metadataQuery.data?.ticker
+              ? `${metadataQuery.data.ticker} `
+              : ""}
+            {metadataQuery.data?.name || "Stake pool"}
+          </h1>
+          {poolId && (
+            <p className="detail-id">
+              <code>{poolQuery.data?.pool_id ?? poolId}</code>
+              <CopyButton
+                value={poolQuery.data?.pool_id ?? poolId}
+                label="pool ID"
+              />
+            </p>
+          )}
+          {metadataQuery.data?.description && (
+            <p className="detail-summary">{metadataQuery.data.description}</p>
+          )}
+        </div>
+        {poolId && !notFound && poolQuery.data && (
+          <Link
+            className="experience-primary"
+            to={`/wallet/delegate?pool=${encodeURIComponent(poolQuery.data.pool_id)}`}
+          >
+            Delegate to this pool
+          </Link>
+        )}
+      </header>
+      <QueryState
+        hasData={poolQuery.data !== undefined}
+        isLoading={poolQuery.isLoading}
+        error={poolQuery.error}
+        notFoundLabel="Pool not found."
       >
+        {poolQuery.data && (
+          <div className="metric-grid">
+            <Metric
+              label="Live stake"
+              value={compactAda(poolQuery.data.live_stake)}
+              detail={formatNativeCoin(BigInt(poolQuery.data.live_stake))}
+            />
+            <Metric
+              label="Saturation"
+              value={`${(poolQuery.data.live_saturation * 100).toFixed(1)}%`}
+              detail={
+                poolQuery.data.live_saturation > 1
+                  ? "Oversaturated"
+                  : "Of the saturation threshold"
+              }
+            />
+            <Metric
+              label="Delegators"
+              value={poolQuery.data.live_delegators.toLocaleString()}
+            />
+            <Metric
+              label="Blocks minted"
+              value={poolQuery.data.blocks_minted.toLocaleString()}
+              detail={`${poolQuery.data.blocks_epoch.toLocaleString()} this epoch`}
+            />
+            <Metric
+              label="Margin"
+              value={`${(poolQuery.data.margin_cost * 100).toFixed(2)}%`}
+              detail={`Plus ${formatNativeCoin(BigInt(poolQuery.data.fixed_cost))} fixed`}
+            />
+          </div>
+        )}
+      </QueryState>
+      <Panel title="Details">
         <QueryState
           hasData={poolQuery.data !== undefined}
           isLoading={poolQuery.isLoading}
-          error={poolQuery.error}
-          notFoundLabel="Pool not found."
+          error={null}
         >
           {poolQuery.data && (
-            <div>
-              <div className="pool-overview">
-                <div className="metric-grid">
-                  <Metric
-                    label="Live stake"
-                    value={formatNativeCoin(BigInt(poolQuery.data.live_stake))}
-                  />
-                  <Metric
-                    label="Delegators"
-                    value={poolQuery.data.live_delegators.toLocaleString()}
-                  />
-                  <Metric
-                    label="Blocks minted"
-                    value={poolQuery.data.blocks_minted.toLocaleString()}
-                  />
-                </div>
-                <div className="pool-instrument">
-                  <Gauge
-                    label="Pool saturation"
-                    value={poolQuery.data.live_saturation * 100}
-                    tone={poolQuery.data.live_saturation > 1 ? "red" : "teal"}
-                    detail={
-                      poolQuery.data.live_saturation > 1
-                        ? "Oversaturated"
-                        : "Share of saturation threshold"
-                    }
-                  />
-                </div>
-              </div>
+            <div className="field-grid">
               <PoolProducer
                 key={poolQuery.data.pool_id}
                 poolId={poolQuery.data.pool_id}
               />
-              <Field label="Pool ID (bech32)" value={poolQuery.data.pool_id} />
               <Field label="Pool key hash (hex)" value={poolQuery.data.hex} />
 
               <Field
@@ -140,15 +162,7 @@ export default function PoolDetail() {
                 label="Declared pledge"
                 value={formatNativeCoin(BigInt(poolQuery.data.declared_pledge))}
               />
-              <Field
-                label="Margin / fixed cost"
-                value={`${(poolQuery.data.margin_cost * 100).toFixed(2)}% + ${formatNativeCoin(BigInt(poolQuery.data.fixed_cost))}`}
-              />
 
-              <Field
-                label="Blocks this epoch"
-                value={poolQuery.data.blocks_epoch}
-              />
               <Field
                 label="Reward account"
                 value={
@@ -163,7 +177,7 @@ export default function PoolDetail() {
               <Field
                 label="Owners"
                 value={
-                  <ul className="flex flex-col gap-0.5">
+                  <ul className="flex flex-col gap-1">
                     {poolQuery.data.owners.map((owner) => (
                       <li key={owner}>
                         <HashLink kind="account" id={owner} />

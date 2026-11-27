@@ -1,9 +1,10 @@
+import { ChainMark } from "../../components/explorer/ChainMark";
+import { CopyButton } from "../../components/explorer/CopyButton";
 import { governanceName } from "../../lib/governanceMetadata";
 import { PaginatedList } from "../../components/explorer/PaginatedList";
 import { HashLink } from "../../components/explorer/HashLink";
 import { shortenHash, nativeTicker } from "../../lib/format";
-import { PageIntro } from "../../components/explorer/Visuals";
-import { Metric, Timeline, BarChart } from "../../components/explorer/Visuals";
+import { Metric, BarChart } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
 import { Link } from "../../components/NetworkLink";
 import { useQuery } from "@tanstack/react-query";
@@ -47,70 +48,73 @@ export default function DRepDetail() {
   const notFound = drepQuery.error instanceof BlockfrostError && drepQuery.error.status === 404;
   return (
     <div className="detail-showcase flex flex-col gap-4">
-      <PageIntro
-        eyebrow="A voice in the network"
-        title={
-          governanceName(metadataQuery.data?.json_metadata) ||
-          "Delegated representative"
-        }
-        symbol="◈"
-        action={drepId && !drepId.startsWith("drep_always_") && !notFound && drepQuery.data && !drepQuery.data.retired && (
+      <header className="detail-header">
+        <div className="detail-identity">
+          {drepId && <span className="detail-mark"><ChainMark value={drepId} /></span>}
+          <h1>
+            {governanceName(metadataQuery.data?.json_metadata) ||
+              "Delegated representative"}
+          </h1>
+          {drepId && (
+            <p className="detail-id">
+              <code>{drepId}</code>
+              <CopyButton value={drepId} label="DRep ID" />
+            </p>
+          )}
+        </div>
+        {drepId && !drepId.startsWith("drep_always_") && !notFound && drepQuery.data && !drepQuery.data.retired && (
           <Link className="experience-primary" to={`/wallet/delegate?drep=${encodeURIComponent(drepId)}`}>
             Delegate voting power
           </Link>
         )}
-      />
-      <Panel title="DRep">
-        <QueryState hasData={drepQuery.data !== undefined}
-          isLoading={drepQuery.isLoading}
-          error={drepQuery.error}
-          notFoundLabel="DRep not found."
-        >
-          {drepQuery.data && (
-            <div>
-              <div className="metric-grid mb-6">
-                <Metric
-                  label="Voting power"
-                  value={formatNativeCoin(BigInt(drepQuery.data.amount))}
-                />
-                <Metric
-                  label="Status"
-                  value={
-                    drepQuery.data.retired
-                      ? "Retired"
-                      : drepQuery.data.expired
-                        ? "Expired"
-                        : drepQuery.data.active
-                          ? "Active"
-                          : "Inactive"
-                  }
-                />
-              </div>
-              <Timeline
-                items={[
-                  {
-                    label: "Active epoch",
-                    complete: drepQuery.data.active_epoch !== null,
-                    detail: drepQuery.data.active_epoch ?? "Not recorded",
-                  },
-                  {
-                    label: "Last activity",
-                    complete: drepQuery.data.last_active_epoch !== null,
-                    detail: drepQuery.data.last_active_epoch ?? "Not recorded",
-                  },
-                ]}
+      </header>
+      <QueryState
+        hasData={drepQuery.data !== undefined}
+        isLoading={drepQuery.isLoading}
+        error={drepQuery.error}
+        notFoundLabel="DRep not found."
+      >
+        {drepQuery.data && (
+          <>
+            <div className="metric-grid">
+              <Metric
+                label="Voting power"
+                value={formatNativeCoin(BigInt(drepQuery.data.amount))}
               />
-              <Field label="DRep ID" value={drepQuery.data.drep_id} />
-              <Field label="Credential hex" value={drepQuery.data.hex} />
-
-              <Field
-                label="Script-based"
-                value={drepQuery.data.has_script ? "Yes" : "No"}
+              <Metric
+                label="Status"
+                value={
+                  drepQuery.data.retired
+                    ? "Retired"
+                    : drepQuery.data.expired
+                      ? "Expired"
+                      : drepQuery.data.active
+                        ? "Active"
+                        : "Inactive"
+                }
+              />
+              <Metric
+                label="Active since epoch"
+                value={drepQuery.data.active_epoch ?? "Not recorded"}
+              />
+              <Metric
+                label="Last active epoch"
+                value={drepQuery.data.last_active_epoch ?? "Not recorded"}
               />
             </div>
-          )}
-        </QueryState>
-      </Panel>{" "}
+            <Panel title="Details">
+              <div className="field-grid">
+                <Field label="Credential hex" value={drepQuery.data.hex} />
+                <Field
+                  label="Credential type"
+                  value={drepQuery.data.has_script ? "Script" : "Key"}
+                />
+              </div>
+            </Panel>
+          </>
+        )}
+      </QueryState>
+
       {!notFound && (
         <Panel title="Delegated voting power">
           <PaginatedList<{ address: string; amount: string }>

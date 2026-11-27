@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Icon } from "../Icon";
 
 async function copyText(value: string) {
   if (window.isSecureContext && navigator.clipboard) {
@@ -39,6 +40,7 @@ export function CopyButton({
     <button
       type="button"
       className="copy-identifier"
+      data-status={status}
       aria-label={`Copy full ${label}`}
       title={`Copy full ${label}`}
       onClick={async () => {
@@ -50,30 +52,9 @@ export function CopyButton({
         }
       }}
     >
-      <svg
-        aria-hidden="true"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {status === "copied" ? (
-          <path d="m5 12 4 4L19 6" />
-        ) : status === "error" ? (
-          <>
-            <path d="m6 6 12 12M6 18 18 6" />
-          </>
-        ) : (
-          <>
-            <rect x="8" y="8" width="12" height="12" rx="2" />
-            <path d="M16 8V4H4v12h4" />
-          </>
-        )}
-      </svg>
+      <Icon name="copy" size={16} data-hidden={status !== "idle" || undefined} />
+      <Icon name="check" size={16} data-hidden={status !== "copied" || undefined} />
+      <Icon name="close" size={16} data-hidden={status !== "error" || undefined} />
       <span className="sr-only" aria-live="polite">
         {status === "copied"
           ? "Copied"

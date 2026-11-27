@@ -1,3 +1,4 @@
+import { Icon } from "../../components/Icon";
 import { governanceName } from "../../lib/governanceMetadata";
 import { PageIntro, BarChart } from "../../components/explorer/Visuals";
 import { useEffect, useMemo, useState } from "react";
@@ -57,7 +58,7 @@ function DRepCard({ row }: { row: DRepDirectoryRow }) {
     <div className="drep-card">
       <span className="drep-identity">
         <span className="drep-avatar" aria-hidden="true">
-          {row.name?.slice(0, 2).toUpperCase() || "◈"}
+          {row.name?.slice(0, 2).toUpperCase() || <Icon name="user" />}
         </span>
         <span className="drep-name-stack">
           <strong>
@@ -198,10 +199,8 @@ export default function DRepList() {
   return (
     <div className="flex flex-col gap-4">
       <PageIntro
-        eyebrow="Governance, delegated"
         title="Representatives"
         detail="Find a representative by name or on-chain identity."
-        symbol="◈"
       />
       <section
         className="directory-filter-bar"
@@ -210,7 +209,7 @@ export default function DRepList() {
         <label className="directory-search">
           <span className="eyebrow">Find a representative</span>
           <span className="directory-search-field">
-            <span aria-hidden="true">⌕</span>
+            <Icon name="search" size={16} />
             <input
               type="search"
               aria-label="Search DReps"
@@ -316,7 +315,7 @@ export default function DRepList() {
         )}
         {!matches.length && !query.isPending && (
           <div className="list-empty">
-            <span aria-hidden="true">⌕</span>
+            <Icon name="search" size={16} />
             <p>
               {loading || query.isError
                 ? "No matches in the DReps loaded so far."

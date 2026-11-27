@@ -105,8 +105,7 @@ function Fingerprints({
     <section className="chain-visual epoch-fingerprints">
       <header className="chain-heading">
         <div>
-          <span className="eyebrow">No two epochs are alike</span>
-          <h2>The shape of an epoch.</h2>
+          <h2>Epoch comparison</h2>
         </div>
         <div className="fingerprint-actions">
           {open ? (
@@ -126,7 +125,7 @@ function Fingerprints({
             </label>
           ) : (
             <button onClick={() => setOpen(true)}>
-              Compare epoch fingerprints
+              Compare with recent epochs
             </button>
           )}
           {open && (
@@ -145,19 +144,15 @@ function Fingerprints({
                 )
               }
             >
-              Refresh totals ↻
+              Refresh totals
             </button>
           )}
         </div>
       </header>
       {!open ? (
-        <div className="fingerprint-teaser" aria-hidden="true">
-          <svg viewBox="0 0 600 300">
-            <path d="M300 25 475 145 410 270 190 270 125 145Z" />
-            <path d="M300 80 430 145 360 230 240 210 180 145Z" />
-            <path d="M300 45 375 145 400 250 235 220 165 145Z" />
-          </svg>
-        </div>
+        <p className="chain-muted">
+          Compare this epoch's totals with the epochs before it.
+        </p>
       ) : (
         <>
           <div className="fingerprint-layout">
@@ -178,14 +173,14 @@ function Fingerprints({
                     cy="250"
                     r="145"
                     fill="none"
-                    stroke="#35515d"
+                    stroke="var(--line-strong)"
                     strokeDasharray="4 12"
                   />
                   <text
                     x="300"
                     y="250"
                     textAnchor="middle"
-                    fill="#94b6c0"
+                    fill="var(--text-3)"
                     fontSize="16"
                   >
                     {queries.some((q) => q.isPending)
@@ -199,7 +194,7 @@ function Fingerprints({
                   key={r}
                   points={polygon(170 * r)}
                   fill="none"
-                  stroke="#345161"
+                  stroke="var(--line-strong)"
                   strokeDasharray="3 6"
                 />
               ))}
@@ -208,12 +203,12 @@ function Fingerprints({
                   label = point(i, 208);
                 return (
                   <g key={a.name}>
-                    <path d={`M300 250L${p.x} ${p.y}`} stroke="#345161" />
+                    <path d={`M300 250L${p.x} ${p.y}`} stroke="var(--line-strong)" />
                     <text
                       x={label.x}
                       y={label.y}
                       textAnchor="middle"
-                      fill="#aac4cf"
+                      fill="var(--text-2)"
                       fontSize="14"
                     >
                       {a.name}
@@ -240,7 +235,7 @@ function Fingerprints({
                       fill={color}
                       fillOpacity=".12"
                       stroke={color}
-                      strokeWidth="2.5"
+                      strokeWidth="1.5"
                     />
                     {availableAxes.map((a, i) => {
                       const p = point(i, 170 * fraction(a.get(e)!, maxima[i]));
@@ -277,7 +272,7 @@ function Fingerprints({
                     onBlur={() => setHover(null)}
                   >
                     <Link to={`/explorer/epoch/${number}`}>
-                      Epoch {number} ↗
+                      Epoch {number}
                     </Link>
                     <span>
                       {number === currentEpoch

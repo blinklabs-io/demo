@@ -17,7 +17,7 @@ export function YoursBadge({ value }: { value: string | null | undefined }) {
   }
 
   return (
-    <span className="ml-2 rounded-full bg-emerald-900/60 px-2 py-0.5 text-xs text-emerald-300">
+    <span className="ml-2 rounded-full bg-emerald-900/60 px-2 py-1 text-xs text-emerald-300">
       Yours
     </span>
   );

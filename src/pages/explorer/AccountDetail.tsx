@@ -1,6 +1,7 @@
+import { ChainMark } from "../../components/explorer/ChainMark";
+import { CopyButton } from "../../components/explorer/CopyButton";
 import { LazyDisclosure } from "../../components/explorer/LazyDisclosure";
 import { StakeJourney } from "../../components/chain/StakeJourney";
-import { PageIntro } from "../../components/explorer/Visuals";
 import { compactAda } from "../../lib/visualFormat";
 import { Distribution } from "../../components/explorer/Visuals";
 import { useParams } from "react-router";
@@ -58,11 +59,18 @@ export default function AccountDetail() {
 
   return (
     <div className="flex flex-col gap-4 detail-showcase">
-      <PageIntro
-        eyebrow="Stake. Delegate. Earn."
-        title="Stake account"
-        symbol="◎"
-      />
+      <header className="detail-header">
+        <div className="detail-identity">
+          {stakeAddress && <span className="detail-mark"><ChainMark value={stakeAddress} /></span>}
+          <h1>Stake account</h1>
+          {stakeAddress && (
+            <p className="detail-id">
+              <code>{stakeAddress}</code>
+              <CopyButton value={stakeAddress} label="stake address" />
+            </p>
+          )}
+        </div>
+      </header>
       <Panel
         title={
           <>
@@ -203,10 +211,11 @@ export default function AccountDetail() {
                 keyFor={(row) => `${row.tx_hash}:${row.output_index}`}
                 emptyLabel="No UTxOs delegating to this account."
                 renderItem={(row) => (
-                  <span>
-                    <HashLink kind="address" id={row.address} /> ·{" "}
-                    <HashLink kind="tx" id={row.tx_hash} />#
-                    {row.output_index}
+                  <span className="record-row">
+                    <HashLink kind="address" id={row.address} />
+                    <span>
+                      <HashLink kind="tx" id={row.tx_hash} />#{row.output_index}
+                    </span>
                   </span>
                 )}
               />
@@ -238,10 +247,12 @@ export default function AccountDetail() {
               keyFor={(row) => row.tx_hash}
               emptyLabel="No transactions for this stake account."
               renderItem={(row) => (
-                <span>
-                  <HashLink kind="tx" id={row.tx_hash} /> · block{" "}
-                  {row.block_height} ·{" "}
-                  {new Date(row.block_time * 1000).toLocaleString()}
+                <span className="record-row">
+                  <HashLink kind="tx" id={row.tx_hash} />
+                  <span>Block {row.block_height.toLocaleString()}</span>
+                  <time dateTime={new Date(row.block_time * 1000).toISOString()}>
+                    {new Date(row.block_time * 1000).toLocaleString()}
+                  </time>
                 </span>
               )}
             />

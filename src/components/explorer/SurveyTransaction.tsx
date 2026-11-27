@@ -165,15 +165,13 @@ function TransactionForm({
       )}
       {prepared && (
         <section className="survey-review">
-          <span className="eyebrow">
-            Review before signing · {DINGO_NETWORK.label}
-          </span>
           <h3>
             {prepared.action.kind === "create"
               ? prepared.action.title
               : prepared.action.survey.title}
           </h3>
           <p>
+            Review before signing on {DINGO_NETWORK.label}.{" "}
             {prepared.action.kind === "create"
               ? `Publish ${prepared.action.questions.length} questions · closes after epoch ${prepared.action.endEpoch}`
               : prepared.action.kind === "cancel"
@@ -304,7 +302,7 @@ function TransactionForm({
                   : `/explorer/surveys/${submit.data}/0`
               }
             >
-              Open survey →
+              Open survey
             </Link>
           )}
         </div>

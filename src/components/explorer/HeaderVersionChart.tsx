@@ -1,4 +1,4 @@
-import { useId, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "../NetworkLink";
 import { nodeImplementation } from "../../lib/dingo/nodeImplementation";
 import "./header-history.css";
@@ -18,24 +18,20 @@ const time = (seconds: number) =>
     hour: "2-digit",
     minute: "2-digit",
   });
-function color(record: Pick<VersionRecord, "minor" | "major">) {
-  const family = implementation(record).id;
-  const hue =
-    family === "dingo"
-      ? 150
-      : family === "amaru"
-        ? 260
-        : family === "gerolamo" || family === "cardano-bean"
-          ? 35
-          : family === "tsunagi"
-            ? 315
-            : family === "unknown"
-              ? 0
-              : 195;
-  const version = BigInt(record.major) * 37n + BigInt(record.minor) * 17n;
-  const range = family === "cardano-node" ? 45n : 15n;
-  return `hsl(${hue + Number(version % range)} ${family === "unknown" ? 10 : 65}% ${55 + Number(version % 13n)}%)`;
-}
+// One colour per implementation, never per version: the rows are labelled, so
+// colour only has to separate a handful of families. Haskell is the baseline
+// and stays grey; Dingo, this site's subject, takes the accent.
+const FAMILY_COLOR: Record<string, string> = {
+  "cardano-node": "var(--gray-8)",
+  dingo: "var(--accent)",
+  amaru: "var(--viz-4)",
+  gerolamo: "var(--viz-2)",
+  "cardano-bean": "var(--viz-2)",
+  tsunagi: "var(--viz-6)",
+  unknown: "var(--viz-5)",
+};
+const color = (record: Pick<VersionRecord, "minor" | "major">) =>
+  FAMILY_COLOR[implementation(record).id] ?? FAMILY_COLOR.unknown;
 
 type Scope =
   | { kind: "all" }
@@ -61,7 +57,6 @@ export function HeaderVersionChart({
   selection: HeaderVersionSelection;
   onSelectionChange: (selection: HeaderVersionSelection) => void;
 }) {
-  const pieId = useId();
   const { scope, page } = selection;
   const windowRecords = useMemo(
     () =>
@@ -104,9 +99,28 @@ export function HeaderVersionChart({
   const nodes = data.versions.map(({ record, count }) => ({
     ...implementation(record),
     id: versionOf(record),
+    family: implementation(record).id,
     count,
     color: color(record),
   }));
+  const families = [
+    ...nodes
+      .reduce((map, node) => {
+        const family = map.get(node.family);
+        map.set(node.family, {
+          name:
+            node.family === "unknown"
+              ? "Unidentified"
+              : node.name.replace(" (assumed)", ""),
+          color: node.color,
+          count: (family?.count ?? 0) + node.count,
+        });
+        return map;
+      }, new Map<string, { name: string; color: string; count: number }>())
+      .values(),
+  ].sort((a, b) => b.count - a.count);
+  const percent = (count: number) =>
+    ((count / Math.max(1, windowRecords.length)) * 100).toFixed(2);
   const matching = [
     ...(scope.kind === "hour"
       ? data.hours[scope.index].records
@@ -143,109 +157,89 @@ export function HeaderVersionChart({
         className="header-node-share"
         aria-label="Node percentage comparison"
       >
-        <div className="header-node-pie-heading">
-          <span className="eyebrow">
-            Node / header share ·{" "}
-            {complete ? "complete 24 hours" : "verified blocks so far"}
-          </span>
-          <h3>Who built the blocks?</h3>
-          <p>Each node and block-header version has its own slice.</p>
+        <div className="header-node-heading">
+          <h3>Node and header version share</h3>
+          <p>
+            Share of{" "}
+            {complete
+              ? "all blocks in the 24-hour window"
+              : "verified blocks so far"}
+            , one row per node and block-header version.
+          </p>
         </div>
-        <div className="header-node-pie-layout">
-          <svg
-            viewBox="0 0 280 280"
-            role="group"
-            aria-labelledby={pieId}
-            className="header-node-pie"
-          >
-            <title id={pieId}>
-              Percentage of{" "}
-              {complete
-                ? "all blocks in the 24-hour window"
-                : "verified blocks so far"}{" "}
-              by node implementation and header version
-            </title>
-            {nodes.map((node, index) => {
-              const total = windowRecords.length,
-                share = node.count / total,
-                start =
-                  (nodes.slice(0, index).reduce((sum, n) => sum + n.count, 0) /
-                    total) *
-                    Math.PI *
-                    2 -
-                  Math.PI / 2,
-                end = start + share * Math.PI * 2;
-              const point = (angle: number) =>
-                `${140 + 115 * Math.cos(angle)} ${140 + 115 * Math.sin(angle)}`;
-              const path =
-                share === 1
-                  ? "M140 25 A115 115 0 1 1 140 255 A115 115 0 1 1 140 25 Z"
-                  : `M140 140 L${point(start)} A115 115 0 ${share > 0.5 ? 1 : 0} 1 ${point(end)} Z`;
-              const selected =
-                scope.kind === "version" && scope.version === node.id;
-              return (
-                <path
-                  key={node.id}
-                  d={path}
-                  fill={node.color}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${node.name} ${node.id}: ${(share * 100).toFixed(2)}%, ${node.count} blocks`}
-                  aria-pressed={selected}
-                  onClick={() => choose({ kind: "version", version: node.id })}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      choose({ kind: "version", version: node.id });
-                    }
-                  }}
-                >
-                  <title>
-                    {node.name} {node.id}: {(share * 100).toFixed(2)}% ·{" "}
-                    {node.count.toLocaleString()} blocks
-                  </title>
-                </path>
-              );
-            })}
-          </svg>
-          <div
-            className="header-node-legend"
-            role="group"
-            aria-label="Filter blocks by node implementation and header version"
-          >
-            {nodes.map((node) => (
-              <button
-                key={node.id}
-                title={node.detail}
-                type="button"
-                aria-pressed={
-                  scope.kind === "version" && scope.version === node.id
-                }
-                onClick={() => choose({ kind: "version", version: node.id })}
-                style={{ "--version-color": node.color } as React.CSSProperties}
-              >
-                <img src={node.icon} width="30" height="30" alt="" />
-                <span>
-                  <strong>{node.name}</strong>
-                  <small>
-                    Header {node.id} · {node.count.toLocaleString()} blocks
-                  </small>
-                  {node.payloadSummary && <small>{node.payloadSummary}</small>}
-                </span>
-                <b>{((node.count / windowRecords.length) * 100).toFixed(2)}%</b>
-              </button>
-            ))}
+        <div
+          className="header-family-bar"
+          role="img"
+          aria-label={`Share by node implementation: ${families.map((family) => `${family.name} ${percent(family.count)}%`).join(", ")}`}
+        >
+          {families.map((family) => (
+            <span
+              key={family.name}
+              style={{ flexGrow: family.count, background: family.color }}
+            />
+          ))}
+        </div>
+        <ul className="header-family-key">
+          {families.map((family) => (
+            <li key={family.name}>
+              <i style={{ background: family.color }} />
+              {family.name}
+              <b>{percent(family.count)}%</b>
+            </li>
+          ))}
+        </ul>
+        <div
+          className="header-node-legend"
+          role="group"
+          aria-label="Filter blocks by node implementation and header version"
+        >
+          <div className="header-node-columns" aria-hidden="true">
+            <span>Node</span>
+            <span>Header version</span>
+            <span>Blocks</span>
+            <span>Share of blocks</span>
           </div>
+          {nodes.map((node) => (
+            <button
+              key={node.id}
+              title={node.detail}
+              type="button"
+              aria-pressed={
+                scope.kind === "version" && scope.version === node.id
+              }
+              onClick={() => choose({ kind: "version", version: node.id })}
+            >
+              <img src={node.icon} width="28" height="28" alt="" />
+              <span className="header-node-name">
+                <strong>{node.name}</strong>
+                {node.payloadSummary && (
+                  <span className="header-node-release">{node.payloadSummary}</span>
+                )}
+              </span>
+              <small className="header-node-version">Header {node.id}</small>
+              <span className="header-node-count">
+                {node.count.toLocaleString()} blocks
+              </span>
+              <span className="header-node-bar" aria-hidden="true">
+                <i
+                  style={{
+                    width: `${percent(node.count)}%`,
+                    background: node.color,
+                  }}
+                />
+              </span>
+              <b>{percent(node.count)}%</b>
+            </button>
+          ))}
         </div>
         <p className="header-history-note">
-          Select a slice or legend entry to inspect that version’s blocks.
-          Haskell includes unsignalled blocks attributed by display assumption.
+          Select a row to list that version’s blocks. Haskell includes
+          unsignalled blocks attributed by display assumption.
         </p>
       </section>
       <div className="header-hour-heading">
         <div>
-          <span className="eyebrow">Every block counts</span>
-          <h3>24 hours of header versions.</h3>
+          <h3>24 hours of header versions</h3>
         </div>
         <span>
           {complete ? "Complete window" : "Verified blocks so far"} · one bar
@@ -307,9 +301,9 @@ export function HeaderVersionChart({
         <span>{time(endTime)}</span>
       </div>
       <p className="header-history-note">
-        Bar heights count blocks. Dots mark hours containing alternative node
-        markers, even when their share is tiny. Select an hour or a version to
-        inspect its blocks.
+        Bar height is the number of blocks in that hour. A dot marks an hour
+        with blocks from a non-Haskell node, however few. Select an hour to list
+        its blocks.
       </p>
       <section
         className="header-history-records"
@@ -349,11 +343,8 @@ export function HeaderVersionChart({
                   key={record.hash}
                   title={node.detail}
                   to={`/explorer/block/${record.hash}`}
-                  style={
-                    { "--version-color": color(record) } as React.CSSProperties
-                  }
                 >
-                  <img src={node.icon} width="25" height="25" alt="" />
+                  <img src={node.icon} width="20" height="20" alt="" />
                   <span>
                     <strong>#{record.height.toLocaleString()}</strong>
                     <small>
@@ -361,7 +352,6 @@ export function HeaderVersionChart({
                     </small>
                   </span>
                   <span>{node.name}</span>
-                  <b aria-hidden="true">↗</b>
                 </Link>
               );
             })}
@@ -394,7 +384,7 @@ export function HeaderVersionChart({
                 onSelectionChange({ scope, page: currentPage + 1 })
               }
             >
-              Next →
+              Next
             </button>
           </nav>
         )}

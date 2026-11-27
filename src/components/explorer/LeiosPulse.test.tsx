@@ -91,7 +91,7 @@ async function render() {
 }
 it("selects ranking blocks and removes rolled-back selections from the displayed sample", async () => {
   await render();
-  expect(host.textContent).toContain("A certificate joins the chain.");
+  expect(host.textContent).toContain(": carries a certificate");
   await act(async () =>
     (
       host.querySelector(
@@ -99,7 +99,7 @@ it("selects ranking blocks and removes rolled-back selections from the displayed
       ) as HTMLButtonElement
     ).click(),
   );
-  expect(host.textContent).toContain("An endorser block is announced.");
+  expect(host.textContent).toContain(": announces an endorser block");
   expect(host.textContent).toContain("131,072 bytes");
   expect(
     host.querySelector(
@@ -115,8 +115,8 @@ it("selects ranking blocks and removes rolled-back selections from the displayed
   await act(async () => {
     await vi.advanceTimersByTimeAsync(0);
   });
-  expect(host.textContent).not.toContain("An endorser block is announced.");
-  expect(host.textContent).toContain("A certificate joins the chain.");
+  expect(host.textContent).not.toContain(": announces an endorser block");
+  expect(host.textContent).toContain(": carries a certificate");
   await act(async () => client.setQueryData(["dingo", "recent-blocks"], { blocks, incomplete: false }));
   await act(async () => { await vi.advanceTimersByTimeAsync(0); });
   expect(host.querySelector('[aria-label="Inspect ranking block 10"]')?.getAttribute("aria-pressed")).toBe("true");
@@ -128,7 +128,7 @@ it("keeps a timestamped saved sample after a failed refresh and distinguishes an
   await act(async () => { await client.refetchQueries({ queryKey: ["dingo", "recent-blocks"] }); });
   await act(async () => { await vi.advanceTimersByTimeAsync(0); });
   expect(host.textContent).toContain("last successful sample, read");
-  expect(host.textContent).toContain("A certificate joins the chain.");
+  expect(host.textContent).toContain(": carries a certificate");
   await act(async () => { await client.resetQueries({ queryKey: ["dingo", "recent-blocks"] }); });
   await act(async () => { await vi.advanceTimersByTimeAsync(0); });
   expect(host.textContent).toContain("Sample refresh failed");
@@ -145,7 +145,7 @@ it("retries unavailable native bytes", async () => {
   expect(host.textContent).toContain("Native Leios data unavailable for 2 sampled blocks");
   available = true;
   await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
-  expect(host.textContent).toContain("A certificate joins the chain.");
+  expect(host.textContent).toContain(": carries a certificate");
 });
 
 it.each(["present", "absent", "error"])("loads optional block details only after opening: %s", async (state) => {
@@ -154,7 +154,7 @@ it.each(["present", "absent", "error"])("loads optional block details only after
   expect(vi.mocked(decodeLeiosBlock)).not.toHaveBeenCalled();
   await act(async () => { const details = host.querySelector("details")!; details.open = true; details.dispatchEvent(new Event("toggle")); });
   await act(async () => { await vi.advanceTimersByTimeAsync(0); });
-  expect(host.textContent).toContain(state === "present" ? "A certificate joins the chain." : state === "error" ? "Invalid native block" : "This header has no Leios extension.");
+  expect(host.textContent).toContain(state === "present" ? ": carries a certificate" : state === "error" ? "Invalid native block" : "This header has no Leios extension.");
 });
 
 it("omits the optional panel on other networks", () => {
@@ -171,7 +171,7 @@ it("can retry a corrected genesis endpoint and identifies incomplete samples", a
   const retry = Array.from(host.querySelectorAll("button")).find((button) => button.textContent === "Retry network verification")!;
   await act(async () => retry.click());
   await act(async () => { await vi.advanceTimersByTimeAsync(0); });
-  expect(host.textContent).toContain("A certificate joins the chain.");
+  expect(host.textContent).toContain(": carries a certificate");
   await act(async () => client.setQueryData(["dingo", "recent-blocks"], { blocks, incomplete: true }));
   await act(async () => { await vi.advanceTimersByTimeAsync(0); });
   expect(host.textContent).toContain("sample is incomplete");
@@ -202,5 +202,5 @@ it("retains other observations when a native block cannot be decoded", async () 
   expect(host.textContent).toContain(
     "Native Leios data unavailable for 1 sampled blocks",
   );
-  expect(host.textContent).toContain("The ranking chain moves forward.");
+  expect(host.textContent).toContain(": no announcement or certificate");
 });

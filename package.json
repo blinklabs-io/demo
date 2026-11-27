@@ -15,6 +15,8 @@
   },
   "dependencies": {
     "@blaze-cardano/sdk": "0.3.3",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
     "@sundaeswap/asset": "1.0.11",
     "@sundaeswap/core": "3.4.0",
     "@tanstack/react-query": "^5.107.1",
@@ -23,6 +25,7 @@
     "react": "^19.2.6",
     "react-dom": "^19.3.1",
     "react-router": "^7.16.0",
+    "three": "^0.187.0",
     "zustand": "^5.1.0"
   },
   "devDependencies": {
@@ -33,6 +36,7 @@
     "@types/node": "^26.6.6",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^6.2.1",
     "@vitest/coverage-v8": "^5.0.0",
     "@vitest/ui": "^5.1.0",

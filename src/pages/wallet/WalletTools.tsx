@@ -1,3 +1,4 @@
+import { ToolArt } from "../../components/illustrations/ToolArt";
 import PlutusWorkbench from "../PlutusWorkbench";
 import { BuildThis } from "../../components/developer/BuildThis";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
@@ -131,7 +132,7 @@ function Batch() {
       </div>
       <section className="data-panel tool-form">
         <div className="tool-section-title">
-          <h2>Build the payout.</h2>
+          <h2>Payout recipients</h2>
           <button
             disabled={rows.length >= 40}
             onClick={() =>
@@ -153,7 +154,7 @@ function Batch() {
           {rows.map((r, i) => (
             <article className="tool-payment" key={r.id}>
               <span className="tool-number">
-                {String(i + 1).padStart(2, "0")}
+                {i + 1}
               </span>
               <label>
                 Recipient address
@@ -266,7 +267,6 @@ function Utxos() {
           value={query.data ? available.length : "—"}
         />
         <Metric label={`Selected ${nativeTicker()}`} value={formatNativeCoin(total)} />
-        <Metric label="Assets stay in your wallet" value="100%" />
       </div>
       <div className="tool-segment">
         <button
@@ -307,8 +307,8 @@ function Utxos() {
         <section className="data-panel tool-form">
           <h2>
             {mode === "consolidate"
-              ? "Fewer outputs. Same assets."
-              : "Prepare your next transactions."}
+              ? "Outputs to consolidate"
+              : "Split into separate outputs"}
           </h2>
           {mode === "consolidate" ? (
             <>
@@ -364,7 +364,6 @@ function Utxos() {
                 <EmptyState
                   title="No eligible UTxOs"
                   detail="Connect a funded wallet. Outputs with datums or reference scripts are kept out of consolidation."
-                  icon="◫"
                 />
               )}
               <p className="tool-help">
@@ -432,7 +431,7 @@ function Utxos() {
                 )}
               </div>
             </div>
-            <h3>Give your wallet room to move.</h3>
+            <h3>Output preview</h3>
             <p>
               Separate outputs can fund independent transactions. Each one must
               meet Cardano’s minimum {nativeTicker()} requirement.
@@ -470,13 +469,10 @@ function Proof() {
   return (
     <div className="tool-two-column">
       <section className="data-panel tool-form">
-        <h2>A fingerprint. A permanent timestamp.</h2>
+        <h2>Publish a file fingerprint</h2>
         <label className="tool-drop">
-          <span className="tool-file-symbol" aria-hidden="true">
-            ⌁
-          </span>
           <strong>{file?.name ?? "Choose a document"}</strong>
-          <span>The file stays on your device · up to 32 MiB</span>
+          <span>The file stays on your device. Up to 32 MiB.</span>
           <input
             type="file"
             aria-label="Document to hash"
@@ -530,10 +526,7 @@ function Proof() {
         />
       </section>
       <aside className="data-panel tool-form">
-        <div className="tool-proof-seal" aria-hidden="true">
-          ✓
-        </div>
-        <h2>Verify a proof.</h2>
+        <h2>Verify a proof</h2>
         <p>
           Choose the original file on the left and paste the transaction that
           published its fingerprint.
@@ -566,7 +559,7 @@ function Proof() {
             <strong>Matching proof confirmed</strong>
             <p>{new Date(verify.data.time * 1000).toLocaleString()}</p>
             <Link to={`/explorer/tx/${verify.data.hash}`}>
-              Inspect transaction →
+              Inspect transaction
             </Link>
           </div>
         )}
@@ -621,8 +614,8 @@ function Mint() {
         <section className="data-panel tool-form">
           <h2>
             {mode === "mint"
-              ? "Make something on chain."
-              : "Retire your tokens."}
+              ? "Mint a token"
+              : "Burn tokens"}
           </h2>
           {mode === "mint" ? (
             <>
@@ -734,7 +727,7 @@ function Mint() {
           <h3>
             {mode === "burn"
               ? assetName(asset) || "Select an asset"
-              : metadata.displayName || name || "Your next token"}
+              : metadata.displayName || name || "Unnamed token"}
           </h3>
           {mode === "mint" && (
             <p className="tool-help">
@@ -777,7 +770,7 @@ function Drep() {
   return (
     <div className="tool-two-column">
       <section className="data-panel tool-form">
-        <h2>Participate in governance.</h2>
+        <h2>DRep registration</h2>
         <p>
           Register your wallet’s CIP-95 DRep key on {DINGO_NETWORK.label}. A registered DRep
           can vote on governance actions in the explorer.
@@ -803,7 +796,6 @@ function Drep() {
         <ToolTransaction action={() => ({ kind: "drep", operation })} />
       </section>
       <aside className="data-panel tool-form tool-drep-preview">
-        <span aria-hidden="true">♧</span>
         <h3>
           {role.data && !role.data.retired
             ? "Registered DRep"
@@ -837,7 +829,7 @@ function Drep() {
           Registration deposits are read from Dingo’s current protocol
           parameters and shown before signing.
         </p>
-        <Link to="/explorer/governance">Explore governance actions →</Link>
+        <Link to="/explorer/governance">Explore governance actions</Link>
       </aside>
     </div>
   );
@@ -847,7 +839,7 @@ function Treasury() {
   return (
     <div className="tool-two-column">
       <section className="data-panel tool-form">
-        <h2>Fund {DINGO_NETWORK.label}’s treasury.</h2>
+        <h2>Fund {DINGO_NETWORK.label}’s treasury</h2>
         <label>
           Donation · {nativeTicker()}
           <input
@@ -864,13 +856,12 @@ function Treasury() {
         <ToolTransaction action={() => ({ kind: "donate", amount })} />
       </section>
       <aside className="tool-treasury data-panel">
-        <div aria-hidden="true">◎</div>
         <strong>
           {amount || "—"}
           <small>test {nativeTicker()}</small>
         </strong>
         <p>{DINGO_NETWORK.label} treasury donation</p>
-        <span className="tool-route-pill">Your wallet → Cardano treasury</span>
+        <span className="tool-route-pill">From your wallet to the Cardano treasury</span>
       </aside>
     </div>
   );
@@ -894,44 +885,25 @@ export default function WalletTools() {
     <div className="wallet-tools">
       {tool !== "transactions" && tool !== "data" && (
         <PageIntro
-          eyebrow="Built on Cardano. Powered by Dingo."
           title={current?.name ?? (tool ? "Tool not found" : "Create & build")}
           detail={
             current?.description ??
             "Create, organize, prove, and participate. Every on-chain action goes through Dingo."
           }
-          symbol={current?.icon ?? "✦"}
         />
       )}
       {!tool ? (
         <>
           <div className="tool-catalog">
-            {tools.map((t, i) => (
-              <Link
-                className={`tool-catalog-card tool-${t.color}`}
-                key={t.id}
-                to={t.to}
-              >
-                <span className="eyebrow">
-                  {String(i + 1).padStart(2, "0")} · {DINGO_NETWORK.label}
-                </span>
-                <span className="tool-catalog-icon" aria-hidden="true">
-                  {t.icon}
-                </span>
-                <h2>{t.name}</h2>
-                <p>{t.description}</p>
-                <span className="tool-catalog-go">
-                  Open tool <b aria-hidden="true">↗</b>
-                </span>
+            {tools.map((t) => (
+              <Link className="tool-catalog-card" key={t.id} to={t.to}>
+                <ToolArt kind={t.id} />
+                <div className="tool-catalog-body">
+                  <h2>{t.name}</h2>
+                  <p>{t.description}</p>
+                </div>
               </Link>
             ))}
-          </div>
-          <div className="tool-api-strip">
-            <span>Wallet signing</span>
-            <b>+</b>
-            <span>Dingo APIs</span>
-            <b>=</b>
-            <span>Cardano, directly.</span>
           </div>
         </>
       ) : current ? (
@@ -957,7 +929,6 @@ export default function WalletTools() {
         </>
       ) : (
         <EmptyState
-          icon="⌕"
           title="Choose a creation tool"
           detail="Choose one of the available wallet tools."
           action={<Link to="/wallet/tools">All tools</Link>}

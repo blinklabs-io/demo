@@ -37,7 +37,7 @@ export function NodeHealthStrip() {
 
   if (isError || !data) {
     return (
-      <span className="flex items-center gap-1.5 text-red-400">
+      <span className="flex items-center gap-2 text-red-400">
         <span className="h-2 w-2 rounded-full bg-red-500" />
         {error instanceof BlockfrostError && error.status >= 400
           ? `Dingo API returned ${error.status}`
@@ -65,7 +65,7 @@ export function NodeHealthStrip() {
       {genesis.data && genesis.data.network_magic !== DINGO_NETWORK.networkMagic && (
         <span className="text-red-300" role="alert">API reports {networkName(genesis.data.network_magic)}</span>
       )}
-      <span className="flex items-center gap-1.5">
+      <span className="flex items-center gap-2">
         <span
           className={`h-2 w-2 rounded-full ${data.isHealthy ? "bg-emerald-500" : "bg-amber-500"}`}
         />

@@ -53,13 +53,11 @@ export default function LookupResolver() {
   return (
     <div className="detail-showcase flex flex-col gap-4">
       <PageIntro
-        eyebrow="Search through Dingo"
         title="Chain lookup"
-        symbol="⌕"
       />
       <Panel>
         <div role={error ? "alert" : valid && !data ? "status" : undefined}>
-          <EmptyState icon="⌕" title={title} detail={detail} />
+          <EmptyState title={title} detail={detail} />
         </div>
       </Panel>
     </div>

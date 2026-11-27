@@ -418,7 +418,7 @@ it("Refresh retries unresolved wallet LP positions", async () => {
   const before = data.positionReads;
   expect(before).toBeGreaterThan(0);
   await act(async () => {
-    button("Refresh ↻").click();
+    button("Refresh").click();
     await new Promise((r) => setTimeout(r, 20));
   });
   expect(data.positionReads).toBeGreaterThan(before);

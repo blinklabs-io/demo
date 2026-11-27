@@ -133,12 +133,7 @@ export function GravityMarket() {
     <div className="markets-page">
       <section className="market-hero">
         <div>
-          <span className="eyebrow">Gravity · Preprod · pool monitor</span>
-          <h1>
-            A pool is
-            <br />
-            <em>a living system.</em>
-          </h1>
+          <h1>Gravity pool monitor on Preprod</h1>
           <p>
             Follow on-chain asset-index records to the contracts that hold the
             tokens. Inspect the individual outputs and their assets, directly
@@ -164,7 +159,7 @@ export function GravityMarket() {
           >
             <path
               d="M210 60V115M210 115L65 180M210 115L210 180M210 115L355 180"
-              stroke="#66dfc2"
+              stroke="var(--line-control)"
               strokeWidth="2"
               fill="none"
             />
@@ -182,8 +177,8 @@ export function GravityMarket() {
                   width="116"
                   height="40"
                   rx="12"
-                  fill={label === "Token pool" ? "#265b51" : "#3c3158"}
-                  stroke="#8d8bba"
+                  fill={"var(--surface-3)"}
+                  stroke="var(--line-control)"
                 />
                 <text x={x} y={Number(y) + 4} textAnchor="middle">
                   {label}
@@ -199,7 +194,6 @@ export function GravityMarket() {
       <div className="market-catalog">
         <div className="market-toolbar">
           <div>
-            <span className="eyebrow">Choose an asset index</span>
             <h2>
               {indexAsset === GRAVITY_ADA_INDEXER_ASSET
                 ? "ADA pairs"
@@ -250,14 +244,13 @@ export function GravityMarket() {
             <section className="market-catalog">
               <div className="market-toolbar">
                 <div>
-                  <span className="eyebrow">Selected pool</span>
                   <h2>
                     <MarketAsset unit={pool.assetA} /> /{" "}
                     <MarketAsset unit={pool.assetB} />
                   </h2>
                 </div>
                 <button onClick={() => void composition.refetch()}>
-                  Refresh outputs ↻
+                  Refresh outputs
                 </button>
               </div>
               {composition.isPending || composition.error ? (
@@ -305,7 +298,7 @@ export function GravityMarket() {
                   disabled={!composition.data?.partial || !!composition.error}
                   onClick={() => setOutputPage((p) => p + 1)}
                 >
-                  Next outputs →
+                  Next outputs
                 </button>
               </div>{" "}
               <details className="market-contracts">
@@ -323,7 +316,7 @@ export function GravityMarket() {
                   </div>
                 ))}
                 <Link to={`/explorer/tx/${pool.txHash}`}>
-                  View oracle transaction ↗
+                  View oracle transaction
                 </Link>
               </details>
             </section>
@@ -331,10 +324,9 @@ export function GravityMarket() {
           <section className="market-catalog">
             <div className="market-toolbar">
               <div>
-                <span className="eyebrow">On-chain pool directory</span>
                 <h2>Follow another pool</h2>
               </div>
-              <button onClick={() => void pools.refetch()}>Refresh ↻</button>
+              <button onClick={() => void pools.refetch()}>Refresh</button>
             </div>
             <input
               className="market-search"
@@ -400,7 +392,7 @@ export function GravityMarket() {
             setOutputPage(1);
           }}
         >
-          Next pairs →
+          Next pairs
         </button>
       </div>{" "}
     </div>

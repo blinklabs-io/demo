@@ -1,6 +1,8 @@
-import { useState } from "react";
+import type { CSSProperties } from "react";
 import { Link } from "../NetworkLink";
+import { RollingNumber } from "../RollingNumber";
 import { useMempoolStore } from "../../stores/mempoolStore";
+import { useNow } from "../../lib/useNow";
 import { BlockHeaderVersion } from "../explorer/BlockHeaderVersion";
 import { PoolIdentity } from "../explorer/PoolIdentity";
 export interface ConveyorBlock {
@@ -10,71 +12,48 @@ export interface ConveyorBlock {
   size: number;
   tx_count: number;
   slot_leader: string;
+  time?: number;
 }
+
+function age(seconds: number) {
+  if (seconds < 5) return "now";
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  return `${Math.floor(seconds / 3600)}h ago`;
+}
+
 export function BlockConveyor({ blocks }: { blocks: ConveyorBlock[] }) {
-  const [paused, setPaused] = useState(false);
   const pending = useMempoolStore((s) => s.pendingTxs);
   const status = useMempoolStore((s) => s.status);
+  const now = useNow(5_000);
   const maximum = Math.max(1, ...blocks.map((b) => b.size));
   const packets = [...pending.values()].slice(0, 18);
   return (
-    <section
-      className={`chain-conveyor chain-visual ${paused ? "motion-paused" : ""}`}
-      aria-label="Live block conveyor"
-    >
-      <header className="chain-heading">
-        <div>
-          <span className="eyebrow">From possibility to permanence</span>
-          <h2>The chain is moving.</h2>
-        </div>
-        <button
-          type="button"
-          aria-pressed={paused}
-          onClick={() => setPaused(!paused)}
-        >
-          {paused ? "Resume motion" : "Pause motion"}
-        </button>
-      </header>
-      <div className="conveyor-pending">
-        <div>
-          <span
-            className={`conveyor-signal ${status === "live" ? "live" : ""}`}
+    <section className="chain-conveyor" aria-label="Mempool and recent blocks">
+      <div className="conveyor-mempool">
+        <span className="eyebrow">
+          <i className={status === "live" ? "live" : ""} />
+          Mempool
+        </span>
+        <strong>
+          <RollingNumber
+            value={status === "live" ? pending.size.toLocaleString() : "—"}
           />
-          <strong>
-            {status === "live" ? pending.size.toLocaleString() : "—"}
-          </strong>
-          <span>
-            {status === "live" ? "pending in Dingo" : "mempool " + status}
-          </span>
-        </div>
+        </strong>
+        <span className="conveyor-note">
+          {status === "live" ? "pending in Dingo" : `mempool ${status}`}
+        </span>
         <div className="pending-particles" aria-label="Pending transactions">
-          {packets.map((p, i) => (
+          {packets.map((p) => (
             <Link
               key={p.hash}
               to={`/explorer/tx/${p.hash}`}
-              style={{
-                animationDelay: `${-i * 0.4}s`,
-                width: Math.min(34, 14 + p.outputCount * 2),
-                height: Math.min(34, 14 + p.outputCount * 2),
-              }}
               aria-label={`Pending transaction ${p.hash}, ${p.outputCount} outputs`}
-              title={`${p.hash} · pending`}
+              title={`${p.hash} · ${p.outputCount} outputs · pending`}
             />
           ))}
-          {status === "live" && !packets.length && (
-            <span className="chain-muted">
-              Waiting for the next transaction
-            </span>
-          )}
         </div>
-        <Link to="/explorer/mempool" className="chain-link">
-          Open mempool ↗
-        </Link>
-      </div>
-      <div className="conveyor-separator">
-        <span />
-        <b>CONFIRMED BLOCKS</b>
-        <span />
+        <Link to="/explorer/mempool">Open mempool</Link>
       </div>
       <div
         className="conveyor-track"
@@ -83,7 +62,7 @@ export function BlockConveyor({ blocks }: { blocks: ConveyorBlock[] }) {
       >
         {blocks.slice(0, 8).map((b, i) => (
           <article
-            className={`conveyor-block ${i === 0 ? "newest" : ""}`}
+            className={`conveyor-block${i === 0 ? " newest" : ""}`}
             key={b.hash}
           >
             <Link
@@ -91,34 +70,41 @@ export function BlockConveyor({ blocks }: { blocks: ConveyorBlock[] }) {
               to={`/explorer/block/${b.hash}`}
               aria-label={`Block ${b.height}, ${b.tx_count} transactions, ${b.size} bytes`}
             >
+              <strong>#{b.height.toLocaleString()}</strong>
+              <span className="conveyor-note">
+                {i === 0 ? "Chain tip" : null}
+                {i === 0 && b.time !== undefined ? " · " : null}
+                {b.time !== undefined
+                  ? age(Math.max(0, Math.floor(now / 1000) - b.time))
+                  : null}
+              </span>
               <span
-                className="block-mass"
-                style={{ height: 42 + (76 * b.size) / maximum }}
+                className="block-well"
+                aria-hidden="true"
+                style={
+                  {
+                    "--fill": `${Math.max(3, (100 * b.size) / maximum)}%`,
+                  } as CSSProperties
+                }
               >
                 <i />
-                <i />
-                <i />
-                <i />
               </span>
-              <span className="eyebrow">
-                {i === 0 ? "CHAIN TIP" : `−${i} BLOCKS`}
-              </span>
-              <strong>#{b.height.toLocaleString()}</strong>
-              <span>
-                {b.tx_count} tx · {(b.size / 1024).toFixed(1)} KiB
+              <span className="conveyor-figures">
+                <span>{(b.size / 1024).toFixed(1)} KiB</span>
+                <span>{b.tx_count} tx</span>
               </span>
             </Link>
             <div className="conveyor-producer">
-              <PoolIdentity poolId={b.slot_leader} compact />
+              <PoolIdentity poolId={b.slot_leader} compact copyable={false} />
               <BlockHeaderVersion hash={b.hash} slot={b.slot} />
             </div>
           </article>
         ))}
       </div>
-      <p className="chain-footnote">
-        Block columns scale by bytes within this recent window. Pending
-        transactions are separate observations; removal from the mempool does
-        not prove inclusion.
+      <p className="conveyor-footnote">
+        Bars compare block size within these {Math.min(8, blocks.length)}{" "}
+        blocks. A transaction leaving the mempool does not prove it was
+        included.
       </p>
     </section>
   );

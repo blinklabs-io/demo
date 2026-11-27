@@ -35,7 +35,7 @@ function DataResult({ cbor }: { cbor: string }) {
   return (
     <section className="developer-panel" aria-label="Decoded Plutus data">
       <header>
-        <h2>Data, unpacked.</h2>
+        <h2>Decoded data</h2>
         <span className="developer-badge">
           {decoded.bytes.toLocaleString()} bytes
         </span>
@@ -150,15 +150,12 @@ function WorkbenchBody() {
   return (
     <div className="developer-page">
       <PageIntro
-        eyebrow="CBOR → Plutus data → context"
         title="Datum & redeemer workbench"
         detail="Decode data locally, or inspect the datums and redeemers of an on-chain transaction."
-        symbol="⌘"
       />
       <div className="workbench-columns">
         <section className="developer-panel">
-          <span className="eyebrow">Local decoder</span>
-          <h2>Inspect a data value.</h2>
+          <h2>Local decoder</h2>
           <form
             className="developer-form"
             onSubmit={(e) => {
@@ -179,7 +176,7 @@ function WorkbenchBody() {
             />
             <div className="developer-actions">
               <button type="submit" className="experience-primary">
-                Decode data →
+                Decode data
               </button>
               <button
                 type="button"
@@ -199,8 +196,7 @@ function WorkbenchBody() {
           </p>
         </section>
         <section className="developer-panel">
-          <span className="eyebrow">Transaction context</span>
-          <h2>Load from the chain.</h2>
+          <h2>Transaction context</h2>
           <form
             className="developer-form"
             onSubmit={(e) => {
@@ -233,10 +229,10 @@ function WorkbenchBody() {
             >
               {transaction.isFetching || utxos.isFetching
                 ? "Loading…"
-                : "Load transaction →"}
+                : "Load transaction"}
             </button>
           </form>
-          {hash && <Link to={`/explorer/tx/${hash}`}>Open transaction →</Link>}
+          {hash && <Link to={`/explorer/tx/${hash}`}>Open transaction</Link>}
           {transaction.error && (
             <p role="alert">Transaction data: {transaction.error.message}</p>
           )}
@@ -256,7 +252,7 @@ function WorkbenchBody() {
       </div>
       {items.length > 0 && (
         <section className="developer-panel">
-          <h2>Choose a datum or redeemer.</h2>
+          <h2>Choose a datum or redeemer</h2>
           <div className="workbench-items">
             {items.map((item) => (
               <button
@@ -289,7 +285,7 @@ function WorkbenchBody() {
                 <div className="developer-actions" key={index}>
                   {input.tx_hash && (
                     <Link to={`/explorer/tx/${input.tx_hash}`}>
-                      Source transaction · output {input.output_index} ↗
+                      Source transaction · output {input.output_index}
                     </Link>
                   )}
                   {input.reference_script_hash && (
@@ -315,7 +311,7 @@ function WorkbenchBody() {
           <div className="developer-actions">
             {selected.sourceHash && (
               <Link to={`/explorer/tx/${selected.sourceHash}`}>
-                Source transaction · output {selected.outputIndex} ↗
+                Source transaction · output {selected.outputIndex}
               </Link>
             )}
             {selected.referenceScriptHash && (

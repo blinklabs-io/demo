@@ -229,7 +229,7 @@ export function MarketTransaction<T extends { tx: Core.Transaction }>({
               to="/wallet/tools/transactions"
               state={{ transactionCbor: draft.tx.toCbor() }}
             >
-              Inspect transaction ↗
+              Inspect transaction
             </Link>
           </div>
         </>
@@ -302,7 +302,7 @@ export function MarketConfirmation({ tracking, resetLabel = "Start a new transac
               ? "Confirmation unavailable"
               : "Submitted · waiting for inclusion"}
       </strong>
-      <Link to={`/explorer/tx/${tracking.hash}`}>View transaction ↗</Link>
+      <Link to={`/explorer/tx/${tracking.hash}`}>View transaction</Link>
       {confirmation.error && <p>{confirmation.error.message}</p>}
       {confirmation.error && !failed && (
         <button onClick={() => void confirmation.refetch()}>

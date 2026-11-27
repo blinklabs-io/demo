@@ -22,6 +22,11 @@ export function PoolDelegators({ poolId }: { poolId: string }) {
     staleTime: 60000,
   });
   const rows = query.data?.pages.flat() ?? [];
+  // Bars compare each delegator with the largest one loaded so far.
+  const largest = rows.reduce(
+    (max, row) => (BigInt(row.live_stake) > max ? BigInt(row.live_stake) : max),
+    1n,
+  );
   return (
     <Panel title="Delegators">
       <QueryState
@@ -33,6 +38,13 @@ export function PoolDelegators({ poolId }: { poolId: string }) {
           {rows.map((row) => (
             <div className="pool-delegator" key={row.address}>
               <HashLink kind="account" id={row.address} full />
+              <span className="pool-delegator-bar" aria-hidden="true">
+                <i
+                  style={{
+                    width: `${Number((BigInt(row.live_stake) * 1000n) / largest) / 10}%`,
+                  }}
+                />
+              </span>
               <strong>{formatNativeCoin(BigInt(row.live_stake))}</strong>
             </div>
           ))}

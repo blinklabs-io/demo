@@ -1,363 +1,221 @@
-.transaction-explorer,
+/* Transaction page: inputs and outputs, assets, scripts, signatures, bytes */
 .ti-insights {
   display: grid;
-  gap: 22px;
-  min-width: 0;
-}
-.ti-passport {
-  padding: 27px;
-  border: 1px solid #29545d;
-  border-radius: 24px;
-  background: radial-gradient(ellipse at 92% 10%, #1d716b40, transparent 60%),
-    linear-gradient(140deg, #102c34, #0e1829);
-  min-width: 0;
-}
-.ti-passport-top,
-.ti-passport-heading,
-.ti-inclusion,
-.ti-context-actions,
-.ti-context-actions > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
+  min-width: 0;
 }
-.ti-verdict {
+.ti-note {
+  max-width: 100ch;
+  margin: 16px 0 0;
+  color: var(--text-3);
   font-size: 12px;
-  color: #7decc1;
-  border: 1px solid #337e6c;
-  background: #14463655;
-  border-radius: 30px;
-  padding: 8px 12px;
+  line-height: 1.6;
 }
-.ti-verdict.failed {
-  color: #fda4af;
-  border-color: #9f4568;
-  background: #5d203055;
-}
-.ti-passport-heading {
-  margin: 18px 0;
-}
-.transaction-explorer .ti-passport h1 {
-  font-size: clamp(30px, 4vw, 52px);
-  line-height: 1.1;
-  letter-spacing: -0.05em;
-}
-.ti-passport-heading p {
-  color: #9bb7c5;
-  max-width: 640px;
-  line-height: 1.7;
-  font-size: 14px;
-  margin-top: 12px;
-}
-.ti-passport-emblem {
-  font-size: 80px;
-  color: #5eead4;
-  line-height: 1;
+.ti-count {
+  margin-left: 8px;
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 400;
 }
 .ti-identifier {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   min-width: 0;
 }
 .ti-identifier code {
   min-width: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.6;
   overflow-wrap: anywhere;
-  font: 11px/1.7 monospace;
-  color: #9db3c5;
 }
 .ti-identifier .copy-identifier {
   flex-shrink: 0;
 }
-.ti-passport > .ti-identifier {
-  padding: 12px 14px;
-  background: #07142088;
-  border: 1px solid #2a4356;
-  border-radius: 10px;
-}
-.ti-passport > .ti-identifier code {
-  color: #d3e8f2;
-  font-size: 12px;
-}
-.ti-passport-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  margin: 23px 0;
-}
-.ti-passport-metrics > div {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-  align-content: start;
-}
-.ti-passport-metrics strong {
-  font-size: clamp(22px, 2vw, 30px);
-  line-height: 1.25;
-  letter-spacing: -0.04em;
-  overflow-wrap: anywhere;
-  color: #e0f6f1;
-}
-.ti-passport-metrics strong small {
-  color: #8be0cb;
-  font-size: 20px;
-}
-.ti-passport-metrics span {
-  font-size: 11px;
-  color: #91aebe;
-}
-.ti-inclusion {
-  border-top: 1px solid #2a4356;
-  padding-top: 18px;
-  font-size: 12px;
-}
-.ti-inclusion a {
-  color: #6ee7ca;
-}
-.ti-inclusion time {
-  color: #a3b7c4;
-}
-.ti-validity {
-  margin-top: 22px;
-  padding-top: 14px;
-}
-.ti-validity-track {
-  height: 4px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #254858, #5eead4, #254858);
-  position: relative;
-  margin: 27px 0 18px;
-}
-.ti-validity-track i {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: #d5fff1;
-  box-shadow: 0 0 20px #5eead480;
-  border: 2px solid #5eead4;
-  border-radius: 50%;
-  top: -4px;
-  transform: translateX(-50%);
-}
-.ti-validity-track > span {
-  position: absolute;
-  bottom: 15px;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font: 10px monospace;
-  color: #8de6cc;
-}
-.ti-validity > div:last-child {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  font-size: 10px;
-  color: #8ea9ba;
-}
-.ti-context-actions {
-  padding: 0 4px;
-}
-.ti-context-actions > span {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #859caf;
-  font-size: 12px;
-}
-.ti-context-actions .experience-primary {
-  padding: 10px 14px;
-  font-size: 12px;
-}
+
+/* Category switch */
 .ti-tabs {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
   flex-wrap: wrap;
-  margin-bottom: 18px;
+  gap: 2px;
+  margin-bottom: 16px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
 }
 .ti-tabs button {
   display: flex;
-  gap: 10px;
   align-items: center;
-  padding: 9px 12px;
-  border: 1px solid #33495d;
-  border-radius: 10px;
-  color: #a8bfd0;
-  background: #0b1927;
-  font-size: 12px;
-  cursor: pointer;
+  gap: 8px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+.ti-tabs button:hover {
+  color: var(--text);
 }
 .ti-tabs button[aria-pressed="true"] {
-  background: #145c5044;
-  border-color: #5eead480;
-  color: #8cefd2;
+  background: var(--surface-3);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
 }
 .ti-tabs b {
-  font-size: 11px;
-  border-radius: 20px;
-  background: #8ba0b41c;
-  padding: 2px 6px;
+  color: var(--text-3);
+  font-weight: 400;
 }
+
+/* One input or output */
 .ti-io-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 .ti-io-card {
-  border: 1px solid #2a4057;
-  border-radius: 14px;
-  background: linear-gradient(140deg, #10293666, #07121f);
-  padding: 18px;
   min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
 }
 .ti-io-card.collateral {
-  border-color: #9b773b70;
-  background: linear-gradient(140deg, #62472333, #07121f);
+  border-color: color-mix(in oklch, var(--warn) 45%, var(--line));
 }
 .ti-io-card header,
 .ti-io-card footer,
 .ti-edge-status {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
   flex-wrap: wrap;
-  font-size: 10px;
-  color: #8ba2b8;
-}
-.ti-io-card header > span:first-child {
-  font-family: monospace;
-  letter-spacing: 0.08em;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-3);
+  font-size: 12px;
 }
 .ti-address-kind {
-  border: 1px solid #2f5162;
-  border-radius: 30px;
-  padding: 4px 8px;
-  color: #b6cede;
-}
-.ti-address-kind.script {
-  color: #c4b5fd;
-  border-color: #6a5585;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text-2);
 }
 .ti-io-value {
   display: block;
-  margin: 18px 0 8px;
-  font-size: 25px;
-  letter-spacing: -0.04em;
-  color: #96f2d4;
+  margin: 12px 0 4px;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   overflow-wrap: anywhere;
 }
 .ti-edge-status {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
-.ti-edge-status a {
-  color: #5eead4;
+.ti-edge-status a,
+.ti-io-card footer a {
+  color: var(--accent-strong);
 }
 .ti-io-card .address-identifier {
-  font-size: 11px;
-  line-height: 1.8;
-  margin: 10px 0;
   max-width: 100%;
+  margin: 4px 0;
+  line-height: 1.6;
 }
 .ti-assets-inline {
   display: flex;
-  gap: 7px;
   flex-wrap: wrap;
-  margin: 14px 0;
+  gap: 4px;
+  margin: 12px 0 0;
+}
+.ti-assets-inline:empty {
+  display: none;
 }
 .ti-assets-inline a {
-  padding: 6px 9px;
-  background: #1e2b4255;
-  border: 1px solid #3a4e65;
-  border-radius: 7px;
-  font-size: 10px;
-  color: #c7c1fa;
+  display: inline-flex;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
   overflow-wrap: anywhere;
 }
+.ti-assets-inline a:hover {
+  color: var(--text);
+}
 .ti-assets-inline b {
-  color: #e5e0ff;
-  margin-left: 5px;
+  color: var(--text);
+  font-weight: 500;
 }
 .ti-io-card footer {
-  border-top: 1px solid #22374a;
-  padding-top: 12px;
   margin-top: 16px;
-}
-.ti-io-card footer a {
-  color: #6bcdb7;
-}
-.ti-note {
-  font-size: 12px;
-  line-height: 1.7;
-  color: #8da5b8;
-  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 .ti-output-data,
 .ti-raw {
   margin-top: 12px;
-  border-top: 1px solid #263b50;
-  padding-top: 10px;
-}
-.ti-output-data summary,
-.ti-raw summary {
-  cursor: pointer;
-  color: #b6cbd9;
-  font-size: 11px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
 }
 .ti-raw pre,
 .ti-datum {
-  color: #a5bacc;
-  background: #081422;
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 10px;
-  font: 11px/1.7 monospace;
   max-height: 280px;
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--surface-1);
+  color: var(--text-2);
+  font: 12px/1.6 var(--font-mono);
   overflow: auto;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
-.ti-output-data > .ti-identifier {
-  margin-top: 12px;
+.ti-output-data > .ti-identifier,
+.ti-signer-list .ti-identifier {
+  margin-top: 8px;
 }
 .ti-pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 18px;
-  font-size: 11px;
-  color: #90a6b8;
+  margin-top: 16px;
+  color: var(--text-3);
+  font-size: 12px;
 }
 .ti-pagination button {
-  border: 1px solid #334a60;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line-control);
   border-radius: 8px;
-  padding: 8px 12px;
-  color: #b3d2e1;
-  background: #132335;
-  cursor: pointer;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
 }
 .ti-pagination button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+  border-color: var(--line);
+  color: var(--text-3);
+  cursor: default;
 }
-.ti-count {
-  font-size: 11px;
-  color: #6ee7c7;
-  margin-left: 8px;
-}
+
+/* Native assets moved by the transaction */
 .ti-asset-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 .ti-asset-card {
   min-width: 0;
-  border: 1px solid #2e405a;
-  background: #0b1729;
-  border-radius: 14px;
-  padding: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
 }
 .ti-asset-card header {
   display: flex;
@@ -366,59 +224,62 @@
 }
 .ti-asset-card header > div {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 .ti-asset-card header a {
-  color: #dfdef9;
-  font-weight: 650;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
+.ti-asset-card header a:hover {
+  color: var(--accent-strong);
+}
 .ti-asset-card header span {
-  font-size: 10px;
-  color: #9aaec5;
+  color: var(--text-3);
+  font-size: 12px;
 }
 .ti-asset-bars {
-  margin: 20px 0;
+  margin: 16px 0;
 }
 .ti-asset-bars > div {
+  position: relative;
   display: flex;
   justify-content: space-between;
-  position: relative;
-  padding-bottom: 12px;
-  margin-top: 14px;
   gap: 8px;
-  font-size: 10px;
-  color: #8fa6bb;
+  margin-top: 12px;
+  padding-bottom: 8px;
+  color: var(--text-3);
+  font-size: 12px;
 }
 .ti-asset-bars b {
-  font: 11px monospace;
-  color: #d3e7ee;
+  color: var(--text);
+  font-weight: 500;
 }
 .ti-asset-bars i {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 4px;
-  background: #8b9eff;
-  border-radius: 4px;
   max-width: 100%;
-}
-.ti-asset-bars > div:last-child i {
-  background: #5eead4;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gray-8);
 }
 .ti-mint,
 .ti-burn {
   display: block;
-  font: 12px monospace;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
 }
 .ti-mint {
-  color: #6ee7b7;
+  color: var(--ok);
 }
 .ti-burn {
-  color: #fda4af;
+  color: var(--danger);
 }
+
+/* Script execution */
 .ti-execution-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -426,220 +287,200 @@
 }
 .ti-execution-summary > div {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   min-width: 0;
-  border-right: 1px solid #283950;
   padding-right: 12px;
+  border-right: 1px solid var(--line);
 }
 .ti-execution-summary > div:last-child {
   border-right: 0;
 }
-.ti-execution-summary > div > span {
-  font-size: 27px;
-  color: #b4a5f5;
-}
+.ti-execution-summary > div > span,
 .ti-execution-summary strong {
-  font-size: 24px;
-  letter-spacing: -0.04em;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
   overflow-wrap: anywhere;
-  color: #d9d2fc;
 }
 .ti-execution-summary small {
-  font-size: 10px;
-  color: #8f9eb9;
+  color: var(--text-3);
+  font-size: 12px;
 }
-.ti-redeemers {
+.ti-redeemers,
+.ti-script-grid,
+.ti-action-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-  gap: 12px;
-  margin: 20px 0;
+  gap: 16px;
 }
-.ti-redeemers > article {
-  border: 1px solid #3a3b62;
-  background: #181b3444;
-  border-radius: 12px;
-  padding: 16px;
+.ti-redeemers {
+  margin: 16px 0;
+}
+.ti-redeemers > article,
+.ti-script-grid article,
+.ti-action-grid article {
   min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
 }
-.ti-redeemers header {
+.ti-redeemers header,
+.ti-script-grid header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font: 12px monospace;
-  color: #b5b6e8;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--text-2);
+  font-size: 13px;
 }
 .ti-purpose {
-  background: #50417855;
-  border: 1px solid #62528d;
-  border-radius: 20px;
-  padding: 4px 10px;
-  color: #dacbff;
-  font: 11px system-ui;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
 }
 .ti-budget {
   position: relative;
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
-  color: #9e9fc1;
-  padding-bottom: 10px;
-  margin: 16px 0;
+  margin: 12px 0;
+  padding-bottom: 8px;
+  color: var(--text-3);
+  font-size: 12px;
 }
 .ti-budget b {
-  font: 11px monospace;
-  color: #e1d9fa;
+  color: var(--text);
+  font-weight: 500;
 }
 .ti-budget i {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 3px;
-  background: #b49af2;
-  border-radius: 3px;
-}
-.ti-budget.cpu i {
-  background: #6ee7ce;
-}
-.ti-script-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
-  gap: 12px;
-}
-.ti-script-grid article {
-  min-width: 0;
-  border: 1px solid #2e4059;
-  border-radius: 10px;
-  padding: 14px;
-  background: #091626;
-}
-.ti-script-grid header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 11px;
-  color: #baa8ef;
-  margin-bottom: 14px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gray-8);
 }
 .ti-script-grid b {
-  font: 10px monospace;
-  color: #9bb1c4;
+  color: var(--text-3);
+  font: 12px var(--font-mono);
 }
+
+/* Signatures and bytes */
 .ti-detail-columns {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-  gap: 22px;
+  gap: 16px;
   align-items: start;
 }
 .ti-signing-summary {
   display: flex;
-  gap: 22px;
   align-items: center;
+  gap: 16px;
 }
 .ti-signing-summary h3 {
-  font-size: 19px;
-  color: #d9e7f3;
+  color: var(--text);
+  font-size: 14px;
   font-weight: 600;
 }
 .ti-key-orbit {
-  flex: 0 0 112px;
-  width: 112px;
-  height: 112px;
-  border: 1px solid #56c8b275;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  flex: none;
+  justify-items: start;
   gap: 2px;
-  background: radial-gradient(circle, #2e968c25, transparent);
+  min-width: 96px;
 }
 .ti-key-orbit > span {
-  font-size: 18px;
-  color: #82dcca;
+  display: none;
 }
 .ti-key-orbit strong {
-  font-size: 28px;
-  color: #d2fff0;
+  color: var(--text);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
 }
 .ti-key-orbit small {
-  font-size: 9px;
-  color: #93b7ba;
+  color: var(--text-3);
+  font-size: 12px;
 }
 .ti-signing-summary .ti-note {
-  margin-top: 8px;
+  margin-top: 4px;
 }
 .ti-signing-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 14px;
+  gap: 4px;
+  margin-top: 12px;
 }
 .ti-signing-tags span {
-  font-size: 9px;
-  border: 1px solid #324a60;
-  padding: 5px 7px;
-  border-radius: 20px;
-  color: #8faabf;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
 }
 .ti-signer-list details {
-  border-top: 1px solid #2a3c52;
-  padding: 12px 0;
   margin-top: 12px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
 }
 .ti-signer-list summary {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  cursor: pointer;
   flex-wrap: wrap;
-  font-size: 9px;
-  color: #a4b7c5;
 }
 .ti-signer-list summary code {
-  overflow-wrap: anywhere;
   flex: 1;
   min-width: 160px;
-  font-size: 10px;
-}
-.ti-signer-list .ti-identifier {
-  margin-top: 10px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 .ti-signature-state {
-  color: #fda4af;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--danger);
 }
 .ti-signature-state.valid {
-  color: #6ee7c7;
+  color: var(--ok);
 }
 .ti-declared-signer {
-  margin-top: 12px;
   display: grid;
   gap: 8px;
+  margin-top: 12px;
 }
 .ti-declared-signer > span {
-  font-size: 10px;
-  color: #9db6c7;
+  color: var(--text-3);
+  font-size: 12px;
 }
 .ti-byte-total {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 22px;
   flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 .ti-byte-total strong {
-  font-size: 42px;
-  letter-spacing: -0.06em;
-  color: #b4f2de;
+  color: var(--text);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 .ti-byte-total > span {
-  font-size: 11px;
-  color: #8aabbb;
+  color: var(--text-3);
+  font-size: 12px;
 }
 .ti-byte-bar {
   display: flex;
-  gap: 3px;
-  height: 44px;
-  border-radius: 12px;
+  gap: 2px;
+  height: 12px;
+  border-radius: 4px;
   overflow: hidden;
 }
 .ti-byte-bar span {
@@ -647,258 +488,316 @@
 }
 .ti-byte-legend {
   display: grid;
-  gap: 14px;
-  margin-top: 22px;
+  margin-top: 16px;
 }
 .ti-byte-legend > div {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 11px;
-  color: #a7becd;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: 13px;
 }
 .ti-byte-legend i {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: 2px;
 }
 .ti-byte-legend b {
   margin-left: auto;
-  font: 11px monospace;
-  color: #dae9f0;
+  color: var(--text);
+  font-weight: 500;
 }
-.ti-action-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
-  gap: 14px;
-}
+
+/* Certificates, votes and other actions */
 .ti-action-grid article {
-  min-width: 0;
-  border: 1px solid #3b445d;
-  border-radius: 14px;
-  background: linear-gradient(145deg, #20244077, #0b1825);
-  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-.ti-action-icon {
-  font-size: 32px;
-  color: #c3b5fa;
+  gap: 8px;
 }
 .ti-action-grid h3 {
-  font-size: 17px;
-  color: #d5dfed;
+  color: var(--text);
+  font-size: 14px;
   font-weight: 600;
 }
 .ti-action-grid strong {
+  color: var(--text);
   font-size: 20px;
-  color: #9be7d1;
+  font-weight: 600;
 }
-.ti-action-grid article > span:not(.ti-action-icon) {
-  font-size: 11px;
-  color: #96a8bb;
-}
-.ti-action-grid .address-identifier {
-  font-size: 11px;
+.ti-action-grid article > span {
+  color: var(--text-3);
+  font-size: 12px;
 }
 .ti-metadata-grid {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 .ti-metadata-grid article {
   display: flex;
-  align-items: start;
-  gap: 18px;
-  padding: 18px;
-  background: #0a1726;
-  border: 1px solid #2c435a;
-  border-radius: 14px;
+  align-items: flex-start;
+  gap: 16px;
   min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
 }
 .ti-metadata-label {
-  min-width: 56px;
-  height: 56px;
-  border: 1px solid #586399;
-  border-radius: 12px;
   display: grid;
   place-items: center;
-  color: #c4b8f3;
-  font: 16px monospace;
-  background: #44407333;
+  min-width: 48px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font: 13px var(--font-mono);
 }
 .ti-metadata-grid article > div {
-  min-width: 0;
   flex: 1;
+  min-width: 0;
 }
 .ti-metadata-grid h3 {
-  font-size: 16px;
-  color: #d3def0;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
 }
 .ti-metadata-grid pre {
-  font: 11px/1.8 monospace;
-  color: #a3b9cb;
   max-height: 240px;
+  color: var(--text-2);
+  font: 12px/1.6 var(--font-mono);
   overflow: auto;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 .ti-metadata-grid .copy-identifier {
-  margin-top: 12px;
-}
-@media (max-width: 1150px) {
-  .ti-passport-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .ti-asset-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .ti-detail-columns {
-    grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 700px) {
-  .ti-passport {
-    padding: 20px 18px;
-  }
-  .transaction-explorer .ti-passport h1 {
-    font-size: 32px;
-  }
-  .ti-passport-emblem {
-    display: none;
-  }
-  .ti-passport-metrics {
-    gap: 18px 12px;
-  }
-  .ti-passport-metrics strong {
-    font-size: 22px;
-  }
-  .ti-inclusion {
-    align-items: start;
-    flex-direction: column;
-  }
-  .ti-validity-track > span {
-    font-size: 9px;
-  }
-  .ti-validity > div:last-child {
-    font-size: 9px;
-    gap: 18px;
-  }
-  .ti-io-grid,
-  .ti-asset-grid {
-    grid-template-columns: 1fr;
-  }
-  .ti-io-value {
-    font-size: 23px;
-  }
-  .ti-execution-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px 16px;
-  }
-  .ti-execution-summary > div:nth-child(2) {
-    border-right: 0;
-  }
-  .ti-execution-summary strong {
-    font-size: 22px;
-  }
-  .ti-signing-summary {
-    align-items: start;
-    gap: 14px;
-  }
-  .ti-key-orbit {
-    flex-basis: 84px;
-    width: 84px;
-    height: 84px;
-  }
-  .ti-key-orbit small {
-    font-size: 8px;
-  }
-  .ti-signing-summary h3 {
-    font-size: 16px;
-  }
-  .ti-context-actions {
-    align-items: start;
-    flex-direction: column;
-  }
-  .ti-context-actions > div {
-    justify-content: start;
-  }
-  .ti-passport > .ti-identifier code {
-    font-size: 10px;
-  }
-  .ti-metadata-grid article {
-    gap: 12px;
-    padding: 14px;
-  }
-  .ti-metadata-label {
-    min-width: 42px;
-    height: 42px;
-    font-size: 12px;
-  }
+  margin-top: 8px;
 }
 
-@media (max-width: 700px) {
-  .ti-validity-track > span {
-    left: 50% !important;
-    max-width: 100%;
-    text-align: center;
-    white-space: normal;
-  }
-}
-
+/* Pending transaction, before inclusion */
 .ti-verdict.pending {
-  color: #fcd780;
-  border-color: #977440;
-  background: #5d4a2044;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--warn) 16%, var(--surface-1));
+  color: var(--warn);
+  font-size: 13px;
+  font-weight: 500;
 }
 .ti-pending-flow {
   display: flex;
   align-items: center;
   justify-content: space-around;
   gap: 12px;
-  padding: 29px 0;
-  margin: 22px 0;
-  border-block: 1px solid #385461;
+  padding: 24px 0;
+  border-block: 1px solid var(--line);
 }
 .ti-pending-flow > div {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 .ti-pending-flow strong {
+  color: var(--text);
   font-size: 32px;
-  color: #d6f6ee;
+  font-weight: 600;
 }
 .ti-pending-flow span,
 .ti-pending-flow small {
-  font-size: 11px;
-  color: #9fb5c4;
+  color: var(--text-3);
+  font-size: 12px;
 }
 .ti-pending-flow > b {
-  color: #91cbbb;
+  color: var(--text-3);
+  font-weight: 400;
 }
 .ti-pending-core {
-  border: 1px solid #a28552;
-  border-radius: 50%;
-  width: 110px;
-  height: 110px;
-  display: flex;
-  justify-content: center;
-  color: #fcd780;
-  font: 12px monospace;
-  background: #9b783515;
+  padding: 8px 16px;
+  border: 1px solid color-mix(in oklch, var(--warn) 45%, var(--line));
+  border-radius: 8px;
+  color: var(--warn);
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+@media (max-width: 1150px) {
+  .ti-asset-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ti-detail-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 @media (max-width: 700px) {
-  .ti-pending-core {
-    width: 90px;
-    height: 90px;
+  .ti-io-grid,
+  .ti-asset-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .ti-pending-flow {
-    gap: 7px;
+  .ti-execution-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .ti-pending-flow span {
-    font-size: 9px;
+  .ti-execution-summary > div:nth-child(2) {
+    border-right: 0;
   }
+}
+
+/* Transaction header, summary and validity window */
+.transaction-explorer {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.ti-passport {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.ti-passport .status-badge {
+  gap: 4px;
+  height: 28px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.status-badge.danger {
+  background: color-mix(in oklch, var(--danger) 16%, var(--surface-1));
+  color: var(--danger);
+}
+.ti-passport .metric a {
+  color: var(--accent-strong);
+}
+.ti-passport .metric a:hover {
+  color: var(--text);
+}
+.ti-validity {
+  padding: 16px 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-1);
+}
+.ti-validity-track {
+  position: relative;
+  height: 4px;
+  margin: 32px 0 12px;
+  border-radius: 2px;
+  background: var(--surface-3);
+}
+.ti-validity-track i {
+  position: absolute;
+  top: -4px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--surface-1);
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+.ti-validity-track > span {
+  position: absolute;
+  bottom: 14px;
+  color: var(--text-2);
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.ti-validity > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  color: var(--text-3);
+  font-size: 12px;
+}
+.ti-context-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.ti-context-actions > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+.ti-context-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ti-context-actions a {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line-control);
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+.ti-context-actions a:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ti-passport .metric-grid > .metric-wide {
+  grid-column: auto;
+}
+
+/* Pending transaction passport */
+.ti-passport-top,
+.ti-passport-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.ti-passport-heading p {
+  max-width: 640px;
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.ti-passport-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.ti-passport-metrics > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  align-content: start;
+}
+.ti-passport-metrics strong {
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.ti-passport-metrics span {
+  color: var(--text-3);
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .ti-passport-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.ti-address-kind.script {
+  color: var(--viz-4);
+}
+.ti-budget.cpu i {
+  background: var(--accent);
 }

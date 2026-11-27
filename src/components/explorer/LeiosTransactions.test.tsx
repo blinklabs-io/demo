@@ -27,7 +27,7 @@ it.each(["Load next 100 transactions", "Read all transaction sizes"])("shows cer
   try {
     await act(async () => root.render(<QueryClientProvider client={client}><MemoryRouter><LeiosTransactions block={{ hash: "child", height: 10, slot: 100, previous_block: "parent", tx_count: 101, time: 0, epoch: 1, epoch_slot: 1, size: 2, slot_leader: "pool" }} /></MemoryRouter></QueryClientProvider>));
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 20)); });
-    expect(container.textContent).toContain("The transactions behind the certificate.");
+    expect(container.textContent).toContain("Transactions in the certified endorser block");
     expect(container.textContent).toContain("90,000");
     expect(container.textContent).toContain("aa".repeat(32));
     expect(container.textContent).not.toContain("bb".repeat(32));

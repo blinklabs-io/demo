@@ -3,61 +3,53 @@ import { nativeTicker } from "./format";
 const definitions = [
   {
     id: "data",
-    icon: "⌘",
+    icon: "build",
     name: "Datum & redeemer workbench",
     description:
       "Decode Plutus CBOR and trace data to transaction inputs and scripts.",
-    color: "violet",
   },
   {
     id: "transactions",
-    icon: "⌁",
+    icon: "swap",
     name: "Transaction studio",
     description:
       "Build unsigned payments, inspect CBOR, add witnesses, and export to cardano-cli.",
-    color: "teal",
   },
   {
     id: "batch",
-    icon: "↗",
+    icon: "send",
     name: "Batch payments",
-    description: "Many recipients. One transaction.",
-    color: "teal",
+    description: "Pay many recipients in a single transaction, by hand or from a CSV.",
   },
   {
     id: "utxos",
-    icon: "◫",
+    icon: "grid",
     name: "UTxO workshop",
-    description: "Consolidate your wallet. Split spending outputs.",
-    color: "violet",
+    description: "Merge many small outputs into one, or split one into several.",
   },
   {
     id: "proof",
-    icon: "⌁",
+    icon: "file",
     name: "Document proofs",
-    description: "Hash locally. Timestamp on chain. Verify later.",
-    color: "amber",
+    description: "Publish a file's hash on chain as a timestamp, and verify it later.",
   },
   {
     id: "mint",
-    icon: "✦",
+    icon: "token",
     name: "Token studio",
     description: "Mint and burn native assets with your own policy.",
-    color: "teal",
   },
   {
     id: "drep",
-    icon: "♧",
+    icon: "user",
     name: "DRep registration",
     description: "Register or renew your governance identity.",
-    color: "violet",
   },
   {
     id: "treasury",
-    icon: "◎",
+    icon: "treasury",
     name: "Treasury donation",
     description: `Donate test ${nativeTicker()} directly to the treasury.`,
-    color: "amber",
   },
 ] as const;
 

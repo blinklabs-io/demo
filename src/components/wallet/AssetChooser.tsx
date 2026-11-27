@@ -1,3 +1,4 @@
+import { Icon } from "../Icon";
 import { nativeTicker } from "../../lib/format";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -82,7 +83,6 @@ export function AssetChooser({
     <section className="additional-assets">
       <header>
         <div>
-          <span className="eyebrow">Build your bundle</span>
           <h2>Additional assets</h2>
         </div>
         <span>{selected.size} / 24 selected</span>
@@ -120,7 +120,7 @@ export function AssetChooser({
               {t.assetId.slice(0, 8)}…{t.assetId.slice(-6)}
             </code>
             <span className="asset-choice-check" aria-hidden="true">
-              {selected.has(t.assetId) ? "✓" : "+"}
+              {selected.has(t.assetId) ? <Icon name="check" size={16} /> : "+"}
             </span>
           </button>
         ))}
@@ -148,7 +148,7 @@ export function AssetChooser({
           disabled={current >= pages}
           onClick={() => setPage(current + 1)}
         >
-          Next →
+          Next
         </button>
       </nav>
       {selected.size > 0 && (
@@ -198,7 +198,7 @@ export function AssetChooser({
       )}
       <p className="metadata-hint">
         Amounts use raw units. {nativeTicker()} stays in the same recipient output with your
-        chosen assets; the reviewed amount must meet its minimum {nativeTicker()}
+        chosen assets; the reviewed amount must meet its minimum {nativeTicker()}{" "}
         requirement.
       </p>
     </section>

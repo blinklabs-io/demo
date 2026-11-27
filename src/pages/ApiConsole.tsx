@@ -277,10 +277,8 @@ export default function ApiConsole() {
     <div className="api-console-grid">
       <div className="api-console-heading">
         <PageIntro
-          eyebrow="Talk directly to Dingo"
           title="API playground"
           detail="Explore the APIs powering every view in this demo."
-          symbol="{ }"
         />
       </div>
 
@@ -289,7 +287,7 @@ export default function ApiConsole() {
           <div>
             <label
               htmlFor="api-target"
-              className="mb-1.5 block text-sm font-medium text-slate-300"
+              className="mb-2 block text-sm font-medium text-slate-300"
             >
               API
             </label>
@@ -312,7 +310,7 @@ export default function ApiConsole() {
           <div>
             <label
               htmlFor="api-endpoint"
-              className="mb-1.5 block text-sm font-medium text-slate-300"
+              className="mb-2 block text-sm font-medium text-slate-300"
             >
               Endpoint path
             </label>
@@ -338,7 +336,7 @@ export default function ApiConsole() {
                     : "Execute GET"}
               </button>
             </div>
-            <p id="api-endpoint-help" className="mt-1.5 text-xs text-slate-500">
+            <p id="api-endpoint-help" className="mt-2 text-xs text-slate-500">
               Requests go to {baseUrl}.
             </p>
           </div>
@@ -347,7 +345,7 @@ export default function ApiConsole() {
             <div>
               <label
                 htmlFor="mesh-request"
-                className="mb-1.5 block text-sm font-medium text-slate-300"
+                className="mb-2 block text-sm font-medium text-slate-300"
               >
                 JSON request
               </label>
@@ -363,7 +361,7 @@ export default function ApiConsole() {
           )}
 
           <div>
-            <span className="mb-1.5 block text-xs uppercase tracking-wide text-slate-500">
+            <span className="mb-2 block text-xs text-slate-500">
               Read-only presets
             </span>
             <select
@@ -402,16 +400,14 @@ export default function ApiConsole() {
           </p>
         )}
         {!loading && !result && !error && (
-          <div className="terminal-ready">
-            <span aria-hidden="true">{">_"}</span>
-            <strong>Ready when you are.</strong>
-            <p>Choose an endpoint and execute a request.</p>
-          </div>
+          <p className="panel-empty">
+            Choose an endpoint and run the request. The response appears here.
+          </p>
         )}
         {(result || error) && (
           <>
             <div
-              className="mb-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-400"
+              className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-400"
               aria-live="polite"
             >
               <span>

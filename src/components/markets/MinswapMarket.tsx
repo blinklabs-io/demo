@@ -1,6 +1,7 @@
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useTipStore } from "../../stores/tipStore";
 import { useState, useEffect } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "../NetworkLink";
 import { Gauge } from "../explorer/Visuals";
@@ -35,48 +36,6 @@ import { MarketAsset, MarketLoading } from "./assets";
 import { marketAmount, marketAssetName, rawAmount } from "./amounts";
 import "./markets.css";
 
-function ReserveCurve({ pool }: { pool: MinswapPool }) {
-  const points = Array.from(
-    { length: 41 },
-    (_, i) => `${30 + i * 9},${185 - (i / 200 / (1 + i / 200)) * 800}`,
-  ).join(" ");
-  return (
-    <figure className="market-illustration">
-      <svg
-        viewBox="0 0 420 235"
-        role="img"
-        aria-label="Current constant-product swap curve: increasing input produces diminishing output"
-      >
-        {[35, 85, 135, 185].map((y) => (
-          <line className="chart-grid" key={y} x1="30" x2="400" y1={y} y2={y} />
-        ))}
-        <path
-          className="chart-area"
-          d={`M30 185 L${points.replaceAll(" ", " L")} L390 185 Z`}
-        />
-        <polyline className="chart-line" points={points} />
-        <text x="30" y="207">
-          0%
-        </text>
-        <text x="350" y="207">
-          20% input
-        </text>
-        <text x="30" y="20">
-          Output / pool reserve
-        </text>
-        <circle cx="30" cy="185" r="5" fill="#a791fa" />
-        <text x="210" y="232" textAnchor="middle">
-          Input asset → output asset
-        </text>
-      </svg>
-      <figcaption>
-        <MarketAsset unit={pool.assetA} /> → <MarketAsset unit={pool.assetB} />
-        <br />
-        Current reserve curve · before trading fees
-      </figcaption>
-    </figure>
-  );
-}
 export function MinswapMarket({
   initialAction = "deposit",
   tracking: parentTracking,
@@ -318,29 +277,19 @@ export function MinswapMarket({
   return (
     <div className="markets-page">
       {!parentTracking && <MarketConfirmation tracking={tracking} />}
-      <section className="market-hero">
+      <section className="market-hero market-hero-liquid">
         <div>
-          <span className="eyebrow">
-            Minswap V2 · {DINGO_NETWORK.label} · powered by Dingo
-          </span>
           <h1>
             {initialAction === "swap" ? (
-              <>
-                Trade from
-                <br />
-                <em>on-chain liquidity.</em>
-              </>
+              <>Minswap V2 swaps on {DINGO_NETWORK.label}</>
             ) : (
-              <>
-                Put liquidity
-                <br />
-                <em>in motion.</em>
-              </>
+              <>Minswap V2 liquidity on {DINGO_NETWORK.label}</>
             )}
           </h1>
           <p>
-            Read the pool. See the quote. Add or remove liquidity, track your
-            positions, and manage orders without a separate indexer.
+            Quote a swap, add or remove liquidity, and manage your open orders
+            in any Minswap V2 pool. Pool state and prices are read from Dingo,
+            with no separate indexer.
           </p>
           <div className="market-source">
             <span>Venue: Minswap V2</span>
@@ -355,11 +304,6 @@ export function MinswapMarket({
             </a>
           </div>
         </div>
-        {pool ? (
-          <ReserveCurve pool={pool} />
-        ) : (
-          <div className="market-skeleton" />
-        )}
       </section>
       {!pools.data ? (
         <MarketLoading error={pools.error} retry={() => void pools.refetch()} />
@@ -418,11 +362,10 @@ export function MinswapMarket({
             </div>
           </div>
           <section className="market-catalog">
-            <span className="eyebrow">Weekly pool price · 6-hour samples</span>
             <h2>
               {pool
-                ? `${marketAssetName(pool.assetB)}${pool.assetB === "lovelace" ? "" : " base units"} per ${marketAssetName(pool.assetA)}${pool.assetA === "lovelace" ? "" : " base unit"}`
-                : "Pool price"}
+                ? `Weekly price, 6-hour samples: ${marketAssetName(pool.assetB)}${pool.assetB === "lovelace" ? "" : " base units"} per ${marketAssetName(pool.assetA)}${pool.assetA === "lovelace" ? "" : " base unit"}`
+                : "Weekly pool price, 6-hour samples"}
             </h2>
             {history.isPending ? (
               <p role="status">Reading verified historical pool states…</p>
@@ -469,7 +412,6 @@ export function MinswapMarket({
             <section className="market-catalog">
               <div className="market-toolbar">
                 <div>
-                  <span className="eyebrow">Live pool UTxOs</span>
                   <h2>Choose your market</h2>
                 </div>
                 <button
@@ -479,7 +421,7 @@ export function MinswapMarket({
                     if (chosen && !listed) void selectedPool.refetch();
                   }}
                 >
-                  Refresh ↻
+                  Refresh
                 </button>
               </div>
               <input
@@ -546,7 +488,7 @@ export function MinswapMarket({
                     setChosen(null);
                   }}
                 >
-                  Next pools →
+                  Next pools
                 </button>
               </div>
             </section>
@@ -714,8 +656,7 @@ export function MinswapMarket({
       {wallet.status === "connected" && (
         <>
           <section className="market-positions">
-            <span className="eyebrow">Your liquidity</span>
-            <h2>Positions, unpacked.</h2>
+            <h2>Your liquidity positions</h2>
             {positions.isPending ? (
               <p>Reading your LP assets…</p>
             ) : positions.error ? (
@@ -760,8 +701,7 @@ export function MinswapMarket({
             ))}
           </section>
           <section className="market-positions">
-            <span className="eyebrow">Pending orders</span>
-            <h2>Manage your orders</h2>
+            <h2>Your pending orders</h2>
             {orders.error ? (
               <p role="alert">{orders.error.message}</p>
             ) : orders.isPending ? (
@@ -809,7 +749,7 @@ export function MinswapMarket({
                 disabled={!orders.data?.partial}
                 onClick={() => setOrderPage((p) => p + 1)}
               >
-                Next orders →
+                Next orders
               </button>
             </div>
           </section>
@@ -817,7 +757,7 @@ export function MinswapMarket({
       )}
       <p className="market-help">
         All pool and order reads go to Dingo.{" "}
-        <Link to="/api">Inspect the available APIs ↗</Link>
+        <Link to="/api">Inspect the available APIs</Link>
       </p>
     </div>
   );

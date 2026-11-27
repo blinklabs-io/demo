@@ -1,3 +1,4 @@
+import { Icon } from "../../components/Icon";
 import { nativeTicker } from "../../lib/format";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
 import { useState } from "react";
@@ -100,21 +101,18 @@ export default function Surveys() {
   return (
     <div className="survey-page">
       <PageIntro
-        eyebrow="Ask. Answer. Verify."
         title="Surveys"
-        symbol="◉"
       />
       <section className="survey-banner">
         <div>
-          <span className="eyebrow">CIP-179 · {DINGO_NETWORK.label}</span>
-          <h2>Turn a question into a public record.</h2>
+          <h2>CIP-179 surveys on {DINGO_NETWORK.label}</h2>
           <p>
             Create a survey, respond with your wallet, and explore the results.
             All chain data comes from Dingo.
           </p>
         </div>
         <Link className="survey-primary" to="/explorer/surveys/new">
-          Create a survey +
+          Create a survey
         </Link>
       </section>
       <div className="metric-grid">
@@ -173,9 +171,6 @@ export default function Surveys() {
               key={`${c.hash}:${c.index}`}
               to={`/explorer/surveys/${c.hash}/${c.index}`}
             >
-              <span className="survey-card-symbol" aria-hidden="true">
-                ◉
-              </span>
               <span className="eyebrow">
                 {c.keyholders ? "Wallet keyholders" : "Role-restricted"} · v
                 {String(c.version)}
@@ -191,7 +186,7 @@ export default function Surveys() {
                       : `Through epoch ${c.end}`}
                 </strong>
               </div>
-              <span className="survey-card-arrow">Explore survey →</span>
+              <span className="survey-card-arrow">Explore survey</span>
             </Link>
           ))}
         </div>
@@ -349,10 +344,8 @@ export function SurveyCreate() {
         ← Surveys
       </Link>
       <PageIntro
-        eyebrow="CIP-179 survey studio"
         title="Create survey"
-        detail="Design and preview your questions without a wallet. Connect when you are ready to publish on chain."
-        symbol="+"
+        detail="Design and preview your CIP-179 survey questions without a wallet. Connect when you are ready to publish on chain."
       />
       <div className="survey-studio">
         <Panel title="Build your survey">
@@ -394,7 +387,7 @@ export function SurveyCreate() {
             {questions.map((q, i) => (
               <section className="survey-editor-section" key={i}>
                 <div className="survey-question-number">
-                  <span>Question {String(i + 1).padStart(2, "0")}</span>
+                  <span>Question {i + 1}</span>
                   {questions.length > 1 && (
                     <button
                       type="button"
@@ -501,7 +494,7 @@ function AnswerInput({
     <div className="survey-answer">
       <div className="survey-question-number">
         <span>
-          Question {String(index + 1).padStart(2, "0")} · {questionNames[q.tag]}
+          Question {index + 1} · {questionNames[q.tag]}
         </span>
         <span>{q.required ? "Required" : "Optional"}</span>
       </div>
@@ -751,7 +744,7 @@ function SurveyDetailContent() {
   if (!valid)
     return (
       <div className="flex flex-col gap-4">
-        <PageIntro title="Survey" eyebrow="CIP-179" />
+        <PageIntro title="Survey" />
         <Panel title="Survey not found">
           <p>Use a transaction ID and a valid survey index.</p>
         </Panel>
@@ -760,7 +753,7 @@ function SurveyDetailContent() {
   if (!survey)
     return (
       <div className="flex flex-col gap-4">
-      <PageIntro title="Survey" eyebrow="CIP-179" />
+      <PageIntro title="Survey" />
       <Panel title={query.error ? "Survey unavailable" : "Loading survey"}>
         <InlineError error={query.error} />
         {query.isError && (
@@ -789,9 +782,8 @@ function SurveyDetailContent() {
         ← Surveys
       </Link>
       <PageIntro
-        eyebrow={query.error ? "Survey verification unavailable" : "Verified creator · CIP-179 v5"}
+        detail={query.error ? "Survey verification unavailable." : "Verified creator · CIP-179 v5"}
         title={survey.title}
-        symbol="◉"
       />
       <section className="survey-detail-hero">
         <div>
@@ -877,7 +869,7 @@ function SurveyDetailContent() {
               className={`${activeQuestion === i ? "active " : ""}${answers[i] !== undefined ? "answered" : ""}`}
               onClick={() => setActiveQuestion(i)}
             >
-              {answers[i] !== undefined ? "✓ " : ""}
+              {answers[i] !== undefined && <><Icon name="check" size={16} /> </>}
               {i + 1}
             </button>
           ))}
@@ -919,7 +911,7 @@ function SurveyDetailContent() {
                 disabled={activeQuestion === survey.questions.length - 1}
                 onClick={() => setActiveQuestion((i) => i + 1)}
               >
-                Next question →
+                Next question
               </button>
             </div>
             {eligible && (
@@ -1065,12 +1057,14 @@ function SurveyDetailContent() {
                 <span
                   className={r.counted ? "text-teal-300" : "text-slate-400"}
                 >
-                  {r.counted ? "✓ Counted" : "Excluded"}
+                  {r.counted ? <><Icon name="check" size={16} /> Counted</> : "Excluded"}
                 </span>
                 <code title={r.credential}>
                   {r.credential || "Invalid credential"}
                 </code>
-                <span>{r.reason}</span>
+                {!(r.counted && r.reason === "Counted") && (
+                  <span>{r.reason}</span>
+                )}
               </summary>
               {r.credential && (
                 <div className="survey-credential">

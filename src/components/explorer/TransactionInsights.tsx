@@ -1,7 +1,9 @@
+import { Icon } from "../Icon";
 import { useMemo, useState } from "react";
 import { Link } from "../NetworkLink";
 import { Core } from "@blaze-cardano/sdk";
 import { Panel } from "./Panel";
+import { Metric } from "./Visuals";
 import { CopyButton } from "./CopyButton";
 import { HashLink } from "./HashLink";
 import { AssetIcon } from "../wallet/AssetChooser";
@@ -62,7 +64,7 @@ function AddressKind({ address }: { address: string }) {
   }
   return (
     <span className={`ti-address-kind ${label === "Script" ? "script" : ""}`}>
-      {label === "Script" ? "⌘" : "◈"} {label}
+      {label}
     </span>
   );
 }
@@ -90,67 +92,79 @@ export function TransactionPassport({
       : 50;
   return (
     <section className="ti-passport">
-      <div className="ti-passport-top">
-        <span className="eyebrow">
-          {inspection ? transactionKind(inspection) : "On-chain transaction"}
-        </span>
-        <span className={`ti-verdict ${record.valid_contract ? "" : "failed"}`}>
-          {record.valid_contract
-            ? "✓ Confirmed"
-            : "! Script failure · collateral applied"}
-        </span>
-      </div>
-      <div className="ti-passport-heading">
+      <header className="detail-header">
         <div>
-          <h1>
-            {record.valid_contract
-              ? "Value in motion."
-              : "A different outcome."}
-          </h1>
-          <p>
-            {record.valid_contract
-              ? "One atomic change to the ledger. Follow its inputs, outputs and intent."
-              : "Normal spending, outputs and actions were not applied. Inspect the collateral effect separately."}
+          <h1>Transaction</h1>
+          <p className="detail-id">
+            <code>{record.hash}</code>
+            <CopyButton value={record.hash} label="transaction ID" />
           </p>
         </div>
-        <span className="ti-passport-emblem" aria-hidden="true">
-          {record.valid_contract ? "⇄" : "!"}
+        <span
+          className={`status-badge ${record.valid_contract ? "positive" : "danger"}`}
+        >
+          {record.valid_contract ? (
+            <>
+              <Icon name="check" size={16} /> Confirmed
+            </>
+          ) : (
+            "Script failure, collateral applied"
+          )}
         </span>
-      </div>
-      <Identifier value={record.hash} label="transaction ID" />
-      <div className="ti-passport-metrics">
-        <div>
-          <strong>{formatNativeCoin(BigInt(record.fees))}</strong>
-          <span>
-            {record.valid_contract
-              ? "Transaction fee"
-              : "Declared fee · not the collateral charge"}
-          </span>
-        </div>
-        <div>
-          <strong>{record.size.toLocaleString()} B</strong>
-          <span>Serialized transaction</span>
-        </div>
-        <div>
-          <strong>
-            {inspection?.body.inputs().size() ?? "—"}
-            <small> → {count ?? "—"}</small>
-          </strong>
-          <span>Spending inputs → planned outputs</span>
-        </div>
-        <div>
-          <strong>{inspection?.redeemers.length ?? "—"}</strong>
-          <span>Script redeemers</span>
-        </div>
-      </div>
-      <div className="ti-inclusion">
-        <Link to={`/explorer/block/${record.block}`}>
-          ⬡ Block #{record.block_height.toLocaleString()} · position{" "}
-          {record.index}
-        </Link>
-        <time dateTime={new Date(record.block_time * 1000).toISOString()}>
-          {new Date(record.block_time * 1000).toLocaleString()}
-        </time>
+      </header>
+      {!record.valid_contract && (
+        <p className="ti-note" role="note">
+          Normal spending, outputs and actions were not applied. Inspect the
+          collateral effect separately.
+        </p>
+      )}
+      <div className="metric-grid">
+        <Metric
+          label="Block"
+          value={
+            <Link to={`/explorer/block/${record.block}`}>
+              #{record.block_height.toLocaleString()}
+            </Link>
+          }
+          detail={`Position ${record.index}`}
+        />
+        <Metric
+          label="Time"
+          value={
+            <time dateTime={new Date(record.block_time * 1000).toISOString()}>
+              {new Date(record.block_time * 1000).toLocaleTimeString()}
+            </time>
+          }
+          detail={new Date(record.block_time * 1000).toLocaleDateString(
+            undefined,
+            { dateStyle: "medium" },
+          )}
+        />
+        <Metric
+          label={record.valid_contract ? "Fee" : "Declared fee"}
+          value={formatNativeCoin(BigInt(record.fees))}
+          detail={
+            record.valid_contract ? undefined : "Not the collateral charge"
+          }
+        />
+        <Metric
+          label="Size"
+          value={`${record.size.toLocaleString()} B`}
+          detail={inspection ? transactionKind(inspection) : undefined}
+        />
+        <Metric
+          label="Inputs and outputs"
+          value={
+            inspection
+              ? `${inspection.body.inputs().size()} in, ${count} out`
+              : ""
+          }
+          detail={
+            inspection
+              ? `${inspection.redeemers.length} script ${inspection.redeemers.length === 1 ? "redeemer" : "redeemers"}`
+              : undefined
+          }
+        />
       </div>
       <div className="ti-validity" aria-label="Transaction validity window">
         <div className="ti-validity-track">
@@ -210,7 +224,7 @@ export function TransactionOutputs({
   const pages = Math.max(1, Math.ceil(selected.rows.length / 6)),
     current = Math.min(page, pages);
   return (
-    <Panel title="Inspect the ledger edges">
+    <Panel title="Inputs and outputs">
       <div
         className="ti-tabs"
         role="group"
@@ -257,7 +271,7 @@ export function TransactionOutputs({
               >
                 <header>
                   <span>
-                    {scope === "outputs" ? "OUTPUT" : "INPUT"} #
+                    {scope === "outputs" ? "Output" : "Input"} #
                     {row.output_index}
                   </span>
                   <AddressKind address={row.address} />
@@ -271,7 +285,7 @@ export function TransactionOutputs({
                     (valid ? !row.collateral : row.collateral) &&
                     row.consumed_by_tx && (
                     <Link to={`/explorer/tx/${row.consumed_by_tx}`}>
-                      Spent later ↗
+                      Spent later
                     </Link>
                   )}
                 </div>
@@ -298,7 +312,7 @@ export function TransactionOutputs({
                   <Link
                     to={`/explorer/tx/${scope === "outputs" ? transactionHash : row.tx_hash}`}
                   >
-                    Transaction ↗
+                    Transaction
                   </Link>
                   <span>
                     {native.length} native asset{native.length === 1 ? "" : "s"}
@@ -353,7 +367,7 @@ export function TransactionOutputs({
             disabled={current === pages}
             onClick={() => setPage(current + 1)}
           >
-            Next →
+            Next
           </button>
         </div>
       )}
@@ -378,7 +392,7 @@ function DatumView({ cbor }: { cbor: string }) {
   return (
     <div>
       <Identifier value={cbor} label="datum CBOR" />
-      <Link to="/wallet/tools/data" state={{ plutusCbor: cbor }}>Open datum workbench →</Link>
+      <Link to="/wallet/tools/data" state={{ plutusCbor: cbor }}>Open datum workbench</Link>
       {decoded && <pre className="ti-datum">{decoded}</pre>}
     </div>
   );
@@ -422,7 +436,7 @@ function AssetActivity({
     <Panel
       title={
         <span>
-          {valid ? "Assets in motion" : "Declared assets · not applied"}{" "}
+          {valid ? "Asset movements" : "Declared assets · not applied"}{" "}
           <small className="ti-count">{rows.length}</small>
         </span>
       }
@@ -485,7 +499,7 @@ function AssetActivity({
             disabled={current === pages}
             onClick={() => setPage(current + 1)}
           >
-            Next →
+            Next
           </button>
         </div>
       )}
@@ -529,22 +543,18 @@ function Execution({
     <Panel title="Inside the execution engine">
       <div className="ti-execution-summary">
         <div>
-          <span>⌘</span>
           <strong>{redeemers.length}</strong>
           <small>Redeemers</small>
         </div>
         <div>
-          <span>◫</span>
           <strong>{mem.toLocaleString()}</strong>
           <small>Declared memory units</small>
         </div>
         <div>
-          <span>↻</span>
           <strong>{steps.toLocaleString()}</strong>
           <small>Declared execution steps</small>
         </div>
         <div>
-          <span>◇</span>
           <strong>
             {scripts.length} + {references.length}
           </strong>
@@ -574,7 +584,7 @@ function Execution({
             </div>
             <RawValue value={r.data} label="Redeemer data" />
             <Identifier value={r.cbor} label="redeemer data CBOR" />
-            <Link to="/wallet/tools/data" state={{ plutusCbor: r.cbor }}>Open redeemer workbench →</Link>
+            <Link to="/wallet/tools/data" state={{ plutusCbor: r.cbor }}>Open redeemer workbench</Link>
           </article>
         ))}
       </div>
@@ -582,7 +592,7 @@ function Execution({
         {scripts.map((s, i) => (
           <article key={`${s.hash}:${i}`}>
             <header>
-              <span>⌘ {s.language}</span>
+              <span>{s.language}</span>
               <b>{s.cbor.length / 2} B</b>
             </header>
             <Identifier value={s.hash} label="script hash" />
@@ -599,7 +609,7 @@ function Execution({
         {references.map((hash) => (
           <article key={hash}>
             <header>
-              <span>↗ Reference script</span>
+              <span>Reference script</span>
             </header>
             <Identifier value={hash} label="script hash" />
             <p className="ti-note">
@@ -621,15 +631,16 @@ function Signing({ inspection }: { inspection: TransactionInspection }) {
   const declared = inspection.body.requiredSigners()?.toCore() ?? [],
     valid = inspection.signatures.filter((s) => s.valid).length;
   return (
-    <Panel title="Who authorized it?">
+    <Panel title="Signatures">
       <div className="ti-signing-summary">
         <div className="ti-key-orbit">
-          <span>⌘</span>
           <strong>{inspection.signatures.length}</strong>
           <small>key witnesses</small>
         </div>
         <div>
-          <h3>{valid} signatures verified</h3>
+          <h3>
+            {valid} {valid === 1 ? "signature" : "signatures"} verified
+          </h3>
           <p className="ti-note">
             Ed25519 signatures checked against this transaction’s body hash.
             Explicit required signers are only one part of the ledger’s
@@ -648,7 +659,7 @@ function Signing({ inspection }: { inspection: TransactionInspection }) {
           <details key={s.key}>
             <summary>
               <span className={`ti-signature-state ${s.valid ? "valid" : ""}`}>
-                {s.valid ? "✓ Valid" : "! Invalid"}
+                {s.valid ? <><Icon name="check" size={16} /> Valid</> : "! Invalid"}
               </span>
               <code>{s.hash}</code>
               <span>
@@ -710,7 +721,6 @@ function LedgerActions({
               .type === Core.CredentialType.ScriptHash;
           return (
             <article key={address}>
-              <span className="ti-action-icon">{scriptHook ? "⌘" : "↙"}</span>
               <h3>
                 {scriptHook ? "Staking script execution" : "Reward withdrawal"}
               </h3>
@@ -728,7 +738,6 @@ function LedgerActions({
         })}
         {donation !== undefined && donation > 0n && (
           <article>
-            <span className="ti-action-icon">◎</span>
             <h3>Treasury donation</h3>
             <strong>{formatNativeCoin(donation)}</strong>
             <span>To the Cardano treasury</span>
@@ -736,7 +745,6 @@ function LedgerActions({
         )}
         {certs.map((c, i) => (
           <article key={i}>
-            <span className="ti-action-icon">◈</span>
             <h3>{readableName(c.__typename)}</h3>
             <RawValue value={c} label="Certificate fields" />
           </article>
@@ -744,7 +752,6 @@ function LedgerActions({
         {votes.flatMap(({ voter, votes }) =>
           votes.map((v, i) => (
             <article key={`${voter.credential.hash}:${i}`}>
-              <span className="ti-action-icon">⚑</span>
               <h3>{["No", "Yes", "Abstain"][v.votingProcedure.vote]} vote</h3>
               <span>{readableName(voter.__typename)}</span>
               <Identifier value={voter.credential.hash} label="voter hash" />
@@ -757,7 +764,6 @@ function LedgerActions({
         )}
         {proposals.map((p, i) => (
           <article key={i}>
-            <span className="ti-action-icon">§</span>
             <h3>Governance proposal</h3>
             <strong>{formatNativeCoin(p.deposit())} deposit</strong>
             <HashLink kind="account" id={p.rewardAccount()} full />
@@ -775,7 +781,7 @@ function Metadata({ inspection }: { inspection: TransactionInspection }) {
     "674": "Transaction message · CIP-20",
   };
   return (
-    <Panel title="Messages carried on chain">
+    <Panel title="Metadata">
       <div className="ti-metadata-grid">
         {inspection.metadata.map(([label, value]) => (
           <article key={label.toString()}>
@@ -814,7 +820,7 @@ export function TransactionInsights({
       <LedgerActions inspection={inspection} valid={valid} />
       <div className="ti-detail-columns">
         <Signing inspection={inspection} />
-        <Panel title="Anatomy of the bytes">
+        <Panel title="Size breakdown">
           <div className="ti-byte-total">
             <strong>{inspection.totalBytes.toLocaleString()}</strong>
             <span>serialized bytes</span>

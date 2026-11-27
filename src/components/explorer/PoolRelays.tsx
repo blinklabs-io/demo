@@ -34,7 +34,6 @@ export function PoolRelays({ poolId }: { poolId: string }) {
               {query.data.map((relay, index) => (
                 <article className="pool-relay" key={[relay.ipv4, relay.ipv6, relay.dns, relay.dns_srv, relay.port].join("|")}>
                   <header>
-                    <span aria-hidden="true">◎</span>
                     <strong>Relay {index + 1}</strong>
                     <small>
                       {relay.dns_srv

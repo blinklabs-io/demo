@@ -22,18 +22,16 @@ function Observation({ row }: { row: LeiosObservation }) {
     <div className="leios-inspection">
       <header>
         <div>
-          <span className="eyebrow">
-            Ranking block #{row.height.toLocaleString()}
-          </span>
           <h3>
+            Ranking block #{row.height.toLocaleString()}
             {row.certified
-              ? "A certificate joins the chain."
+              ? ": carries a certificate"
               : row.announcement
-                ? "An endorser block is announced."
-                : "The ranking chain moves forward."}
+                ? ": announces an endorser block"
+                : ": no announcement or certificate"}
           </h3>
         </div>
-        <Link to={`/explorer/block/${row.hash}`}>Open block →</Link>
+        <Link to={`/explorer/block/${row.hash}`}>Open block</Link>
       </header>
       <dl className="leios-facts">
         <div>
@@ -83,12 +81,12 @@ export function LeiosPulse() {
   if (DINGO_NETWORK.id !== "musashi")
     return (
       <section className="leios-panel">
-        <h2>Explore Leios on Musashi.</h2>
+        <h2>Leios on Musashi</h2>
         <p>
           Follow endorser-block announcements and certificates on the
           Leios-enabled network.
         </p>
-        <Link to="/explorer/leios?network=musashi">Switch to Musashi →</Link>
+        <Link to="/explorer/leios?network=musashi">Switch to Musashi</Link>
       </section>
     );
   return <MusashiPulse />;
@@ -140,21 +138,12 @@ function MusashiPulse() {
     <section className="leios-panel" aria-label="Leios activity">
       <header className="leios-heading">
         <div>
-          <span className="eyebrow">Musashi · {recent.isError ? "saved Leios sample" : "live Leios observations"}</span>
-          <h1>
-            Small ranking blocks.
-            <br />
-            <em>A bigger story.</em>
-          </h1>
+          <h1>Leios on Musashi</h1>
           <p>
-            Follow the ranking chain as it announces endorser blocks and carries
+            {recent.isError ? "Saved sample." : "Live observations."} Follow the ranking chain as it announces endorser blocks and carries
             certificates.
           </p>
         </div>
-        <span className="leios-orbit" aria-hidden="true">
-          ◉<i>EB</i>
-          <b>RB</b>
-        </span>
       </header>
       {!verified && (
         <p role="status">
@@ -190,9 +179,9 @@ function MusashiPulse() {
       {rows.length > 0 && (
         <>
           <div className="leios-key">
-            <span className="leios-purple">● Announced manifest size</span>
-            <span className="leios-teal">◆ Certificate present</span>
-            <span>Oldest → newest · select a block</span>
+            <span className="leios-key-bar">Bar: announced manifest size</span>
+            <span className="leios-key-certificate">◆ Certificate carried</span>
+            <span>Oldest to newest. Select a block to inspect it.</span>
           </div>
           <div
             className="leios-timeline"
@@ -249,8 +238,8 @@ function MusashiPulse() {
       </p>
       <BuildThis recipe="leios" />
       <div className="leios-links">
-        <Link to="/explorer">Explore the ranking chain →</Link>
-        <Link to="/api">Inspect the APIs →</Link>
+        <Link to="/explorer">Explore the ranking chain</Link>
+        <Link to="/api">Inspect the APIs</Link>
       </div>
     </section>
   );
@@ -293,7 +282,7 @@ function BlockObservation({
           {query.isSuccess && !query.data && (
             <p>This header has no Leios extension.</p>
           )}
-          <Link to="/explorer/leios">Open the Leios activity view →</Link>
+          <Link to="/explorer/leios">Open the Leios activity view</Link>
         </>
       )}
     </details>

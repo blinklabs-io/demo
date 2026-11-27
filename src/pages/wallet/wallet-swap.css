@@ -1,34 +1,5 @@
 .swap-version-nav {
-  margin-bottom: 20px;
-}
-.swap-version-switch {
-  display: inline-flex;
-  flex-wrap: wrap;
-  max-width: 100%;
-  padding: 5px;
-  gap: 5px;
-  border: 1px solid #274451;
-  border-radius: 13px;
-  background: #0c1722;
-}
-.swap-version-switch button {
-  padding: 9px 18px;
-  border-radius: 9px;
-  color: #93a9bf;
-  font-size: 12px;
-  font-weight: 700;
-  transition:
-    background 150ms,
-    color 150ms;
-}
-.swap-version-switch button[aria-pressed="true"] {
-  background: #43d8c3;
-  color: #062c2b;
-  box-shadow: 0 2px 12px #14b8a625;
-}
-.swap-version-switch button:hover:not(:disabled):not([aria-pressed="true"]) {
-  color: #e2f9f6;
-  background: #19323a;
+  margin-bottom: 24px;
 }
 .swap-version-switch button:disabled {
   cursor: wait;
@@ -39,18 +10,18 @@
   justify-content: center;
   align-items: center;
   gap: 8px;
-  border: 1px solid #345361;
-  border-radius: 10px;
-  background: #122c35;
-  padding: 10px 15px;
-  color: #7de9db;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 12px 16px;
+  color: var(--accent-strong);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
 .swap-v4 .v4-market-button:hover:not(:disabled) {
-  background: #1d3d46;
-  border-color: #59c5b9;
+  background: var(--surface-3);
+  border-color: var(--accent);
 }
 .swap-v4 .v4-market-button:disabled {
   opacity: 0.5;
@@ -61,7 +32,7 @@
   display: grid;
   gap: 8px;
   min-width: 0;
-  color: #a8bccf;
+  color: var(--text-2);
   font-size: 12px;
 }
 .swap-v4 .swap-order-card input,
@@ -69,11 +40,11 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 12px 13px;
-  border: 1px solid #284653;
-  border-radius: 10px;
-  background: #0a1a26;
-  color: #eff7ff;
+  padding: 12px 12px;
+  border: 1px solid var(--line-control);
+  border-radius: 8px;
+  background: var(--surface-1);
+  color: var(--text);
   font-size: 14px;
   line-height: 1.4;
 }
@@ -81,12 +52,12 @@
 .swap-v4 .swap-order-card select:focus-visible,
 .swap-v4 button:focus-visible,
 .swap-version-switch button:focus-visible {
-  outline: 2px solid #5eead4;
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 .swap-v4 .swap-order-card .v4-offer-amount {
   padding: 16px;
-  font-size: 30px;
+  font-size: 32px;
   font-variant-numeric: tabular-nums;
 }
 .swap-v4 .v4-order-settings {
@@ -100,44 +71,44 @@
   align-items: baseline;
   gap: 12px;
   margin: 4px 0;
-  border: 1px solid #31594f;
-  border-radius: 13px;
-  padding: 18px;
-  background: #102e27;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--surface-2);
   font-size: 12px;
 }
 .wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary dt {
-  color: #9cbab7;
+  color: var(--text-2);
 }
 .wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary dd {
   margin: 0;
   text-align: right;
   overflow-wrap: anywhere;
-  color: #e4f8f3;
+  color: var(--accent-strong);
   font-variant-numeric: tabular-nums;
 }
 .wallet-workbench.swap-v4
   .swap-order-card
   dl.v4-order-summary
   dd.text-emerald-300 {
-  color: #58f2c1;
-  font-weight: 700;
+  color: var(--accent-strong);
+  font-weight: 600;
 }
 .swap-v4 .swap-order-card details {
   font-size: 12px;
-  color: #b5c9d9;
+  color: var(--text-2);
 }
 .swap-v4 .swap-order-card details summary {
   cursor: pointer;
-  color: #6cddcf;
+  color: var(--accent-strong);
 }
 .swap-v4 .swap-order-card details dl {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 .swap-v4 .swap-order-card details dd {
-  margin: 4px 0 14px;
+  margin: 4px 0 16px;
   overflow-wrap: anywhere;
-  color: #d9e8f4;
+  color: var(--text);
 }
 .swap-v4 .swap-spot-price {
   font-size: clamp(13px, 1.2vw, 17px);
@@ -145,48 +116,62 @@
 }
 @media (max-width: 600px) {
   .swap-version-nav {
-    margin-bottom: 18px;
-  }
-  .swap-version-switch {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .swap-version-switch button {
-    flex: 1;
-    padding-inline: 10px;
+    margin-bottom: 16px;
   }
   .wallet-workbench.swap-v4 .swap-order-card dl.v4-order-summary {
-    padding: 14px;
-    gap: 12px 10px;
+    padding: 16px;
+    gap: 12px 12px;
   }
   .swap-v4 .v4-order-settings {
-    gap: 10px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .swap-version-switch button {
-    transition: none;
+    gap: 12px;
   }
 }
 
 .swap-v4 .v4-built-review {
   display: grid;
   gap: 12px;
-  border: 1px solid #3f8a78;
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 16px;
-  background: #0b2725;
+  background: var(--surface-1);
 }
 .swap-v4 .v4-built-review h3 {
-  font-size: 17px;
-  font-weight: 700;
-  color: #d3fff3;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
 }
 .swap-v4 .v4-built-review p {
   font-size: 12px;
-  color: #9ebeb9;
+  color: var(--text-2);
 }
 .swap-v4 .v4-built-review .experience-primary {
   width: 100%;
   margin-top: 4px;
+}
+
+.swap-version-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  max-width: 100%;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.swap-version-switch button {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+.swap-version-switch button:hover:not(:disabled) {
+  color: var(--text);
+}
+.swap-version-switch button[aria-pressed="true"] {
+  background: var(--surface-3);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
 }

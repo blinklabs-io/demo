@@ -7,7 +7,13 @@ import {
 } from "../../lib/dingo/blockHeader";
 import { Distribution } from "./Visuals";
 
-const colors = ["#2dd4bf", "#818cf8", "#fbbf24", "#f472b6", "#60a5fa"];
+const colors = [
+  "var(--viz-1)",
+  "var(--viz-2)",
+  "var(--viz-3)",
+  "var(--viz-4)",
+  "var(--viz-5)",
+];
 
 export function RecentHeaderVersions({
   blocks,
@@ -87,7 +93,7 @@ export function RecentHeaderVersions({
                   style={{
                     background: version
                       ? colors[colorIndex % colors.length]
-                      : "#293b4b",
+                      : "var(--surface-3)",
                   }}
                   aria-label={`Block ${block.height}, ${node ? `${node.name}, ` : ""}${node?.payloadSummary ? `${node.payloadSummary}, ` : ""}header version ${version ?? (header.isError ? "unavailable" : "loading")}`}
                   title={`Block ${block.height} · ${date(block.time)} · ${node ? `${node.name} · ${node.detail} · ` : ""}${version ?? (header.isError ? "Header unavailable" : "Loading header")}`}

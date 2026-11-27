@@ -219,7 +219,8 @@ Large histories load bounded pages on request. Visuals expose exact records,
 keyboard controls, mobile layouts, and reduced-motion support.
 
 The explorer includes transaction and block-size charts, ADA supply breakdowns,
-reward and holder charts, and timelines for eras, blocks, and governance actions.
+reward and holder charts, an era table, adjacent-block navigation, and governance
+action timelines.
 Charts link to the underlying records and expose values on keyboard focus.
 Pool identities use registered tickers and names returned by Dingo and show
 ticker initials. Pool-controlled metadata and image URLs are never fetched
@@ -636,8 +637,8 @@ sampling or one request per block. Native header hashes, parsed metadata, parent
 links and height continuity are checked before the completed window is shown.
 The frozen snapshot is rechecked against Dingo’s canonical chain.
 
-Pie slices, version legends, hourly bars and alternative-node markers expose even rare header
-versions. Select a version or hour to inspect its blocks. The block list is
+A share bar by node implementation, one ranked row per header version, hourly bars
+and alternative-node markers expose even rare header versions. Select a version or hour to inspect its blocks. The block list is
 paginated; counts always cover the verified records rather than just displayed
 links. CIP-203 scheme, identifier and payload fields identify self-reported producers.
 Payload fields use supported registry-linked definitions; unspecified,

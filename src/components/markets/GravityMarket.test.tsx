@@ -106,11 +106,11 @@ afterEach(async () => {
   host.remove();
 });
 it("uses output page one immediately when refreshed directory changes the effective pool", async () => {
-  await click("Next outputs →");
+  await click("Next outputs");
   expect(host.textContent).toContain("Output page 2");
   state.id = "b";
   vi.mocked(readGravityPoolComposition).mockClear();
-  await click("Refresh ↻");
+  await click("Refresh");
   expect(host.textContent).toContain("Output page 1");
   expect(
     vi
@@ -125,12 +125,12 @@ it("uses output page one immediately when refreshed directory changes the effect
 });
 it("keeps previous output and directory controls available after later-page errors", async () => {
   state.compositionError = true;
-  await click("Next outputs →");
+  await click("Next outputs");
   expect(host.textContent).toContain("Outputs unavailable");
   await click("← Previous outputs");
   expect(host.textContent).toContain("Output page 1");
   state.directoryError = true;
-  await click("Next pairs →");
+  await click("Next pairs");
   expect(host.textContent).toContain("Directory unavailable");
   await click("← Previous pairs");
   expect(host.textContent).toContain("Page 1");

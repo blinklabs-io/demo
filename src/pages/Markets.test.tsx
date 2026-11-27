@@ -69,7 +69,7 @@ it.each(["liquidity", "lending", "options", "orders", "marketplace"])("routes ma
   const router = createMemoryRouter([{ path: "/wallet/markets/:tab", element: <Markets /> }], { initialEntries: [`/wallet/markets/${tab}`] });
   try {
     await act(async () => root.render(<RouterProvider router={router} />));
-    expect(host.textContent).toContain(tab === "liquidity" ? "Submit fixture order" : tab === "orders" ? "Kernel orders" : "Apps on the live chain.");
+    expect(host.textContent).toContain(tab === "liquidity" ? "Submit fixture order" : tab === "orders" ? "Kernel orders" : "Apps on Cardano Mainnet");
     expect(host.textContent).not.toContain("Open Preprod markets");
   } finally { await act(async () => root.unmount()); router.dispose(); }
 });

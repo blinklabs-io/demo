@@ -232,8 +232,7 @@ export function TransactionFlow({
     <section className="chain-visual transaction-river">
       <header className="chain-heading">
         <div>
-          <span className="eyebrow">Follow the value</span>
-          <h2>One transaction. Many paths.</h2>
+          <h2>Transaction flow</h2>
         </div>
         <label className="chain-select">
           Value
@@ -357,39 +356,32 @@ export function TransactionFlow({
           Transaction sources and destinations through a shared value pool;
           individual input-to-output attribution is not implied.
         </title>
-        <defs>
-          <linearGradient id={`${uid}-fill`}>
-            <stop stopColor="#30d4b2" />
-            <stop offset="1" stopColor="#a99bff" />
-          </linearGradient>
-        </defs>
         <rect
           x="454"
           y="30"
           width="92"
           height={height - 60}
-          rx="24"
-          fill={`url(#${uid}-fill)`}
-          opacity=".17"
-          stroke="#70dfcf"
+          rx="8"
+          fill="var(--accent-soft)"
+          stroke="var(--accent)"
         />
         <text
           x="500"
-          y={height / 2 - 8}
+          y={height / 2 - 4}
           textAnchor="middle"
-          fill="#d6fff5"
-          fontSize="16"
+          fill="var(--text)"
+          fontSize="13"
         >
-          VALUE
+          Shared
         </text>
         <text
           x="500"
-          y={height / 2 + 15}
+          y={height / 2 + 14}
           textAnchor="middle"
-          fill="#96c6bc"
-          fontSize="12"
+          fill="var(--text)"
+          fontSize="13"
         >
-          POOL
+          pool
         </text>
         {[
           { nodes: from, left: true },
@@ -407,14 +399,14 @@ export function TransactionFlow({
                   y={y - 24}
                   width="290"
                   height="48"
-                  rx="10"
-                  fill={left ? "#123a33" : "#2c2448"}
-                  stroke={left ? "#387d6d" : "#66558d"}
+                  rx="8"
+                  fill="var(--surface-2)"
+                  stroke="var(--line-strong)"
                 />
-                <text x={x + 14} y={y - 4} fill="#b9d5df" fontSize="13">
+                <text x={x + 14} y={y - 4} fill="var(--text-2)" fontSize="13">
                   {n.href ? shortenHash(n.label, 6) : n.label}
                 </text>
-                <text x={x + 14} y={y + 14} fill="#f0fff9" fontSize="14">
+                <text x={x + 14} y={y + 14} fill="var(--text)" fontSize="14">
                   {format(n.value)}
                 </text>
                 <title>
@@ -431,13 +423,17 @@ export function TransactionFlow({
                       : `M546 ${height / 2} C610 ${height / 2} 610 ${y} 690 ${y}`
                   }
                   fill="none"
-                  stroke={left ? "#35dcb9" : "#af9eff"}
+                  stroke={
+                    focus === `${left ? "Source" : "Destination"}:${n.id}`
+                      ? "var(--accent)"
+                      : "color-mix(in oklch, var(--accent) 55%, var(--gray-6))"
+                  }
                   strokeWidth={thickness}
                   opacity={
                     !selected ||
                     focus === `${left ? "Source" : "Destination"}:${n.id}`
                       ? ".65"
-                      : ".12"
+                      : ".2"
                   }
                 />
                 <g
@@ -489,7 +485,7 @@ export function TransactionFlow({
               <CopyButton value={selected.label} label="flow address" />
             )}
           </div>
-          {selected.href && <Link to={selected.href}>Explore address →</Link>}
+          {selected.href && <Link to={selected.href}>Explore address</Link>}
           <button type="button" onClick={() => setFocus(null)}>
             Clear selection
           </button>

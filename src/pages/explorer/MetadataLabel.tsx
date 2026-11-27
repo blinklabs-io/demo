@@ -53,10 +53,8 @@ export default function MetadataLabel() {
   return (
     <div className="flex flex-col gap-4">
       <PageIntro
-        eyebrow="Written into the chain"
         title={`Metadata · ${label}`}
         detail="Messages and structured data, preserved on chain."
-        symbol="{ }"
       />
       <Panel title="JSON metadata">
         <PaginatedList<MetadataJsonRow>

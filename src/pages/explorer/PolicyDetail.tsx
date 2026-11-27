@@ -1,3 +1,5 @@
+import { CopyButton } from "../../components/explorer/CopyButton";
+import { Icon } from "../../components/Icon";
 import { useState } from "react";
 import { useParams } from "react-router";
 import { Link } from "../../components/NetworkLink";
@@ -6,7 +8,7 @@ import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { hexToBytes } from "../../lib/dingo/utxorpc/bytes";
 import { shortenHash } from "../../lib/format";
 import { ChainMark } from "../../components/explorer/ChainMark";
-import { EmptyState, PageIntro } from "../../components/explorer/Visuals";
+import { EmptyState } from "../../components/explorer/Visuals";
 import { Panel } from "../../components/explorer/Panel";
 import { Pagination } from "../../components/explorer/Pagination";
 import { QueryState } from "../../components/explorer/QueryState";
@@ -42,7 +44,6 @@ export default function PolicyDetail() {
     return (
       <Panel>
         <EmptyState
-          icon="⌕"
           title="Invalid policy ID"
           detail="A minting policy ID contains 56 hexadecimal characters."
         />
@@ -84,26 +85,24 @@ function PolicyAssets({ policyId }: { policyId: string }) {
     ) ?? [];
   return (
     <div className="flex flex-col gap-4">
-      <PageIntro
-        eyebrow="Native assets · minting policy"
-        title="One policy. Its assets."
-        symbol={<ChainMark value={policyId} />}
-      />
-      <section className="policy-identity">
-        <span className="eyebrow">Policy ID</span>
-        <code>{policyId}</code>
-        <p>Browse native assets minted under this policy.</p>
-      </section>
+      <header className="detail-header">
+        <div className="detail-identity">
+          <span className="detail-mark"><ChainMark value={policyId} /></span>
+          <h1>Minting policy</h1>
+          <p className="detail-id">
+            <code>{policyId}</code>
+            <CopyButton value={policyId} label="policy ID" />
+          </p>
+        </div>
+      </header>
       <Panel
         title="Policy assets"
         action={<span className="text-xs text-slate-400">Page {page}</span>}
       >
         <label className="directory-search">
-          <span className="text-xs text-slate-400">
-            Filter this page by asset name or ID
-          </span>
+          <span className="field-label">Filter this page by asset name or ID</span>
           <span className="directory-search-field">
-            <span aria-hidden="true">⌕</span>
+            <Icon name="search" size={16} />
             <input
               type="search"
               aria-label="Filter policy assets on this page"
@@ -120,7 +119,7 @@ function PolicyAssets({ policyId }: { policyId: string }) {
         >
           {(assets.data !== undefined) && (
             <>
-              <p className="my-4 text-xs text-slate-500">
+              <p className="tool-help" style={{ marginTop: 12 }}>
                 {visible.length} of {assets.data.length} assets on this page ·
                 quantities are base units.
               </p>
@@ -145,13 +144,11 @@ function PolicyAssets({ policyId }: { policyId: string }) {
                           </strong>
                         </span>
                       </div>
-                      <span aria-hidden="true">↗</span>
                     </Link>
                   ))}
                 </div>
               ) : (
                 <EmptyState
-                  icon="◇"
                   title={
                     query ? "No matches on this page" : "No assets on this page"
                   }

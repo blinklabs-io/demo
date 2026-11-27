@@ -1,3 +1,4 @@
+import { Icon } from "../Icon";
 import { useMemo, useState } from "react";
 import { Core } from "@blaze-cardano/sdk";
 import { Link } from "../NetworkLink";
@@ -104,12 +105,7 @@ export function UtxoConstellation({
     <section className="chain-visual utxo-constellation">
       <header className="chain-heading">
         <div>
-          <span className="eyebrow">
-            {inspectOnly
-              ? "On-chain contract outputs"
-              : "Your spendable universe"}
-          </span>
-          <h2>{inspectOnly ? "The pool, unpacked." : "Gather the stars."}</h2>
+          <h2>{inspectOnly ? "Contract outputs" : "Spendable outputs"}</h2>
         </div>
         <div className="constellation-count">
           <strong>{chosenVisible.length}</strong>
@@ -174,15 +170,7 @@ export function UtxoConstellation({
                 strokeWidth={chosen.has(n.id) ? 3 : 1}
               />
               {chosen.has(n.id) && (
-                <text
-                  x={n.x}
-                  y={n.y + 5}
-                  textAnchor="middle"
-                  fill="#071a18"
-                  fontSize="18"
-                >
-                  ✓
-                </text>
+                <Icon name="check" size={16} x={n.x - 8} y={n.y - 8} stroke="var(--accent-ink)" />
               )}
               <title>
                 {n.id} · {formatNativeCoin(n.utxo.output().amount().coin())} ·{" "}
@@ -194,14 +182,14 @@ export function UtxoConstellation({
         <aside className="constellation-inspector">
           {active ? (
             <>
-              <span className="eyebrow">Output under the lens</span>
+              <span className="eyebrow">Selected output</span>
               <strong>{formatNativeCoin(active.utxo.output().amount().coin())}</strong>
               <Link
                 className="chain-link"
                 to={`/explorer/tx/${active.utxo.input().transactionId()}`}
               >
                 {shortenHash(active.utxo.input().transactionId(), 8)} #
-                {active.utxo.input().index().toString()} ↗
+                {active.utxo.input().index().toString()}
               </Link>
               <div className="tool-identifier">
                 <code>{active.address}</code>
@@ -228,14 +216,11 @@ export function UtxoConstellation({
             </>
           ) : (
             <>
-              <span className="constellation-star" aria-hidden="true">
-                ✦
-              </span>
-              <h3>Each node is an output.</h3>
+              <h3>Each node is an output</h3>
               <p>
                 {inspectOnly
-                  ? "Inspect a star to see its locked value and native assets."
-                  : "Inspect a star to see its value. Select the ones you want to consolidate."}
+                  ? "Inspect a node to see its locked value and native assets."
+                  : "Inspect a node to see its value. Select the ones you want to consolidate."}
               </p>
               <p>
                 Outputs cluster by address; colors are decorative. Dotted rings

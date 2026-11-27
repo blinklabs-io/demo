@@ -105,8 +105,8 @@ export function MarketChart({
       >
         <defs>
           <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-            <stop stopColor="#2dd4bf" stopOpacity=".3" />
-            <stop offset="1" stopColor="#2dd4bf" stopOpacity="0" />
+            <stop stopColor="var(--accent)" stopOpacity=".3" />
+            <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0, 1, 2, 3, 4].map((i) => {
@@ -118,7 +118,7 @@ export function MarketChart({
                 x2={right}
                 y1={y(value)}
                 y2={y(value)}
-                stroke="#243a48"
+                stroke="var(--line)"
               />
               <text x={right + 10} y={y(value) + 4}>
                 {number(value)}
@@ -135,7 +135,7 @@ export function MarketChart({
                 x2={x(time)}
                 y1="25"
                 y2="254"
-                stroke="#1d303d"
+                stroke="var(--line)"
               />
               <text
                 x={x(time)}
@@ -154,13 +154,13 @@ export function MarketChart({
           d={`${path} L${x(last.time)},254 L${x(valid[0].time)},254 Z`}
           fill={`url(#${id})`}
         />
-        <path d={path} stroke="#2dd4bf" strokeWidth="2" fill="none" />
+        <path d={path} stroke="var(--accent)" strokeWidth="2" fill="none" />
         <line
           x1="24"
           x2={right}
           y1={y(last.value)}
           y2={y(last.value)}
-          stroke="#2dd4bf"
+          stroke="var(--accent)"
           strokeDasharray="4 5"
           opacity=".5"
         />
@@ -169,7 +169,7 @@ export function MarketChart({
           x2={x(point.time)}
           y1="25"
           y2="254"
-          stroke="#9bb4c5"
+          stroke="var(--text-3)"
           strokeDasharray="3 4"
         />
         <line
@@ -177,10 +177,10 @@ export function MarketChart({
           x2={right}
           y1={y(point.value)}
           y2={y(point.value)}
-          stroke="#9bb4c5"
+          stroke="var(--text-3)"
           strokeDasharray="3 4"
         />
-        <circle cx={x(point.time)} cy={y(point.value)} r="4" fill="#c7fff1" />
+        <circle cx={x(point.time)} cy={y(point.value)} r="4" fill="var(--text)" />
       </svg>
     </div>
   );

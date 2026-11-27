@@ -7,7 +7,7 @@ import { holderClosingEpoch } from "../lib/surveys/cip204";
 import { useNodeHealth } from "../lib/dingo/nodeHealth";
 import { PaginatedList } from "../components/explorer/PaginatedList";
 import { Panel } from "../components/explorer/Panel";
-import { shortenHash, nativeSymbol } from "../lib/format";
+import { shortenHash } from "../lib/format";
 interface Action {
   id: string;
   governance_type: string;
@@ -56,30 +56,15 @@ function ActionCard({ action }: { action: Action }) {
             ? "Accepting holder answers"
             : "Answers closed"}
       </span>
-      <span className="participation-emblem" aria-hidden="true" style={{ fontSize: nativeSymbol().length > 1 ? 12 : undefined }}>
-        {{
-          treasury_withdrawals: `${nativeSymbol()}`,
-          new_constitution: "§",
-          no_confidence: "◇",
-          info_action: "i",
-          parameter_change: "⚙",
-          hard_fork_initiation: "⑂",
-          update_committee: "◈",
-        }[action.governance_type] ?? "◈"}
-      </span>
-      {title && (
-        <span className="eyebrow">
-          {action.governance_type.replaceAll("_", " ")}
-        </span>
-      )}
       <h3>{title ?? action.governance_type.replaceAll("_", " ")}</h3>
+        {title && <small>{action.governance_type.replaceAll("_", " ")}</small>}
       {query.data && (
         <small>Answers close at epoch {holderClosingEpoch(query.data)}</small>
       )}
       {metadata.error && <small>Action title could not be loaded</small>}
       <code>{shortenHash(action.id, 16)}</code>
       <strong>
-        {open ? "Record your opinion" : "Explore action & answers"} ↗
+        {open ? "Record your opinion" : "Explore action & answers"}
       </strong>
     </Link>
   );
@@ -88,57 +73,53 @@ export default function Participate() {
   return (
     <div className="participation-page">
       <section className="participation-hero">
-        <div className="participation-seal" aria-hidden="true">
-          ◉
-        </div>
         <div>
-          <span className="eyebrow">Your stake key. Your voice.</span>
-          <h1>Participate in governance.</h1>
+          <h1>Participate in governance</h1>
           <p>
             Give your opinion on a governance action, ask a question of your
             own, or vote as a DRep. Pick how you want to participate.
           </p>
           <a className="experience-primary" href="#holder-actions">
-            Find an action to answer ↓
+            Find an action to answer
           </a>
         </div>
       </section>
       <div className="participation-paths">
         <a href="#holder-actions">
-          <span>01 · CIP-204</span>
+          <span>CIP-204</span>
           <h2>Answer as a holder</h2>
           <p>
             Yes, No, or Abstain on an existing action. No survey creator. Your
             stake key proves it’s you.
           </p>
-          <strong>Find an action ↓</strong>
+          <strong>Find an action</strong>
         </a>
         <Link to="/explorer/surveys">
-          <span>02 · CIP-179</span>
+          <span>CIP-179</span>
           <h2>Ask the community</h2>
           <p>
             Create a survey with choices, rankings, ratings, or free text.
             Respond and inspect results on chain.
           </p>
-          <strong>Explore surveys ↗</strong>
+          <strong>Explore surveys</strong>
         </Link>
         <Link to="/explorer/governance">
-          <span>03 · Official governance</span>
-          <h2>Step into the chamber</h2>
+          <span>Official governance</span>
+          <h2>Follow official votes</h2>
           <p>
             Follow the votes behind a decision. Connected DReps can cast their
             official vote.
           </p>
-          <strong>Open governance ↗</strong>
+          <strong>Open governance</strong>
         </Link>
         <Link to="/explorer/dreps">
-          <span>04 · Representation</span>
+          <span>Representation</span>
           <h2>Find your representative</h2>
           <p>
             Explore DRep profiles and activity before choosing who represents
             your stake.
           </p>
-          <strong>Meet the representatives ↗</strong>
+          <strong>Meet the representatives</strong>
         </Link>
       </div>
       <section id="holder-actions">

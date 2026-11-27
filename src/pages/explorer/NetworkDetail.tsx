@@ -2,12 +2,12 @@ import { CapacityCockpit } from "../../components/explorer/CapacityCockpit";
 import { EraName } from "../../components/explorer/EraName";
 import { networkName } from "../../lib/dingo/networkNames";
 import { compactAda, ratio } from "../../lib/visualFormat";
-import { Distribution, Meter, Gauge } from "../../components/explorer/Visuals";
+import { Distribution, Meter } from "../../components/explorer/Visuals";
 import { useQuery } from "@tanstack/react-query";
-import { Field } from "../../components/explorer/Panel";
+import { Field, Panel } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
-import { formatNativeCoin, nativeTicker, nativeSymbol } from "../../lib/format";
+import { formatNativeCoin, nativeTicker } from "../../lib/format";
 
 interface NetworkResponse {
   supply: {
@@ -104,24 +104,20 @@ export default function NetworkDetail() {
   const name = genesis ? networkName(genesis.network_magic) : "Network";
   return (
     <div className="network-dashboard">
-      <header className="network-heading">
+      <header className="detail-header">
         <div>
-          <span className="eyebrow">The economics of the chain</span>
           <h1>
             {name === "Preview" || name === "Preprod"
               ? `${name} network`
               : name}
           </h1>
+          {genesis && (
+            <p className="detail-id">
+              {networkName(genesis.network_magic)}, network magic{" "}
+              {genesis.network_magic}
+            </p>
+          )}
         </div>
-        {genesis && (
-          <span
-            className="network-id"
-            title={`Network magic ${genesis.network_magic}`}
-          >
-            <span aria-hidden="true">◎</span>
-            <strong>{networkName(genesis.network_magic)}</strong>
-          </span>
-        )}
       </header>
 
       <CapacityCockpit />
@@ -132,203 +128,144 @@ export default function NetworkDetail() {
         error={networkQuery.error}
       >
         {network && (
-          <div className="network-economics">
-            <section className="network-supply">
-              <div className="network-section-heading">
-                <span className="eyebrow">{nativeTicker()} distribution</span>
-                <span className="network-unit">{nativeSymbol()}</span>
-              </div>
-              <h2>Where the {nativeTicker()} is</h2>
+          <div className="visual-grid wide-left">
+            <Panel title={`${nativeTicker()} supply`}>
               <Distribution
                 title="Maximum supply"
                 unit={compactAda(network.supply.max)}
                 items={supplyItems}
               />
-              <div className="supply-release">
+              <Meter
+                label={`Issued: ${compactAda(network.supply.total)} of the maximum`}
+                value={ratio(
+                  BigInt(network.supply.total),
+                  BigInt(network.supply.max),
+                )}
+              />
+            </Panel>
+            <Panel title="Stake">
+              <div className="epoch-timing">
                 <div>
-                  <span className="eyebrow">Issued supply</span>
-                  <strong>{compactAda(network.supply.total)}</strong>
+                  <span className="field-label">Live stake</span>
+                  <strong title={ada(network.stake.live)}>
+                    {compactAda(network.stake.live)}
+                  </strong>
                 </div>
-                <Meter
-                  label="Issued / maximum"
-                  value={ratio(
-                    BigInt(network.supply.total),
-                    BigInt(network.supply.max),
-                  )}
-                />
+                <div>
+                  <span className="field-label">Active stake</span>
+                  <strong title={ada(network.stake.active)}>
+                    {compactAda(network.stake.active)}
+                  </strong>
+                </div>
               </div>
-            </section>
-            <section className="network-staking">
-              <span className="eyebrow">Participation</span>
-              <h2>Stake in the network</h2>
-              <div
-                className="stake-comparison"
-                role="img"
-                aria-label={`Live stake ${ada(network.stake.live)}; active stake ${ada(network.stake.active)}`}
-              >
-                {[
-                  {
-                    label: "Live stake",
-                    value: network.stake.live,
-                    className: "live",
-                  },
-                  {
-                    label: "Active stake",
-                    value: network.stake.active,
-                    className: "active",
-                  },
-                ].map((item) => (
-                  <div
-                    className={`stake-column ${item.className}`}
-                    key={item.label}
-                  >
-                    <strong title={ada(item.value)}>
-                      {compactAda(item.value)}
-                    </strong>
-                    <div className="stake-column-track">
-                      <span
-                        style={{
-                          height: `${ratio(BigInt(item.value), BigInt(network.stake.live) > BigInt(network.stake.active) ? BigInt(network.stake.live) : BigInt(network.stake.active))}%`,
-                        }}
-                      />
-                    </div>
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-              <Gauge
-                label="Live stake / issued supply"
+              <Meter
+                label={`Live stake as a share of issued ${nativeTicker()}`}
                 value={ratio(
                   BigInt(network.stake.live),
                   BigInt(network.supply.total),
                 )}
-                detail={`Current delegation as a share of issued ${nativeTicker()}`}
-                tone="violet"
               />
-              <div className="stake-footnote">
-                <span className="legend-dot" />
-                <p>
-                  Live stake reflects current delegation. Active stake is the
-                  snapshot used for the epoch.
-                </p>
-              </div>
-            </section>
+              <p className="tool-help">
+                Live stake reflects current delegation. Active stake is the
+                snapshot used for the epoch.
+              </p>
+            </Panel>
           </div>
         )}
       </QueryState>
 
-      <section className="network-clock">
-        <div className="network-clock-heading">
-          <div>
-            <span className="eyebrow">How the chain keeps time</span>
-            <h2>Network rhythm</h2>
-          </div>
-          <span className="clock-orbit" aria-hidden="true">
-            ◷
-          </span>
-        </div>
+      <Panel title="Slot and epoch timing">
         <QueryState
           hasData={erasQuery.data !== undefined}
           isLoading={erasQuery.isLoading}
           error={erasQuery.error}
         >
           {currentTiming && (
-            <div className="rhythm-grid">
+            <div className="epoch-timing">
               <div>
-                <strong>
-                  {currentTiming.parameters.slot_length}
-                  <small>s</small>
-                </strong>
-                <span>per slot</span>
-                <div className="slot-pulses" aria-hidden="true">
-                  {Array.from({ length: 18 }, (_, i) => (
-                    <i key={i} />
-                  ))}
-                </div>
+                <span className="field-label">Slot length</span>
+                <strong>{currentTiming.parameters.slot_length} s</strong>
               </div>
               <div>
+                <span className="field-label">Slots per epoch</span>
                 <strong>
                   {currentTiming.parameters.epoch_length.toLocaleString()}
                 </strong>
-                <span>slots per epoch</span>
-                <div className="epoch-stripes" aria-hidden="true" />
               </div>
               <div>
+                <span className="field-label">Epoch length</span>
                 <strong>
                   {(
                     (currentTiming.parameters.epoch_length *
                       currentTiming.parameters.slot_length) /
                     3600
-                  ).toLocaleString()}
-                  <small>h</small>
+                  ).toLocaleString()}{" "}
+                  hours
                 </strong>
-                <span>per epoch</span>
-                <div className="epoch-clock" aria-hidden="true" />
               </div>
             </div>
           )}
         </QueryState>
-      </section>
+      </Panel>
 
-      <section className="network-history">
-        <div className="network-section-heading">
-          <div>
-            <span className="eyebrow">Protocol timing</span>
-            <h2>Across the eras</h2>
-          </div>
-          <span className="network-unit">↗</span>
-        </div>
+      <Panel title="Protocol timing by era">
         <QueryState
           hasData={erasQuery.data !== undefined}
           isLoading={erasQuery.isLoading}
           error={erasQuery.error}
         >
-          <ol className="era-track">
-            {(eras ?? []).map((era, index) => (
-              <li key={era.start.slot}>
-                <div className="era-station">
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <i />
-                </div>
-                <h3>
-                  <EraName epoch={era.start.epoch} />
-                </h3>
-                <time dateTime={new Date(era.start.time * 1000).toISOString()}>
-                  {new Date(era.start.time * 1000).toLocaleDateString(
-                    undefined,
-                    { month: "short", day: "numeric", year: "numeric" },
-                  )}
-                </time>
-                <div className="era-origin">
-                  <span>Begins at epoch</span>
-                  <strong>{era.start.epoch.toLocaleString()}</strong>
-                </div>
-                <details>
-                  <summary>Timing boundaries</summary>
-                  <dl>
-                    <dt>Start slot</dt>
-                    <dd>{era.start.slot.toLocaleString()}</dd>
-                    <dt>Start time</dt>
-                    <dd>{date(era.start.time)}</dd>
-                    <dt>End boundary</dt>
-                    <dd>{era.end ? date(era.end.time) : "Open"}</dd>
-                    <dt>Slots / epoch</dt>
-                    <dd>{era.parameters.epoch_length.toLocaleString()}</dd>
-                    <dt>Slot duration</dt>
-                    <dd>{era.parameters.slot_length}s</dd>
-                  </dl>
-                </details>
-              </li>
-            ))}
-          </ol>
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Era</th>
+                  <th>Started</th>
+                  <th className="num">First epoch</th>
+                  <th className="num">Start slot</th>
+                  <th className="num">Slots per epoch</th>
+                  <th className="num">Slot length</th>
+                  <th>Ended</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(eras ?? []).map((era) => (
+                  <tr key={era.start.slot}>
+                    <td className="table-strong">
+                      <EraName epoch={era.start.epoch} />
+                    </td>
+                    <td>
+                      <time
+                        dateTime={new Date(era.start.time * 1000).toISOString()}
+                        title={date(era.start.time)}
+                      >
+                        {new Date(era.start.time * 1000).toLocaleDateString(
+                          undefined,
+                          { month: "short", day: "numeric", year: "numeric" },
+                        )}
+                      </time>
+                    </td>
+                    <td className="num">
+                      {era.start.epoch.toLocaleString()}
+                    </td>
+                    <td className="num">{era.start.slot.toLocaleString()}</td>
+                    <td className="num">
+                      {era.parameters.epoch_length.toLocaleString()}
+                    </td>
+                    <td className="num">{era.parameters.slot_length} s</td>
+                    <td>{era.end ? date(era.end.time) : "Current"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </QueryState>
-      </section>
+      </Panel>
 
       <div className="network-reference">
         <details className="detail-disclosure">
           <summary>Exact monetary values</summary>
           {network && (
-            <div className="network-value-grid">
+            <div className="field-grid">
               {[
                 ["Maximum supply", network.supply.max],
                 ["Total supply", network.supply.total],
@@ -352,7 +289,7 @@ export default function NetworkDetail() {
             error={genesisQuery.error}
           >
             {genesis && (
-              <div className="network-value-grid">
+              <div className="field-grid">
                 <Field
                   label="System start"
                   value={date(genesis.system_start)}

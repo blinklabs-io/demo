@@ -186,10 +186,8 @@ function DelegationForm({
   return (
     <div className="wallet-workbench delegate-workbench flex flex-col gap-6">
       <PageIntro
-        eyebrow="Stake pools & governance"
         title="Delegation"
         detail="Choose a stake pool or representative. Connect only when you are ready to review and sign."
-        symbol="⬡"
         action={<WalletConnectSummary />}
       />
       {connected && !rewardAddress && (
@@ -323,13 +321,9 @@ function DelegationForm({
           className="tool-review tool-transaction"
           aria-label="Delegation review"
         >
-          <span className="eyebrow">
-            Unsigned delegation · {DINGO_NETWORK.label}
-          </span>
           <h3>
-            {draft.target.kind === "pool"
-              ? "Stake pool delegation"
-              : "DRep vote delegation"}
+            Unsigned {draft.target.kind === "pool" ? "stake pool" : "DRep vote"}{" "}
+            delegation on {DINGO_NETWORK.label}
           </h3>
           <dl className="tool-facts">
             <div>
@@ -399,7 +393,7 @@ function DelegationForm({
                   ? "Submitted · confirmation unavailable"
                   : "Submitted to Dingo · waiting for confirmation"}
           </strong>
-          <Link to={`/explorer/tx/${submit.data}`}>View transaction →</Link>
+          <Link to={`/explorer/tx/${submit.data}`}>View transaction</Link>
           {confirmation.error && !failed && (
             <button type="button" onClick={() => void confirmation.refetch()}>
               Retry confirmation

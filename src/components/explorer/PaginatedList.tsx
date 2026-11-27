@@ -53,7 +53,6 @@ function PaginatedListPage<T>({
       >
         {query.data?.length === 0 && (
           <div className="list-empty">
-            <span aria-hidden="true">◇</span>
             <p>{page === 1 ? emptyLabel : "No more records."}</p>
           </div>
         )}

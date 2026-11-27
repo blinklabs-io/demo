@@ -13,7 +13,6 @@ export default function NetworkRecovery() {
   }
   return (
     <main className="detail-showcase mx-auto max-w-xl p-8">
-      <span className="eyebrow">Build with Dingo</span>
       <h1>Choose a Cardano network</h1>
       <p className="my-4 text-slate-300">Your network selection could not be used. Choose a network to continue.</p>
       <div className="flex gap-4">

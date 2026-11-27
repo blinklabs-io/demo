@@ -29,7 +29,7 @@ export default function WalletHome() {
   if (status !== "connected" || !changeAddress)
     return (
       <div className="wallet-workbench">
-        <PageIntro eyebrow="Wallet workspace" title="Portfolio" symbol="▣" />
+        <PageIntro title="Portfolio" />
         <WalletWelcome purpose="explore your portfolio" />
       </div>
     );
@@ -170,9 +170,7 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
     <div className="flex flex-col gap-4 wallet-portfolio">
       <PageIntro
         action={<WalletConnectSummary />}
-        eyebrow="Connected through Dingo"
         title="Portfolio"
-        symbol="▣"
       />
       <section className="wallet-balance-hero">
         <div>
@@ -197,9 +195,9 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
           ) : (
             <span>No stake credential on this address</span>
           )}
-          <Link to="/wallet/send">Send →</Link>
-          <Link to="/wallet/tools">Explore wallet tools ↗</Link>
-          <Link to="/wallet/tools/utxos">Map spendable outputs ✦</Link>
+          <Link to="/wallet/send">Send</Link>
+          <Link to="/wallet/tools">Explore wallet tools</Link>
+          <Link to="/wallet/tools/utxos">Map spendable outputs</Link>
         </div>
       </section>
       <div className="metric-grid">
@@ -239,9 +237,6 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
             {account.data !== undefined && (
               <div className="wallet-role-grid">
                 <section className="wallet-role-card">
-                  <span className="wallet-role-icon" aria-hidden="true">
-                    ⬡
-                  </span>
                   <h3>Stake pool</h3>
                   {account.data?.pool_id ? (
                     <HashLink kind="pool" id={account.data.pool_id} />
@@ -250,9 +245,6 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
                   )}
                 </section>
                 <section className="wallet-role-card">
-                  <span className="wallet-role-icon" aria-hidden="true">
-                    ◈
-                  </span>
                   <h3>Voting delegation</h3>
                   {account.data?.drep_id === "drep_always_abstain" ? (
                     <strong>Always abstain</strong>
@@ -399,7 +391,6 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
         )}
         {utxos.isSuccess && !loadingUtxos && !outputs.length && (
           <div className="list-empty">
-            <span aria-hidden="true">◇</span>
             <p>No unspent outputs.</p>
           </div>
         )}
@@ -411,7 +402,7 @@ function ConnectedWallet({ changeAddress }: { changeAddress: string }) {
             >
               <div className="wallet-utxo-heading">
                 <span className="wallet-output-index">
-                  <span aria-hidden="true">◇</span> Output #{utxo.output_index}
+                  Output #{utxo.output_index}
                 </span>
                 <AdaAmount amount={utxo.amount} />
               </div>

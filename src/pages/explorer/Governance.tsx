@@ -21,7 +21,7 @@ import { Panel, Field } from "../../components/explorer/Panel";
 import { QueryState } from "../../components/explorer/QueryState";
 import { Pagination } from "../../components/explorer/Pagination";
 import { HashLink } from "../../components/explorer/HashLink";
-import { formatNativeCoin, shortenHash, nativeSymbol } from "../../lib/format";
+import { formatNativeCoin, shortenHash } from "../../lib/format";
 
 interface ProposalSummary {
   id: string;
@@ -65,23 +65,11 @@ function ProposalCard({ row }: { row: ProposalSummary }) {
   const title = governanceName(metadata.data?.json_metadata);
   return (
     <div className={`proposal-card proposal-${row.governance_type}`}>
-      <span className="proposal-emblem" aria-hidden="true" style={{ fontSize: nativeSymbol().length > 1 ? 12 : undefined }}>
-        {{
-          treasury_withdrawals: `${nativeSymbol()}`,
-          new_constitution: "§",
-          no_confidence: "◇",
-          info_action: "i",
-          parameter_change: "⚙",
-          hard_fork_initiation: "⑂",
-          update_committee: "◈",
-        }[row.governance_type] ?? "◈"}
-      </span>
       <Link
         to={`/explorer/proposal/${encodeURIComponent(row.id)}`}
         className="text-sky-400 hover:underline"
       >
-        {title ?? row.governance_type.replaceAll("_", " ")}{" "}
-        <span aria-hidden="true">↗</span>
+        {title ?? row.governance_type.replaceAll("_", " ")}
       </Link>
       <span className="status-badge">
         {row.governance_type.replaceAll("_", " ")}
@@ -121,10 +109,8 @@ export default function Governance() {
   return (
     <div className="flex flex-col gap-4">
       <PageIntro
-        eyebrow="The next chapter is on chain"
         title="Governance"
         detail="Proposals, votes, and the people entrusted with the protocol."
-        symbol="§"
       />
       <Panel title="Governance proposals">
         <label className="survey-check survey-note">
@@ -155,8 +141,7 @@ export default function Governance() {
                 }))}
               />
               <div>
-                <span className="eyebrow">A cross-section of governance</span>
-                <h2>What's on the table?</h2>
+                <h2>Proposals by action type</h2>
                 <p>
                   Action types among proposals on this page. Select a proposal
                   below to follow its lifecycle and votes.
@@ -210,9 +195,6 @@ export default function Governance() {
               {committee.data.members.map((member) => (
                 <div key={member.cc_cold_id} className="committee-member">
                   <div className="committee-member-heading">
-                    <span className="member-symbol" aria-hidden="true">
-                      ◈
-                    </span>
                     <strong>{shortenHash(member.cc_cold_id, 10)}</strong>
                     <span className="status-badge">{member.status}</span>
                   </div>
@@ -269,16 +251,14 @@ export function ProposalDetail() {
         Governance proposals
       </Link>
       <PageIntro
-        eyebrow="On-chain governance"
         title="Governance action"
-        symbol="§"
       />
       <Panel
         title="Governance proposal"
         action={
           record && (
             <a href="#drep-vote" className="text-xs text-teal-300">
-              DRep voting ↓
+              DRep voting
             </a>
           )
         }
@@ -290,7 +270,7 @@ export function ProposalDetail() {
         >
           {record && (
             <div>
-              <div className="metric-grid mb-5">
+              <div className="metric-grid mb-6">
                 <Metric
                   label="Deposit"
                   value={formatNativeCoin(BigInt(record.deposit))}

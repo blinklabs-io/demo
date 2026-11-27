@@ -9,13 +9,13 @@ import { treemap } from "../../lib/chain/geometry";
 import { formatNativeCoin, shortenHash } from "../../lib/format";
 import { decodeLeiosTransaction } from "../../lib/explorer/leiosTransactions";
 const kinds = [
-  { id: "transfer", label: "Transfers / other", color: "#43d9b6" },
-  { id: "stake", label: "Stake / certificates", color: "#69b8f2" },
-  { id: "governance", label: "Governance", color: "#b4a3ff" },
-  { id: "mint", label: "Mint / burn", color: "#f6c86d" },
-  { id: "scripts", label: "Script execution", color: "#ee91cb" },
-  { id: "withdrawal", label: "Reward withdrawals", color: "#8bdba0" },
-  { id: "failed", label: "Failed scripts", color: "#fc968b" },
+  { id: "transfer", label: "Transfers / other", color: "var(--accent)" },
+  { id: "stake", label: "Stake / certificates", color: "var(--viz-1)" },
+  { id: "governance", label: "Governance", color: "var(--viz-4)" },
+  { id: "mint", label: "Mint / burn", color: "var(--viz-2)" },
+  { id: "scripts", label: "Script execution", color: "var(--viz-5)" },
+  { id: "withdrawal", label: "Reward withdrawals", color: "var(--viz-3)" },
+  { id: "failed", label: "Failed scripts", color: "var(--danger)" },
 ];
 interface Raw {
   tx_hash: string;
@@ -81,6 +81,8 @@ function Mosaic({ hash, total }: MosaicProps) {
   const compact = useCompactVisual();
   const mapWidth = compact ? 700 : 1000,
     mapHeight = compact ? 700 : 540;
+  // A treemap of two or three tiles says less than the rows themselves.
+  const few = total <= 4;
   const [filter, setFilter] = useState("all");
   const client = useQueryClient();
   const uid = useId();
@@ -133,14 +135,13 @@ function Mosaic({ hash, total }: MosaicProps) {
   );
   const bytes = filtered.reduce((n, r) => n + r.bytes, 0);
   const fees = filtered.reduce((n, r) => n + r.fee, 0n);
+  const present = kinds
+    .map((k) => ({ ...k, count: records.filter((r) => r.kind === k.id).length }))
+    .filter((k) => k.count > 0 || k.id === filter);
   return (
     <section className="chain-visual block-mosaic">
       <header className="chain-heading">
-        <div>
-          <span className="eyebrow">A block, under the microscope</span>
-          <h2>Every transaction has a shape.</h2>
-        </div>
-
+        <h2>Transactions in this block</h2>
       </header>
       {total === 0 ? (
         <div className="chain-empty">
@@ -149,30 +150,33 @@ function Mosaic({ hash, total }: MosaicProps) {
         </div>
       ) : (
         <>
-          <nav
+          {!few && <nav
             className="chain-legend"
             aria-label="Transaction activity filter"
           >
-            <button
-              aria-pressed={filter === "all"}
-              onClick={() => setFilter("all")}
-            >
-              All · {records.length}
-            </button>
-            {kinds.map((k) => (
+            {present.length > 1 && (
+              <button
+                aria-pressed={filter === "all"}
+                onClick={() => setFilter("all")}
+              >
+                All {records.length}
+              </button>
+            )}
+            {present.map((k) => (
               <button
                 key={k.id}
                 aria-pressed={filter === k.id}
                 onClick={() => setFilter(k.id)}
               >
                 <i style={{ background: k.color }} />
-                {k.label} · {records.filter((r) => r.kind === k.id).length}
+                {k.label} {k.count}
               </button>
             ))}
-          </nav>
+          </nav>}
           <div className="mosaic-caption">
             <strong>
-              {filtered.length} transactions · {(bytes / 1024).toFixed(1)} KiB ·{" "}
+              {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"} ·{" "}
+              {(bytes / 1024).toFixed(1)} KiB ·{" "}
               {formatNativeCoin(fees)} fees
             </strong>
             <span>
@@ -197,7 +201,32 @@ function Mosaic({ hash, total }: MosaicProps) {
               </button>
             </div>
           )}
-          {tiles.length > 0 ? (
+          {few ? (
+            <ul className="mosaic-strip">
+              {filtered.map((t) => {
+                const kind = kinds.find((k) => k.id === t.kind)!;
+                return (
+                  <li
+                    key={t.id}
+                    style={{ flexGrow: t.bytes, ["--kind" as string]: kind.color }}
+                  >
+                    <Link
+                      to={`/explorer/tx/${t.id}`}
+                      aria-label={`${t.id}, ${t.bytes} bytes, ${kind.label}, ${formatNativeCoin(t.fee)} fee`}
+                    >
+                      <span className="mosaic-tile-kind">
+                        <i />
+                        {kind.label}
+                      </span>
+                      <strong>{t.bytes.toLocaleString()} B</strong>
+                      <span>{formatNativeCoin(t.fee)} fee</span>
+                      <code>{shortenHash(t.id, 8)}</code>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : tiles.length > 0 ? (
             <svg
               className="mosaic-svg"
               viewBox={`0 0 ${mapWidth} ${mapHeight}`}
@@ -221,11 +250,10 @@ function Mosaic({ hash, total }: MosaicProps) {
                       y={t.y + 2}
                       width={Math.max(0, t.width - 4)}
                       height={Math.max(0, t.height - 4)}
-                      rx={Math.min(12, t.width / 10, t.height / 10)}
-                      fill={color}
-                      fillOpacity=".2"
-                      stroke={color}
-                      strokeOpacity=".65"
+                      rx={Math.min(8, t.width / 10, t.height / 10)}
+                      style={{ fill: color, stroke: color }}
+                      fillOpacity=".16"
+                      strokeOpacity=".6"
                     />
                     <title>
                       {t.id} · {t.bytes} bytes · {t.kind} · {formatNativeCoin(t.fee)}
@@ -235,7 +263,7 @@ function Mosaic({ hash, total }: MosaicProps) {
                         <text
                           x={t.x + 16}
                           y={t.y + 30}
-                          fill={color}
+                          style={{ fill: color }}
                           fontSize="19"
                         >
                           {t.bytes.toLocaleString()} B
@@ -243,7 +271,7 @@ function Mosaic({ hash, total }: MosaicProps) {
                         <text
                           x={t.x + 16}
                           y={t.y + 54}
-                          fill="#d4e2e9"
+                          style={{ fill: "var(--text-2)" }}
                           fontSize="14"
                         >
                           {shortenHash(t.id, 5)}
@@ -289,7 +317,7 @@ function Mosaic({ hash, total }: MosaicProps) {
               ))}
             </details>
           )}
-          <details className="chain-records">
+          {!few && <details className="chain-records">
             <summary>Accessible transaction list</summary>
             {filtered.map((t) => (
               <Link key={t.id} to={`/explorer/tx/${t.id}`}>
@@ -299,14 +327,14 @@ function Mosaic({ hash, total }: MosaicProps) {
                 </span>
               </Link>
             ))}
-          </details>
+          </details>}
         </>
       )}
       <p className="chain-footnote">
-        Tile area represents serialized transaction bytes. Mixed activity uses
-        this priority: failed scripts, governance, mint/burn, script execution,
-        stake/certificates, reward withdrawals, transfer. Transaction bytes
-        exclude the block header.
+        {few ? "Tile width" : "Tile area"} is serialized transaction bytes. A transaction
+        with several kinds of activity is labelled by the first that applies:
+        failed scripts, governance, mint/burn, script execution,
+        stake/certificates, reward withdrawals, transfer.
       </p>
     </section>
   );

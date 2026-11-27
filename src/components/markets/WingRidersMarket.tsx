@@ -102,8 +102,7 @@ export function WingRidersMarket({ onBusy }: { onBusy?: (busy: boolean) => void 
       <MarketConfirmation tracking={tracking} />
       <header className="market-hero">
         <div>
-          <span className="eyebrow">WingRiders Rapid · Mainnet</span>
-          <h1>A swap in one transaction.</h1>
+          <h1>WingRiders Rapid swaps on Mainnet</h1>
           <p>
             Trade directly against the pool, with exact amounts reviewed before
             your wallet signs. Dingo reads the chain and submits your
@@ -326,7 +325,7 @@ export function WingRidersMarket({ onBusy }: { onBusy?: (busy: boolean) => void 
                 <p style={{ overflowWrap: "anywhere" }}>{pool.assetA}</p>
                 <p style={{ overflowWrap: "anywhere" }}>{pool.assetB}</p>
                 <Link to={`/explorer/tx/${pool.utxo.input().transactionId()}`}>
-                  Current pool transaction ↗
+                  Current pool transaction
                 </Link>
               </details>
             </>

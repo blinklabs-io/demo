@@ -117,29 +117,12 @@ function StudioWorkspace({ imported }: { imported: string }) {
     <div className="transaction-studio">
       <section className="tx-studio-hero">
         <div>
-          <span className="eyebrow">Build with Dingo · Transaction studio</span>
           <h1>Transaction studio</h1>
           <p>
             Turn an address into an unsigned payment. Open a transaction,
             understand its intent, and add your wallet’s witness when you’re
             ready.
           </p>
-        </div>
-        <div className="tx-pipeline" aria-label="Transaction workflow">
-          <span>
-            01 <b>Compose</b>
-            <small>Dingo UTxOs + parameters</small>
-          </span>
-          <i>→</i>
-          <span>
-            02 <b>Inspect</b>
-            <small>Decode locally</small>
-          </span>
-          <i>→</i>
-          <span>
-            03 <b>Export</b>
-            <small>cardano-cli JSON</small>
-          </span>
         </div>
       </section>
       <div className="tx-studio-grid">
@@ -219,7 +202,7 @@ function StudioWorkspace({ imported }: { imported: string }) {
               {payments.map((payment, i) => (
                 <div className="tx-recipient" key={i}>
                   <span className="tx-recipient-number">
-                    {String(i + 1).padStart(2, "0")}
+                    {i + 1}
                   </span>
                   <div>
                     <label htmlFor={`recipient-${i}`}>Payment address</label>
@@ -294,7 +277,7 @@ function StudioWorkspace({ imported }: { imported: string }) {
                 >
                   {busy
                     ? "Balancing with Dingo…"
-                    : "Build unsigned transaction →"}
+                    : "Build unsigned transaction"}
                 </button>
               </div>
             </form>
@@ -380,7 +363,7 @@ function StudioWorkspace({ imported }: { imported: string }) {
                   }
                 }}
               >
-                Inspect transaction →
+                Inspect transaction
               </button>
             </div>
           )}
@@ -451,7 +434,7 @@ function StudioWorkspace({ imported }: { imported: string }) {
                 </p>
                 <div className="tx-form-actions">
                   <button className="experience-primary" onClick={download}>
-                    ↓ Export cardano-cli JSON
+                    Export cardano-cli JSON
                   </button>
                   <CopyButton
                     value={transaction.cbor}
@@ -509,21 +492,11 @@ function StudioWorkspace({ imported }: { imported: string }) {
             </>
           ) : (
             <section className="tx-empty-review">
-              <div className="tx-empty-orbit">
-                <span>⌁</span>
-                <i />
-                <i />
-              </div>
-              <h2>Your transaction, unpacked.</h2>
+              <h2>Transaction review</h2>
               <p>
-                See outputs, assets, collateral, scripts and signers before
-                taking the next step.
+                Build or import a transaction to see its outputs, assets,
+                collateral, scripts and signers here.
               </p>
-              <div>
-                <span>Address → unsigned</span>
-                <span>CBOR → clarity</span>
-                <span>Witness → export</span>
-              </div>
             </section>
           )}
         </div>
@@ -535,7 +508,7 @@ function StudioWorkspace({ imported }: { imported: string }) {
               {body.outputs().map((output, i) => (
                 <article className="tx-output-card" key={i}>
                   <div>
-                    <span>OUTPUT {String(i + 1).padStart(2, "0")}</span>
+                    <span>Output {i + 1}</span>
                     <strong>{ada(output.amount().coin())}</strong>
                   </div>
                   <div className="tx-address">
@@ -555,7 +528,7 @@ function StudioWorkspace({ imported }: { imported: string }) {
                   {output.datum() && (
                     <details>
                       <summary>Datum</summary>
-                      {output.datum()!.asInlineData() && <Link to="/wallet/tools/data" state={{ plutusCbor: String(output.datum()!.asInlineData()!.toCbor()) }}>Open datum workbench →</Link>}
+                      {output.datum()!.asInlineData() && <Link to="/wallet/tools/data" state={{ plutusCbor: String(output.datum()!.asInlineData()!.toCbor()) }}>Open datum workbench</Link>}
                       <pre>{output.datum()!.toCbor()}</pre>
                     </details>
                   )}
@@ -598,14 +571,13 @@ function StudioWorkspace({ imported }: { imported: string }) {
         </>
       )}
       <section className="tx-capability">
-        <span className="eyebrow">Build an app on Dingo</span>
-        <h2>One node. The pieces your app needs.</h2>
+        <h2>Build an app on Dingo</h2>
         <p>
           UTxO RPC supplies funds and protocol parameters. Blockfrost supplies
           the current slot. Your browser builds the transaction; your wallet
           adds keys.
         </p>
-        <Link to="/api">Explore Dingo’s APIs →</Link>
+        <Link to="/api">Explore Dingo’s APIs</Link>
         <a
           href="https://github.com/blinklabs-io/demo"
           target="_blank"

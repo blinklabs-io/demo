@@ -44,10 +44,10 @@ it.each(["full", "missing", "pre-plutus"])("shares the header read and reports m
       expect(container.querySelector('[aria-label="Block resource capacity"]')).toBeNull();
     } else if (prePlutus) {
       expect(container.textContent).toContain("Execution memory: not applicable in this epoch.");
-      expect(container.querySelector(".gauge-violet title")?.textContent).toContain("1.0 percent");
+      expect(container.querySelector(".block-capacity-summary")?.textContent).toContain("1.0%");
     } else {
-      expect(container.querySelector(".gauge-red title")?.textContent).toContain("Block capacity used: 100.0 percent");
-      expect(container.textContent).toContain("Full · execution memory");
+      expect(container.querySelector(".block-capacity-summary[data-full]")?.textContent).toContain("100.0%");
+      expect(container.textContent).toContain("Full, limited by execution memory");
       expect(container.querySelector('[role="meter"][aria-label="Execution memory"]')?.getAttribute("aria-valuenow")).toBe("100");
       expect(container.querySelector('[role="meter"][aria-label="Body bytes"]')?.getAttribute("aria-valuenow")).toBe("1");
     }

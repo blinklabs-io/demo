@@ -61,10 +61,8 @@ function SendForm({
   return (
     <div className="wallet-workbench send-page">
       <PageIntro
-        eyebrow="Transfers through Dingo"
         title={`Send ${nativeTicker()} & assets`}
-        detail={`${nativeTicker()} first. Your assets alongside it.`}
-        symbol="↗"
+        detail={`Every transfer carries ${nativeTicker()}. Native assets can ride along in the same transaction.`}
       />
       <div className="wallet-transfer-layout">
         <div className="wallet-form-card send-bundle-form">
@@ -136,9 +134,6 @@ function SendForm({
         </div>
         <aside className="transfer-preview">
           <span className="eyebrow">Draft transfer</span>
-          <div className="transfer-preview-orbit" aria-hidden="true">
-            ↗
-          </div>
           <strong>
             {ada || "—"}
             <small>{nativeTicker()}</small>
@@ -152,11 +147,6 @@ function SendForm({
             {recipient && (
               <CopyButton value={recipient} label="recipient address" />
             )}
-          </div>
-          <div className="transfer-steps">
-            <span>01 · Review</span>
-            <span>02 · Sign</span>
-            <span>03 · On chain</span>
           </div>
         </aside>
       </div>

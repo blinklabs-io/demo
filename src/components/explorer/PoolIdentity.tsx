@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "../NetworkLink";
 import { blockfrostFetch } from "../../lib/dingo/blockfrost";
 import { CopyButton } from "./CopyButton";
@@ -11,7 +11,7 @@ export interface PoolMetadata {
   name?: string | null;
 }
 
-function PoolAvatar({
+export function PoolAvatar({
   metadata,
   poolId,
 }: {
@@ -62,8 +62,17 @@ function PoolAvatar({
     })();
     return () => controller.abort();
   }, [source, offset]);
+  // Each pool keeps one hue, derived from its ID, wherever it appears.
+  const hue = [...poolId].reduce(
+    (sum, char) => (sum * 31 + char.charCodeAt(0)) % 360,
+    0,
+  );
   return (
-    <span className="pool-avatar" aria-hidden="true">
+    <span
+      className="pool-avatar"
+      aria-hidden="true"
+      style={{ "--hue": hue } as CSSProperties}
+    >
       {image ? (
         <img
           src={image.src}
@@ -116,10 +125,16 @@ export function PoolIdentity({
         poolId={poolId}
       />
       <span className="pool-label">
-        <strong>
-          {info?.ticker ? info.ticker : compact ? poolId : "Stake pool"}
-          {!compact && info?.name && <span> {info.name}</span>}
-        </strong>
+        {!info?.ticker ? (
+          <code>
+            {poolId.slice(0, 8)}…{poolId.slice(-4)}
+          </code>
+        ) : (
+          <strong>
+            {info.ticker}
+            {!compact && info?.name && <span> {info.name}</span>}
+          </strong>
+        )}
         {!compact && <small>{poolId}</small>}
       </span>
     </Link>

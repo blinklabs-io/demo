@@ -7,7 +7,7 @@ import {
 } from "../../lib/developerRecipes";
 import { useId, useState } from "react";
 import { DINGO_NETWORK } from "../../lib/dingo/config";
-import { CopyButton } from "../explorer/CopyButton";
+import { CodeBlock } from "./CodeBlock";
 import { Link } from "../NetworkLink";
 import "../explorer/developer-tools.css";
 
@@ -19,7 +19,7 @@ export function BuildThis({ recipe }: { recipe: BuildRecipe }) {
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
       <summary>
-        Build this yourself <span aria-hidden="true">⌘</span>
+        Build this yourself
       </summary>
       {open && <BuildThisBody recipe={recipe} />}
     </details>
@@ -36,7 +36,6 @@ function BuildThisBody({ recipe }: { recipe: BuildRecipe }) {
   const code = language === "SDK" ? sdk! : recipeExample(recipe, language);
   return (
     <div className="build-this-body">
-      <span className="eyebrow">{DINGO_NETWORK.label} · {recipe === "bridge" ? "Reactor + your Dingo instance" : "Your Dingo instance"}</span>
       <h2>{definition.title}</h2>
       <p>{definition.context}</p>
       <div className="build-this-setup">
@@ -47,20 +46,24 @@ function BuildThisBody({ recipe }: { recipe: BuildRecipe }) {
           <li>Set the URLs below to your listeners. Local examples use <code>127.0.0.1</code>; hosted applications need reachable HTTPS endpoints and their exact browser origin in your node’s CORS allowlist.</li>
         </ol>
       </div>
-      <div className="developer-actions">
-        <label htmlFor={id}>Example language</label>
-        <select
-          id={id}
-          value={language}
-          onChange={(e) => setLanguage(e.target.value as typeof language)}
-        >
-          <option>JavaScript</option>
-          <option>cURL</option>
-          {sdk && <option>SDK</option>}
-        </select>
-        <CopyButton value={code} label="developer example" />
-      </div>
-      <pre className="developer-code">{code}</pre>
+      <CodeBlock
+        code={code}
+        copyLabel="developer example"
+        bar={
+          <div className="code-editor-language">
+            <label htmlFor={id}>Example language</label>
+            <select
+              id={id}
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as typeof language)}
+            >
+              <option>JavaScript</option>
+              <option>cURL</option>
+              {sdk && <option>SDK</option>}
+            </select>
+          </div>
+        }
+      />
       <p className="developer-note">
         {language === "SDK"
           ? "Install the imported package in your ES module project. Endpoint constants refer to your Dingo instance. "
@@ -71,8 +74,7 @@ function BuildThisBody({ recipe }: { recipe: BuildRecipe }) {
       <details>
         <summary>Run this UI with your own node</summary>
         <p>Check out the demo source, then run these commands from its directory. Replace the listener URLs with your own, and enable Mesh on port 8080 for its API playground.</p>
-        <CopyButton value={selfHostedDemoExample()} label="self-hosted demo setup" />
-        <pre className="developer-code">{selfHostedDemoExample()}</pre>
+        <CodeBlock code={selfHostedDemoExample()} title="Terminal" copyLabel="self-hosted demo setup" />
       </details>
       <div className="developer-actions">
         <a
@@ -83,7 +85,7 @@ function BuildThisBody({ recipe }: { recipe: BuildRecipe }) {
           View implementation ↗
         </a>
         {recipe === "tracker" && (
-          <Link to="/wallet/tools/data">Inspect datum & redeemer data →</Link>
+          <Link to="/wallet/tools/data">Inspect datum & redeemer data</Link>
         )}
       </div>
     </div>

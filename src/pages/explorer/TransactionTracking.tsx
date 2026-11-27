@@ -17,13 +17,11 @@ function TrackingBody({ hash }: { hash: string }) {
   return (
     <div className="developer-page">
       <PageIntro
-        eyebrow="Live chain evidence"
         title="Transaction tracker"
         detail="Follow submission, mempool presence, inclusion, and confirmation depth."
-        symbol="↗"
       />
       <form
-        className="developer-panel developer-form"
+        className="lookup-form"
         onSubmit={(e) => {
           e.preventDefault();
           if (isTransactionHash(input.trim()))
@@ -44,7 +42,7 @@ function TrackingBody({ hash }: { hash: string }) {
           />
         </label>
         <button className="experience-primary" type="submit">
-          Track transaction →
+          Track transaction
         </button>
       </form>
       {hash && <TransactionTracker key={hash} hash={hash} />}

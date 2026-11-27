@@ -104,8 +104,7 @@ function Journey({ stake }: { stake: string }) {
     <section className="chain-visual stake-journey">
       <header className="chain-heading">
         <div>
-          <span className="eyebrow">The story of your stake</span>
-          <h2>Delegate. Earn. Repeat.</h2>
+          <h2>Stake history</h2>
         </div>
         {open && (
           <label className="chain-select">
@@ -129,19 +128,19 @@ function Journey({ stake }: { stake: string }) {
       {!open ? (
         <div className="journey-teaser" aria-hidden="true">
           <span>
-            ◎<small>Register</small>
+            <small>Register</small>
           </span>
           <i />
           <span>
-            ◈<small>Delegate</small>
+            <small>Delegate</small>
           </span>
           <i />
           <span>
-            ✦<small>Earn</small>
+            <small>Earn</small>
           </span>
           <i />
           <span>
-            ↗<small>Withdraw</small>
+            <small>Withdraw</small>
           </span>
         </div>
       ) : (
@@ -203,11 +202,11 @@ function Journey({ stake }: { stake: string }) {
                       y1="1"
                       y2="0"
                     >
-                      <stop stopColor="#13594f" />
-                      <stop offset="1" stopColor="#57efc2" />
+                      <stop stopColor="var(--gray-7)" />
+                      <stop offset="1" stopColor="var(--accent)" />
                     </linearGradient>
                   </defs>
-                  <path d="M40 230H960" stroke="#48626b" />
+                  <path d="M40 230H960" stroke="var(--line-strong)" />
                   {epochs.map((epoch) => {
                     const x = 40 + ((epoch - first) / span) * 920,
                       value = totals.get(epoch) ?? 0n,
@@ -255,7 +254,7 @@ function Journey({ stake }: { stake: string }) {
                           cy="230"
                           r={delegated ? 8 : 3}
                           pointerEvents="none"
-                          fill={delegated ? "#bbacff" : "#638e90"}
+                          fill={delegated ? "var(--accent)" : "var(--gray-8)"}
                         />
                         {(epoch === first ||
                           epoch === last ||
@@ -265,7 +264,7 @@ function Journey({ stake }: { stake: string }) {
                             y="274"
                             textAnchor="middle"
                             pointerEvents="none"
-                            fill="#c3d7df"
+                            fill="var(--text-2)"
                             fontSize="15"
                           >
                             {epoch}
@@ -295,7 +294,7 @@ function Journey({ stake }: { stake: string }) {
                         : "No reward records loaded"}
                     </strong>
                     <Link to={`/explorer/epoch/${inspected}`}>
-                      Explore epoch ↗
+                      Explore epoch
                     </Link>
                   </div>
                   <div>
@@ -308,7 +307,7 @@ function Journey({ stake }: { stake: string }) {
                           </span>
                           <PoolIdentity poolId={d.pool_id} />
                           <Link to={`/explorer/tx/${d.tx_hash}`}>
-                            Delegation transaction ↗
+                            Delegation transaction
                           </Link>
                         </div>
                       ))}
@@ -322,7 +321,7 @@ function Journey({ stake }: { stake: string }) {
                               {" "}
                               ·{" "}
                               <Link to={`/explorer/pool/${r.pool_id}`}>
-                                Reward pool ↗
+                                Reward pool
                               </Link>
                             </>
                           )}
@@ -380,14 +379,12 @@ function Journey({ stake }: { stake: string }) {
           </details>
           <div className="mint-heading">
             <div>
-              <span className="eyebrow">On the ledger</span>
-              <h3>Milestones, by transaction date.</h3>
+              <h3>Milestones by transaction date</h3>
             </div>
           </div>
           <ol className="stake-milestones">
             {dated.map((e) => (
               <li key={e.id} className={e.kind}>
-                <i aria-hidden="true">{e.kind === "withdrawal" ? "↗" : "◎"}</i>
                 <div>
                   <time dateTime={new Date(e.time * 1000).toISOString()}>
                     {new Date(e.time * 1000).toLocaleDateString(undefined, {
@@ -396,7 +393,7 @@ function Journey({ stake }: { stake: string }) {
                       day: "numeric",
                     })}
                   </time>
-                  <Link to={`/explorer/tx/${e.hash}`}>{e.label} ↗</Link>
+                  <Link to={`/explorer/tx/${e.hash}`}>{e.label}</Link>
                   <strong>{e.value}</strong>
                 </div>
               </li>

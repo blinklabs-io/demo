@@ -70,8 +70,7 @@ export function Cip25Editor({
     <section className="cip25-editor">
       <header>
         <div>
-          <span className="eyebrow">CIP-25 · version 1</span>
-          <h3>Give your token an identity.</h3>
+          <h3>CIP-25 metadata, version 1</h3>
         </div>
         <span className="metadata-size">
           {new TextEncoder().encode(json).length.toLocaleString()} / 8,192 bytes
@@ -89,7 +88,6 @@ export function Cip25Editor({
             />
           ) : (
             <>
-              <span aria-hidden="true">✦</span>
               <small>
                 {image.startsWith("ipfs:")
                   ? "IPFS artwork"

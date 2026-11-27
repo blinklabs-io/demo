@@ -1,3 +1,4 @@
+import { Icon } from "../Icon";
 import { useId, type ReactNode } from "react";
 import { Link } from "../NetworkLink";
 
@@ -41,65 +42,24 @@ export function Gauge({
   );
   return (
     <figure className={`instrument-gauge gauge-${tone}`}>
-      <svg viewBox="0 0 260 230" role="img" aria-labelledby={id}>
+      <figcaption>{label}</figcaption>
+      <p className="gauge-reading">
+        {value.toFixed(1)}
+        <span>%</span>
+      </p>
+      <svg
+        viewBox="0 0 100 2"
+        preserveAspectRatio="none"
+        role="img"
+        aria-labelledby={id}
+      >
         <title id={id}>
           {label}: {value.toFixed(1)} percent{detail ? `. ${detail}` : ""}
         </title>
-        <circle className="gauge-halo" cx="130" cy="120" r="94" />
-        <circle
-          className="gauge-track"
-          cx="130"
-          cy="120"
-          r="88"
-          pathLength="100"
-          strokeDasharray="75 25"
-          transform="rotate(135 130 120)"
-        />
-        <circle
-          className="gauge-fill"
-          cx="130"
-          cy="120"
-          r="88"
-          pathLength="100"
-          strokeDasharray={`${bounded * 0.75} ${100 - bounded * 0.75}`}
-          transform="rotate(135 130 120)"
-        />
-        {Array.from({ length: 21 }, (_, i) => (
-          <line
-            key={i}
-            className={i % 5 === 0 ? "gauge-tick major" : "gauge-tick"}
-            x1="230"
-            x2={i % 5 === 0 ? "240" : "235"}
-            y1="120"
-            y2="120"
-            transform={`rotate(${135 + i * 13.5} 130 120)`}
-          />
-        ))}
-        <text className="gauge-scale" x="44" y="213">
-          0
-        </text>
-        <text className="gauge-scale" x="130" y="12" textAnchor="middle">
-          50
-        </text>
-        <text className="gauge-scale" x="216" y="213" textAnchor="end">
-          100
-        </text>
-        <g
-          className="gauge-needle"
-          transform={`rotate(${135 + bounded * 2.7} 130 120)`}
-        >
-          <line x1="118" y1="120" x2="202" y2="120" />
-          <circle cx="130" cy="120" r="6" />
-        </g>
-        <text className="gauge-reading" x="130" y="176" textAnchor="middle">
-          {value.toFixed(1)}
-          <tspan>%</tspan>
-        </text>
+        <rect className="gauge-track" width="100" height="2" />
+        <rect className="gauge-fill" width={bounded} height="2" />
       </svg>
-      <figcaption>
-        <strong>{label}</strong>
-        {detail && <span>{detail}</span>}
-      </figcaption>
+      {detail && <small>{detail}</small>}
     </figure>
   );
 }
@@ -108,26 +68,21 @@ export function PageIntro({
   eyebrow,
   title,
   detail,
-  symbol = "◈",
   action,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   detail?: string;
-  symbol?: ReactNode;
   action?: ReactNode;
 }) {
   return (
     <header className="showcase-intro">
       <div>
-        <span className="eyebrow">{eyebrow}</span>
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
         <h1>{title}</h1>
         {detail && <p>{detail}</p>}
         {action}
       </div>
-      <span className="showcase-symbol" aria-hidden="true">
-        {symbol}
-      </span>
     </header>
   );
 }
@@ -166,7 +121,18 @@ export function Meter({
   );
 }
 
-const colors = ["#2dd4bf", "#818cf8", "#fbbf24", "#f472b6", "#60a5fa"];
+const compact = (value: number) =>
+  value.toLocaleString(undefined, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
+const colors = [
+  "var(--viz-1)",
+  "var(--viz-2)",
+  "var(--viz-3)",
+  "var(--viz-4)",
+  "var(--viz-5)",
+];
 export function Distribution({
   title,
   items,
@@ -176,63 +142,32 @@ export function Distribution({
   items: { label: string; value: bigint; display: string }[];
   unit?: string;
 }) {
-  const id = useId();
   const total = items.reduce(
     (sum, item) => sum + (item.value > 0n ? item.value : 0n),
     0n,
   );
   return (
     <div className="distribution">
-      <div className="donut-wrap">
-        <svg viewBox="0 0 180 180" role="img" aria-labelledby={id}>
-          <title id={id}>
-            {title}:{" "}
-            {items.map((item) => `${item.label} ${item.display}`).join(", ")}
-          </title>
-          <circle
-            cx="90"
-            cy="90"
-            r="67"
-            fill="none"
-            stroke="#243148"
-            strokeWidth="20"
-          />
-          {items.map((item, i) => {
-            const percent = ratio(item.value > 0n ? item.value : 0n, total);
-            const start = items
-              .slice(0, i)
-              .reduce(
-                (sum, previous) =>
-                  sum + ratio(previous.value > 0n ? previous.value : 0n, total),
-                0,
-              );
-            return (
-              <circle
-                key={item.label}
-                cx="90"
-                cy="90"
-                r="67"
-                fill="none"
-                stroke={colors[i % colors.length]}
-                strokeWidth="20"
-                pathLength="100"
-                strokeDasharray={`${percent} ${100 - percent}`}
-                strokeDashoffset={-start}
-                transform="rotate(-90 90 90)"
-              >
-                <title>
-                  {item.label}: {item.display} ({percent.toFixed(1)}%)
-                </title>
-              </circle>
-            );
-          })}
-          <text x="90" y="86" textAnchor="middle" className="donut-caption">
-            {title}
-          </text>
-          <text x="90" y="108" textAnchor="middle" className="donut-total">
-            {unit || (total === 0n ? "No data" : "100%")}
-          </text>
-        </svg>
+      {unit && (
+        <p className="distribution-total">
+          <strong>{unit}</strong> {title}
+        </p>
+      )}
+      <div
+        className="stack-bar"
+        role="img"
+        aria-label={`${title}: ${items.map((item) => `${item.label} ${item.display}`).join(", ")}`}
+      >
+        {items.map((item, i) => {
+          const percent = ratio(item.value > 0n ? item.value : 0n, total);
+          return (
+            <span
+              key={item.label}
+              title={`${item.label}: ${item.display} (${percent.toFixed(1)}%)`}
+              style={{ flexGrow: percent, background: colors[i % colors.length] }}
+            />
+          );
+        })}
       </div>
       <ul className="chart-legend">
         {items.map((item, i) => (
@@ -293,9 +228,11 @@ export function BarChart({
   return (
     <div className="bar-chart">
       <div className="chart-scale">
-        <span>{max.toLocaleString()}</span>
+        <span>{compact(max)}</span>
         <span>
-          {(max / 2).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+          {items.every((item) => Number.isInteger(item.value)) && max % 2
+            ? ""
+            : compact(max / 2)}
         </span>
         <span>0</span>
       </div>
@@ -358,7 +295,7 @@ export function Timeline({
           key={`${item.label}:${i}`}
           className={item.complete ? "complete" : ""}
         >
-          <span className="timeline-node">{item.complete ? "✓" : i + 1}</span>
+          <span className="timeline-node">{item.complete ? <Icon name="check" size={16} /> : i + 1}</span>
           <div>
             <strong>{item.label}</strong>
             <div className="timeline-detail">{item.detail}</div>
@@ -372,19 +309,14 @@ export function Timeline({
 export function EmptyState({
   title,
   detail,
-  icon = "◇",
   action,
 }: {
   title: string;
   detail: string;
-  icon?: string;
   action?: ReactNode;
 }) {
   return (
     <div className="visual-empty">
-      <span className="empty-orbit" aria-hidden="true">
-        {icon}
-      </span>
       <h2>{title}</h2>
       <p>{detail}</p>
       {action}

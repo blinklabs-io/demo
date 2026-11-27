@@ -60,8 +60,8 @@ export function PriceChart({
         >
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-              <stop stopColor="#36e6c0" stopOpacity=".32" />
-              <stop offset="1" stopColor="#36e6c0" stopOpacity="0" />
+              <stop stopColor="var(--accent)" stopOpacity=".32" />
+              <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
             </linearGradient>
           </defs>
           {[40, 85, 130, 175].map((height) => (
@@ -71,7 +71,7 @@ export function PriceChart({
               x2="550"
               y1={height}
               y2={height}
-              stroke="#273846"
+              stroke="var(--line)"
               strokeDasharray="3 6"
             />
           ))}
@@ -81,7 +81,7 @@ export function PriceChart({
           <path
             d={path}
             fill="none"
-            stroke="#36e6c0"
+            stroke="var(--accent)"
             strokeWidth="3"
             strokeLinejoin="round"
           />
@@ -91,7 +91,7 @@ export function PriceChart({
               cx={x(point.time)}
               cy={y(point.value)}
               r={valid.length === 1 ? 5 : 3}
-              fill="#7cf5dd"
+              fill="var(--accent-strong)"
               tabIndex={0}
             >
               <title>

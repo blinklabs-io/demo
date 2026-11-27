@@ -202,54 +202,16 @@ function marketDiagram(family: Family, selected?: KernelRecord) {
           ? ["Publish", "Discover", "Fill", "Compose"]
           : ["List", "Discover", "Buy", "Own"];
   return (
-    <figure className="market-illustration">
-      <svg
-        viewBox="0 0 420 220"
-        role="img"
-        aria-label={`${labels.join(" → ")}: direct on-chain workflow`}
-      >
-        <path
-          d="M55 65 C140 20 285 20 365 65 M365 65 C405 130 310 180 215 155 M215 155 C100 190 15 140 55 65"
-          fill="none"
-          stroke="#5edcc44a"
-          strokeWidth="2"
-          strokeDasharray="5 7"
-        />
-        {labels.map((label, i) => {
-          const [x, y] = [
-            [55, 65],
-            [215, 40],
-            [365, 65],
-            [215, 155],
-          ][i];
-          return (
-            <g key={label}>
-              <circle
-                cx={x}
-                cy={y}
-                r="29"
-                fill={i % 2 ? "#4e3569" : "#1c5c56"}
-                stroke={i % 2 ? "#ae94e8" : "#66e3c3"}
-              />
-              <text
-                x={x}
-                y={y + 5}
-                textAnchor="middle"
-                style={{ fontSize: 19, fill: "#d6fff4" }}
-              >
-                {i + 1}
-              </text>
-              <text x={x} y={y + 49} textAnchor="middle">
-                {label}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-      <figcaption>
-        One chain · existing contracts · your wallet signs
-      </figcaption>
-    </figure>
+    <ol
+      className="swap-execution-path market-steps"
+      aria-label="How a position moves through this market"
+    >
+      {labels.map((label, i) => (
+        <li key={label}>
+          <strong>{i + 1}.</strong> {label}
+        </li>
+      ))}
+    </ol>
   );
 }
 function SelectedAction({
@@ -467,7 +429,7 @@ function SelectedAction({
       {recordTerms(record, term)}
       <div className="market-actions">
         <Link to={`/explorer/tx/${record.utxo.input().transactionId()}`}>
-          Inspect transaction ↗
+          Inspect transaction
         </Link>
         <CopyButton value={record.outpoint} label="output reference" />
       </div>
@@ -776,14 +738,14 @@ export function KernelMarket({ family }: { family: Family }) {
       .includes(search.toLowerCase().trim()),
   );
   const titles = {
-    lending: ["Set your terms.", "Fund real possibilities."],
-    options: ["Price the possibility.", "Own the choice."],
-    orders: ["The chain is", "the order book."],
-    marketplace: ["Trade the position.", "Keep the possibilities."],
+    lending: "Peer-to-peer loans",
+    options: "Covered options",
+    orders: "Limit orders",
+    marketplace: "Position marketplace",
   };
   const details = {
     lending:
-      "Peer-to-peer loan requests, offers, and repayment—without an external lending API.",
+      "Peer-to-peer loan requests, offers, and repayment, without an external lending API.",
     options:
       "Covered options with public strikes, premiums, and expirations. Every position is an on-chain output.",
     orders:
@@ -797,13 +759,8 @@ export function KernelMarket({ family }: { family: Family }) {
       <MarketConfirmation tracking={tracking} />
       <section className="market-hero">
         <div>
-          <span className="eyebrow">
-            DeFi Kernel · {DINGO_NETWORK.label} · powered by Dingo
-          </span>
           <h1>
-            {titles[family][0]}
-            <br />
-            <em>{titles[family][1]}</em>
+            DeFi Kernel {titles[family].toLowerCase()} on {DINGO_NETWORK.label}
           </h1>
           <p>{details[family]}</p>
           <div className="market-source">
@@ -872,12 +829,11 @@ export function KernelMarket({ family }: { family: Family }) {
             <section className="market-catalog">
               <div className="market-toolbar">
                 <div>
-                  <span className="eyebrow">Live contract outputs</span>
                   <h2>
                     {lanes[family].find((item) => item.lane === lane)?.label}
                   </h2>
                 </div>
-                <button onClick={() => void market.refetch()}>Refresh ↻</button>
+                <button onClick={() => void market.refetch()}>Refresh</button>
               </div>
               <input
                 type="search"
@@ -957,7 +913,7 @@ export function KernelMarket({ family }: { family: Family }) {
                     setSelected("");
                   }}
                 >
-                  More positions →
+                  More positions
                 </button>
               </div>
             </section>
@@ -997,7 +953,7 @@ export function KernelMarket({ family }: { family: Family }) {
         Discovery uses beacon-policy queries and existing reference scripts
         through Dingo.{" "}
         <Link to={`/explorer/policy/${KERNEL_LANES[lane].beaconPolicy}`}>
-          Explore this protocol’s beacon policy ↗
+          Explore this protocol’s beacon policy
         </Link>
       </p>
     </div>

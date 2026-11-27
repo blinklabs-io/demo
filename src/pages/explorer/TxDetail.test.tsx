@@ -64,7 +64,7 @@ it("resolves uppercase pending IDs with the same lowercase identity as the track
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
-    expect(host.textContent).toContain("Waiting for a block.");
+    expect(host.textContent).toContain("Pending transaction");
     expect(
       host
         .querySelector("[data-tracked-hash]")

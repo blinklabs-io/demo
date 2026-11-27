@@ -73,8 +73,7 @@ function Transactions({ block }: { block: BlockSummary }) {
     <section className="leios-panel" aria-label="Leios block transactions">
       <header className="leios-heading">
         <div>
-          <span className="eyebrow">{certified ? "Certified Endorser Block" : "Ranking-block body"}</span>
-          <h2>{certified ? "The transactions behind the certificate." : "Transactions carried by this block."}</h2>
+          <h2>{certified ? "Transactions in the certified endorser block" : "Transactions in this ranking block"}</h2>
         </div>
       </header>
       {native.isLoading && <p role="status">Reading the ranking block…</p>}
@@ -91,7 +90,7 @@ function Transactions({ block }: { block: BlockSummary }) {
           {parent.isLoading && <p role="status">Resolving the certified EB from the previous ranking block…</p>}
           {parent.error && <p role="alert">{parent.error.message} <button type="button" onClick={() => void parent.refetch()}>Retry EB identity</button></p>}
           {parent.data && <div className="leios-announcement">
-            <span>Certified EB hash · announced by <Link to={`/explorer/block/${parent.data.block}`}>the previous ranking block ↗</Link></span>
+            <span>Certified EB hash · announced by <Link to={`/explorer/block/${parent.data.block}`}>the previous ranking block</Link></span>
             <code>{parent.data.hash}</code><CopyButton value={parent.data.hash} label="certified endorser block hash" />
           </div>}
           <p className="leios-note">These transactions are confirmed by this ranking block’s certificate and are stored separately from its body. The certified EB was announced by the previous block. Its manifest lists transaction references; transaction bytes measure the full serialized transactions separately.</p>

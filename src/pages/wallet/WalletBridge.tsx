@@ -17,9 +17,9 @@ const stages = [
 ] as const;
 export default function WalletBridge() {
   if (DINGO_NETWORK.id !== "prime-testnet") return <section className="market-hero">
-    <div><span className="eyebrow">Reactor · Apex Fusion</span><h1>Bridge from Prime Testnet.</h1>
+    <div><h1>Reactor bridge from Prime Testnet</h1>
       <p>Move test AP3X from Prime to Vector or Nexus. Open Prime Testnet to build and sign a transfer.</p>
-      <Link className="experience-primary" to="/wallet/bridge?network=prime-testnet">Open Prime bridge →</Link>
+      <Link className="experience-primary" to="/wallet/bridge?network=prime-testnet">Open Prime bridge</Link>
     </div>
   </section>;
   return <BridgeWorkspace />;
@@ -44,14 +44,14 @@ function BridgeWorkspace() {
   const available = !!settings.data && !settings.isError && !settings.data.paused && settings.data.destinations.includes(destination);
   const progress = stages.findIndex(([status]) => status === transfer.data?.status);
   return <div className="markets-page bridge-page">
-    <section className="market-hero"><div><span className="eyebrow">Prime Testnet · Reactor Bridge</span><h1>Move AP3X.<br /><em>Across the fusion.</em></h1>
+    <section className="market-hero"><div><h1>Bridge AP3X from Prime Testnet</h1>
       <p>Build a Prime transaction here. Your wallet signs, Dingo submits, and Reactor delivers to Vector or Nexus Testnet.</p>
       <a href={REACTOR_DOCS} target="_blank" rel="noopener noreferrer">How Reactor works ↗</a>
     </div></section>
     <div className="bridge-flow" role="img" aria-label={`Prime Testnet through Reactor to ${chainName(destination)} Testnet`}>
-      <div><span>P</span><strong>Prime</strong><small>Testnet · AP3X</small></div><i aria-hidden="true">→</i>
-      <div><span>⇄</span><strong>Reactor</strong><small>Witness · Batch · Deliver</small></div><i aria-hidden="true">→</i>
-      <div><span>{destination === "vector" ? "V" : "N"}</span><strong>{chainName(destination)}</strong><small>Testnet · AP3X</small></div>
+      <div><strong>Prime</strong><small>Testnet, AP3X</small></div><i aria-hidden="true">→</i>
+      <div><strong>Reactor</strong><small>Witnesses, batches and delivers</small></div><i aria-hidden="true">→</i>
+      <div><strong>{chainName(destination)}</strong><small>Testnet, AP3X</small></div>
     </div>
     <section className="bridge-settings" aria-label="Reactor availability">
       <h2>Live bridge conditions</h2>

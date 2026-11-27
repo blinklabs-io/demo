@@ -84,7 +84,7 @@ function Distribution({
       id: "other",
       weight: rows.slice(24).reduce((n, h) => n + BigInt(h.quantity), 0n),
       label: `${rows.length - 24} other loaded addresses`,
-      color: "#7595ae",
+      color: "var(--gray-8)",
       href: "",
     });
   if (remaining > 0n)
@@ -92,7 +92,7 @@ function Distribution({
       id: "unloaded",
       weight: remaining,
       label: "Supply not mapped in loaded addresses",
-      color: "#42576c",
+      color: "var(--gray-7)",
       href: "",
     });
   const mapHeight = entries.length === 1 ? 180 : compact ? 600 : 480;
@@ -106,8 +106,7 @@ function Distribution({
     <section className="chain-visual asset-landscape">
       <header className="chain-heading">
         <div>
-          <span className="eyebrow">Where the supply lives</span>
-          <h2>The ownership landscape.</h2>
+          <h2>Supply by holder address</h2>
         </div>
         <div className="chain-stat">
           <strong>{(fraction(loaded, supply) * 100).toFixed(1)}%</strong>
@@ -195,7 +194,7 @@ function Distribution({
                     <text
                       x={t.x + 16}
                       y={t.y + 30}
-                      fill="#ecfff9"
+                      fill="var(--text)"
                       fontSize="22"
                     >
                       {(fraction(t.weight, supply) * 100).toFixed(2)}%
@@ -203,7 +202,7 @@ function Distribution({
                     <text
                       x={t.x + 16}
                       y={t.y + 54}
-                      fill="#b7cbd5"
+                      fill="var(--text-2)"
                       fontSize="12"
                     >
                       {t.label}
@@ -257,8 +256,7 @@ function Distribution({
       </p>
       <div className="mint-heading">
         <div>
-          <span className="eyebrow">Supply in motion</span>
-          <h3>Created. Destroyed. Recorded.</h3>
+          <h3>Mint and burn history</h3>
         </div>
         {!history && (
           <button onClick={() => setHistory(true)}>

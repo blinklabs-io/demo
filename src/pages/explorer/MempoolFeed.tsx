@@ -1,4 +1,6 @@
 import { Metric, PageIntro } from "../../components/explorer/Visuals";
+import { Link } from "../../components/NetworkLink";
+import { RollingNumber } from "../../components/RollingNumber";
 import { useMempoolStore } from "../../stores/mempoolStore";
 import { Panel } from "../../components/explorer/Panel";
 import { HashLink } from "../../components/explorer/HashLink";
@@ -21,99 +23,89 @@ export default function MempoolFeed() {
 
   const sorted = useMemo(() => [...pendingTxs.values()].sort((a, b) => b.seenAt - a.seenAt), [pendingTxs]);
 
+  const feed =
+    status === "live"
+      ? "Connected"
+      : status === "error"
+        ? "Reconnecting"
+        : status === "connecting"
+          ? "Connecting"
+          : "Not started";
+
   return (
     <div className="flex flex-col gap-4">
       <PageIntro
-        eyebrow="Before the next block"
         title="Mempool"
-        detail="Live transaction arrivals, streamed directly from Dingo."
-        symbol="≋"
-      />
-      <MempoolGraph transactions={sorted} status={status} />
-      <Panel
-        title={
-          <span className="flex items-center gap-2">
-            Mempool
-            <span
-              className={`h-2 w-2 rounded-full ${
-                status === "live"
-                  ? "bg-emerald-500"
-                  : status === "error"
-                    ? "bg-red-500"
-                    : "bg-amber-500"
-              }`}
-            />
-            <span className="text-xs font-normal text-slate-500">
-              {status === "live" && `${sorted.length} pending`}
-              {status === "connecting" && "connecting…"}
-              {status === "error" && "reconnecting…"}
-              {status === "idle" && "not started"}
-            </span>
-          </span>
+        detail="Transactions Dingo has seen that are not yet in a block. The list updates as they arrive."
+        action={
+          <div className="page-actions">
+            <Link className="experience-primary" to="/wallet/send">Send a test transaction</Link>
+            <Link className="button-secondary" to="/wallet/tools/transactions">Build one without a wallet</Link>
+            <Link className="button-secondary" to="/explorer/track">Track a transaction</Link>
+          </div>
         }
-      >
-        <div className="metric-grid mb-6">
-          <Metric label="Pending transactions" value={sorted.length} />
-          <Metric
-            label="Total fees"
-            value={formatNativeCoin(sorted.reduce((sum, tx) => sum + tx.fee, 0n))}
-          />
-          <Metric
-            label="Live feed"
-            value={status === "live" ? "Connected" : "Connecting"}
-          />
-        </div>
-        <p className="mb-4 text-xs text-slate-400">
-          Transactions waiting to be included in a block. Updates arrive live
-          from Dingo.
-        </p>
-
+      />
+      <div className="metric-grid">
+        <Metric
+          label="Pending transactions"
+          value={<RollingNumber value={sorted.length.toLocaleString()} />}
+        />
+        <Metric
+          label="Total fees"
+          value={
+            <RollingNumber
+              value={formatNativeCoin(
+                sorted.reduce((sum, tx) => sum + tx.fee, 0n),
+              )}
+            />
+          }
+        />
+        <Metric label="Live feed" value={feed} />
+      </div>
+      <Panel title="Pending transactions">
         {error && status === "error" && (
           <p className="mb-3 text-sm text-red-400">{error}</p>
         )}
-
-        {status === "live" && sorted.length === 0 && !error && (
-          <div className="mempool-radar-empty">
-            <div className="mempool-radar" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-              <span className="radar-sweep" />
-              <b>0</b>
-            </div>
-            <div>
-              <span className="eyebrow">Live feed connected</span>
-              <h2>Clear for the next block.</h2>
-              <p>
-                No transactions are waiting. New arrivals appear automatically.
-              </p>
-            </div>
+        {sorted.length === 0 ? (
+          <p className="panel-empty">
+            {status === "live" && !error
+              ? "No transactions are waiting. New arrivals appear here automatically."
+              : "Waiting for the mempool feed."}
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Transaction</th>
+                  <th className="num">Inputs</th>
+                  <th className="num">Outputs</th>
+                  <th className="num">Output value</th>
+                  <th className="num">Fee</th>
+                  <th className="num">Seen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((tx) => (
+                  <tr key={tx.hash}>
+                    <td>
+                      <HashLink kind="tx" id={tx.hash} />
+                    </td>
+                    <td className="num">{tx.inputCount}</td>
+                    <td className="num">{tx.outputCount}</td>
+                    <td className="num">
+                      {formatNativeCoin(tx.totalOutputLovelace)}
+                    </td>
+                    <td className="num">{formatNativeCoin(tx.fee)}</td>
+                    <td className="num">{formatAge(tx.seenAt, now)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-
-        <ul className="flex flex-col gap-2">
-          {sorted.map((tx) => (
-            <li
-              key={tx.hash}
-              className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-800 p-2 text-sm"
-            >
-              <div className="flex items-center gap-3">
-                <HashLink kind="tx" id={tx.hash} />
-                <span className="text-xs text-slate-500">
-                  {tx.inputCount} in · {tx.outputCount} out
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <span>{formatNativeCoin(tx.totalOutputLovelace)}</span>
-                <span>fee {formatNativeCoin(tx.fee)}</span>
-                <span className="text-slate-600">
-                  {formatAge(tx.seenAt, now)}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
       </Panel>
+      <MempoolGraph transactions={sorted} status={status} />
     </div>
   );
 }

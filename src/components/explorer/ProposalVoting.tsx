@@ -165,7 +165,7 @@ function VotingForm({
         ) : !api ? (
           <div className="vote-connect">
             <div>
-              <h3>Make your voice count.</h3>
+              <h3>Vote as a DRep</h3>
               <p>Connect your DRep wallet to vote on this governance action.</p>
             </div>
             <WalletConnectSummary />

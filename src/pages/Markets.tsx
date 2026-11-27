@@ -27,25 +27,19 @@ export default function Markets() {
     return (
       <section className="market-hero">
         <div>
-          <span className="eyebrow">Existing Preprod contracts</span>
-          <h1>
-            Explore more
-            <br />
-            <em>of what Dingo can do.</em>
-          </h1>
+          <h1>Markets on Preprod</h1>
           <p>
-            These markets use Preprod deployments. Switching networks
-            disconnects your wallet and starts a fresh workspace.
+            Switching networks disconnects your wallet and starts a fresh workspace.
           </p>
           <div className="market-actions">
             <Link
               className="experience-primary"
               to={`/wallet/markets/${tab}?network=preprod`}
             >
-              Open Preprod markets →
+              Open Preprod markets
             </Link>
             <Link to="/wallet/swap?network=preview">
-              Explore Preview swaps ↗
+              Explore Preview swaps
             </Link>
           </div>
         </div>
