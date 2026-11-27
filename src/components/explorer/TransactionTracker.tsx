@@ -15,10 +15,13 @@ import "./developer-tools.css";
 export function TransactionTracker({
   hash,
   embedded = false,
+  validUntil: indexedValidUntil,
 }: {
   hash: string;
   /** On the transaction's own page the hash and a link to it are already shown. */
   embedded?: boolean;
+  /** Upper validity bound read from the indexed transaction, when known. */
+  validUntil?: number;
 }) {
   const normalized = hash.toLowerCase();
   const receipt = useSubmissionStore((s) => s.receipts.get(normalized));
@@ -47,7 +50,8 @@ export function TransactionTracker({
   const inclusion = snapshot?.inclusion;
   const validUntil =
     (receipt?.network === DINGO_NETWORK.id ? receipt.validUntil : undefined) ??
-    (observed.hash === normalized ? observed.validUntil : undefined);
+    (observed.hash === normalized ? observed.validUntil : undefined) ??
+    indexedValidUntil;
   const verdict = query.isError
     ? "Tracking unavailable"
     : trackingVerdict(snapshot, !!pending && stream === "live", validUntil);

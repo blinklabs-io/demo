@@ -42,12 +42,12 @@ afterEach(async () => {
   client.clear();
   vi.useRealTimers();
 });
-async function render() {
+async function render(validUntil?: number) {
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <TransactionTracker hash={hash} />
+          <TransactionTracker hash={hash} validUntil={validUntil} />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
@@ -174,4 +174,14 @@ it("retains an observed validity bound after eviction and reports expiry without
   });
   await check();
   expect(host.textContent).toContain("Validity window ended");
+});
+it("shows the indexed validity bound for a transaction this tab did not submit", async () => {
+  vi.mocked(readTrackingSnapshot).mockResolvedValue({
+    tip,
+    inclusion,
+    depth: 4,
+  });
+  await render(1100);
+  expect(host.textContent).toContain("Valid before slot 1,100");
+  expect(host.textContent).not.toContain("Validity bound unavailable");
 });
