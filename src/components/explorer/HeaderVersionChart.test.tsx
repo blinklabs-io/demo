@@ -126,8 +126,12 @@ it("uses hourly boundaries and full versions while excluding out-of-window cache
   try {
     expect(host.querySelectorAll(".header-node-legend button")).toHaveLength(3);
     expect(host.textContent).toContain("Amaru");
-    expect(host.textContent).toContain("cardano-bean");
-    expect(host.textContent).not.toContain("Dingo");
+    expect(host.textContent).toContain("Bean");
+    expect(
+      [...host.querySelectorAll(".header-node-legend button")].some((button) =>
+        button.textContent?.includes("Dingo"),
+      ),
+    ).toBe(false);
     const hours = host.querySelectorAll<HTMLButtonElement>(
       ".header-hour-chart button",
     );
@@ -227,7 +231,7 @@ it("gives each Haskell header version its own labelled row in one family colour"
     await close();
   }
 });
-it("keeps Gerolamo and cardano-bean in one chart colour", async () => {
+it("keeps Gerolamo and Bean in one chart colour", async () => {
   const { host, close } = await render([record(1, "42"), record(2, "67")]);
   try {
     const fills = [
@@ -250,7 +254,7 @@ it("displays packed producer signals consistently in the chart and inspection li
     const legend = host.querySelector(".header-node-legend")!;
     expect(legend.textContent).toContain("Dingo");
     expect(legend.textContent).toContain("Amaru");
-    expect(legend.textContent).toContain("cardano-bean");
+    expect(legend.textContent).toContain("Bean");
     expect(legend.textContent).toContain("Identity withheld");
     expect(legend.textContent).toContain("Unsupported scheme 1");
     const dingo = [

@@ -42,12 +42,6 @@ it("keeps historical IDs, legacy markers, opt-outs and unknown identifiers disti
     name: "Gerolamo",
     registration: "historical",
   });
-  expect(nodeImplementation("67")).toMatchObject({
-    id: "cardano-bean",
-    name: "cardano-bean",
-    icon: "/nodes/bean.svg",
-    registration: "historical",
-  });
   expect(nodeImplementation("0").name).toContain("assumed");
   expect(nodeImplementation("1").name).toBe("Haskell cardano-node");
   expect(nodeImplementation("2").name).toBe("Haskell cardano-node");
@@ -61,16 +55,19 @@ it("keeps historical IDs, legacy markers, opt-outs and unknown identifiers disti
 });
 it("resolves the current registry while preserving historical identities", () => {
   expect(nodeImplementation("79")).toMatchObject({ id: "tsunagi", name: "TSUNAGI", registration: "active", decodedPayload: { kind: "opaque", reason: "absent" } });
-  expect(nodeImplementation("65")).toMatchObject({ id: "amaru", registration: "active", decodedPayload: { kind: "opaque", reason: "invalid-definition" } });
+  expect(nodeImplementation("65")).toMatchObject({ id: "amaru", registration: "active", decodedPayload: { kind: "decoded", layoutVersion: 0, fields: [{ name: "days_since_amaru_epoch", value: 0 }, { name: "flags", value: 0 }] } });
+  expect(nodeImplementation("67")).toMatchObject({ id: "cardano-bean", name: "Bean", registration: "active" });
+  expect(nodeImplementation("73")).toMatchObject({ id: "scarab", name: "Scarab", registration: "active" });
   expect(nodeImplementation("69")).toMatchObject({ id: "dingo", registration: "historical" });
   expect(nodeImplementation("42")).toMatchObject({ id: "gerolamo", name: "Gerolamo", registration: "historical" });
-  expect(nodeImplementation("67")).toMatchObject({ id: "cardano-bean", name: "cardano-bean", registration: "historical" });
 });
-it.each(["65", "2637889", "4374593", "4374849", String(0x0042ff41), "268419137", String(0x1042c041)])(
-  "keeps Amaru payload %s opaque when its linked definition is nonconforming", minor => {
-    const identity = nodeImplementation(minor);
-    expect(identity).toMatchObject({ id: "amaru", decodedPayload: { kind: "opaque", reason: "invalid-definition" } });
-    expect(identity.payloadSummary).toBeUndefined();
-    expect(identity.detail).toContain("opaque payload");
-  },
-);
+it("decodes Amaru payloads with the current registry-linked definition", () => {
+  expect(nodeImplementation(String((64 << 8) + 65))).toMatchObject({
+    id: "amaru",
+    payloadSummary: "days_since_amaru_epoch: 1 · flags: 0",
+    decodedPayload: { kind: "decoded", layoutVersion: 0, fields: [
+      { name: "days_since_amaru_epoch", value: 1 },
+      { name: "flags", value: 0 },
+    ] },
+  });
+});

@@ -2,13 +2,15 @@ import registry from "./nodeRegistry.json";
 import amaruDefinition from "./amaruPayloadDefinition.json";
 import { decodeProducerPayload } from "./producerPayload";
 
-export const NODE_REGISTRY_SOURCE = "https://github.com/cardano-foundation/CIPs/blob/8bf55a9b05841799000f454b619ee5acd4b41854/CIP-0203/registry.json";
+export const NODE_REGISTRY_SOURCE = "https://github.com/cardano-foundation/CIPs/blob/c7d5a3897c75aef9e0cf6c37187da7d25ecc1248/CIP-0203/registry.json";
 export const NODE_PAYLOAD_DEFINITION_SOURCES: Readonly<Record<string, string>> = {
-  "0:65": "https://github.com/pragma-org/amaru/blob/8fce2fbbf25e8445d4b5060598a02c8aff1df032/cip-203-payload-definition.json",
+  "0:65": "https://raw.githubusercontent.com/pragma-org/amaru/main/crates/amaru-kernel/src/cardano/software_tag/cip-0203-payload.json",
 };
 const definitions: Readonly<Record<string, unknown>> = { "0:65": amaruDefinition };
 const presentation: Readonly<Record<number, { id: string; icon: string }>> = {
   65: { id: "amaru", icon: "/nodes/amaru.svg" },
+  67: { id: "cardano-bean", icon: "/nodes/bean.svg" },
+  73: { id: "scarab", icon: "/nodes/unknown.svg" },
   79: { id: "tsunagi", icon: "/nodes/unknown.svg" },
 };
 

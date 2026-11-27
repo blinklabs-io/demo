@@ -148,11 +148,12 @@ export function RecentHeaderVersions({
         <p className="mt-2 text-xs text-slate-500">
           Uses the same headers as the block list below. Shares cover decoded
           headers in this recent window, not a 24-hour network total. Node
-          identities follow the CIP-203 registry, including Amaru and TSUNAGI,
-          with historical Dingo and Gerolamo signals retained. Payloads without
-          a supported definition remain opaque. IDs 42, 67 and 79 identify
-          Gerolamo, cardano-bean and TSUNAGI; unsignalled blocks are assumed
-          Haskell. Explicit
+          identities follow the CIP-203 registry, including Amaru, Bean, Scarab
+          and TSUNAGI, with historical Dingo and Gerolamo signals retained.
+          Payloads without a supported definition remain opaque. Registered
+          IDs 65, 67, 73 and 79 identify Amaru, Bean, Scarab and TSUNAGI;
+          historical IDs 42 and 69 identify Gerolamo and Dingo. Unsignalled
+          blocks are assumed Haskell. Explicit
           opt-outs and unsupported signals stay unidentified.
         </p>
       </section>
