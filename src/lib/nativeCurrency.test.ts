@@ -17,3 +17,15 @@ it.each([
   expect(compactAda(1000000000000n)).toBe("1M AP3X");
   expect(CARDANO_NETWORK_ID).toBe(networkId);
 });
+
+it.each([
+  ["mainnet", "ADA"],
+  ["prime-mainnet", "AP3X"],
+  ["preview", "test ADA"],
+  ["prime-testnet", "test AP3X"],
+] as const)("labels %s native funds as %s", async (network, expected) => {
+  window.history.replaceState(null, "", `/?network=${network}`);
+  vi.resetModules();
+  const { nativeFundsLabel } = await import("./format");
+  expect(nativeFundsLabel()).toBe(expected);
+});

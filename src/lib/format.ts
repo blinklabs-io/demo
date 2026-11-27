@@ -6,6 +6,10 @@ function isPrimeNetwork() {
 }
 export function nativeTicker() { return isPrimeNetwork() ? "AP3X" : "ADA"; }
 export function nativeSymbol() { return isPrimeNetwork() ? "AP3X" : "₳"; }
+export function nativeFundsLabel() {
+  const live = DINGO_NETWORK.id === "mainnet" || DINGO_NETWORK.id === "prime-mainnet";
+  return `${live ? "" : "test "}${nativeTicker()}`;
+}
 
 // A grouping-only formatter applied to the whole-coin part as a bigint
 // (Intl.NumberFormat accepts bigint directly, exactly - no float round-trip).

@@ -34,7 +34,11 @@ import {
   type Payment,
 } from "../../lib/tools/transactions";
 import { fileDigest, verifyDocumentProof } from "../../lib/tools/proofs";
-import { formatNativeCoin, nativeTicker } from "../../lib/format";
+import {
+  formatNativeCoin,
+  nativeFundsLabel,
+  nativeTicker,
+} from "../../lib/format";
 import { readWalletDRep } from "../../lib/dingo/governanceVote";
 
 function ToolTransaction(
@@ -858,7 +862,7 @@ function Treasury() {
       <aside className="tool-treasury data-panel">
         <strong>
           {amount || "—"}
-          <small>test {nativeTicker()}</small>
+          <small>{nativeFundsLabel()}</small>
         </strong>
         <p>{DINGO_NETWORK.label} treasury donation</p>
         <span className="tool-route-pill">From your wallet to the Cardano treasury</span>
