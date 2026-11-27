@@ -24,7 +24,7 @@ vi.mock("../dingo/config", () => ({
 }));
 vi.mock("../dingo/blaze", () => ({ getBlaze: vi.fn() }));
 vi.mock("../dingo/blockfrost", () => ({
-  blockfrostFetch: async () => ({ slot: state.slot, network_magic: 764824073 }),
+  blockfrostFetch: async () => ({ slot: state.slot, network_magic: 764824073, system_start: 1506203091 }),
 }));
 vi.mock("../dingo/utxorpc/provider", () => ({
   assertDingoNetwork: vi.fn(),

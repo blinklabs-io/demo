@@ -21,6 +21,7 @@ export type DingoUtxo = {
 export type DingoGenesis = {
   networkMagic: number;
   networkId: string;
+  systemStart: string;
 };
 
 export type DingoQueryClient = {

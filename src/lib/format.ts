@@ -1,8 +1,11 @@
 import type { Core } from "@blaze-cardano/sdk";
 import { DINGO_NETWORK } from "./dingo/config";
 
-export function nativeTicker() { return DINGO_NETWORK.id === "prime-testnet" ? "AP3X" : "ADA"; }
-export function nativeSymbol() { return DINGO_NETWORK.id === "prime-testnet" ? "AP3X" : "₳"; }
+function isPrimeNetwork() {
+  return DINGO_NETWORK.id === "prime-testnet" || DINGO_NETWORK.id === "prime-mainnet";
+}
+export function nativeTicker() { return isPrimeNetwork() ? "AP3X" : "ADA"; }
+export function nativeSymbol() { return isPrimeNetwork() ? "AP3X" : "₳"; }
 
 // A grouping-only formatter applied to the whole-coin part as a bigint
 // (Intl.NumberFormat accepts bigint directly, exactly - no float round-trip).

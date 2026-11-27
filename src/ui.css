@@ -104,6 +104,20 @@
   min-width: 0;
   padding: 24px;
 }
+.workspace-main .mempool-transaction-list > summary {
+  justify-content: flex-start;
+  min-height: 52px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.mempool-transaction-list > summary > h2 {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+.mempool-transaction-list > summary > span:last-child {
+  margin-left: auto;
+}
 .visual-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -23,7 +23,15 @@ import { orderScriptCbor, mainnetOrderScriptCbor } from "./script.fixture";
 const network = vi.hoisted(() => ({ id: "preprod", label: "Preprod", networkMagic: 1, cardanoId: 0 }));
 const rpcPage = vi.hoisted(() => vi.fn());
 vi.mock("../dingo/config", () => ({ DINGO_NETWORK: network, DINGO_CONFIG: { utxorpcUrl: "http://127.0.0.1:9090", blockfrostUrl: "http://127.0.0.1:3000" } }));
-vi.mock("../dingo/networkIdentity", () => ({ get CARDANO_NETWORK_ID() { return network.cardanoId; } }));
+vi.mock("../dingo/networkIdentity", () => ({
+  get CARDANO_NETWORK_ID() { return network.cardanoId; },
+  matchesDingoRpcGenesis: (genesis: { networkMagic: number; systemStart?: string }) =>
+    genesis.networkMagic === network.networkMagic &&
+    (network.id !== "mainnet" || genesis.systemStart === "2017-09-23T21:44:51Z"),
+  matchesDingoRestGenesis: (genesis: { network_magic: number; system_start?: number }) =>
+    genesis.network_magic === network.networkMagic &&
+    (network.id !== "mainnet" || genesis.system_start === 1506203091),
+}));
 vi.mock("./rpc", () => ({ minswapAssetReader: async () => rpcPage, readMinswapAssetPage: (...args: unknown[]) => rpcPage(...args) }));
 function poolFixtures() {
   return preprodPoolFixtures.map((row) => network.id === "preprod" ? structuredClone(row) : ({
@@ -43,7 +51,7 @@ const fundingResolver = vi.hoisted(() => vi.fn());
 vi.mock("../dingo/utxorpc/provider", async (original) => ({
   ...(await original<typeof import("../dingo/utxorpc/provider")>()),
   getDingoProvider: () => ({
-    queryClient: { readGenesis: async () => ({ networkMagic: network.networkMagic }) },
+    queryClient: { readGenesis: async () => ({ networkMagic: network.networkMagic, systemStart: network.id === "mainnet" ? "2017-09-23T21:44:51Z" : undefined }) },
     resolveUnspentOutputs: fundingResolver,
   }),
 }));
@@ -187,7 +195,7 @@ function fixture() {
     },
   } as unknown as Awaited<ReturnType<typeof getBlaze>>);
   vi.mocked(blockfrostFetch).mockImplementation(async (path) => {
-    if (path === "/api/v0/genesis") return { network_magic: magic };
+    if (path === "/api/v0/genesis") return { network_magic: magic, system_start: network.id === "mainnet" ? 1506203091 : undefined };
     if (path === "/api/v0/blocks/latest") return { slot };
     if (path.includes("/scripts/"))
       return { script_hash: path.split("/").at(-1), type: "plutusV2" };

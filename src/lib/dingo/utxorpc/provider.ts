@@ -2,6 +2,7 @@ import { DINGO_NETWORK } from "../config";
 import { Core } from "@blaze-cardano/sdk";
 import { DingoProvider } from "./DingoProvider";
 import { bytesToHex, hexToBytes } from "./bytes";
+import { matchesDingoRpcGenesis } from "../networkIdentity";
 export { DingoProvider } from "./DingoProvider";
 
 const MAX_SUMMARY_UTXOS = 200;
@@ -13,9 +14,9 @@ export async function assertDingoNetwork(
   provider: DingoProvider,
 ): Promise<string> {
   const genesis = await provider.queryClient.readGenesis();
-  if (genesis.networkMagic !== DINGO_NETWORK.networkMagic)
+  if (!matchesDingoRpcGenesis(genesis))
     throw new Error(
-      `Dingo reports network magic ${genesis.networkMagic}; this app requires ${DINGO_NETWORK.label} (${DINGO_NETWORK.networkMagic}).`,
+      `Dingo reports a different genesis; this app requires ${DINGO_NETWORK.label} (${DINGO_NETWORK.networkMagic}).`,
     );
   return `${DINGO_NETWORK.label} genesis confirmed (network magic ${genesis.networkMagic}, ${genesis.networkId})`;
 }

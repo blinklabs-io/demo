@@ -10,7 +10,7 @@ const definitions: Readonly<Record<string, unknown>> = { "0:65": amaruDefinition
 const presentation: Readonly<Record<number, { id: string; icon: string }>> = {
   65: { id: "amaru", icon: "/nodes/amaru.svg" },
   67: { id: "cardano-bean", icon: "/nodes/bean.svg" },
-  73: { id: "scarab", icon: "/nodes/unknown.svg" },
+  73: { id: "scarab", icon: "/nodes/scarab.png" },
   79: { id: "tsunagi", icon: "/nodes/unknown.svg" },
 };
 

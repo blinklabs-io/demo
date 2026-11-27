@@ -161,7 +161,7 @@ function Batch() {
                 <input
                   value={r.address}
                   onChange={(e) => update(r.id, { address: e.target.value })}
-                  placeholder={DINGO_NETWORK.id === "mainnet" ? "addr1…" : "addr_test1…"}
+                  placeholder={DINGO_NETWORK.id === "mainnet" || DINGO_NETWORK.id === "prime-mainnet" ? "addr1…" : "addr_test1…"}
                   autoComplete="off"
                 />
               </label>
@@ -205,7 +205,7 @@ function Batch() {
               rows={4}
               value={csv}
               onChange={(e) => setCsv(e.target.value)}
-              placeholder={DINGO_NETWORK.id === "mainnet" ? "addr1…,5,lovelace" : "addr_test1…,5,lovelace"}
+              placeholder={DINGO_NETWORK.id === "mainnet" || DINGO_NETWORK.id === "prime-mainnet" ? "addr1…,5,lovelace" : "addr_test1…,5,lovelace"}
             />
           </label>
           <button onClick={importRows}>Replace recipients</button>

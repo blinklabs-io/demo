@@ -4,16 +4,20 @@ import { DINGO_NETWORK } from "../dingo/config";
 import { minswapDeployment } from "./constants";
 import { authenticatePool, type MinswapPool, type MinswapUtxo } from "./data";
 import { quoteWithdraw } from "./quotes";
+import { matchesDingoRestGenesis } from "../dingo/networkIdentity";
 export function assertMinswapNetwork() {
   minswapDeployment();
 }
 export async function assertMinswapGenesis(signal?: AbortSignal) {
   assertMinswapNetwork();
-  const genesis = await blockfrostFetch<{ network_magic: number }>(
+  const genesis = await blockfrostFetch<{
+    network_magic: number;
+    system_start: number;
+  }>(
     "/api/v0/genesis",
     { signal },
   );
-  if (genesis.network_magic !== DINGO_NETWORK.networkMagic)
+  if (!matchesDingoRestGenesis(genesis))
     throw new Error(`Minswap V2 requires verified ${DINGO_NETWORK.label} Dingo data.`);
 }
 export async function readMinswapPools(page = 1, signal?: AbortSignal, cursor = ""): Promise<{ pools: MinswapPool[]; partial: boolean; errors: string[]; nextToken?: string }> {

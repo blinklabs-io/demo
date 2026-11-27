@@ -38,6 +38,12 @@ const endpoints = {
     meshUrl: import.meta.env.VITE_DINGO_PRIME_TESTNET_MESH_URL || "https://dingo.prime-testnet.blinklabs.cloud:8080",
     kupoUrl: import.meta.env.VITE_DINGO_PRIME_TESTNET_KUPO_URL || "https://dingo.prime-testnet.blinklabs.cloud:1442",
   },
+  "prime-mainnet": {
+    blockfrostUrl: import.meta.env.VITE_DINGO_PRIME_MAINNET_BLOCKFROST_URL || "https://dingo.prime-mainnet.blinklabs.cloud",
+    utxorpcUrl: import.meta.env.VITE_DINGO_PRIME_MAINNET_UTXORPC_URL || "https://dingo.prime-mainnet.blinklabs.cloud:9090",
+    meshUrl: import.meta.env.VITE_DINGO_PRIME_MAINNET_MESH_URL || "https://dingo.prime-mainnet.blinklabs.cloud:8080",
+    kupoUrl: import.meta.env.VITE_DINGO_PRIME_MAINNET_KUPO_URL || "https://dingo.prime-mainnet.blinklabs.cloud:1442",
+  },
 }[DINGO_NETWORK.id];
 export const DINGO_CONFIG = Object.freeze({
   blockfrostUrl: endpoints.blockfrostUrl.replace(/\/$/, ""),

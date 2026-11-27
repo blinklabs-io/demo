@@ -1,4 +1,7 @@
-import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
+import {
+  CARDANO_NETWORK_ID,
+  matchesDingoRestGenesis,
+} from "../dingo/networkIdentity";
 import { nativeTicker } from "../format";
 import { assertTransactionNetwork } from "../dingo/walletSession";
 import { Blaze, ColdWallet, Core } from "@blaze-cardano/sdk";
@@ -270,9 +273,11 @@ export async function buildPayment(
   const [outputs, tip, genesis] = await Promise.all([
     provider.getUnspentOutputs(address),
     blockfrostFetch<{ slot: number }>("/api/v0/blocks/latest"),
-    blockfrostFetch<{ network_magic: number }>("/api/v0/genesis"),
+    blockfrostFetch<{ network_magic: number; system_start: number }>(
+      "/api/v0/genesis",
+    ),
   ]);
-  if (genesis.network_magic !== DINGO_NETWORK.networkMagic)
+  if (!matchesDingoRestGenesis(genesis))
     throw new Error(
       `Blockfrost API must serve ${DINGO_NETWORK.label} (network magic ${DINGO_NETWORK.networkMagic}).`,
     );

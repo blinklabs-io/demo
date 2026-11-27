@@ -11,15 +11,15 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.resetModules();
 });
-it("defaults to Preview only when no network is saved and stays immutable per page", async () => {
+it("defaults fresh browser sessions to Mainnet and stays immutable per page", async () => {
   const { DINGO_NETWORK } = await import("./config");
   expect(DINGO_NETWORK).toEqual({
-    id: "preview",
-    label: "Preview",
-    networkMagic: 2,
+    id: "mainnet",
+    label: "Mainnet",
+    networkMagic: 764824073,
   });
   localStorage.setItem("dingo.network", "preprod");
-  expect(DINGO_NETWORK.id).toBe("preview");
+  expect(DINGO_NETWORK.id).toBe("mainnet");
 });
 it("selects Preprod endpoints and network magic without borrowing Preview overrides", async () => {
   localStorage.setItem("dingo.network", "preprod");
@@ -122,6 +122,7 @@ it.each([
   ["mainnet", "MAINNET", 764824073],
   ["dijkstra", "DIJKSTRA", 6],
   ["prime-testnet", "PRIME_TESTNET", 3311],
+  ["prime-mainnet", "PRIME_MAINNET", 764824073],
 ] as const)("isolates %s defaults and all endpoint overrides", async (id, prefix, magic) => {
   window.history.replaceState(null, "", `/explorer?network=${id}`);
   vi.stubEnv("VITE_DINGO_BLOCKFROST_URL", "https://preview.invalid");
@@ -140,7 +141,7 @@ it.each([
   expect((await import("./config")).DINGO_CONFIG).toEqual({ blockfrostUrl: "https://rest.invalid", utxorpcUrl: "https://rpc.invalid", meshUrl: "https://mesh.invalid", kupoUrl: "https://kupo.invalid" });
 });
 
-it("uses hosted Preview APIs and permits explicit self-hosted Kupo overrides",async()=>{
- const config=await import("./config");expect(config.DINGO_CONFIG).toEqual({blockfrostUrl:"https://dingo.preview.blinklabs.cloud",utxorpcUrl:"https://dingo.preview.blinklabs.cloud:9090",meshUrl:"https://dingo.preview.blinklabs.cloud:8080",kupoUrl:"https://dingo.preview.blinklabs.cloud:1442"});
- vi.stubEnv("VITE_DINGO_KUPO_URL","http://127.0.0.1:1442/");vi.resetModules();expect((await import("./config")).DINGO_CONFIG.kupoUrl).toBe("http://127.0.0.1:1442");
+it("uses hosted Mainnet APIs and permits explicit self-hosted Kupo overrides",async()=>{
+ const config=await import("./config");expect(config.DINGO_CONFIG).toEqual({blockfrostUrl:"https://dingo.mainnet.blinklabs.cloud",utxorpcUrl:"https://dingo.mainnet.blinklabs.cloud:9090",meshUrl:"https://dingo.mainnet.blinklabs.cloud:8080",kupoUrl:"https://dingo.mainnet.blinklabs.cloud:1442"});
+ vi.stubEnv("VITE_DINGO_MAINNET_KUPO_URL","http://127.0.0.1:1442/");vi.resetModules();expect((await import("./config")).DINGO_CONFIG.kupoUrl).toBe("http://127.0.0.1:1442");
 });

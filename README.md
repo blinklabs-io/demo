@@ -58,23 +58,25 @@ node. Connect a wallet configured for the selected network before signing.
 
 ## Network selection
 
-Choose Mainnet, Preview, Preprod, Musashi, Dijkstra, or Prime Testnet in the header. Shared links include the network
-(for example, `?network=dijkstra` or `?network=prime-testnet`), which takes precedence over a saved
-choice. Explicit network links work when browser storage is blocked. Switching disconnects the wallet,
-clears drafts and transient chain data, and reloads the current tool or a safe
-list view for the new network. Safe ticker filters and page anchors survive;
-old-network delegation and entity prefills are discarded. Wallet connections are always explicit.
+Fresh sessions start on Mainnet. Choose Mainnet, Preview, Preprod, Musashi,
+Dijkstra, Prime Testnet, or Prime Mainnet in the header. Shared links include
+the network (for example, `?network=dijkstra` or `?network=prime-mainnet`),
+which takes precedence over a saved choice. Explicit network links work when
+browser storage is blocked. Switching disconnects the wallet, clears drafts and
+transient chain data, and reloads the current tool or a safe list view for the
+new network. Safe ticker filters and page anchors survive; old-network
+delegation and entity prefills are discarded. Wallet connections are always
+explicit.
 
-The existing `VITE_DINGO_*_URL` settings configure Preview. Preprod has separate
-`VITE_DINGO_PREPROD_BLOCKFROST_URL`, `VITE_DINGO_PREPROD_MESH_URL` and
-`VITE_DINGO_PREPROD_UTXORPC_URL` and `VITE_DINGO_PREPROD_KUPO_URL` overrides. Mainnet uses independent
-`VITE_DINGO_MAINNET_BLOCKFROST_URL`, `VITE_DINGO_MAINNET_MESH_URL`, and
-`VITE_DINGO_MAINNET_UTXORPC_URL` and `VITE_DINGO_MAINNET_KUPO_URL` overrides. Each API must serve the selected
-network. SundaeSwap V3 and V4 use separate verified Mainnet and Preview deployments;
-other creation and participation tools use the selected network. CIP-30 reports
-only mainnet versus testnet, so transaction review and signing additionally
-require the actual spending and collateral inputs to be unspent on the selected
-Dingo chain.
+The existing `VITE_DINGO_*_URL` settings configure Preview. Other networks use
+`VITE_DINGO_<NETWORK>_<API>_URL`, where `<NETWORK>` is `MAINNET`, `PREPROD`,
+`MUSASHI`, `DIJKSTRA`, `PRIME_TESTNET`, or `PRIME_MAINNET`, and `<API>` is
+`BLOCKFROST`, `MESH`, `UTXORPC`, or `KUPO`. Each API must serve the selected
+network. SundaeSwap V3 and V4 use separate verified Mainnet and Preview
+deployments; other creation and participation tools use the selected network.
+CIP-30 reports only mainnet versus testnet, so transaction review and signing
+additionally require the actual spending and collateral inputs to be unspent on
+the selected Dingo chain.
 
 ## Indexed output history
 
@@ -102,8 +104,9 @@ pass cancellation signals when navigating away or replacing a request.
 Kupo endpoints default to HTTPS port 1442 for every hosted network. Override
 `VITE_DINGO_KUPO_URL` for Preview or the network-specific forms:
 `VITE_DINGO_MAINNET_KUPO_URL`, `VITE_DINGO_PREPROD_KUPO_URL`,
-`VITE_DINGO_MUSASHI_KUPO_URL`, `VITE_DINGO_DIJKSTRA_KUPO_URL`, and
-`VITE_DINGO_PRIME_TESTNET_KUPO_URL`.
+`VITE_DINGO_MUSASHI_KUPO_URL`, `VITE_DINGO_DIJKSTRA_KUPO_URL`,
+`VITE_DINGO_PRIME_TESTNET_KUPO_URL`, and
+`VITE_DINGO_PRIME_MAINNET_KUPO_URL`.
 
 For example, read the public Preview service without a wallet:
 
@@ -800,17 +803,21 @@ When more than 12 transactions are pending, the transaction web opens an overvie
 of the entire pending set. Circle size scales with fee; connections identify
 transactions spending another pending transaction’s output. Search by hash, zoom,
 or drag the view, then select a transaction to inspect its fee, inputs, outputs,
-and native assets. Transaction view retains the paginated input/output webs.
+and native assets. The input/output view appears before the collapsed
+pending-transaction table, which can be expanded for exact rows. Transaction
+view retains the paginated input/output webs.
 
-## Dijkstra and Prime Testnet
+## Dijkstra and Prime networks
 
-Dijkstra and Prime Testnet have separate REST, UTxO RPC, and Mesh connections.
-Their overrides use `VITE_DINGO_DIJKSTRA_BLOCKFROST_URL`,
+Dijkstra, Prime Testnet, and Prime Mainnet have separate REST, UTxO RPC, and
+Mesh connections. Their overrides use `VITE_DINGO_DIJKSTRA_BLOCKFROST_URL`,
 `VITE_DINGO_DIJKSTRA_UTXORPC_URL`, `VITE_DINGO_DIJKSTRA_MESH_URL`,
 `VITE_DINGO_PRIME_TESTNET_BLOCKFROST_URL`,
 `VITE_DINGO_PRIME_TESTNET_UTXORPC_URL`, and
-`VITE_DINGO_PRIME_TESTNET_MESH_URL`. Network identity checks require magic 6
-and 3311 respectively. Prime Testnet amounts display AP3X with up to six decimal places, keeping at least two.
+`VITE_DINGO_PRIME_TESTNET_MESH_URL`, plus the corresponding
+`VITE_DINGO_PRIME_MAINNET_*` overrides. Network identity checks require magic 6,
+3311, and 764824073 respectively. Both Prime networks display AP3X with up to
+six decimal places, keeping at least two.
 
 Wallet swaps remain available only for networks with configured market deployments.
 Musashi header history uses its genesis slot clock because all its eras activate at genesis.

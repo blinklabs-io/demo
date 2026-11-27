@@ -1,4 +1,7 @@
-import { CARDANO_NETWORK_ID } from "../dingo/networkIdentity";
+import {
+  CARDANO_NETWORK_ID,
+  matchesDingoRestGenesis,
+} from "../dingo/networkIdentity";
 import { DINGO_NETWORK } from "../dingo/config";
 import {
   assertTransactionNetwork,
@@ -64,11 +67,15 @@ async function validateAction(action: SurveyAction, key: string) {
     blockfrostFetch<{ epoch: number; slot: number; epoch_slot: number }>(
       "/api/v0/blocks/latest",
     ),
-    blockfrostFetch<{ epoch_length: number; network_magic: number }>(
+    blockfrostFetch<{
+      epoch_length: number;
+      network_magic: number;
+      system_start: number;
+    }>(
       "/api/v0/genesis",
     ),
   ]);
-  if (genesis.network_magic !== DINGO_NETWORK.networkMagic)
+  if (!matchesDingoRestGenesis(genesis))
     throw new Error(`Dingo’s explorer API is not on ${DINGO_NETWORK.label}.`);
   if (
     !Number.isSafeInteger(tip.epoch) ||
